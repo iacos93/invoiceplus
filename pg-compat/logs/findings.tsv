@@ -1,0 +1,4 @@
+file	line	pattern	risk	desc	match
+app/Controllers/ClientsAjax.php	42	P3	MEDIUM	HAVING instead of WHERE on real column (no GROUP BY)	->having("client_name LIKE '" . $pattern . "'", null, false)
+app/Controllers/ClientsAjax.php	43	P3	MEDIUM	HAVING instead of WHERE on real column (no GROUP BY)	->orHaving("client_surname LIKE '" . $pattern . "'", null, false)
+app/Controllers/ClientsAjax.php	44	P3	HIGH	HAVING on CONCAT alias (PG < 16 crash)	->orHaving("client_fullname LIKE '" . $pattern . "'", null, false)

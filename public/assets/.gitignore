@@ -1,0 +1,10 @@
+*
+!.gitignore
+
+# Core
+!core
+!core/**/*
+
+# Base themes
+!invoiceplane
+!invoiceplane/**/*

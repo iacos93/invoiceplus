@@ -1,0 +1,12 @@
+vendor/
+writable/cache/*
+writable/logs/*
+writable/session/*
+.env
+writable/uploads/*
+writable/debugbar/*
+.DS_Store
+build/
+_archivio-asset-rimossi/
+writable/backups/*
+.phpunit.cache/

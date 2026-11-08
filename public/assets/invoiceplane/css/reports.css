@@ -1,0 +1,909 @@
+/* ==========================================================================
+   reports.css — Stili specifici per le pagine di report
+   --------------------------------------------------------------------------
+   Una pagina di report non e' un elenco: e' un prospetto. Dice quale domanda
+   e' stata posta (il filtro), qual e' la risposta in una riga (i KPI) e poi
+   mostra le prove (la tabella). Prima i tre livelli avevano lo stesso peso
+   visivo — una card form, una tabella nuda, un placeholder — e chi apriva la
+   pagina doveva ricostruire da solo cosa stava guardando.
+
+   Tutti i token vengono da custom.css: qui non nascono colori nuovi, solo
+   la rampa di gravita' dello scaduto, che e' derivata da --ip-warning e
+   --ip-danger con color-mix perche' segua i due temi senza duplicazioni.
+   ========================================================================== */
+
+:root {
+    /* Rampa dello scaduto: dall'ambra del "appena scaduto" al rosso pieno
+       dell'inesigibile. Cinque gradini perche' cinque sono le fasce che il
+       ReportModel calcola davvero (1-30, 31-60, 61-90, 91-120, oltre 120). */
+    --ip-aging-1: color-mix(in srgb, var(--ip-warning) 32%, transparent);
+    --ip-aging-2: color-mix(in srgb, var(--ip-warning) 62%, transparent);
+    --ip-aging-3: color-mix(in srgb, var(--ip-danger) 45%, transparent);
+    --ip-aging-4: color-mix(in srgb, var(--ip-danger) 72%, transparent);
+    --ip-aging-5: var(--ip-danger);
+}
+
+/* -----------------------------------------------------------------------------
+   1. Hub dei report — griglia di card cliccabili
+   -------------------------------------------------------------------------- */
+
+.ip-report-hub {
+    display: grid;
+    /* 250px, non 280: a 1440 i quattro report stanno sulla stessa riga
+       (280 ne faceva entrare tre, lasciando il quarto orfano su una riga
+       vuota). A 1024 diventano due colonne, a 768 restano due. */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.ip-report-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px 20px;
+    background: var(--ip-bg-card);
+    border: 1px solid var(--ip-border);
+    border-radius: var(--ip-radius);
+    /* Stessa ombra di sistema delle .ip-table-card / .ip-doc-section per
+       coerenza fra tutti i tipi di card dell'app. */
+    box-shadow: var(--ip-shadow-sm);
+    text-decoration: none;
+    color: var(--ip-text);
+    transition: border-color var(--ip-transition),
+                background-color var(--ip-transition),
+                transform var(--ip-transition),
+                box-shadow var(--ip-transition);
+}
+
+.ip-report-card:hover {
+    border-color: var(--ip-primary);
+    background: var(--ip-primary-soft);
+    transform: translateY(-1px);
+    color: var(--ip-text);
+    text-decoration: none;
+}
+
+.ip-report-card:focus-visible {
+    outline: 2px solid var(--ip-primary);
+    outline-offset: 2px;
+}
+
+.ip-report-card__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ip-report-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--ip-radius-sm);
+    background: var(--ip-primary-soft);
+    color: var(--ip-primary);
+    font-size: 13.5px;
+    flex: 0 0 auto;
+}
+
+.ip-report-card:hover .ip-report-card__icon {
+    background: var(--ip-primary);
+    color: var(--ip-bg-card);
+}
+
+.ip-report-card__title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* La freccia compare solo al passaggio del mouse: a riposo le quattro card
+   sono identiche e la pagina resta calma, ma appena una e' sotto il cursore
+   dice dove porta. */
+.ip-report-card__go {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--ip-text-muted);
+    opacity: 0;
+    transform: translateX(-3px);
+    transition: opacity var(--ip-transition), transform var(--ip-transition);
+}
+
+.ip-report-card:hover .ip-report-card__go,
+.ip-report-card:focus-visible .ip-report-card__go {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.ip-report-card__desc {
+    font-size: 12.5px;
+    color: var(--ip-text-muted);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.ip-report-card:hover .ip-report-card__desc {
+    color: var(--ip-text);
+}
+
+/* -----------------------------------------------------------------------------
+   2. Breadcrumb di navigazione fra report
+   -------------------------------------------------------------------------- */
+
+.ip-report-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-size: 12.5px;
+}
+
+.ip-report-nav a {
+    color: var(--ip-text-muted);
+    text-decoration: none;
+    transition: color var(--ip-transition);
+}
+
+.ip-report-nav a:hover {
+    color: var(--ip-primary);
+}
+
+.ip-report-nav .ip-report-nav__sep {
+    color: var(--ip-border-strong);
+    font-size: 10px;
+}
+
+.ip-report-nav .ip-report-nav__current {
+    color: var(--ip-text);
+    font-weight: 500;
+}
+
+/* -----------------------------------------------------------------------------
+   3. Card filtro (form di configurazione del report)
+   -------------------------------------------------------------------------- */
+
+.ip-report-filter {
+    margin-bottom: 18px;
+}
+
+.ip-report-filter .card-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.ip-report-filter .card-header .card-header-icon {
+    margin-right: 0;
+}
+
+/* Azioni del filtro (Esegui + Esporta) nella stessa riga dell'header.
+   Staccate dal titolo con margin-left:auto per allinearle a destra.
+   Stanno li' e non in fondo al form perche' il form e' una riga sola: un
+   pulsante sotto avrebbe richiesto una label fantasma per allinearsi. */
+.ip-report-filter__actions {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* I campi del filtro stanno su una riga che si spezza da sola: nessuna
+   colonna Bootstrap, cosi' i report con due campi e quelli con cinque
+   usano lo stesso markup e nessuno resta con un terzo di riga vuoto. */
+.ip-report-filter__fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+}
+
+.ip-report-filter__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 0 1 180px;
+    min-width: 140px;
+}
+
+.ip-report-filter__field .form-control {
+    width: 100%;
+}
+
+/* Campo di spunta (es. "valori con imposte"): allineato alla base della riga
+   come se fosse un campo, non appoggiato con un margine a occhio. */
+.ip-report-filter__check {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex: 0 0 auto;
+    padding-bottom: 8px;
+    font-size: 13px;
+    color: var(--ip-text);
+    cursor: pointer;
+}
+
+.ip-report-filter__check input {
+    margin: 0;
+}
+
+/* Le scorciatoie di periodo precedono i campi data e le pilotano. Il
+   separatore sotto dice che sono un modo piu' rapido di compilare gli
+   stessi due campi, non un filtro in piu'. */
+.ip-report-filter .ip-quick-range {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ip-border-soft);
+}
+
+.ip-quick-range__btn.is-active {
+    border-color: var(--ip-primary);
+    background: var(--ip-primary-soft);
+    color: var(--ip-text);
+}
+
+/* -----------------------------------------------------------------------------
+   4. KPI di riepilogo (sopra la tabella risultati)
+   -------------------------------------------------------------------------- */
+
+.ip-report-kpis {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding: 0 0 16px;
+}
+
+.ip-report-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ip-report-kpi__label {
+    /* Token della scala (11px) e non 10.5px fissi: le etichette dei report
+       devono misurare come quelle delle altre schermate. */
+    font-size: var(--ip-text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--ip-text-muted);
+}
+
+.ip-report-kpi__value {
+    font-family: var(--ip-display);
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ip-text);
+}
+
+.ip-report-kpi__value.is-success { color: var(--ip-success); }
+.ip-report-kpi__value.is-danger  { color: var(--ip-danger-text); }
+.ip-report-kpi__value.is-warning { color: var(--ip-warning-text); }
+.ip-report-kpi__value.is-muted   { color: var(--ip-text-muted); }
+
+/* -----------------------------------------------------------------------------
+   5. Tabella risultati con metadati di periodo
+   -------------------------------------------------------------------------- */
+
+.ip-report-results {
+    margin-top: 0;
+}
+
+/* custom.css forza overflow:visible su .table-responsive dentro .ip-table-card
+   per non tagliare i menu "Opzioni" di riga. Le tabelle dei report quei menu
+   non ce li hanno, e senza overflow-x a scorrere in orizzontale era tutta la
+   pagina: sette colonne di scadenzario o due anni di trimestri non stanno in
+   375px. Il contenitore torna a scorrere per conto suo dove serve. */
+.ip-table-card .table-responsive.ip-report-scroll {
+    overflow-x: auto;
+}
+/* Con il contenitore che scorre, l'intestazione sticky si ancora a lui e non
+   piu' alla pagina: il top di custom.css (navbar + headerbar, 112px) la
+   spingeva 112px piu' in basso, sopra la seconda riga. Nello scadenzario la
+   riga coperta era un cliente intero, con il saldo piu' alto, e la tabella
+   sembrava avere l'intestazione a meta'. Stessa correzione del bilancino. */
+.ip-table-card .table-responsive.ip-report-scroll > .table > thead > tr > th {
+    top: auto;
+}
+
+/* Periodo di riferimento nell'header della tabella, accanto al titolo.
+   Senza, una tabella stampata o esportata non dice piu' a quale intervallo
+   si riferisce: e' il dato che rende leggibile tutto il resto. */
+.ip-report-period {
+    font-family: var(--ip-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ip-text-muted);
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--ip-bg);
+    border: 1px solid var(--ip-border-soft);
+    white-space: nowrap;
+}
+
+/* Riga di totale in fondo alla tabella: separata da un bordo pieno e con
+   l'importo in Fraunces, come le cifre risultato del prospetto fiscale. */
+.ip-report-results tbody tr.ip-report-total > td {
+    border-top: 2px solid var(--ip-border);
+    background: var(--ip-bg);
+    font-weight: 600;
+}
+
+.ip-report-results tbody tr.ip-report-total > td.amount {
+    font-family: var(--ip-display);
+    font-size: 15px;
+    letter-spacing: -0.01em;
+}
+
+.ip-report-results tbody tr.ip-report-total:hover > td {
+    background: var(--ip-bg);
+}
+
+/* -----------------------------------------------------------------------------
+   6. Invoice aging — fasce di ritardo con indicatori visivi
+   -------------------------------------------------------------------------- */
+
+.ip-aging-table th.ip-aging-range,
+.ip-aging-table td.ip-aging-range {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Sette colonne: la tabella scorre in orizzontale sotto i 1100px circa, ma
+   la colonna cliente non deve pagarne il prezzo mandando i nomi a capo su
+   tre righe. Larghezza minima e il resto scorre. */
+.ip-aging-table th:first-child,
+.ip-aging-table td:first-child {
+    min-width: 190px;
+}
+
+.ip-aging-table th.ip-aging-total {
+    text-align: right;
+}
+
+/* Il totale della riga resta il valore dominante della cella, quindi e'
+   sempre in Fraunces come le cifre KPI della dashboard. */
+.ip-aging-table td.ip-aging-total {
+    font-family: var(--ip-display);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Importi nulli nelle celle di aging: mostrati come trattino discreto
+   invece di "0,00" — scansionando la tabella i dati reali saltano
+   all'occhio e le fasce senza esposizioni spariscono. */
+.ip-aging-table td.ip-aging-range.is-empty {
+    color: var(--ip-border-strong);
+}
+
+/* Intestazione di fascia: etichetta sopra, gravita' sotto, e un filetto del
+   colore della fascia in basso. Il filetto fa da legenda alla barra di
+   composizione: senza, i colori della barra andrebbero spiegati in una
+   riga a parte sotto la tabella, che ripeteva le stesse cinque etichette. */
+.ip-aging-table th.ip-aging-range {
+    line-height: 1.3;
+    border-bottom-width: 2px;
+    border-bottom-style: solid;
+}
+
+.ip-aging-table th.ip-aging-range--1 { border-bottom-color: var(--ip-aging-1); }
+.ip-aging-table th.ip-aging-range--2 { border-bottom-color: var(--ip-aging-2); }
+.ip-aging-table th.ip-aging-range--3 { border-bottom-color: var(--ip-aging-3); }
+.ip-aging-table th.ip-aging-range--4 { border-bottom-color: var(--ip-aging-4); }
+.ip-aging-table th.ip-aging-range--5 { border-bottom-color: var(--ip-aging-5); }
+
+.ip-aging-range-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    /* Era 9px, sotto anche al passo più piccolo della scala (--ip-text-2xs,
+       10px) che custom.css assegna a tutti i badge: questa regola, caricata
+       dopo, lo sovrascriveva. */
+    font-size: var(--ip-badge-font-size, var(--ip-text-2xs));
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    vertical-align: middle;
+}
+
+.ip-aging-range-badge--1 { background: rgba(248, 148, 6, 0.12); color: var(--ip-warning-text); }
+.ip-aging-range-badge--2 { background: rgba(248, 148, 6, 0.20); color: var(--ip-warning-text); }
+.ip-aging-range-badge--3 { background: rgba(185, 74, 72, 0.12); color: var(--ip-danger-text); }
+.ip-aging-range-badge--4 { background: rgba(185, 74, 72, 0.20); color: var(--ip-danger-text); }
+.ip-aging-range-badge--5 { background: rgba(185, 74, 72, 0.32); color: var(--ip-danger-text); }
+
+/* Barra di composizione dello scaduto — l'elemento che porta il senso di
+   questa pagina. La somma degli importi non dice se il credito e' fresco o
+   marcio; la barra si': la stessa cifra tutta ambra o tutta rossa e' un
+   problema diverso. Riusa l'idioma di .ip-split__bar del prospetto fiscale
+   (segmenti che sommano al totale della riga) perche' e' la stessa lettura. */
+.ip-aging-bar {
+    display: flex;
+    width: 100%;
+    max-width: 150px;
+    height: 6px;
+    margin-top: 5px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--ip-border-soft);
+}
+
+.ip-aging-bar__seg {
+    display: block;
+    height: 100%;
+}
+
+.ip-aging-bar__seg--1 { background: var(--ip-aging-1); }
+.ip-aging-bar__seg--2 { background: var(--ip-aging-2); }
+.ip-aging-bar__seg--3 { background: var(--ip-aging-3); }
+.ip-aging-bar__seg--4 { background: var(--ip-aging-4); }
+.ip-aging-bar__seg--5 { background: var(--ip-aging-5); }
+
+.ip-aging-client {
+    display: block;
+    font-weight: 500;
+}
+
+/* -----------------------------------------------------------------------------
+   6bis. Vendite per cliente — la classifica
+   -------------------------------------------------------------------------- */
+
+/* La domanda di questo report e' "chi fattura di piu'", e a quella domanda
+   una tabella in ordine alfabetico non risponde: costringe a leggere tutte
+   le righe e a fare il confronto a mente. Ordinata per fatturato diventa
+   una classifica, e allora la posizione, la quota e la concentrazione
+   diventano leggibili senza aggiungere una parola. */
+
+.ip-rank-table th.ip-rank,
+.ip-rank-table td.ip-rank {
+    width: 1%;
+    padding-right: 0;
+    text-align: right;
+    font-family: var(--ip-mono);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ip-text-muted);
+    white-space: nowrap;
+}
+
+/* Le prime tre posizioni in inchiostro pieno: sono quelle che si citano
+   ("il secondo cliente"), le altre servono come contesto. */
+.ip-rank-table td.ip-rank.is-podium {
+    color: var(--ip-text);
+    font-weight: 600;
+}
+
+.ip-rank-client {
+    display: block;
+    font-weight: 500;
+}
+
+/* Quota sul fatturato del periodo. Una colonna di percentuali dice quanto
+   pesa ogni cliente; la barra dice, in un colpo d'occhio, se il fatturato
+   sta in piedi su uno solo — che e' il rischio vero e non si legge da una
+   lista di numeri. Stessa grammatica della barra dello scaduto. */
+.ip-share-bar {
+    display: block;
+    width: 100%;
+    max-width: 150px;
+    height: 5px;
+    margin-top: 5px;
+    border-radius: 999px;
+    overflow: hidden;
+    /* La pista e' lunga uguale su tutte le righe — e' il "su cento" che
+       rende confrontabili i riempimenti — ma va tenuta leggera: piu' scura
+       si legge come una sottolineatura del nome invece che come una scala. */
+    background: color-mix(in srgb, var(--ip-primary) 7%, transparent);
+}
+
+.ip-share-bar__fill {
+    display: block;
+    height: 100%;
+    /* Sotto il paio di pixel un riempimento sparisce e la riga sembra a zero:
+       una quota piccola e' comunque una quota, e deve lasciare un segno. */
+    min-width: 2px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ip-primary) 55%, transparent);
+}
+
+.ip-rank-table td.ip-share-pct {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
+    color: var(--ip-text-muted);
+    white-space: nowrap;
+}
+
+/* -----------------------------------------------------------------------------
+   6ter. Storico pagamenti — registro raggruppato per mese
+   -------------------------------------------------------------------------- */
+
+/* Gli incassi si leggono per mese: e' l'unita' con cui si riconcilia la
+   banca e con cui si risponde a "com'e' andato ottobre". Una lista piatta
+   di trecento righe quel taglio non ce l'ha, e il totale in fondo arriva
+   troppo tardi. L'intestazione di mese e' una riga della tabella, non un
+   blocco a parte, cosi' le colonne restano allineate. */
+.ip-report-results tbody tr.ip-month-row > td {
+    /* Vince sul padding 48px che custom.css da' a ogni td[colspan]:only-child
+       (li' serve per gli stati vuoti, qui gonfierebbe ogni separatore). */
+    padding: 14px 12px 6px !important;
+    border-bottom: 1px solid var(--ip-border);
+    background: transparent;
+}
+
+.ip-report-results tbody tr.ip-month-row:first-child > td {
+    padding-top: 4px !important;
+}
+
+.ip-report-results tbody tr.ip-month-row:hover > td {
+    background: transparent;
+}
+
+.ip-month-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.ip-month-label {
+    font-size: var(--ip-text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--ip-text-muted);
+}
+
+.ip-month-count {
+    font-size: 11.5px;
+    color: var(--ip-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Il totale del mese e' una cifra risultato, quindi in Fraunces come i KPI
+   e il netto del prospetto: e' l'unico numero della riga e va letto come
+   tale, non come un'etichetta. */
+.ip-month-total {
+    margin-left: auto;
+    font-family: var(--ip-display);
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    color: var(--ip-text);
+}
+
+/* -----------------------------------------------------------------------------
+   7. Sales by year — tabella trimestri compatta
+   -------------------------------------------------------------------------- */
+
+/* Intestazione bi-livello: anno sopra, trimestri sotto. L'anno e' raggruppato
+   con colspan=4, i trimestri sono T1-T4 come nel prospetto fiscale. */
+.ip-sales-year-table thead th.ip-year-group {
+    text-align: center;
+    font-family: var(--ip-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ip-text);
+    border-bottom: 1px solid var(--ip-border);
+}
+
+/* Bordo a sinistra di ogni gruppo-anno: senza, due anni affiancati sono
+   otto colonne indistinguibili e il colspan non si vede piu'. */
+.ip-sales-year-table thead th.ip-year-group + th.ip-year-group,
+.ip-sales-year-table thead th.ip-quarter.is-year-start,
+.ip-sales-year-table td.ip-quarter-cell.is-year-start {
+    border-left: 1px solid var(--ip-border-soft);
+}
+
+.ip-sales-year-table thead th.ip-quarter {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--ip-text-muted);
+    padding: 4px 8px;
+    min-width: 74px;
+}
+
+/* Celle trimestre: importo tabulare, zero nascosti con trattino */
+.ip-sales-year-table td.ip-quarter-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Intensita' della cella proporzionale all'importo. Otto o dodici colonne
+   di cifre sono una matrice, e una matrice si legge per forma prima che per
+   valore: dove si e' concentrato il lavoro, quale trimestre e' stato vuoto,
+   se un cliente e' stagionale. Quattro gradini e non una sfumatura continua
+   perche' la lettura utile e' "molto / poco", non la terza cifra decimale.
+   La tinta e' l'inchiostro del tema: nella matrice il valore alto non e'
+   ne' buono ne' cattivo, e caricarlo di verde o di rosso direbbe il falso. */
+.ip-sales-year-table td.ip-quarter-cell.is-heat-1 { background: color-mix(in srgb, var(--ip-primary) 5%, transparent); }
+.ip-sales-year-table td.ip-quarter-cell.is-heat-2 { background: color-mix(in srgb, var(--ip-primary) 10%, transparent); }
+.ip-sales-year-table td.ip-quarter-cell.is-heat-3 { background: color-mix(in srgb, var(--ip-primary) 16%, transparent); }
+.ip-sales-year-table td.ip-quarter-cell.is-heat-4 { background: color-mix(in srgb, var(--ip-primary) 24%, transparent); }
+
+/* L'hover di riga (primary-soft) e la tinta della cella sono lo stesso
+   colore: senza questo, passando sopra una riga la matrice si appiattiva.
+   In hover la cella tinta resta piu' scura del suo sfondo di riga. */
+.ip-table-card .table-hover > tbody > tr:hover > td.ip-quarter-cell.is-heat-1 { background: color-mix(in srgb, var(--ip-primary) 8%, transparent); }
+.ip-table-card .table-hover > tbody > tr:hover > td.ip-quarter-cell.is-heat-2 { background: color-mix(in srgb, var(--ip-primary) 12%, transparent); }
+.ip-table-card .table-hover > tbody > tr:hover > td.ip-quarter-cell.is-heat-3 { background: color-mix(in srgb, var(--ip-primary) 17%, transparent); }
+.ip-table-card .table-hover > tbody > tr:hover > td.ip-quarter-cell.is-heat-4 { background: color-mix(in srgb, var(--ip-primary) 24%, transparent); }
+
+/* Scala di lettura della matrice, nel piede della card: senza, i quattro
+   gradini sono un effetto grafico invece che un asse. */
+.ip-heat-scale {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--ip-border-soft);
+    font-size: 11.5px;
+    color: var(--ip-text-muted);
+}
+
+/* Cosa misura la scala, staccato dai due estremi con un filetto: senza,
+   "fatturato nel trimestre meno piu'" si legge come una frase sola. */
+.ip-heat-scale__what {
+    padding-right: 10px;
+    border-right: 1px solid var(--ip-border-soft);
+    color: var(--ip-text);
+}
+
+.ip-heat-scale__steps {
+    display: flex;
+    gap: 3px;
+}
+
+.ip-heat-scale__step {
+    display: block;
+    width: 22px;
+    height: 8px;
+    border-radius: 2px;
+    border: 1px solid var(--ip-border-soft);
+}
+
+.ip-heat-scale__step--1 { background: color-mix(in srgb, var(--ip-primary) 5%, transparent); }
+.ip-heat-scale__step--2 { background: color-mix(in srgb, var(--ip-primary) 10%, transparent); }
+.ip-heat-scale__step--3 { background: color-mix(in srgb, var(--ip-primary) 16%, transparent); }
+.ip-heat-scale__step--4 { background: color-mix(in srgb, var(--ip-primary) 24%, transparent); }
+
+.ip-sales-year-table td.ip-quarter-cell.is-empty {
+    color: var(--ip-border-strong);
+}
+
+/* Colonna totale annuo: piu' larga e con peso maggiore, separata visivamente
+   dalle colonne trimestrali con un bordo a sinistra. */
+.ip-sales-year-table th.ip-year-total,
+.ip-sales-year-table td.ip-year-total {
+    border-left: 1px solid var(--ip-border);
+    font-family: var(--ip-display);
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Due anni fanno undici colonne, quattro anni ne fanno diciannove: questa
+   matrice scorre in orizzontale per costruzione, non per sfortuna. E quando
+   scorre si perdono le due cose che rendono leggibile una riga — di chi e' e
+   quanto fa in totale. Restano ferme ai due bordi; i trimestri passano in
+   mezzo. Le celle fisse hanno un fondo proprio, altrimenti il contenuto che
+   scorre passerebbe sotto e si sovrapporrebbe. */
+.ip-sales-year-table th:first-child,
+.ip-sales-year-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-width: 150px;
+    background: var(--ip-bg-card);
+}
+
+.ip-sales-year-table th.ip-year-total,
+.ip-sales-year-table td.ip-year-total {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: var(--ip-bg-card);
+}
+
+/* Le intestazioni hanno il fondo del thead, non quello della card. */
+.ip-sales-year-table thead th:first-child,
+.ip-sales-year-table thead th.ip-year-total {
+    z-index: 3;
+    background: var(--ip-bg);
+}
+
+/* L'hover di riga e la riga di totale devono raggiungere anche le celle
+   fisse: con un fondo dichiarato non ereditano piu' quello della riga. */
+.ip-table-card .ip-sales-year-table.table-hover > tbody > tr:hover > td:first-child,
+.ip-table-card .ip-sales-year-table.table-hover > tbody > tr:hover > td.ip-year-total {
+    background: color-mix(in srgb, var(--ip-primary) 6%, var(--ip-bg-card));
+}
+
+.ip-sales-year-table tbody tr.ip-report-total > td:first-child,
+.ip-sales-year-table tbody tr.ip-report-total > td.ip-year-total,
+.ip-table-card .ip-sales-year-table.table-hover > tbody > tr.ip-report-total:hover > td:first-child,
+.ip-table-card .ip-sales-year-table.table-hover > tbody > tr.ip-report-total:hover > td.ip-year-total {
+    background: var(--ip-bg);
+}
+
+/* Un filetto sul bordo interno delle colonne fisse: dice che li' il
+   contenuto continua e sta scorrendo, invece di sembrare il bordo tabella. */
+.ip-sales-year-table th:first-child,
+.ip-sales-year-table td:first-child {
+    box-shadow: 1px 0 0 var(--ip-border-soft);
+}
+
+.ip-sales-year-table th.ip-year-total,
+.ip-sales-year-table td.ip-year-total {
+    box-shadow: -1px 0 0 var(--ip-border);
+}
+
+/* Colonna partita IVA: testo in mono come i numeri documento */
+.ip-sales-year-table td.ip-vat-id {
+    font-family: var(--ip-mono);
+    font-size: 12px;
+    color: var(--ip-text-muted);
+}
+
+/* -----------------------------------------------------------------------------
+   8. Responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 575.98px) {
+    .ip-report-hub {
+        grid-template-columns: 1fr;
+    }
+
+    .ip-report-kpis {
+        gap: 16px;
+    }
+
+    .ip-report-kpi__value {
+        font-size: 17px;
+    }
+
+    /* La pillola del periodo prende una riga sua sotto il titolo: dentro il
+       flex dell'header, senza flex-basis, veniva compressa e troncata. Il
+       wrap va concesso anche al titolo, che di suo e' nowrap: altrimenti a
+       pagare la riga in piu' e' la label, che ha min-width:0 e sparisce. */
+    .ip-report-results .ip-table-card-title {
+        flex-wrap: wrap;
+    }
+
+    .ip-report-period {
+        flex: 0 0 auto;
+        margin-left: 0;
+        margin-top: 6px;
+    }
+
+    /* Le azioni del filtro vanno sotto il titolo su mobile */
+    .ip-report-filter__actions {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .ip-report-filter__field {
+        flex: 1 1 100%;
+    }
+
+    /* L'anno e' centrato sui suoi quattro trimestri: su uno schermo stretto
+       il centro del gruppo cade fuori dalla porzione visibile e l'etichetta
+       spariva finche' non si scorreva. A sinistra sta dove inizia il gruppo. */
+    .ip-sales-year-table thead th.ip-year-group {
+        text-align: left;
+    }
+
+    /* Registro pagamenti collassato: l'intestazione di mese non e' una delle
+       mini-card di riga, e' il titolo che le separa. Niente bordo, niente
+       sfondo, larghezza piena. */
+    .ip-table-card table.ip-table-card-collapse tbody tr.ip-month-row {
+        display: block;
+        border: 0;
+        background: transparent;
+        margin: 14px 0 4px;
+        padding: 0;
+    }
+
+    .ip-table-card table.ip-table-card-collapse tbody tr.ip-month-row > td {
+        display: block;
+        border-bottom: 1px solid var(--ip-border);
+        /* Stessi 12px di rientro delle mini-card sotto: il mese e' il titolo
+           di quel gruppo e deve partire dalla loro stessa colonna. */
+        padding: 0 12px 6px !important;
+        text-align: left;
+    }
+
+    .ip-table-card table.ip-table-card-collapse tbody tr.ip-month-row > td::before {
+        content: none;
+    }
+
+    /* Nella mini-card la cella e' un flex "etichetta | valore": nome e barra
+       ci finivano affiancati, con il nome schiacciato a capo. La barra va a
+       riga propria sotto, allineata a destra come il valore che descrive. */
+    .ip-table-card table.ip-table-card-collapse tbody td.ip-rank-name {
+        flex-wrap: wrap;
+    }
+
+    .ip-table-card table.ip-table-card-collapse tbody td.ip-rank-name .ip-share-bar {
+        flex: 0 0 100%;
+        max-width: 120px;
+        margin-left: auto;
+    }
+}
+
+/* -----------------------------------------------------------------------------
+   9. Tema scuro — adattamento
+   -------------------------------------------------------------------------- */
+
+html[data-theme="dark"] .ip-report-card:hover {
+    border-color: var(--ip-primary);
+}
+
+html[data-theme="dark"] .ip-report-card:hover .ip-report-card__desc {
+    color: var(--ip-text);
+}
+
+html[data-theme="dark"] .ip-aging-table td.ip-aging-range.is-empty,
+html[data-theme="dark"] .ip-sales-year-table td.ip-quarter-cell.is-empty {
+    color: var(--ip-border);
+}
+
+/* Sul fondo scuro gli rgba tarati sul bianco perdono contrasto: i badge
+   della rampa vanno ricalcolati sui token dark. */
+html[data-theme="dark"] .ip-aging-range-badge--1 { background: color-mix(in srgb, var(--ip-warning) 16%, transparent); }
+html[data-theme="dark"] .ip-aging-range-badge--2 { background: color-mix(in srgb, var(--ip-warning) 26%, transparent); }
+html[data-theme="dark"] .ip-aging-range-badge--3 { background: color-mix(in srgb, var(--ip-danger) 18%, transparent); }
+html[data-theme="dark"] .ip-aging-range-badge--4 { background: color-mix(in srgb, var(--ip-danger) 28%, transparent); }
+html[data-theme="dark"] .ip-aging-range-badge--5 { background: color-mix(in srgb, var(--ip-danger) 40%, transparent); }
+
+html[data-theme="dark"] .ip-aging-bar,
+html[data-theme="dark"] .ip-share-bar {
+    background: var(--ip-border);
+}
+
+/* -----------------------------------------------------------------------------
+   10. Stampa
+   -------------------------------------------------------------------------- */
+
+/* Le pagine di report finiscono in stampa piu' spesso di ogni altra: il
+   filtro e il breadcrumb non servono su carta, il periodo si'. */
+@media print {
+    .ip-report-filter,
+    .ip-report-nav {
+        display: none !important;
+    }
+
+    .ip-report-results {
+        border: 0;
+    }
+
+    .ip-aging-bar,
+    .ip-share-bar,
+    .ip-heat-scale {
+        display: none;
+    }
+
+    /* La tinta della matrice serve anche su carta: senza sfondi la tabella
+       torna a essere solo cifre. Va chiesta esplicitamente perche' i browser
+       di default non stampano i colori di fondo. */
+    .ip-sales-year-table td.ip-quarter-cell {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

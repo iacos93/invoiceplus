@@ -1,0 +1,53 @@
+Fogli di stile per l'anteprima della fattura elettronica
+========================================================
+
+L'anteprima (Fatture > Opzioni > Anteprima fattura elettronica, e la stessa
+voce sulle spese importate da XML) rende leggibile il tracciato FatturaPA
+applicandogli un foglio di stile XSLT. I due stili sono alternativi e si
+scelgono dalla barra in alto alla pagina. Entrambi sono installati.
+
+
+1) Agenzia delle Entrate  —  Foglio_di_stile_fattura_ordinaria_ver1.2.3.xsl
+   Origine: https://www.fatturapa.gov.it/export/documenti/fatturapa/v1.4/
+            Foglio_di_stile_fattura_ordinaria_ver1.2.3.xsl
+   Pagina:  https://www.fatturapa.gov.it/it/norme-e-regole/
+            documentazione-fattura-elettronica/formato-fatturapa/
+   121.598 byte
+   sha256 7b15ea1286c3a684c96d9a9e64e06ec9aff8e3655b8ea6ff7f4a4ae5e743d97c
+
+   Versione 1.2.3 della Fattura Ordinaria, in vigore dal 1 aprile 2025. Rende
+   anche i documenti 1.2.x precedenti: stesso namespace
+   http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2
+
+
+2) AssoSoftware  —  FoglioStileAssoSoftware.xsl
+   115.034 byte
+   sha256 3db65ca7102d0f9b6cd0e20f082cb83f29d157f6f40a47e4408d575c4e11b29b
+
+   AssoSoftware non lo pubblica come file scaricabile a se'. Questa copia e'
+   stata estratta dal pacchetto dell'estensione Firefox "Visualizzatore di
+   fatture elettroniche" (formatta-fattura-elettronica 2.0), scaricata da
+   addons.mozilla.org; l'impronta del pacchetto combaciava con quella
+   pubblicata da Mozilla. Dal .xpi e' stato preso solo questo file.
+   L'alternativa e' estrarlo dall'applicazione AssoInvoice
+   (https://www.assosoftware.it/servizi-offerti/assoinvoice/).
+
+   Copre i namespace FatturaPA 1.0, 1.1 e 1.2.
+
+
+Aggiornare o sostituire un foglio
+---------------------------------
+Basta copiare il .xsl in questa cartella. Il nome canonico e' quello sopra, ma
+il riconoscimento e' tollerante (vedi App\Libraries\FatturaPreview::STYLES):
+un file il cui nome contiene "asso" vale come foglio AssoSoftware, uno che
+contiene "ordinaria" o "fatturapa" vale come foglio ministeriale. Non serve
+rinominare quello che si scarica.
+
+
+Sicurezza
+---------
+Il processore XSLT gira con accesso a rete e filesystem disabilitato
+(XSL_SECPREF) e l'HTML prodotto viene mostrato in un iframe sandbox, perche'
+l'XML di una fattura di acquisto arriva da terzi. Entrambi i fogli sono stati
+controllati: nessun document(), xsl:include/import o <script>, e gli unici URL
+presenti sono dichiarazioni di namespace.

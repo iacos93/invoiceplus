@@ -1,0 +1,2 @@
+timestamp	file	line	pattern	status	description
+2026-08-26T16:15	app/Controllers/ClientsAjax.php	42-44	P3	FIXED	Replaced having/orHaving with groupStart+where/orWhere; spelled out CONCAT instead of alias
