@@ -31,8 +31,23 @@ Lingue disponibili: italiano e inglese.
 
 ## Schermate
 
-I documenti che l'applicazione produce. Sono generati dai dati di prova
-(`tests/fixtures/ci_seed.sql`), non da clienti veri:
+Le immagini sono prese dai dati di prova (`tests/fixtures/ci_seed.sql`), non da
+clienti veri.
+
+### Bacheca
+
+Indice di redditività, ricavi, incassato, saldo da incassare e grafici dei
+movimenti:
+
+![Bacheca: indice di redditività in alto, riquadri di ricavi, incassato, saldo da incassare, fatture scadute, spese e IVA](docs/img/bacheca.png)
+
+La stessa pagina nel tema scuro:
+
+![Bacheca in tema scuro, con gli stessi riquadri e gli stessi grafici](docs/img/bacheca-tema-scuro.png)
+
+### Documenti
+
+I documenti che l'applicazione produce:
 
 ![Fattura di esempio: intestazione, righe con codice articolo, totali e saldo](docs/img/fattura.png)
 
