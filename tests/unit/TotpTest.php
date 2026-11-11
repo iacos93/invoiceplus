@@ -2,6 +2,7 @@
 
 use App\Libraries\Totp;
 use CodeIgniter\Test\CIUnitTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Copertura di TOTP e codici di recupero.
@@ -37,8 +38,10 @@ final class TotpTest extends CIUnitTestCase
     }
 
     /**
-     * @dataProvider rfc6238Vectors
+     * I vettori arrivano da un attributo e non da un'annotazione: dalla
+     * PHPUnit 11 i metadata nei docblock sono deprecati e nella 12 spariscono.
      */
+    #[DataProvider('rfc6238Vectors')]
     public function testRfc6238Vectors(int $timestamp, string $secret, string $expected): void
     {
         $this->assertSame($expected, Totp::code($secret, $timestamp));
