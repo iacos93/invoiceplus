@@ -203,6 +203,40 @@ final class SystemStatusTest extends CIUnitTestCase
         $this->assertNotSame('', $check['hint']);
     }
 
+    /**
+     * Le migrazioni disponibili arrivano indicizzate per UID, la storia
+     * riporta le versioni con i trattini: confrontare le chiavi faceva
+     * risultare tutto da applicare su uno schema aggiornato.
+     */
+    public function testLeMigrazioniApplicateNonRisultanoPendenti(): void
+    {
+        $disponibili = [
+            '20260817000000App\\Database\\Migrations\\CreateBaseTables' =>
+                (object) ['version' => '2026-08-17-000000', 'class' => 'CreateBaseTables'],
+            '20261111120000App\\Database\\Migrations\\EnsureIndexNames' =>
+                (object) ['version' => '2026-11-11-120000', 'class' => 'EnsureIndexNames'],
+        ];
+
+        $applicate = ['2026-08-17-000000', '2026-11-11-120000'];
+
+        $this->assertSame([], SystemStatus::pendingMigrations($disponibili, $applicate));
+    }
+
+    public function testLeMigrazioniMancantiVengonoElencate(): void
+    {
+        $disponibili = [
+            '20260817000000App\\Database\\Migrations\\CreateBaseTables' =>
+                (object) ['version' => '2026-08-17-000000'],
+            '20261111120000App\\Database\\Migrations\\EnsureIndexNames' =>
+                (object) ['version' => '2026-11-11-120000'],
+        ];
+
+        $this->assertSame(
+            ['2026-11-11-120000'],
+            SystemStatus::pendingMigrations($disponibili, ['2026-08-17-000000'])
+        );
+    }
+
     #[DataProvider('etaFornite')]
     public function testFormattaLEta(int $secondi, string $atteso): void
     {

@@ -188,6 +188,36 @@ final class SystemStatus
     }
 
     /**
+     * Versioni delle migrazioni non ancora applicate.
+     *
+     * findMigrations() indicizza i risultati per UID
+     * ("20261111120000App\Database\Migrations\EnsureIndexNames"), mentre la
+     * storia riporta la versione con i trattini ("2026-11-11-120000").
+     * Confrontare le chiavi dell'array con le versioni applicate le faceva
+     * risultare tutte da applicare: la pagina diceva "59 migrazioni pendenti"
+     * su uno schema aggiornato.
+     *
+     * @param array<string, object> $available risultato di findMigrations()
+     * @param list<string>          $applied   versioni presenti nella storia
+     *
+     * @return list<string>
+     */
+    public static function pendingMigrations(array $available, array $applied): array
+    {
+        $pending = [];
+
+        foreach ($available as $migration) {
+            $version = (string) ($migration->version ?? '');
+
+            if ($version !== '' && ! in_array($version, $applied, true)) {
+                $pending[] = $version;
+            }
+        }
+
+        return $pending;
+    }
+
+    /**
      * File più recente di un pattern, con il suo mtime.
      *
      * @return list<array{0: string, 1: int}> dal più recente

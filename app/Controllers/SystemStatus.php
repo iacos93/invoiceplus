@@ -68,10 +68,10 @@ class SystemStatus extends BaseController
     private function migrationCheck(): array
     {
         try {
-            $runner  = \Config\Services::migrations();
+            $runner    = \Config\Services::migrations();
             $applicate = array_map(static fn ($row) => (string) $row->version, $runner->getHistory());
 
-            $pendenti = array_values(array_diff(array_keys($runner->findMigrations()), $applicate));
+            $pendenti = SystemStatusService::pendingMigrations($runner->findMigrations(), $applicate);
         } catch (\Throwable $e) {
             return [
                 'key'    => 'migrations',
