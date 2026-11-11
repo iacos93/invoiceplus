@@ -257,7 +257,9 @@ backup automatico anche su MySQL/MariaDB. Il ramo `main` è verificato dalla CI
 a ogni push. Le modifiche sono elencate in [`CHANGELOG.md`](CHANGELOG.md): le
 versioni seguono [Semantic Versioning](https://semver.org/), quindi il numero
 di patch sale per le correzioni, il minore quando cambia qualcosa di visibile e
-il maggiore quando il progetto esce dallo stato di sviluppo.
+il maggiore quando il progetto esce dallo stato di sviluppo. Come si scrive una
+voce e si prepara una release è spiegato in
+[`docs/changelog.md`](docs/changelog.md).
 
 ## Strumenti di sviluppo e debug
 

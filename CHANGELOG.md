@@ -4,6 +4,9 @@ Le versioni seguono [Semantic Versioning](https://semver.org/): la patch sale
 per le correzioni, il numero minore quando cambia qualcosa di visibile. Il
 progetto è ancora in sviluppo (0.x), quindi il maggiore resta 0.
 
+Le regole per scrivere le voci e preparare una release sono in
+[docs/changelog.md](docs/changelog.md).
+
 ## [v0.2] — 2026-11-11
 
 ### Aggiunto
