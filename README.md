@@ -21,7 +21,7 @@
 [![PHP](https://img.shields.io/badge/php-8.4%2B-777BB3?logo=php&logoColor=white)](https://www.php.net)
 [![CodeIgniter](https://img.shields.io/badge/codeigniter-4.7-EF4223?logo=codeigniter&logoColor=white)](https://codeigniter.com)
 
-![Bacheca di Invoice+: indice di redditività, ricavi, incassato, saldo da incassare e grafici dei movimenti](docs/img/bacheca.png)
+![Copertina di Invoice+: la fatturazione self-hosted per l'Italia, accanto alla Bacheca dell'applicazione](docs/img/copertina.png)
 
 Invoice+ è un'applicazione web **self-hosted** per gestire la fatturazione di
 una piccola azienda o di uno studio: anagrafiche, preventivi, fatture, DDT,
