@@ -1,9 +1,10 @@
 # Registro delle modifiche
 
-Le versioni seguono [Semantic Versioning](https://semver.org/): con il progetto
-ancora in sviluppo (0.x) il numero minore sale a ogni versione pubblicata.
+Le versioni seguono [Semantic Versioning](https://semver.org/): la patch sale
+per le correzioni, il numero minore quando cambia qualcosa di visibile. Il
+progetto è ancora in sviluppo (0.x), quindi il maggiore resta 0.
 
-## [Non pubblicata]
+## [v0.1.1] — 2026-11-11
 
 ### Aggiunto
 
