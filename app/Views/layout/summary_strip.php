@@ -14,9 +14,12 @@
  *
  * Parametri attesi:
  *   $items array  elenco di ['label' => string, 'value' => string,
- *                            'tone' => 'default'|'danger'|'warning'|'success']
+ *                            'tone' => 'default'|'danger'|'warning'|'success',
+ *                            'hint' => string]
  *                 Le voci con value === null vengono saltate, così il
  *                 chiamante può comporre l'elenco senza if annidati.
+ *                 `hint` è il testo del tooltip sull'etichetta, per i numeri
+ *                 che non si spiegano da soli (es. "Quota primi 3").
  */
 $_ss   = (array) ($this->renderVars['options'] ?? []);
 $items = $_ss['items'] ?? ($items ?? []);
@@ -31,7 +34,7 @@ if ($items === []) {
     <?php foreach ($items as $item): ?>
         <?php $tone = $item['tone'] ?? 'default'; ?>
         <span class="ip-summary-item">
-            <span class="ip-summary-label"><?= esc($item['label']) ?></span>
+            <span class="ip-summary-label"<?= !empty($item['hint']) ? ' title="' . esc($item['hint'], 'attr') . '"' : '' ?>><?= esc($item['label']) ?></span>
             <span class="ip-summary-value<?= $tone !== 'default' ? ' is-' . esc($tone, 'attr') : '' ?>">
                 <?= esc($item['value']) ?>
             </span>

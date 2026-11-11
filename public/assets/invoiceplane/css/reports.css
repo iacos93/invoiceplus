@@ -255,44 +255,12 @@
 }
 
 /* -----------------------------------------------------------------------------
-   4. KPI di riepilogo (sopra la tabella risultati)
+   4. Numeri di riepilogo (sopra la tabella risultati)
+   --------------------------------------------------------------------------
+   Non ci sono piu' stili locali: i report usano la striscia condivisa
+   (.ip-summary, partial layout/summary_strip) come lo Scadenzario e le liste
+   documenti, cosi' gli stessi numeri hanno la stessa forma ovunque.
    -------------------------------------------------------------------------- */
-
-.ip-report-kpis {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-    padding: 0 0 16px;
-}
-
-.ip-report-kpi {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.ip-report-kpi__label {
-    /* Token della scala (11px) e non 10.5px fissi: le etichette dei report
-       devono misurare come quelle delle altre schermate. */
-    font-size: var(--ip-text-xs);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-    color: var(--ip-text-muted);
-}
-
-.ip-report-kpi__value {
-    font-family: var(--ip-display);
-    font-size: 20px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: var(--ip-text);
-}
-
-.ip-report-kpi__value.is-success { color: var(--ip-success); }
-.ip-report-kpi__value.is-danger  { color: var(--ip-danger-text); }
-.ip-report-kpi__value.is-warning { color: var(--ip-warning-text); }
-.ip-report-kpi__value.is-muted   { color: var(--ip-text-muted); }
 
 /* -----------------------------------------------------------------------------
    5. Tabella risultati con metadati di periodo
@@ -837,19 +805,6 @@
 @media (max-width: 575.98px) {
     .ip-report-hub {
         grid-template-columns: 1fr;
-    }
-
-    /* Quattro KPI in flex lasciavano il quarto da solo su una riga a meta':
-       in griglia da due colonne stanno in due righe pari, con le cifre
-       allineate fra loro. */
-    .ip-report-kpis {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 16px 20px;
-    }
-
-    .ip-report-kpi__value {
-        font-size: 17px;
     }
 
     /* La pillola del periodo prende una riga sua sotto il titolo: dentro il

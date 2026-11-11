@@ -48,31 +48,34 @@
 
         // "Oltre 90 giorni" e' la soglia oltre la quale un credito smette di
         // essere un ritardo e diventa un problema di recupero: e' la cifra da
-        // guardare per prima, quindi sale nei KPI accanto all'esposizione.
+        // guardare per prima, quindi sale nei numeri in testa all'esposizione.
         // La quota dice se e' un caso isolato o la fetta principale del
         // portafoglio: il numero assoluto da solo non lo chiarisce.
+        // I toni sono quelli della striscia dello Scadenzario, cosi' lo stesso
+        // dato si legge uguale nelle due schermate.
         $overNinety      = $rangeTotals[4] + $rangeTotals[5];
         $overNinetyShare = $grandTotal > 0 ? $overNinety / $grandTotal * 100 : 0.0;
-        $shareClass      = $overNinetyShare >= 50 ? 'is-danger' : ($overNinetyShare > 0 ? 'is-warning' : 'is-muted');
         ?>
-        <div class="ip-report-kpis">
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('total_balance') ?></span>
-                <span class="ip-report-kpi__value"><?= format_currency($grandTotal) ?></span>
-            </div>
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('aging_over_90', '', 'Oltre 90 giorni') ?></span>
-                <span class="ip-report-kpi__value <?= $overNinety > 0 ? 'is-warning' : 'is-muted' ?>"><?= format_currency($overNinety) ?></span>
-            </div>
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('aging_share_over_90', '', 'Quota oltre 90') ?></span>
-                <span class="ip-report-kpi__value <?= $shareClass ?>"><?= $overNinetyShare > 0 ? format_amount($overNinetyShare) . '%' : '&ndash;' ?></span>
-            </div>
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('clients') ?></span>
-                <span class="ip-report-kpi__value is-muted"><?= count($results) ?></span>
-            </div>
-        </div>
+        <?= view('layout/summary_strip', ['items' => [
+            [
+                'label' => trans('total_balance'),
+                'value' => format_currency($grandTotal),
+            ],
+            [
+                'label' => trans('aging_over_90', '', 'Oltre 90 giorni'),
+                'value' => $overNinety > 0 ? format_currency($overNinety) : null,
+                'tone'  => 'warning',
+            ],
+            [
+                'label' => trans('aging_share_over_90', '', 'Quota oltre 90'),
+                'value' => $overNinetyShare > 0 ? format_amount($overNinetyShare) . '%' : null,
+                'tone'  => $overNinetyShare >= 50 ? 'danger' : 'warning',
+            ],
+            [
+                'label' => trans('clients'),
+                'value' => (string) count($results),
+            ],
+        ]]) ?>
 
         <div class="card ip-table-card ip-report-results">
             <div class="card-header ip-table-card-header">

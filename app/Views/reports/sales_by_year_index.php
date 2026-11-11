@@ -159,18 +159,16 @@
             return 4;
         };
         ?>
-        <div class="ip-report-kpis">
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('clients') ?></span>
-                <span class="ip-report-kpi__value"><?= count($results) ?></span>
-            </div>
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label">
-                    <?= $checkbox_tax ? trans('sales_with_tax') : trans('sales') ?>
-                </span>
-                <span class="ip-report-kpi__value"><?= format_currency($grandTotal) ?></span>
-            </div>
-        </div>
+        <?= view('layout/summary_strip', ['items' => [
+            [
+                'label' => trans('clients'),
+                'value' => (string) count($results),
+            ],
+            [
+                'label' => $checkbox_tax ? trans('sales_with_tax') : trans('sales'),
+                'value' => format_currency($grandTotal),
+            ],
+        ]]) ?>
 
         <div class="card ip-table-card ip-report-results">
             <div class="card-header ip-table-card-header">

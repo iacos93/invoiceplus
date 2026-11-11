@@ -83,20 +83,21 @@
         $monthNames   = \App\Services\FinanceService::monthNames(service('request')->getLocale());
         $currentMonth = null;
         ?>
-        <div class="ip-report-kpis">
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('payments') ?></span>
-                <span class="ip-report-kpi__value"><?= count($results) ?></span>
-            </div>
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('total_collected', '', 'Incassato') ?></span>
-                <span class="ip-report-kpi__value is-success"><?= format_currency($sum) ?></span>
-            </div>
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('clients') ?></span>
-                <span class="ip-report-kpi__value is-muted"><?= count($clientIds) ?></span>
-            </div>
-        </div>
+        <?= view('layout/summary_strip', ['items' => [
+            [
+                'label' => trans('payments'),
+                'value' => (string) count($results),
+            ],
+            [
+                'label' => trans('total_collected', '', 'Incassato'),
+                'value' => format_currency($sum),
+                'tone'  => 'success',
+            ],
+            [
+                'label' => trans('clients'),
+                'value' => (string) count($clientIds),
+            ],
+        ]]) ?>
 
         <div class="card ip-table-card ip-report-results">
             <div class="card-header ip-table-card-header">

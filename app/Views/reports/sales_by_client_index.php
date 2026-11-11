@@ -85,28 +85,27 @@
             $top3Net += (float) ($row['sales'] ?? 0);
         }
         $top3Share = $share($top3Net);
-        $top3Class = $top3Share >= 50 ? 'is-warning' : 'is-muted';
         ?>
-        <div class="ip-report-kpis">
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('clients') ?></span>
-                <span class="ip-report-kpi__value"><?= $clientCount ?></span>
-            </div>
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('invoices') ?></span>
-                <span class="ip-report-kpi__value"><?= $invoiceCount ?></span>
-            </div>
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label"><?= trans('sales') ?></span>
-                <span class="ip-report-kpi__value"><?= format_currency($sumNet) ?></span>
-            </div>
-            <div class="ip-report-kpi">
-                <span class="ip-report-kpi__label" title="<?= esc(trans('report_top3_hint', '', 'Peso dei primi tre clienti sul fatturato del periodo.'), 'attr') ?>">
-                    <?= trans('report_top3_share', '', 'Quota primi 3') ?>
-                </span>
-                <span class="ip-report-kpi__value <?= $top3Class ?>"><?= format_amount($top3Share) ?>%</span>
-            </div>
-        </div>
+        <?= view('layout/summary_strip', ['items' => [
+            [
+                'label' => trans('clients'),
+                'value' => (string) $clientCount,
+            ],
+            [
+                'label' => trans('invoices'),
+                'value' => (string) $invoiceCount,
+            ],
+            [
+                'label' => trans('sales'),
+                'value' => format_currency($sumNet),
+            ],
+            [
+                'label' => trans('report_top3_share', '', 'Quota primi 3'),
+                'value' => format_amount($top3Share) . '%',
+                'tone'  => $top3Share >= 50 ? 'warning' : 'default',
+                'hint'  => trans('report_top3_hint', '', 'Peso dei primi tre clienti sul fatturato del periodo.'),
+            ],
+        ]]) ?>
 
         <div class="card ip-table-card ip-report-results">
             <div class="card-header ip-table-card-header">
