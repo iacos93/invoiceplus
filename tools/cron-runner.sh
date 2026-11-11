@@ -5,7 +5,7 @@
 # invoca questo script ogni 15 minuti: lo script decide quali job eseguire
 # in base alla frequenza prevista, con tre garanzie che il curl nudo non dà:
 #
-#   1. timeout: nessun job può bloccare la coda (IMAP lento, mysqldump lungo);
+#   1. timeout: nessun job può bloccare la coda (IMAP lento, pg_dump lungo);
 #   2. anti-sovrapposizione: un job ancora in esecuzione non viene rilanciato;
 #   3. log con rotazione: gli output finiscono su file invece che nel nulla,
 #      così un fallimento silenzioso del curl si vede il giorno dopo.
@@ -16,8 +16,9 @@
 #        */15 * * * * /percorso/ci4-invoiceplane/tools/cron-runner.sh
 #
 # Frequenze interne (modificabili nella tabella run_job più sotto):
-#   sdi_poll ogni 15 min, recur/remind_overdue/backup una volta al giorno,
-#   digest una volta alla settimana.
+#   sdi_poll ogni 15 min, recur e backup una volta al giorno, digest una volta
+#   alla settimana. I solleciti per le fatture scadute si inviano a mano dalla
+#   scheda della fattura: non c'è un endpoint automatico per loro.
 
 BASE_URL=""       # es. https://fatture.tuodominio.it/index.php
 CRON_KEY=""
@@ -97,6 +98,5 @@ WEEK=$((7 * DAY))
 #            nome         frequenza  timeout  endpoint
 run_job      sdi_poll     $((15 * 60))  120   "/cron/sdi_poll/"
 run_job      recur        $DAY          300   "/cron/recur/"
-run_job      remind       $DAY          300   "/cron/remind_overdue/"
 run_job      digest       $WEEK         300   "/cron/digest/"
 run_job      backup       $DAY          900   "/cron/backup/"

@@ -109,6 +109,7 @@ di usarla.
 - [Fisco e analisi](docs/funzioni/fisco-e-analisi.md)
 - [Accesso e integrazioni](docs/funzioni/accesso-e-integrazioni.md)
 - [Impostazioni](docs/funzioni/impostazioni.md)
+- [Installazione, aggiornamento e ripristino](docs/installazione-e-aggiornamento.md)
 
 ## Requisiti software
 

@@ -16,6 +16,8 @@ ancora in sviluppo (0.x) il numero minore sale a ogni versione pubblicata.
   cercano nell'azienda attiva lo saltavano.
 - Analisi statica con PHPStan (livello 3) e `composer audit` in CI, più il
   comando `composer analyse` per eseguirla in locale.
+- Guida `docs/installazione-e-aggiornamento.md`: aggiornamento, backup,
+  ripristino verificato e checklist da passare sull'ambiente reale.
 
 ### Corretto
 
@@ -30,6 +32,10 @@ ancora in sviluppo (0.x) il numero minore sale a ogni versione pubblicata.
 - Documentazione di `set_node()`, `_set_anagr()`, `_to_xml()`, `Cryptor` e
   `Management::csv()` allineata ai parametri e ai tipi reali; `FatturaPA`
   converte esplicitamente a float l'aliquota letta dalla chiave.
+- `tools/cron-runner.sh` chiamava `/cron/remind_overdue/`, rotta che non
+  esiste: ogni giorno il job finiva in 404 e nel log sembrava un guasto. I
+  solleciti si inviano a mano dalla scheda della fattura e la riga è stata
+  tolta.
 
 ## [v0.1] — 2026-11-11
 
