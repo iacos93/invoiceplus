@@ -472,7 +472,7 @@ class Mailer extends BaseController
 
     /**
      * Dati per i tag {{...}} di una fattura (pubblica: la usa anche
-     * tag_check.php per verificare i tag contro i dati reali).
+     * tools/tag_check.php per verificare i tag contro i dati reali).
      */
     public function invoiceTemplateData(array $invoice): array
     {

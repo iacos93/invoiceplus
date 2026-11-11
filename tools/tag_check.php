@@ -1,6 +1,6 @@
 <?php
 // Verifica i tag {{...}} del Mailer contro dati reali (sola lettura).
-define('FCPATH', __DIR__ . '/public/');
+define('FCPATH', dirname(__DIR__) . '/public/');
 if (getcwd() . DIRECTORY_SEPARATOR !== FCPATH) {
     chdir(FCPATH);
 }
