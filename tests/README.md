@@ -90,10 +90,27 @@ aprano. Chi aggiunge un test che legge tabelle nuove deve allargare la fixture,
 altrimenti in CI quel test fallisce — che è il comportamento giusto, meglio di
 un salto silenzioso.
 
+## Collaudo sui dati veri
+
+`tests/collaudo` non fa parte della suite e non gira in CI: legge una copia del
+database di lavoro, con i clienti, le aliquote e la numerazione veri. Serve per
+provate i percorsi completi prima di una release, quando i dati di prova non
+bastano a far emergere un problema.
+
+```console
+createdb -T invoiceplane invoiceplane_cicli
+IP_PDF_TEST_DB=invoiceplane_cicli vendor/bin/phpunit tests/collaudo --no-coverage
+```
+
+Il test crea due fatture su due clienti reali (una con la data del mese scorso),
+le emette, genera PDF e XML, le incassa e verifica totali, numeri e stato. Gira
+in transazione con rollback: la copia resta com'era.
+
 ## Come sono organizzati
 
 - `tests/unit` — logica pura: servizi, librerie, calcoli, formattazione.
 - `tests/integration` — rotte e controller, con database di test e sessione.
+- `tests/collaudo` — percorsi completi su una copia dei dati veri, a mano.
 - `tests/database` — migrazioni, seed e integrità dello schema.
 - `tests/session` — gestione della sessione e dell'autenticazione.
 - `tests/_support` — classi di supporto, migrazioni e seed usati dai test.

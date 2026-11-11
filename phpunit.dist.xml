@@ -21,8 +21,15 @@
     </coverage>
 
     <testsuites>
+        <!-- Le cartelle sono elencate una per una: tests/collaudo non deve
+             finire nella suite normale, perche' legge una copia del database
+             di lavoro con i dati veri e in CI non esiste. Si lancia a mano
+             passando la cartella: vendor/bin/phpunit tests/collaudo -->
         <testsuite name="App">
-            <directory>./tests</directory>
+            <directory>./tests/unit</directory>
+            <directory>./tests/integration</directory>
+            <directory>./tests/database</directory>
+            <directory>./tests/session</directory>
         </testsuite>
     </testsuites>
 
