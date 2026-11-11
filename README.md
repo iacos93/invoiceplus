@@ -1,69 +1,104 @@
-# CodeIgniter 4 Application Starter
+<img src="public/assets/core/img/logo_400x200.png" alt="Invoice+" width="400">
 
-## What is CodeIgniter?
+# Invoice+
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+Applicazione self-hosted per la fatturazione: fatture, preventivi, clienti,
+fornitori e pagamenti. È un porting su CodeIgniter 4 di InvoicePlane, con
+interfaccia in italiano e adattamenti per la fatturazione italiana.
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+**Stato: in sviluppo.** Le funzioni principali sono utilizzabili e coperte da
+test, ma il progetto non è ancora dichiarato stabile per l'uso in produzione su
+dati reali senza backup.
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## Funzioni
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+- **Anagrafiche** clienti e fornitori, con schede, ricerca e collegamento ai
+  documenti.
+- **Preventivi, fatture, DDT**, pagamenti, spese e prodotti, con calcolo di
+  totali, imposte e sconti.
+- **Fatturazione italiana**: F24, RiBa, scadenzario, invio dei documenti via
+  PEC e canale SDI.
+- **Riconciliazione bancaria** con importazione degli estratti conto.
+- **PDF** dei documenti con modelli sovrascrivibili e nomi file configurabili.
+- **Area guest**: link temporanei per far vedere a un cliente i propri
+  documenti senza creargli un account.
+- **Accesso**: sessioni, modulo MFA e passkey (WebAuthn).
+- **Calendario** delle scadenze, esportabile in formato iCalendar.
+- **Coda di lavoro** per l'invio dei documenti, con worker da riga di comando.
+- **Endpoint MCP** per far pilotare i dati a un assistente, con chiave dedicata.
 
-## Installation & updates
+Lingue disponibili: italiano e inglese.
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+## Requisiti
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+- PHP **8.2** o superiore, con le estensioni `intl`, `mbstring`, `json`,
+  `curl`, `gd`, `zip` e `pdo`.
+- **Composer 2**.
+- Un database **PostgreSQL** oppure **MySQL/MariaDB**.
+- **Redis** solo se usi cache e coda di lavoro.
 
-## Setup
+## Installazione
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+```console
+composer install
+cp env .env
+```
 
-## Important Change with index.php
+Nel file `.env` imposta almeno:
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+```ini
+CI_ENVIRONMENT = production
+app.baseURL = 'https://tuo-dominio.example/'
+database.default.hostname = localhost
+database.default.database = invoiceplus
+database.default.username = tuo_utente
+database.default.password = 'la-tua-password'
+database.default.DBDriver = Postgre   # oppure MySQLi
+encryption.key = 'chiave-esadecimale-di-32-byte'
+```
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+La chiave di cifratura si genera con `php spark key:generate`.
 
-**Please** read the user guide for a better explanation of how CI4 works!
+Quindi crea lo schema:
 
-## Repository Management
+```console
+php spark migrate
+```
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+Il primo amministratore si crea da riga di comando:
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+```console
+php spark users:create
+```
 
-## Server Requirements
+Per lo sviluppo:
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+```console
+php spark serve --port 8080
+```
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+Il server web deve puntare alla cartella **public/**, non alla radice del
+progetto.
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
+## Test
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+La suite usa SQLite in memoria per il gruppo `tests` della configurazione
+database, quindi non serve un database esterno:
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+```console
+composer test
+```
+
+È lo stesso comando che gira nel workflow di integrazione continua
+(`.github/workflows/ci.yml`) a ogni push e pull request.
+
+## Licenza e attribuzione
+
+Distribuito con licenza **MIT** (`LICENSE`).
+
+Il codice deriva da **InvoicePlane**, che è MIT: la sua licenza originale è
+riprodotta in `LICENSES/InvoicePlane-LICENSE.txt`, come richiesto dai suoi
+termini. Il nome e il logo InvoicePlane sono invece marchi di
+InvoicePlane.com / Kovah.de con licenza separata, che ne vieta l'alterazione e
+l'uso fuori dal progetto originale: questo progetto si chiama "Invoice+" e usa
+un marchio proprio, e il nome InvoicePlane compare solo per citarne l'origine.

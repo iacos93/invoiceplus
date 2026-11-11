@@ -1,13 +1,24 @@
 {
-    "name": "codeigniter4/appstarter",
-    "description": "CodeIgniter4 starter app",
+    "name": "iacos93/invoiceplus",
+    "description": "Gestione di fatture, preventivi, clienti e pagamenti: porting di InvoicePlane su CodeIgniter 4",
+    "keywords": [
+        "fatturazione",
+        "fatture",
+        "preventivi",
+        "invoiceplane",
+        "codeigniter4"
+    ],
+    "homepage": "https://github.com/iacos93/invoiceplus",
     "license": "MIT",
     "type": "project",
-    "homepage": "https://codeigniter.com",
+    "authors": [
+        {
+            "name": "Fabio Iacovino"
+        }
+    ],
     "support": {
-        "forum": "https://forum.codeigniter.com/",
-        "source": "https://github.com/codeigniter4/CodeIgniter4",
-        "slack": "https://codeigniterchat.slack.com"
+        "issues": "https://github.com/iacos93/invoiceplus/issues",
+        "source": "https://github.com/iacos93/invoiceplus"
     },
     "require": {
         "php": "^8.2",
@@ -42,6 +53,7 @@
         "sort-packages": true
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "serve": "php spark serve --port 8080"
     }
 }
