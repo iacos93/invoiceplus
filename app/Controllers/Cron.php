@@ -500,10 +500,6 @@ class Cron extends BaseController
             return 'Cron key non valida';
         }
 
-        if (!function_exists('exec')) {
-            return $this->backupFailed('exec() non disponibile: backup impossibile su questo hosting');
-        }
-
         $cfg   = config('Database');
         $group = $cfg->defaultGroup;
         $db    = $cfg->{$group} ?? [];
@@ -511,9 +507,8 @@ class Cron extends BaseController
         // pg_dump rifiuta un server di versione maggiore della propria, e il
         // primo nel PATH non e' quello giusto quando sono installate piu'
         // versioni (Homebrew con postgresql@16 e @17 affiancati, distribuzioni
-        // con il client vecchio). Il locatore confronta le versioni trovate con
-        // quella del server; backup.pgDumpPath nel .env resta la scelta
-        // esplicita e ha la precedenza.
+        // con il client vecchio). La versione del server serve a scegliere il
+        // binario; su MySQL/MariaDB non si usa e vale 0.
         $serverMajor = 0;
 
         try {
@@ -523,64 +518,16 @@ class Cron extends BaseController
             log_message('error', 'Backup: versione del server non leggibile: ' . $e->getMessage());
         }
 
-        $bin = (string) (new \App\Libraries\PgDumpLocator(
-            trim((string) env('backup.pgDumpPath', '')) ?: null
-        ))->locate($serverMajor);
+        try {
+            $result = (new \App\Libraries\DatabaseBackup($db, null, $serverMajor))->dump();
+        } catch (\Throwable $e) {
+            log_message('error', 'Backup DB fallito: ' . $e->getMessage());
 
-        if ($bin === '') {
-            return $this->backupFailed('pg_dump non disponibile sul server');
+            return $this->backupFailed('Backup fallito: ' . $e->getMessage());
         }
 
-        $dir = WRITEPATH . 'backups';
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
-        }
-
-        // Formato custom (-Fc): compresso, supporta restore selettivo con
-        // pg_restore. L'estensione .dump è convenzionale per questo formato.
-        $file = $dir . '/backup_' . date('Ymd_His') . '.dump';
-
-        // La password passa via ambiente (PGPASSWORD) e non sulla riga di
-        // comando: ps la mostrerebbe a chiunque sia loggato sul server.
-        putenv('PGPASSWORD=' . (string) ($db['password'] ?? ''));
-        $cmd = escapeshellarg($bin)
-            . ' -Fc --no-owner --no-acl'
-            . ' -h ' . escapeshellarg((string) ($db['hostname'] ?? 'localhost'))
-            . ' -p ' . (int) ($db['port'] ?? 5432)
-            . ' -U ' . escapeshellarg((string) ($db['username'] ?? ''))
-            . ' -f ' . escapeshellarg($file)
-            . ' ' . escapeshellarg((string) ($db['database'] ?? ''))
-            . ' 2>&1';
-
-        exec($cmd, $output, $code);
-        putenv('PGPASSWORD');
-
-        if ($code !== 0 || !is_file($file) || filesize($file) === 0) {
-            log_message('error', 'Backup DB fallito: ' . implode("\n", $output ?: []));
-
-            // Il file vuoto va tolto: la rotazione qui sotto conta i file,
-            // e due settimane di dump falliti avrebbero spinto fuori tutti
-            // i backup buoni lasciando 14 file da 0 byte.
-            if (is_file($file)) {
-                @unlink($file);
-            }
-
-            return $this->backupFailed('Backup fallito: ' . mb_substr(implode(' ', $output ?: []), 0, 300));
-        }
-
-        // Rotazione: i nomi con timestamp ordinano cronologicamente, si
-        // tengono solo gli ultimi 14 dump.
-        $files   = glob($dir . '/backup_*.dump') ?: [];
-        sort($files, SORT_STRING);
-        $removed = 0;
-
-        foreach (array_slice($files, 0, max(0, count($files) - 14)) as $old) {
-            @unlink($old);
-            $removed++;
-        }
-
-        return 'Backup salvato: ' . basename($file) . ($removed ? ' (eliminati ' . $removed . ' vecchi)' : '');
+        return 'Backup salvato: ' . basename($result['file'])
+            . ($result['removed'] ? ' (eliminati ' . $result['removed'] . ' vecchi)' : '');
     }
 
     /**

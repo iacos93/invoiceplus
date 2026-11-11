@@ -65,12 +65,21 @@ fa **prima**.
 
 ## Backup
 
-### Automatico (PostgreSQL)
+### Automatico
 
-L'endpoint `cron/backup/<chiave>` lancia `pg_dump` in formato custom e salva il
-file in `writable/backups`, tenendo gli ultimi 14. La chiave è quella
-configurata nelle impostazioni (`cron_key`); la riga di crontab è una sola,
-quella di `tools/cron-runner.sh`.
+L'endpoint `cron/backup/<chiave>` salva il dump in `writable/backups` e tiene
+gli ultimi 14 file. La chiave è quella configurata nelle impostazioni
+(`cron_key`); la riga di crontab è una sola, quella di `tools/cron-runner.sh`.
+
+Il motore lo decide la configurazione del database:
+
+- **PostgreSQL** → `pg_dump -Fc` (formato custom, compresso) in
+  `backup_*.dump`;
+- **MySQL/MariaDB** → `mysqldump --single-transaction --quick` in
+  `backup_*.sql`, così il dump è coerente senza bloccare le scritture.
+
+La rotazione conta i file per formato: cambiando motore, i `.dump` vecchi non
+vengono confusi con i `.sql` nuovi.
 
 Nel `.env`, se `pg_dump` non è quello giusto (versioni diverse installate sul
 server), si indica il binario esatto:
@@ -98,18 +107,29 @@ Il dump contiene i dati fiscali completi. **Va portato fuori dal server**:
 `writable/backups` è una copia di lavoro, non un archivio. Se il server si
 perde, si perdono anche i backup che stanno dentro.
 
-Su MySQL/MariaDB questo endpoint non è disponibile: il backup si fa con
-`mysqldump` da crontab, con la stessa regola (fuori dal server, rotazione,
-verifica periodica).
+Su MySQL/MariaDB si può indicare il binario allo stesso modo, se `mysqldump`
+non è nel PATH o è di una versione sbagliata:
+
+```ini
+backup.mysqldumpPath = /usr/bin/mysqldump
+```
 
 ### Ripristino
 
-Il dump è in formato custom: si ripristina con `pg_restore`, in un database
-vuoto.
+**PostgreSQL.** Il dump è in formato custom: si ripristina con `pg_restore`, in
+un database vuoto.
 
 ```console
 createdb invoiceplus_ripristino
 pg_restore --no-owner --no-acl -d invoiceplus_ripristino writable/backups/backup_20261111_030000.dump
+```
+
+**MySQL/MariaDB.** Il dump è SQL: si ripristina con `mysql` su un database
+vuoto.
+
+```console
+mysql -u root -p -e "CREATE DATABASE invoiceplus_ripristino CHARACTER SET utf8mb4"
+mysql -u root -p invoiceplus_ripristino < writable/backups/backup_20261111_030000.sql
 ```
 
 Poi si punta `.env` al database ripristinato, si esegue `php spark migrate`
@@ -143,6 +163,10 @@ done
 psql -d invoiceplane            -Atc "select round(sum(invoice_total),2) from ip_invoice_amounts"
 psql -d invoiceplus_verifica    -Atc "select round(sum(invoice_total),2) from ip_invoice_amounts"
 ```
+
+Su MySQL/MariaDB gli stessi conteggi si leggono con
+`mysql -u ... -N -B <db> -e "SELECT COUNT(*) FROM ip_invoices"`, e il ripristino
+è quello della sezione precedente.
 
 Poi si punta l'applicazione alla copia (basta `database.default.database` in un
 `.env` separato, o una variabile d'ambiente davanti a `spark`) e si controlla:

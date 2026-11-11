@@ -4,6 +4,18 @@ Le versioni seguono [Semantic Versioning](https://semver.org/): la patch sale
 per le correzioni, il numero minore quando cambia qualcosa di visibile. Il
 progetto è ancora in sviluppo (0.x), quindi il maggiore resta 0.
 
+## [Non pubblicata]
+
+### Aggiunto
+
+- Il backup automatico funziona anche su MySQL/MariaDB: l'endpoint sceglie
+  `pg_dump` o `mysqldump` dal motore configurato (`backup_*.dump` e
+  `backup_*.sql`), con rotazione separata per formato. Prima lanciava sempre
+  `pg_dump`, quindi su un'installazione MariaDB falliva parlando di PostgreSQL.
+  Il binario di `mysqldump` si può indicare in `backup.mysqldumpPath`.
+- Test sul comando di dump (argomenti, password fuori dalla riga di comando,
+  quotatura dei nomi) e sulla rotazione.
+
 ## [v0.1.1] — 2026-11-11
 
 ### Aggiunto
