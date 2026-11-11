@@ -1,118 +1,60 @@
-# Running Application Tests
+# Test
 
-This is the quick-start to CodeIgniter testing. Its intent is to describe what
-it takes to set up your application and get it ready to run unit tests.
-It is not intended to be a full description of the test features that you can
-use to test your application. Those details can be found in the documentation.
+La suite gira con PHPUnit e usa SQLite in memoria, quindi non serve un database
+esterno né un server avviato.
 
-## Resources
-
-* [CodeIgniter 4 User Guide on Testing](https://codeigniter.com/user_guide/testing/index.html)
-* [PHPUnit docs](https://phpunit.de/documentation.html)
-* [Any tutorials on Unit testing in CI4?](https://forum.codeigniter.com/showthread.php?tid=81830)
-
-## Requirements
-
-It is recommended to use the latest version of PHPUnit. At the time of this
-writing, we are running version 9.x. Support for this has been built into the
-**composer.json** file that ships with CodeIgniter and can easily be installed
-via [Composer](https://getcomposer.org/) if you don't already have it installed globally.
+## Come si eseguono
 
 ```console
-> composer install
+composer test
 ```
 
-If running under macOS or Linux, you can create a symbolic link to make running tests a touch nicer.
+oppure, direttamente:
 
 ```console
-> ln -s ./vendor/bin/phpunit ./phpunit
+vendor/bin/phpunit
 ```
 
-You also need to install [XDebug](https://xdebug.org/docs/install) in order
-for code coverage to be calculated successfully. After installing `XDebug`, you must add `xdebug.mode=coverage` in the **php.ini** file to enable code coverage.
+Il file di configurazione è `phpunit.dist.xml` nella radice. Se ti serve una
+configurazione personale (es. escludere i test lenti), copialo in `phpunit.xml`,
+che non è versionato.
 
-## Setting Up
-
-A number of the tests use a running database.
-In order to set up the database edit the details for the `tests` group in
-**app/Config/Database.php** or **.env**.
-Make sure that you provide a database engine that is currently running on your machine.
-More details on a test database setup are in the
-[Testing Your Database](https://codeigniter.com/user_guide/testing/database.html) section of the documentation.
-
-## Running the tests
-
-The entire test suite can be run by simply typing one command-line command from the main directory.
+Filtrare un singolo file o una singola area:
 
 ```console
-> ./phpunit
+vendor/bin/phpunit tests/unit/TotpTest.php
+vendor/bin/phpunit --testsuite App --filter GuestScoping
 ```
 
-If you are using Windows, use the following command.
+## Database
 
-```console
-> vendor\bin\phpunit
-```
+Il gruppo `tests` in `app/Config/Database.php` punta a SQLite `:memory:`, quindi
+ogni esecuzione parte da uno schema vuoto e applica le migrazioni: quello che
+scrivi in un test non resta e non tocca il database di lavoro.
 
-You can limit tests to those within a single test directory by specifying the
-directory name after phpunit.
+Per usare un database tuo basta passare le chiavi `database.tests.*` in `.env`;
+il file di configurazione le legge già.
 
-```console
-> ./phpunit app/Models
-```
+## Come sono organizzati
 
-## Generating Code Coverage
+- `tests/unit` — logica pura: servizi, librerie, calcoli, formattazione.
+- `tests/integration` — rotte e controller, con database di test e sessione.
+- `tests/database` — migrazioni, seed e integrità dello schema.
+- `tests/session` — gestione della sessione e dell'autenticazione.
+- `tests/_support` — classi di supporto, migrazioni e seed usati dai test.
 
-To generate coverage information, including HTML reports you can view in your browser,
-you can use the following command:
+## Convenzioni
 
-```console
-> ./phpunit --colors --coverage-text=tests/coverage.txt --coverage-html=tests/coverage/ -d memory_limit=1024m
-```
+- Le classi derivano da `CodeIgniter\Test\CIUnitTestCase`, e i test che toccano
+  il database usano anche `DatabaseTestTrait`.
+- I metadata vanno scritti come **attributi**, non come annotazioni nei docblock:
+  `#[DataProvider('metodo')]`, `#[CoversClass(...)]`. Dalla PHPUnit 11 le
+  annotazioni sono deprecate e dalla 12 non funzionano più.
+- Il conteggio delle asserzioni conta: se un test smette di asserire qualcosa,
+  la suite deve accorgersene, non passare lo stesso.
 
-This runs all of the tests again collecting information about how many lines,
-functions, and files are tested. It also reports the percentage of the code that is covered by tests.
-It is collected in two formats: a simple text file that provides an overview as well
-as a comprehensive collection of HTML files that show the status of every line of code in the project.
+## Versioni
 
-The text file can be found at **tests/coverage.txt**.
-The HTML files can be viewed by opening **tests/coverage/index.html** in your favorite browser.
-
-## PHPUnit XML Configuration
-
-The repository has a ``phpunit.dist.xml`` file in the project root that's used for
-PHPUnit configuration. This is used to provide a default configuration if you
-do not have your own configuration file in the project root.
-
-The normal practice would be to copy ``phpunit.dist.xml`` to ``phpunit.xml``
-(which is git ignored), and to tailor it as you see fit.
-For instance, you might wish to exclude database tests, or automatically generate
-HTML code coverage reports.
-
-## Test Cases
-
-Every test needs a *test case*, or class that your tests extend. CodeIgniter 4
-provides one class that you may use directly:
-* `CodeIgniter\Test\CIUnitTestCase`
-
-Most of the time you will want to write your own test cases that extend `CIUnitTestCase`
-to hold functions and services common to your test suites.
-
-## Creating Tests
-
-All tests go in the **tests/** directory. Each test file is a class that extends a
-**Test Case** (see above) and contains methods for the individual tests. These method
-names must start with the word "test" and should have descriptive names for precisely what
-they are testing:
-`testUserCanModifyFile()` `testOutputColorMatchesInput()` `testIsLoggedInFailsWithInvalidUser()`
-
-Writing tests is an art, and there are many resources available to help learn how.
-Review the links above and always pay attention to your code coverage.
-
-### Database Tests
-
-Tests can include migrating, seeding, and testing against a mock or live database.
-Be sure to modify the test case (or create your own) to point to your seed and migrations
-and include any additional steps to be run before tests in the `setUp()` method.
-See [Testing Your Database](https://codeigniter.com/user_guide/testing/database.html)
-for details.
+PHPUnit 13 richiede **PHP 8.4** o superiore, come il resto del progetto. Se hai
+ancora la 8.2 o la 8.3 il vincolo in `composer.json` non ti lascia installare le
+dipendenze di sviluppo.

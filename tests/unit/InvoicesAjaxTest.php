@@ -18,6 +18,14 @@ use CodeIgniter\Test\CIUnitTestCase;
  * sé e di leggere il servizio di richiesta globale. Senza questo, l'unico modo
  * di provare un controllo di appartenenza era guardarlo.
  *
+ * Le due forme non sono intercambiabili: dove la chiamata deve avvenire — la
+ * fattura va cercata, il cliente va aggiornato — c'è un expect con once() e
+ * with(), così se il controller smette di farlo il test cade. Dove il model
+ * serve solo a restituire un valore c'è uno stub, senza with(). Il motivo è
+ * che dalla PHPUnit 13 un mock senza expect è un avviso e with() senza
+ * expects() è deprecato: mescolare le due cose rende il test rumoroso e
+ * nasconde il caso in cui una chiamata importante sparisce.
+ *
  * @internal
  */
 final class InvoicesAjaxTest extends CIUnitTestCase
@@ -25,17 +33,17 @@ final class InvoicesAjaxTest extends CIUnitTestCase
     public function testLaRigaArrivaConLaSuaAliquota(): void
     {
         $item = $this->createMock(ItemModel::class);
-        $item->method('find')->with(5)->willReturn([
+        $item->expects($this->once())->method('find')->with(5)->willReturn([
             'item_id'          => 5,
             'invoice_id'       => 7,
             'item_tax_rate_id' => 2,
         ]);
 
         $invoice = $this->createMock(InvoiceModel::class);
-        $invoice->method('findScoped')->with(7)->willReturn(['invoice_id' => 7]);
+        $invoice->expects($this->once())->method('findScoped')->with(7)->willReturn(['invoice_id' => 7]);
 
         $tax = $this->createMock(TaxRateModel::class);
-        $tax->method('find')->with(2)->willReturn(['tax_rate_percent' => '22.00']);
+        $tax->expects($this->once())->method('find')->with(2)->willReturn(['tax_rate_percent' => '22.00']);
 
         $json = json_decode($this->controller(
             ['item_id' => 5],
@@ -53,11 +61,12 @@ final class InvoicesAjaxTest extends CIUnitTestCase
     public function testLaRigaDiUnAltraAziendaNonEsce(): void
     {
         $item = $this->createMock(ItemModel::class);
-        $item->method('find')->with(5)->willReturn(['item_id' => 5, 'invoice_id' => 99]);
+        $item->expects($this->once())->method('find')->with(5)->willReturn(['item_id' => 5, 'invoice_id' => 99]);
 
         $invoice = $this->createMock(InvoiceModel::class);
-        $invoice->method('findScoped')->with(99)->willReturn(null);
+        $invoice->expects($this->once())->method('findScoped')->with(99)->willReturn(null);
 
+        // L'aliquota non va nemmeno cercata: la riga non è nostra.
         $tax = $this->createMock(TaxRateModel::class);
         $tax->expects($this->never())->method('find');
 
@@ -82,7 +91,10 @@ final class InvoicesAjaxTest extends CIUnitTestCase
             3 => ['item_id' => 3, 'invoice_id' => 7],
         ];
 
-        $item = $this->createMock(ItemModel::class);
+        // Le righe sono diverse per id, quindi lo stub risponde in base
+        // all'argomento: l'asserzione su cosa è stato toccato resta in fondo,
+        // dove si vede l'effetto del riordino.
+        $item = $this->createStub(ItemModel::class);
         $item->method('find')->willReturnCallback(static fn (int $id) => $righe[$id] ?? null);
 
         $aggiornati = [];
@@ -93,7 +105,7 @@ final class InvoicesAjaxTest extends CIUnitTestCase
         });
 
         $invoice = $this->createMock(InvoiceModel::class);
-        $invoice->method('findScoped')->with(7)->willReturn(['invoice_id' => 7]);
+        $invoice->expects($this->once())->method('findScoped')->with(7)->willReturn(['invoice_id' => 7]);
 
         $json = json_decode($this->controller(
             ['invoice_id' => 7, 'item_ids' => '[1,2,3]'],
@@ -114,11 +126,11 @@ final class InvoicesAjaxTest extends CIUnitTestCase
     public function testCambioClienteRifiutaUnClienteDiUnAltraAzienda(): void
     {
         $invoice = $this->createMock(InvoiceModel::class);
-        $invoice->method('findScoped')->with(7)->willReturn(['invoice_id' => 7]);
+        $invoice->expects($this->once())->method('findScoped')->with(7)->willReturn(['invoice_id' => 7]);
         $invoice->expects($this->never())->method('update');
 
         $client = $this->createMock(ClientModel::class);
-        $client->method('findScoped')->with(3)->willReturn(null);
+        $client->expects($this->once())->method('findScoped')->with(3)->willReturn(null);
 
         $amount = $this->createMock(InvoiceAmountModel::class);
         $amount->expects($this->never())->method('calculate');
@@ -138,11 +150,11 @@ final class InvoicesAjaxTest extends CIUnitTestCase
     public function testCambioClienteAggiornaERicalcola(): void
     {
         $invoice = $this->createMock(InvoiceModel::class);
-        $invoice->method('findScoped')->with(7)->willReturn(['invoice_id' => 7]);
+        $invoice->expects($this->once())->method('findScoped')->with(7)->willReturn(['invoice_id' => 7]);
         $invoice->expects($this->once())->method('update')->with(7, ['client_id' => 3]);
 
         $client = $this->createMock(ClientModel::class);
-        $client->method('findScoped')->with(3)->willReturn(['client_id' => 3]);
+        $client->expects($this->once())->method('findScoped')->with(3)->willReturn(['client_id' => 3]);
 
         $amount = $this->createMock(InvoiceAmountModel::class);
         $amount->expects($this->once())->method('calculate')->with(7);
@@ -177,7 +189,9 @@ final class InvoicesAjaxTest extends CIUnitTestCase
 
     private function richiestaPost(array $post): IncomingRequest
     {
-        $request = $this->createMock(IncomingRequest::class);
+        // Stub e non mock: qui la richiesta non ha nulla da pretendere, deve
+        // solo rispondere "POST" e restituire i campi passati.
+        $request = $this->createStub(IncomingRequest::class);
 
         $request->method('getMethod')->willReturn('POST');
         $request->method('getPost')->willReturnCallback(

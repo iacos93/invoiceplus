@@ -31,7 +31,7 @@ Lingue disponibili: italiano e inglese.
 
 ## Requisiti
 
-- PHP **8.2** o superiore, con le estensioni `intl`, `mbstring`, `json`,
+- PHP **8.4** o superiore, con le estensioni `intl`, `mbstring`, `json`,
   `curl`, `gd`, `zip` e `pdo`.
 - **Composer 2**.
 - Un database **PostgreSQL** oppure **MySQL/MariaDB**.
