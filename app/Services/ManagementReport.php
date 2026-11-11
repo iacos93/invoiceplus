@@ -228,7 +228,7 @@ class ManagementReport
         $scope = company_scope_sql('i');
 
         $rows = $this->db()->query("
-            SELECT EXTRACT(MONTH FROM i.invoice_date_created)::int AS m,
+            SELECT EXTRACT(MONTH FROM i.invoice_date_created) AS m,
                    COALESCE(ii.costing_account_id, 0) AS account_id,
                    SUM(COALESCE(ia.item_subtotal, 0) - COALESCE(ia.item_discount, 0)) AS amount
             FROM ip_invoices i
@@ -267,7 +267,7 @@ class ManagementReport
         $scope = company_scope_sql('ip_expenses');
 
         $rows = $this->db()->query("
-            SELECT EXTRACT(MONTH FROM expense_date)::int AS m,
+            SELECT EXTRACT(MONTH FROM expense_date) AS m,
                    COALESCE(costing_account_id, 0) AS account_id,
                    SUM(COALESCE(expense_amount, 0)) AS amount
             FROM ip_expenses
@@ -306,7 +306,7 @@ class ManagementReport
         $invoiceScope = company_scope_sql('i');
 
         $in = $this->db()->query("
-            SELECT EXTRACT(MONTH FROM p.payment_date)::int AS m,
+            SELECT EXTRACT(MONTH FROM p.payment_date) AS m,
                    SUM(COALESCE(p.payment_amount, 0)) AS amount
             FROM ip_payments p
             JOIN ip_invoices i ON i.invoice_id = p.invoice_id
@@ -317,7 +317,7 @@ class ManagementReport
         $outScope = company_scope_sql('ip_expenses');
 
         $out = $this->db()->query("
-            SELECT EXTRACT(MONTH FROM expense_date)::int AS m,
+            SELECT EXTRACT(MONTH FROM expense_date) AS m,
                    SUM(COALESCE(expense_paid, 0)) AS amount
             FROM ip_expenses
             WHERE EXTRACT(YEAR FROM expense_date) = ?

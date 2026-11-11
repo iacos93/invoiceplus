@@ -78,7 +78,7 @@ class CreateManagementControl extends Migration
             $this->forge->addColumn('ip_invoice_items', [
                 'costing_account_id' => ['type' => 'INT', 'null' => true],
             ]);
-            $this->db->query('CREATE INDEX IF NOT EXISTS idx_invoice_items_costing ON ip_invoice_items (costing_account_id)');
+            $this->db->query('CREATE INDEX idx_invoice_items_costing ON ip_invoice_items (costing_account_id)');
         }
 
         // Associazione spesa → voce di costo. Le spese non hanno righe: la
@@ -87,19 +87,21 @@ class CreateManagementControl extends Migration
             $this->forge->addColumn('ip_expenses', [
                 'costing_account_id' => ['type' => 'INT', 'null' => true],
             ]);
-            $this->db->query('CREATE INDEX IF NOT EXISTS idx_expenses_costing ON ip_expenses (costing_account_id)');
+            $this->db->query('CREATE INDEX idx_expenses_costing ON ip_expenses (costing_account_id)');
         }
     }
 
     public function down()
     {
+        $mysql = $this->db->DBDriver === 'MySQLi';
+
         if ($this->db->fieldExists('costing_account_id', 'ip_expenses')) {
-            $this->db->query('DROP INDEX IF EXISTS idx_expenses_costing');
+            $this->db->query('DROP INDEX idx_expenses_costing' . ($mysql ? ' ON ip_expenses' : ''));
             $this->forge->dropColumn('ip_expenses', 'costing_account_id');
         }
 
         if ($this->db->fieldExists('costing_account_id', 'ip_invoice_items')) {
-            $this->db->query('DROP INDEX IF EXISTS idx_invoice_items_costing');
+            $this->db->query('DROP INDEX idx_invoice_items_costing' . ($mysql ? ' ON ip_invoice_items' : ''));
             $this->forge->dropColumn('ip_invoice_items', 'costing_account_id');
         }
 

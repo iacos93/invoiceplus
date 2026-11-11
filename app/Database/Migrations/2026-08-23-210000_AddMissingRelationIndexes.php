@@ -56,7 +56,7 @@ class AddMissingRelationIndexes extends Migration
                 continue;
             }
 
-            $this->db->query("CREATE INDEX IF NOT EXISTS {$name} ON {$table} ({$columns})");
+            $this->db->query("CREATE INDEX {$name} ON {$table} ({$columns})");
         }
     }
 
@@ -64,7 +64,7 @@ class AddMissingRelationIndexes extends Migration
     {
         foreach (self::INDEXES as [$table, $name, $columns]) {
             if ($this->db->tableExists($table) && $this->indexExists($table, $name)) {
-                $this->db->query("DROP INDEX IF EXISTS {$name}");
+                $this->db->query("DROP INDEX {$name}" . ($this->db->DBDriver === 'MySQLi' ? " ON {$table}" : ''));
             }
         }
     }

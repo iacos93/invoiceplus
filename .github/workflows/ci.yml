@@ -6,17 +6,19 @@ on:
   pull_request:
 
 jobs:
-  test:
+  # PostgreSQL e' il database di sviluppo: la matrice PHP verifica le due
+  # versioni supportate.
+  postgres:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         php: ['8.4', '8.5']
-    name: PHP ${{ matrix.php }}
+    name: PostgreSQL / PHP ${{ matrix.php }}
 
     # I test d'integrazione leggono da un database vero: le migrazioni creano
-    # lo schema e tests/fixtures/ci_seed.sql i dati minimi. Senza, quei 25 test
-    # si saltano e la suite resta verde senza aver mai generato un PDF, un XML
+    # lo schema e tests/fixtures/ci_seed.sql i dati minimi. Senza, quei test si
+    # saltano e la suite resta verde senza aver mai generato un PDF, un XML
     # FatturaPA o aperto il portale.
     services:
       postgres:
@@ -78,10 +80,81 @@ jobs:
         env:
           PGPASSWORD: postgres
 
-      # Un test che si salta non fa fallire PHPUnit, e per mesi i 25 test
+      # Un test che si salta non fa fallire PHPUnit, e per mesi i test
       # d'integrazione sono stati "verdi" senza aver verificato niente. PHPUnit
       # 13 non ha un --fail-on-skipped, quindi la guardia sta qui: se il
       # risultato contiene dei salti il passo fallisce.
+      - name: Esegue i test
+        run: |
+          set -o pipefail
+          vendor/bin/phpunit --no-coverage 2>&1 | tee phpunit.log
+          if grep -q 'Skipped:' phpunit.log; then
+            echo "Alcuni test si sono saltati: vedi l'elenco qui sopra."
+            exit 1
+          fi
+        env:
+          IP_PDF_TEST_DB: invoiceplus_test
+
+  # Il secondo motore: le migrazioni hanno rami per MySQLi e l'app gira anche
+  # su MariaDB, ma finche' non lo esegue nessuno quei rami restano teoria.
+  # Un solo PHP: qui la variabile da coprire e' il database, non la versione.
+  mysql:
+    runs-on: ubuntu-latest
+    name: MariaDB / PHP 8.5
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_DATABASE: invoiceplus_test
+          MARIADB_USER: invoiceplus
+          MARIADB_PASSWORD: invoiceplus
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installa PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, mbstring, json, curl, gd, zip, pdo_sqlite, sqlite3, mysqli, pdo_mysql
+          coverage: none
+
+      - name: Installa le dipendenze
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Configura l'ambiente
+        run: |
+          cp env .env
+          cat >> .env <<'EOF'
+          database.default.hostname = 127.0.0.1
+          database.default.database = invoiceplus_test
+          database.default.username = invoiceplus
+          database.default.password = invoiceplus
+          database.default.DBDriver = MySQLi
+          database.default.port = 3306
+          EOF
+
+      - name: Genera la chiave di cifratura
+        run: php spark key:generate
+
+      - name: Crea lo schema di prova
+        run: php spark migrate
+
+      # Fixture separata: quella PostgreSQL usa generate_series(), UPDATE ...
+      # FROM e TRUNCATE ... CASCADE, che MariaDB non accetta. I valori sono gli
+      # stessi; ci_seed_mysql.sql va aggiornata insieme all'altra.
+      - name: Popola i dati di prova
+        run: mysql -h 127.0.0.1 -u invoiceplus -pinvoiceplus --default-character-set=utf8mb4 invoiceplus_test < tests/fixtures/ci_seed_mysql.sql
+
       - name: Esegue i test
         run: |
           set -o pipefail

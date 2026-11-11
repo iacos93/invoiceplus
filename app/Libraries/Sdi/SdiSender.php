@@ -184,16 +184,41 @@ class SdiSender
         $key = 'sdi_progressive_' . $companyId;
         $db  = \Config\Database::connect();
 
-        // query() su una UPDATE ritorna un booleano, non un ResultInterface:
-        // le righe toccate si leggono da affectedRows() dopo l'esecuzione.
-        $db->query(
-            "UPDATE ip_settings SET setting_value = (setting_value::int + 1)::text
-             WHERE setting_key = ? AND setting_value ~ '^[0-9]+$'",
-            [$key]
-        );
+        // Confronto-e-scambio invece di (setting_value::int + 1)::text: la
+        // sintassi dei cast e dell'operatore regex e' di PostgreSQL e su
+        // MySQL la UPDATE falliva. Si legge il valore, si scrive quello
+        // incrementato solo se nel frattempo nessun altro l'ha cambiato:
+        // stesso effetto atomico, senza dialetto.
+        for ($tentativo = 0; $tentativo < 5; $tentativo++) {
+            $row = $db->query(
+                'SELECT setting_value FROM ip_settings WHERE setting_key = ?',
+                [$key]
+            )->getRow();
 
-        if ($db->affectedRows() > 0) {
-            \App\Models\SettingModel::resetCache();
+            if ($row === null) {
+                return;
+            }
+
+            $corrente = trim((string) $row->setting_value);
+
+            // Progressivo non configurato (stringa vuota) o non numerico: si
+            // lascia com'e', come faceva il filtro regex.
+            if ($corrente === '' || !ctype_digit($corrente)) {
+                return;
+            }
+
+            $db->query(
+                'UPDATE ip_settings SET setting_value = ? WHERE setting_key = ? AND setting_value = ?',
+                [(string) ((int) $corrente + 1), $key, $corrente]
+            );
+
+            if ($db->affectedRows() > 0) {
+                \App\Models\SettingModel::resetCache();
+
+                return;
+            }
+
+            // Un altro invio ha incrementato nel frattempo: si rilegge.
         }
     }
 

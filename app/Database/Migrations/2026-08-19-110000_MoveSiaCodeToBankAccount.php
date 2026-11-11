@@ -31,12 +31,19 @@ class MoveSiaCodeToBankAccount extends Migration
             ],
         ]);
 
+        // Sotto-query invece di UPDATE ... FROM: la seconda forma e' solo di
+        // PostgreSQL, MySQL la rifiuta. La condizione si ripete nel WHERE
+        // perche' senza, i conti di un'azienda senza codice si vedrebbero
+        // scrivere NULL sopra un eventuale valore gia' presente.
         $this->db->query(
             'UPDATE ip_bank_accounts
-                SET bank_account_sia_code = c.company_sia_code
-               FROM ip_companies c
-              WHERE c.company_id = ip_bank_accounts.company_id
-                AND c.company_sia_code IS NOT NULL AND c.company_sia_code <> \'\''
+                SET bank_account_sia_code = (
+                    SELECT c.company_sia_code FROM ip_companies c
+                     WHERE c.company_id = ip_bank_accounts.company_id)
+              WHERE EXISTS (
+                    SELECT 1 FROM ip_companies c
+                     WHERE c.company_id = ip_bank_accounts.company_id
+                       AND c.company_sia_code IS NOT NULL AND c.company_sia_code <> \'\')'
         );
 
         $this->forge->dropColumn('ip_companies', 'company_sia_code');
@@ -54,12 +61,15 @@ class MoveSiaCodeToBankAccount extends Migration
 
         // Un codice per azienda non basta a rappresentarne uno per conto: si
         // riporta indietro quello del conto predefinito, il piu' probabile.
+        // Stessa forma portabile del ramo di salita (MySQL non ha UPDATE ...
+        // FROM): si prende il conto predefinito dell'azienda, se c'e'.
         $this->db->query(
             'UPDATE ip_companies
-                SET company_sia_code = a.bank_account_sia_code
-               FROM ip_bank_accounts a
-              WHERE a.company_id = ip_companies.company_id
-                AND a.bank_account_is_default = 1'
+                SET company_sia_code = (
+                    SELECT a.bank_account_sia_code FROM ip_bank_accounts a
+                     WHERE a.company_id = ip_companies.company_id
+                       AND a.bank_account_is_default = 1
+                     ORDER BY a.bank_account_id LIMIT 1)'
         );
 
         $this->forge->dropColumn('ip_bank_accounts', 'bank_account_sia_code');

@@ -96,7 +96,7 @@ class InvoiceRecurringModel extends IpBaseModel
 
         $builder = $this->select("ip_invoices.*, ip_clients.client_name,
                 ip_invoices_recurring.*,
-                CASE WHEN recur_end_date > NOW()::date OR recur_end_date IS NULL THEN 'active' ELSE 'inactive' END AS recur_status", false)
+                CASE WHEN recur_end_date > CURRENT_DATE OR recur_end_date IS NULL THEN 'active' ELSE 'inactive' END AS recur_status", false)
             ->join('ip_invoices', 'ip_invoices.invoice_id = ip_invoices_recurring.invoice_id')
             ->join('ip_clients', 'ip_clients.client_id = ip_invoices.client_id')
             ->orderBy('ip_invoices_recurring.recur_next_date', 'ASC');
@@ -118,7 +118,7 @@ class InvoiceRecurringModel extends IpBaseModel
      */
     public function getActive(): array
     {
-        return $this->where("recur_next_date <= NOW()::date AND (recur_end_date > NOW()::date OR recur_end_date IS NULL)")
+        return $this->where("recur_next_date <= CURRENT_DATE AND (recur_end_date > CURRENT_DATE OR recur_end_date IS NULL)")
             ->findAll();
     }
 

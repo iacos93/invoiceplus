@@ -48,8 +48,9 @@ In locale la copia si crea dal database di lavoro, senza toccarlo:
 createdb -T invoiceplane invoiceplane_posttest
 ```
 
-Da quel momento `vendor/bin/phpunit` esegue anche i 25 test d'integrazione:
-309 test e 1269 asserzioni, contro 872 asserzioni e 25 salti senza la copia. Un
+Da quel momento `vendor/bin/phpunit` esegue anche i 35 test d'integrazione: la
+suite completa conta 319 test e 1402 asserzioni. Senza la copia quei test si
+saltano, e la suite resta verde avendo verificato meno di quello che dice. Un
 altro database si indica con `IP_PDF_TEST_DB`, che è una variabile di processo,
 non una chiave di `.env`:
 
@@ -65,13 +66,21 @@ si vuole.
 ## Come girano in CI
 
 In CI non esiste nessuna copia, quindi il database viene costruito da zero a
-ogni esecuzione:
+ogni esecuzione. Il workflow ha due job con la stessa sequenza, per i due motori
+supportati:
 
-1. un servizio `postgres:17` (definito in `.github/workflows/ci.yml`);
+1. un servizio `postgres:17` oppure `mariadb:11` (definiti in
+   `.github/workflows/ci.yml`);
 2. `php spark migrate` crea lo schema — le 58 migrazioni bastano da sole, non
    serve un dump;
-3. `psql -f tests/fixtures/ci_seed.sql` inserisce i dati minimi;
+3. la fixture inserisce i dati minimi: `tests/fixtures/ci_seed.sql` con
+   `psql`, `tests/fixtures/ci_seed_mysql.sql` con `mysql`;
 4. `IP_PDF_TEST_DB=invoiceplus_test` dice ai test quale database usare.
+
+Le due fixture contengono gli stessi dati scritti in due dialetti: la versione
+MySQL non può usare `generate_series()`, `UPDATE ... FROM` o
+`TRUNCATE ... CASCADE`, e la versione PostgreSQL le usa. Vanno cambiate
+insieme.
 
 `tests/fixtures/ci_seed.sql` è un dataset inventato ma coerente: importi che
 tornano con le righe, saldi a zero solo dove c'è un incasso, un preventivo

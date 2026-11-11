@@ -73,7 +73,9 @@ class AddPerformanceIndexes extends Migration
                 continue;
             }
 
-            $this->db->query("CREATE INDEX IF NOT EXISTS {$name} ON {$table} ({$columns})");
+            // CREATE INDEX senza IF NOT EXISTS: MySQL non lo accetta, e qui
+            // l'indice manca gia' per il controllo qui sopra.
+            $this->db->query("CREATE INDEX {$name} ON {$table} ({$columns})");
         }
 
         // setting_key: da indice semplice a univoco.
@@ -94,12 +96,15 @@ class AddPerformanceIndexes extends Migration
                     )");
             }
 
-            if ($this->db->DBDriver === 'MySQLi') {
-                $this->db->query('DROP INDEX setting_key ON ip_settings');
-            } else {
-                $this->db->query('DROP INDEX IF EXISTS setting_key');
+            // L'indice semplice setting_key non esiste in un'installazione
+            // nuova: su MySQL il DROP fallisce e fermava la migrazione.
+            if ($this->indexExists('ip_settings', 'setting_key')) {
+                $this->db->query(
+                    'DROP INDEX setting_key' . ($this->db->DBDriver === 'MySQLi' ? ' ON ip_settings' : '')
+                );
             }
-            $this->db->query('CREATE UNIQUE INDEX IF NOT EXISTS setting_key_unique ON ip_settings (setting_key)');
+
+            $this->db->query('CREATE UNIQUE INDEX setting_key_unique ON ip_settings (setting_key)');
         }
     }
 
@@ -107,13 +112,13 @@ class AddPerformanceIndexes extends Migration
     {
         foreach (self::INDEXES as [$table, $name, $columns]) {
             if ($this->db->tableExists($table) && $this->indexExists($table, $name)) {
-                $this->db->query("DROP INDEX IF EXISTS {$name}" . ($this->db->DBDriver === 'MySQLi' ? " ON {$table}" : ''));
+                $this->db->query("DROP INDEX {$name}" . ($this->db->DBDriver === 'MySQLi' ? " ON {$table}" : ''));
             }
         }
 
         if ($this->db->tableExists('ip_settings') && $this->indexExists('ip_settings', 'setting_key_unique')) {
-            $this->db->query('DROP INDEX IF EXISTS setting_key_unique' . ($this->db->DBDriver === 'MySQLi' ? ' ON ip_settings' : ''));
-            $this->db->query('CREATE INDEX IF NOT EXISTS setting_key ON ip_settings (setting_key)');
+            $this->db->query('DROP INDEX setting_key_unique' . ($this->db->DBDriver === 'MySQLi' ? ' ON ip_settings' : ''));
+            $this->db->query('CREATE INDEX setting_key ON ip_settings (setting_key)');
         }
     }
 

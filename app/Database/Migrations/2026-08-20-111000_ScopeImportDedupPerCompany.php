@@ -36,13 +36,13 @@ class ScopeImportDedupPerCompany extends Migration
             }
 
             if ($this->indexExists($table, $index)) {
-                $this->db->query("DROP INDEX IF EXISTS \"{$index}\"" . ($this->isPgsql() ? '' : " ON \"{$table}\""));
+                $this->db->query("DROP INDEX {$index}" . ($this->isPgsql() ? '' : " ON {$table}"));
             }
 
             $new = $column . '_company';
 
             if (!$this->indexExists($table, $new)) {
-                $this->db->query("CREATE UNIQUE INDEX IF NOT EXISTS \"{$new}\" ON \"{$table}\" (\"company_id\", \"{$column}\")");
+                $this->db->query("CREATE UNIQUE INDEX {$new} ON {$table} (company_id, {$column})");
             }
         }
     }
@@ -57,11 +57,11 @@ class ScopeImportDedupPerCompany extends Migration
             $new = $column . '_company';
 
             if ($this->indexExists($table, $new)) {
-                $this->db->query("DROP INDEX IF EXISTS \"{$new}\"" . ($this->isPgsql() ? '' : " ON \"{$table}\""));
+                $this->db->query("DROP INDEX {$new}" . ($this->isPgsql() ? '' : " ON {$table}"));
             }
 
             if (!$this->indexExists($table, $index)) {
-                $this->db->query("CREATE UNIQUE INDEX IF NOT EXISTS \"{$index}\" ON \"{$table}\" (\"{$column}\")");
+                $this->db->query("CREATE UNIQUE INDEX {$index} ON {$table} ({$column})");
             }
         }
     }
