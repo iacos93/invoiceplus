@@ -53,8 +53,8 @@ INSERT INTO ip_users
 VALUES
     (1, 1, true, CURRENT_TIMESTAMP, 'it',
      'Amministratore', 'admin@example.com',
-     '$2y$10$e0NRMU1s2K5Zt0jT4cQ1e.5cQ9VQ1WMbL3Hs0kK1nR2sYq0mB8Yhe',
-     '', 1, '', false);
+     '$2y$12$qcIixvxO7i/tnZrHkzrfCOjaNxxVjhzaxrfUZK13habOLV2xJYo.a',
+     'abcdefghij0123456789AB', 1, '', false);
 
 INSERT INTO ip_clients
     (client_id, client_date_created, client_name, client_surname, client_address_1,
