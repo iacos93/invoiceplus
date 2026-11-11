@@ -799,11 +799,13 @@ class McpTools
 
         unset($dbArray['client_id']);
 
-        // dbArrayFromPost non tocca client_active se assente; qui non deve
-        // mai partire con un default implicito (solo la creazione lo impone).
-        if (!array_key_exists('client_active', $dbArray)) {
-            unset($dbArray['client_active']);
-        }
+        // ClientModel::dbArrayFromPost() porta client_active a 0 quando il
+        // campo non c'e' (e' il comportamento giusto in creazione, dove la
+        // casella non spuntata significa cliente inattivo). In modifica
+        // disattiverebbe il cliente a ogni intervento che non parla di
+        // client_active, quindi qui si toglie sempre: update_client non
+        // cambia l'attivazione.
+        unset($dbArray['client_active']);
 
         if (empty($dbArray)) {
             throw new \RuntimeException('Nessun campo da aggiornare');

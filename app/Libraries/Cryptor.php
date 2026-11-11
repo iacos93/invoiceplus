@@ -50,7 +50,7 @@ class Cryptor
      * Construct a Cryptor, using aes256 encryption, sha256 key hashing and base64 encoding.
      * @param string $cipher_algo The cipher algorithm.
      * @param string $hash_algo   Key hashing algorithm.
-     * @param [type] $fmt         Format of the encrypted data.
+     * @param int    $fmt         Format of the encrypted data.
      */
     public function __construct($cipher_algo = 'aes-256-ctr', $hash_algo = 'sha256', $fmt = self::FORMAT_B64)
     {

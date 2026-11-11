@@ -29,7 +29,7 @@ class PredisSessionHandler extends BaseHandler
     protected int $lockRetryInterval;
     protected int $lockMaxRetries;
 
-    /** @var array{host: string, port: int, password: ?string, database: int, timeout: float} */
+    /** @var array{}|array{host: string, port: int, password: ?string, database: int, timeout: float} */
     protected array $parsedPath = [];
 
     public function __construct(SessionConfig $config, string $ipAddress)

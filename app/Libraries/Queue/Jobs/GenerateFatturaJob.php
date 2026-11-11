@@ -22,12 +22,14 @@ class GenerateFatturaJob implements JobInterface
         // Imposta il contesto aziendale per tutta la durata del job
         session()->set('active_company_id', $this->companyId);
 
-        $fattura = new \App\Libraries\FatturaXml();
-        $fattura->generate($this->invoiceId);
+        // La composizione del tracciato vive in FatturaPaXmlService: FatturaXml
+        // legge e valida l'XML, non lo produce (generate() non esiste).
+        $result = (new \App\Services\FatturaPaXmlService())->build($this->invoiceId);
 
-        log_message('info', 'FatturaPA generata per fattura #{id} (azienda {company})', [
+        log_message('info', 'FatturaPA generata per fattura #{id} (azienda {company}): {file}', [
             'id'      => $this->invoiceId,
             'company' => $this->companyId,
+            'file'    => $result['filename'] ?? '',
         ]);
     }
 }

@@ -23,7 +23,9 @@ class AuthFilter implements FilterInterface
         return null;
     }
 
-    public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
+    public function after(RequestInterface $request, ResponseInterface $response, $arguments = null): ?ResponseInterface
     {
+        // Nessuna modifica alla risposta in uscita.
+        return null;
     }
 }

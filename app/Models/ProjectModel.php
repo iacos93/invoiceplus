@@ -82,8 +82,7 @@ class ProjectModel extends IpBaseModel
             // ip_projects non ha company_id: il progetto appartiene
             // all'azienda del cliente a cui e' intestato.
             ->scopeToCompany(null, 'ip_clients')
-            ->get()
-            ->getRowArray();
+            ->first();
 
         return [
             'projects'           => (int) ($projects['project_count'] ?? 0),

@@ -1,0 +1,25 @@
+parameters:
+    # Livello 1: funzioni e classi inesistenti, costanti non definite,
+    # variabili usate prima di essere assegnate. I livelli successivi
+    # chiedono i generics dei model di CodeIgniter, che qui non ci sono:
+    # alzarli senza un lavoro di tipizzazione darebbe solo rumore.
+    level: 3
+    paths:
+        - app
+    excludePaths:
+        # I template mescolano HTML e PHP e usano variabili estratte da
+        # view(); senza tipizzarle l'analisi non ha appigli.
+        - app/Views
+        # Le migrazioni girano una volta sola e sono escluse dal classmap
+        # (vedi composer.json): le verifica la CI ricreando lo schema.
+        - app/Database/Migrations
+        # File di configurazione copiato dal template di CodeIgniter: cita
+        # classi di Kint, che e' una dipendenza di sviluppo facoltativa e non
+        # e' installata qui.
+        - app/Config/Kint.php
+    scanDirectories:
+        - vendor/codeigniter4/framework/system/Helpers
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+        - vendor/codeigniter4/framework/system/Common.php
+        - app/Common.php

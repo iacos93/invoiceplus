@@ -31,6 +31,7 @@
     "require-dev": {
         "fakerphp/faker": "^1.9",
         "mikey179/vfsstream": "^1.6",
+        "phpstan/phpstan": "^2.3",
         "phpunit/phpunit": "^13.0"
     },
     "autoload": {
@@ -54,6 +55,7 @@
     },
     "scripts": {
         "test": "phpunit",
+        "analyse": "phpstan analyse --no-progress --memory-limit=1G",
         "serve": "php spark serve --port 8080"
     }
 }

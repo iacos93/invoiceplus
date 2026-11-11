@@ -165,3 +165,40 @@ jobs:
           fi
         env:
           IP_PDF_TEST_DB: invoiceplus_test
+
+  # Controlli che non hanno bisogno di un database: tipi e metodi inesistenti,
+  # variabili non assegnate, advisories note nelle dipendenze. Girano su un PHP
+  # solo perche' il risultato non dipende dalla versione.
+  qualita:
+    runs-on: ubuntu-latest
+    name: Analisi statica / PHP 8.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installa PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, mbstring, json, curl, gd, zip, pdo_sqlite, sqlite3, pgsql, pdo_pgsql
+          coverage: none
+
+      - name: Installa le dipendenze
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # Le cartelle di writable/ sono versionate con un segnaposto: senza,
+      # spark termina senza messaggi gia' al primo comando. PHPStan non lo
+      # esegue, ma la chiave serve se in futuro si aggiungono passi con spark.
+      - name: Genera la chiave di cifratura
+        run: php spark key:generate
+
+      # Livello 3: funzioni, classi e metodi inesistenti, costanti non
+      # definite, tipi di ritorno sbagliati. I livelli successivi chiedono i
+      # generics dei model di CodeIgniter, che qui non ci sono.
+      - name: Analisi statica
+        run: composer analyse
+
+      # Fallisce se una dipendenza ha un advisory noto: e' l'unico controllo
+      # che si accorge di una vulnerabilita' corretta a monte.
+      - name: Verifica le dipendenze
+        run: composer audit --locked

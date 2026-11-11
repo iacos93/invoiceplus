@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 class ClientModel extends IpBaseModel
 {
     protected $table = 'ip_clients';
@@ -423,12 +426,16 @@ class ClientModel extends IpBaseModel
      */
     public function delete($id = null, bool $purge = false)
     {
-        parent::delete($id, $purge);
+        // Il risultato del model va restituito: chi chiama lo controlla, e
+        // senza return una cancellazione fallita passava per riuscita.
+        $result = parent::delete($id, $purge);
 
         if ($id) {
             $this->db->table('ip_client_notes')->where('client_id', $id)->delete();
             $this->db->table('ip_user_clients')->where('client_id', $id)->delete();
             $this->db->table('ip_client_custom')->where('client_id', $id)->delete();
         }
+
+        return $result;
     }
 }

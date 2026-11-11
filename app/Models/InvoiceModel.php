@@ -1157,10 +1157,12 @@ class InvoiceModel extends IpBaseModel
     {
         $invoice = $id ? $this->find($id) : null;
 
-        parent::delete($id, $purge);
+        // Il risultato del model va restituito: chi chiama lo controlla, e
+        // senza return una cancellazione fallita passava per riuscita.
+        $result = parent::delete($id, $purge);
 
         if (!$invoice) {
-            return;
+            return $result;
         }
 
         $invoiceId = (int) $invoice['invoice_id'];
@@ -1186,6 +1188,8 @@ class InvoiceModel extends IpBaseModel
         if (!empty($invoice['invoice_url_key'])) {
             $this->db->table('ip_uploads')->where('url_key', $invoice['invoice_url_key'])->delete();
         }
+
+        return $result;
     }
 
     /**

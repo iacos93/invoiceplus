@@ -106,9 +106,8 @@ class FatturaPA {
 	}
 	
 	/**
-	 * 
 	 * @param array $data
-	 * @param string $type ('mittente'/'destinatario')
+	 * @param mixed $node nodo a cui appendere i dati, per riferimento
 	 */
 	protected function _set_anagr($data, &$node)
 	{
@@ -306,6 +305,9 @@ class FatturaPA {
 		foreach ($sommeImporti as $key => $sommaImporto)
 		{
 			list($perciva, $natura_iva0) = explode('|', $key);
+			// explode() restituisce stringhe: il cast rende esplicito che qui
+			// si fa aritmetica, non concatenazione.
+			$perciva = (float) $perciva;
 			$sommaImporto = round($sommaImporto, 2);
 			// Con Natura IVA (N1-N7) l'operazione non e' imponibile: l'Imposta
 			// e' sempre 0 anche se l'aliquota e' piena (es. inversione
@@ -362,7 +364,7 @@ class FatturaPA {
 	/**
 	 * Imposta dati pagamento (opzionale)
 	 * @param array $data
-	 * @param array $mods Modalità (possibile più di una)
+	 * @param array $modes Modalità (possibile più di una)
 	 * - condizioni: https://github.com/s2software/fatturapa/wiki/Costanti#condizioni-pagamento (default: TP02 = completo)
 	 * - $modes - modalita:  https://github.com/s2software/fatturapa/wiki/Costanti#modalit%C3%A0-pagamento
 	 */
@@ -395,7 +397,7 @@ class FatturaPA {
 	/**
 	 * Imposta liberamente valore nodo dall'esterno
 	 * @param string $path
-	 * @param mixed $data
+	 * @param mixed $value
 	 * @return mixed
 	 */
 	public function &set_node($path, $value)
@@ -563,8 +565,8 @@ class FatturaPA {
 	
 	/**
 	 * Produce XML
-	 * @param array $node
-	 * @param string $xml
+	 * @param array|null $node
+	 * @param int $level
 	 * @param string $node_type Devo utilizzare lo schema dei complexType presenti nello schema XSD per mantenere lo stesso ordine dei nodi
 	 */
 	protected function _to_xml($node = NULL, $level = 1, $node_type = 'FatturaElettronicaType')

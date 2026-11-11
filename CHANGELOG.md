@@ -14,6 +14,22 @@ ancora in sviluppo (0.x) il numero minore sale a ogni versione pubblicata.
   collegamento fra i documenti).
 - Il fornitore della fixture di test ora ha un'azienda: senza, i test che lo
   cercano nell'azienda attiva lo saltavano.
+- Analisi statica con PHPStan (livello 3) e `composer audit` in CI, più il
+  comando `composer analyse` per eseguirla in locale.
+
+### Corretto
+
+- `GenerateFatturaJob` chiamava `FatturaXml::generate()`, che non esiste: il
+  job in coda sarebbe fallito a ogni esecuzione. Ora usa `FatturaPaXmlService`.
+- `ClientModel::delete()` e `InvoiceModel::delete()` non restituivano l'esito
+  della cancellazione, quindi un errore del database passava per riuscita.
+- La lingua italiana aveva due chiavi `new`: la seconda sovrascriveva la
+  prima in silenzio.
+- `ProjectModel::getSummary()` usava `get()->getRowArray()` su un metodo del
+  model che PHPStan non risolve; ora usa `first()`.
+- Documentazione di `set_node()`, `_set_anagr()`, `_to_xml()`, `Cryptor` e
+  `Management::csv()` allineata ai parametri e ai tipi reali; `FatturaPA`
+  converte esplicitamente a float l'aliquota letta dalla chiave.
 
 ## [v0.1] — 2026-11-11
 

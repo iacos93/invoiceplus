@@ -271,6 +271,7 @@ Comandi utili:
 |-----|-----|
 | `composer install` | Installa le dipendenze PHP |
 | `composer test` | Esegue tutta la suite PHPUnit |
+| `composer analyse` | Analisi statica con PHPStan (livello 3) |
 | `composer serve` | Avvia il server di sviluppo sulla porta 8080 |
 | `vendor/bin/phpunit tests/unit/NavItemStateTest.php` | Esegue un solo file di test |
 | `php spark migrate` | Applica le migrazioni |

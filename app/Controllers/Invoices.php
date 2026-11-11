@@ -811,8 +811,10 @@ class Invoices extends BaseController
             'result'  => $result,
             'styles'  => $preview->styles(),
             'style'   => $result['style'],
-            'summary' => $preview->summary($xml ?? ''),
-            'rawXml'  => $xml ?? '',
+            // $xml è assegnata sia nel ramo riuscito sia nel catch: il
+            // controllo su null qui non copriva nessun caso.
+            'summary' => $preview->summary($xml),
+            'rawXml'  => $xml,
         ]);
     }
 

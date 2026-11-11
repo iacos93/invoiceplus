@@ -318,7 +318,11 @@ return array (
   'miur_name' => 'Ministero dell\'Istruzione e del Merito',
   'monospaced_font_for_amounts' => 'Utilizza un carattere monospazio per gli importi',
   'month' => 'Mese',
-  'name' => 'Nome',  'new' => 'Nuovo',
+  'name' => 'Nome',
+  // Nessun 'new' qui: in italiano il termine e' accordato sui documenti
+  // ("Nuova fattura", "Nuovo preventivo") e la chiave vive piu' sotto, con
+  // il valore 'Nuova'. Una seconda definizione in questo punto la
+  // sovrascriveva in silenzio e la faceva sembrare inutilizzata.
   'new_password' => 'Nuova password',
   'new_password_help' => 'Scegli una nuova password per l\'accesso al registro.',
   'new_product' => 'Nuovo prodotto',

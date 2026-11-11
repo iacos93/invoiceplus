@@ -534,7 +534,7 @@ class Management extends BaseController
     }
 
     /**
-     * @return array<string, mixed>
+     * Righe CSV del report, già con BOM e separatore decimale locale.
      */
     private function csv(array $report): string
     {
