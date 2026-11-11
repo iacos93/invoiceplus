@@ -82,15 +82,23 @@ progetto.
 
 ## Test
 
-La suite usa SQLite in memoria per il gruppo `tests` della configurazione
-database, quindi non serve un database esterno:
+I test unitari usano SQLite in memoria e non hanno bisogno di altro; i test
+d'integrazione (`tests/integration`) leggono invece da un PostgreSQL vero,
+perché verificano PDF, XML FatturaPA e pagine complete:
 
 ```console
 composer test
 ```
 
-È lo stesso comando che gira nel workflow di integrazione continua
-(`.github/workflows/ci.yml`) a ogni push e pull request.
+Senza un database quei 25 test si saltano, e la suite resta verde avendo
+verificato meno. Per eseguirli in locale basta una copia del database di lavoro
+(`createdb -T <database> invoiceplane_posttest`) oppure un altro database
+indicato con `IP_PDF_TEST_DB`.
+
+Il workflow `.github/workflows/ci.yml` gira a ogni push e pull request su PHP
+8.4 e 8.5: avvia un PostgreSQL, crea lo schema con le migrazioni, carica
+`tests/fixtures/ci_seed.sql` e fallisce se un test risulta saltato. I dettagli
+sono in `tests/README.md`.
 
 ## Licenza e attribuzione
 
