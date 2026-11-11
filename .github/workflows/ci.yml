@@ -32,6 +32,8 @@ jobs:
 
       # Senza chiave l'app registra errori di decrypt_secret durante i test:
       # non fanno fallire la suite, ma rendono il log del CI inutilizzabile.
+      # Le cartelle di writable/ sono versionate con un segnaposto, altrimenti
+      # spark termina senza messaggi gia' al primo comando.
       - name: Genera la chiave di cifratura
         run: php spark key:generate
 

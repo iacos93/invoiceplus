@@ -1,12 +1,22 @@
 vendor/
+# Le cartelle di scrittura devono esistere anche in un clone pulito: senza,
+# spark non riesce a scrivere cache e log e termina prima di stampare qualsiasi
+# messaggio (successo su GitHub Actions). Il contenuto resta ignorato, ma i
+# segnaposto index.html sono versionati con la negazione che segue.
 writable/cache/*
+!writable/cache/index.html
 writable/logs/*
+!writable/logs/index.html
 writable/session/*
+!writable/session/index.html
 .env
 writable/uploads/*
+!writable/uploads/index.html
 writable/debugbar/*
+!writable/debugbar/index.html
 .DS_Store
 build/
 _archivio-asset-rimossi/
 writable/backups/*
+!writable/backups/index.html
 .phpunit.cache/
