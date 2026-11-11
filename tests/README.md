@@ -1,7 +1,9 @@
 # Test
 
-La suite gira con PHPUnit e usa SQLite in memoria, quindi non serve un database
-esterno né un server avviato.
+La suite gira con PHPUnit. I test unitari usano SQLite in memoria e non hanno
+bisogno di altro; i test di `tests/integration` leggono invece da un database
+PostgreSQL vero, perché verificano PDF, XML FatturaPA e pagine complete, e su
+uno schema vuoto non avrebbero niente da leggere.
 
 ## Come si eseguono
 
@@ -28,12 +30,56 @@ vendor/bin/phpunit --testsuite App --filter GuestScoping
 
 ## Database
 
-Il gruppo `tests` in `app/Config/Database.php` punta a SQLite `:memory:`, quindi
-ogni esecuzione parte da uno schema vuoto e applica le migrazioni: quello che
+Il gruppo `tests` in `app/Config/Database.php` punta a SQLite `:memory:`: ogni
+esecuzione parte da uno schema vuoto e applica le migrazioni, quindi quello che
 scrivi in un test non resta e non tocca il database di lavoro.
 
-Per usare un database tuo basta passare le chiavi `database.tests.*` in `.env`;
-il file di configurazione le legge già.
+I test d'integrazione fanno eccezione: prima di ogni test spostano quel gruppo
+sui parametri di connessione di `default` e cambiano solo il nome del database,
+poi verificano che la tabella `ip_invoices` risponda. Se non c'è, il test si
+salta con "Copia del database non disponibile": è voluto, così la suite resta
+verde su una macchina che non ha quella copia.
+
+### La copia in locale
+
+In locale la copia si crea dal database di lavoro, senza toccarlo:
+
+```console
+createdb -T invoiceplane invoiceplane_posttest
+```
+
+Da quel momento `vendor/bin/phpunit` esegue anche i 25 test d'integrazione:
+309 test e 1269 asserzioni, contro 872 asserzioni e 25 salti senza la copia. Un
+altro database si indica con `IP_PDF_TEST_DB`, che è una variabile di processo,
+non una chiave di `.env`:
+
+```console
+IP_PDF_TEST_DB=invoiceplane_prova vendor/bin/phpunit
+```
+
+I test che scrivono (approvazione di un preventivo, assegnazioni cliente-utente)
+ripristinano lo stato in `tearDown()` o dentro una transazione con rollback:
+la copia è di sola lettura nei fatti, e si può rilanciare la suite quante volte
+si vuole.
+
+## Come girano in CI
+
+In CI non esiste nessuna copia, quindi il database viene costruito da zero a
+ogni esecuzione:
+
+1. un servizio `postgres:17` (definito in `.github/workflows/ci.yml`);
+2. `php spark migrate` crea lo schema — le 58 migrazioni bastano da sole, non
+   serve un dump;
+3. `psql -f tests/fixtures/ci_seed.sql` inserisce i dati minimi;
+4. `IP_PDF_TEST_DB=invoiceplus_test` dice ai test quale database usare.
+
+`tests/fixtures/ci_seed.sql` è un dataset inventato ma coerente: importi che
+tornano con le righe, saldi a zero solo dove c'è un incasso, un preventivo
+pubblico e una fattura emessa con saldo aperto. Deve restare così: la
+Panoramica verifica le relazioni fra i numeri, non solo che le pagine si
+aprano. Chi aggiunge un test che legge tabelle nuove deve allargare la fixture,
+altrimenti in CI quel test fallisce — che è il comportamento giusto, meglio di
+un salto silenzioso.
 
 ## Come sono organizzati
 
@@ -42,6 +88,7 @@ il file di configurazione le legge già.
 - `tests/database` — migrazioni, seed e integrità dello schema.
 - `tests/session` — gestione della sessione e dell'autenticazione.
 - `tests/_support` — classi di supporto, migrazioni e seed usati dai test.
+- `tests/fixtures` — dati di prova per la CI.
 
 ## Convenzioni
 
