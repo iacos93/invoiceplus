@@ -295,6 +295,12 @@ $routes->group('', ['filter' => 'auth'], static function ($routes) {
     $routes->post('security/passkey/register', 'Security::passkeyRegister');
     $routes->post('security/passkey/delete/(:num)', 'Security::passkeyDelete/$1');
 
+    // --- Stato del sistema: controlli di salute dell'installazione ---
+    // In sola lettura: legge PHP, database, schema, permessi, backup e stato
+    // delle automazioni. Serve a vedere i guasti silenziosi (un backup che non
+    // viene prodotto) senza dover leggere i log del server.
+    $routes->get('system/status', 'SystemStatus::index');
+
     // --- Modulo: integrazione MCP (chiave e perimetro fuori da Impostazioni) ---
     $routes->get('mcp/settings', 'McpSettings::index');
     $routes->post('mcp/settings', 'McpSettings::index');

@@ -15,6 +15,14 @@ progetto è ancora in sviluppo (0.x), quindi il maggiore resta 0.
   Il binario di `mysqldump` si può indicare in `backup.mysqldumpPath`.
 - Test sul comando di dump (argomenti, password fuori dalla riga di comando,
   quotatura dei nomi) e sulla rotazione.
+- **Gestione > Stato del sistema**: pagina in sola lettura con i controlli che
+  possono guastarsi in silenzio — versione di PHP, cartelle scrivibili,
+  connessione al database, migrazioni da applicare, età dell'ultimo backup,
+  ultima esecuzione delle automazioni. Un backup assente o vecchio, o un
+  cron-runner fermo, ora si vedono senza aprire i log del server.
+- `tools/cron-runner.sh` scrive log e stato dei job in `writable/cron` (con
+  ripiego sulla home se la cartella non è scrivibile), così la pagina può
+  leggerli.
 
 ## [v0.1.1] — 2026-11-11
 

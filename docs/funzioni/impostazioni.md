@@ -92,6 +92,12 @@ pagina: vedi [accesso-e-integrazioni.md](accesso-e-integrazioni.md).
 - **Backup**: il cron `backup` produce un dump del database in
   `writable/backups`, con rotazione. Non è un archivio: i file vanno portati
   fuori dal server.
+- **Stato del sistema** (Gestione > Stato del sistema): una pagina in sola
+  lettura che dice se PHP è alla versione richiesta, se le cartelle sono
+  scrivibili, se il database risponde, se lo schema è aggiornato, quando è
+  stato fatto l'ultimo backup e se le automazioni girano ancora. È il posto
+  dove si vede un guasto silenzioso (per esempio un backup che non viene più
+  prodotto) senza leggere i log del server.
 
 ## Da sapere
 

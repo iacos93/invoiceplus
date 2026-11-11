@@ -200,8 +200,10 @@ Da fare sull'ambiente reale, con un utente vero, non solo con i test:
 6. Il preventivo di prova si converte in fattura con le righe giuste.
 7. Scadenzario e Utile e imposte si aprono senza errori.
 8. Il portale pubblico di un documento risponde con il link già inviato.
-9. Le automazioni girano: `writable/logs` non ha errori nuovi e il cron-runner
-   ha scritto l'esito dei job.
+9. **Gestione > Stato del sistema** è tutto regolare (o gli avvisi sono
+   spiegati): PHP, cartelle scrivibili, database, schema, ultimo backup,
+   automazioni. Le automazioni girano: `writable/logs` non ha errori nuovi e
+   il cron-runner ha scritto l'esito dei job in `writable/cron`.
 10. Se è il giorno del backup, il dump nuovo esiste e non è da 0 byte.
 
 Se un punto fallisce, il CHANGELOG dice cosa è cambiato in quella versione e

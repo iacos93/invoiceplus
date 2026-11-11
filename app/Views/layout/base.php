@@ -379,6 +379,7 @@
                     ['security', trans('security_title', '', 'Sicurezza account')],
                 ]],
                 ['mcp/settings', 'fa-solid fa-robot', trans('mcp_settings', '', 'Integrazione MCP'), []],
+                ['system/status', 'fa-solid fa-heart-pulse', trans('system_status', '', 'Stato del sistema'), []],
             ],
         ],
     ];

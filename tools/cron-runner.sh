@@ -23,7 +23,12 @@
 BASE_URL=""       # es. https://fatture.tuodominio.it/index.php
 CRON_KEY=""
 
-LOG_DIR="${HOME}/.invoiceplane-cron"
+# Log e stato dei job stanno dentro writable/cron: la pagina "Stato del
+# sistema" li legge per dire se le automazioni girano ancora. In una cartella
+# fuori dall'applicazione (era ~/.invoiceplane-cron) nessuno se ne accorge, ed
+# è lo stesso motivo per cui il backup è stato fermo giorni senza avvisi.
+APP_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+LOG_DIR="${APP_DIR}/writable/cron"
 LOG_FILE="${LOG_DIR}/cron.log"
 LOG_MAX_LINES=2000
 
@@ -34,7 +39,13 @@ if [ -z "$BASE_URL" ] || [ -z "$CRON_KEY" ]; then
     exit 1
 fi
 
-mkdir -p "$LOG_DIR"
+# Se writable/cron non è scrivibile dall'utente del cron, si torna alla
+# cartella nella home: meglio un log fuori posto che nessun log.
+if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
+    LOG_DIR="${HOME}/.invoiceplane-cron"
+    LOG_FILE="${LOG_DIR}/cron.log"
+    mkdir -p "$LOG_DIR"
+fi
 
 log() {
     # Rotazione elementare: oltre LOG_MAX_LINES tiene solo l'ultima metà.
