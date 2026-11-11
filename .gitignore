@@ -20,3 +20,6 @@ _archivio-asset-rimossi/
 writable/backups/*
 !writable/backups/index.html
 .phpunit.cache/
+# Output degli strumenti di analisi e delle build locali: non sono progetto.
+graphify-out/
+builds
