@@ -501,25 +501,35 @@ class Cron extends BaseController
         }
 
         if (!function_exists('exec')) {
-            return 'exec() non disponibile: backup impossibile su questo hosting';
-        }
-
-        // pg_dump rifiuta un server di versione maggiore della propria, e il
-        // primo nel PATH spesso non e' quello giusto (Homebrew con piu'
-        // postgresql@N installati, distribuzioni con il client vecchio):
-        // backup.pgDumpPath nel .env indica il binario esatto.
-        $bin = trim((string) env('backup.pgDumpPath', ''));
-        if ($bin === '' || !is_executable($bin)) {
-            $bin = trim((string) shell_exec('command -v pg_dump 2>/dev/null'));
-        }
-
-        if ($bin === '') {
-            return 'pg_dump non disponibile sul server';
+            return $this->backupFailed('exec() non disponibile: backup impossibile su questo hosting');
         }
 
         $cfg   = config('Database');
         $group = $cfg->defaultGroup;
         $db    = $cfg->{$group} ?? [];
+
+        // pg_dump rifiuta un server di versione maggiore della propria, e il
+        // primo nel PATH non e' quello giusto quando sono installate piu'
+        // versioni (Homebrew con postgresql@16 e @17 affiancati, distribuzioni
+        // con il client vecchio). Il locatore confronta le versioni trovate con
+        // quella del server; backup.pgDumpPath nel .env resta la scelta
+        // esplicita e ha la precedenza.
+        $serverMajor = 0;
+
+        try {
+            $serverVersion = (string) \Config\Database::connect()->getVersion();
+            $serverMajor   = (int) $serverVersion;
+        } catch (\Throwable $e) {
+            log_message('error', 'Backup: versione del server non leggibile: ' . $e->getMessage());
+        }
+
+        $bin = (string) (new \App\Libraries\PgDumpLocator(
+            trim((string) env('backup.pgDumpPath', '')) ?: null
+        ))->locate($serverMajor);
+
+        if ($bin === '') {
+            return $this->backupFailed('pg_dump non disponibile sul server');
+        }
 
         $dir = WRITEPATH . 'backups';
 
@@ -556,7 +566,7 @@ class Cron extends BaseController
                 @unlink($file);
             }
 
-            return 'Backup fallito: ' . mb_substr(implode(' ', $output ?: []), 0, 300);
+            return $this->backupFailed('Backup fallito: ' . mb_substr(implode(' ', $output ?: []), 0, 300));
         }
 
         // Rotazione: i nomi con timestamp ordinano cronologicamente, si
@@ -571,6 +581,20 @@ class Cron extends BaseController
         }
 
         return 'Backup salvato: ' . basename($file) . ($removed ? ' (eliminati ' . $removed . ' vecchi)' : '');
+    }
+
+    /**
+     * Un backup mancato deve arrivare al chiamante come errore HTTP, non come
+     * corpo 200 con la parola "fallito": tools/cron-runner.sh usa `curl -f`,
+     * quindi solo un 4xx/5xx gli fa registrare FALLITO e riprovare al giro
+     * successivo. Con il 200 il log diceva "ok: Backup fallito: ..." e non
+     * riprovava fino al giorno dopo.
+     */
+    private function backupFailed(string $message): string
+    {
+        $this->response->setStatusCode(500);
+
+        return $message;
     }
 
     /* ------------------------------------------------------ email di sistema */

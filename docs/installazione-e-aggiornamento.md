@@ -79,6 +79,21 @@ server), si indica il binario esatto:
 backup.pgDumpPath = /usr/lib/postgresql/17/bin/pg_dump
 ```
 
+Il valore conta più di quanto sembri: `pg_dump` **rifiuta** di leggere un server
+di versione maggiore della propria, e con più versioni installate il primo nel
+PATH non è sempre quello abbinato. Su una macchina con Homebrew, `pg_dump` 16
+con il server 17.11 produce un errore di versione e nessun file: il backup
+smette di esistere senza che nessuno se ne accorga finché non serve. Per questo
+l'endpoint prova da solo i percorsi abituali (`/usr/lib/postgresql/*/bin`,
+`/opt/homebrew/opt/postgresql@*/bin`, `/usr/local/...`, Postgres.app) e sceglie
+il primo binario di versione almeno pari al server; `backup.pgDumpPath` resta
+la scelta esplicita e ha la precedenza.
+
+Un fallimento risponde **500**: `tools/cron-runner.sh` usa `curl -f` e lo
+registra come `FALLITO`, quindi riprova al giro successivo. Con un 200 e il
+testo "Backup fallito" nel corpo, il log lo annotava come riuscito e non
+riprovava fino al giorno dopo.
+
 Il dump contiene i dati fiscali completi. **Va portato fuori dal server**:
 `writable/backups` è una copia di lavoro, non un archivio. Se il server si
 perde, si perdono anche i backup che stanno dentro.
@@ -110,6 +125,44 @@ psql -d invoiceplus_ripristino -c "SELECT COUNT(*) FROM ip_clients;"
 **Un backup non verificato non è un backup.** Almeno una volta, su un database
 separato, provare il ripristino e aprire l'applicazione su quella copia: è
 l'unico modo per sapere che il file è integro e che la procedura funziona.
+
+### Verifica periodica, in pratica
+
+Il giro completo, da fare su un database di servizio e non su quello in uso:
+
+```console
+createdb invoiceplus_verifica
+pg_restore --no-owner --no-acl -d invoiceplus_verifica writable/backups/backup_20261111_183626.dump
+
+# i numeri devono coincidere con quelli del database vero
+for t in ip_invoices ip_quotes ip_clients ip_payments ip_expenses ip_invoice_items; do
+  echo "$t reale=$(psql -d invoiceplane -Atc "select count(*) from $t") \
+ripristino=$(psql -d invoiceplus_verifica -Atc "select count(*) from $t")"
+done
+
+psql -d invoiceplane            -Atc "select round(sum(invoice_total),2) from ip_invoice_amounts"
+psql -d invoiceplus_verifica    -Atc "select round(sum(invoice_total),2) from ip_invoice_amounts"
+```
+
+Poi si punta l'applicazione alla copia (basta `database.default.database` in un
+`.env` separato, o una variabile d'ambiente davanti a `spark`) e si controlla:
+
+- `php spark migrate:status` non deve trovare migrazioni da applicare: se ne
+  trova, il dump è più vecchio del codice;
+- la pagina di login risponde;
+- il link pubblico di una fattura esistente si apre e mostra il documento;
+- il PDF di quella fattura si scarica.
+
+Se i conteggi tornano, `migrate:status` è pulito e le pagine si aprono, il dump
+è integro. Poi `dropdb invoiceplus_verifica`.
+
+Il controllo che conta non è il numero assoluto ma l'uguaglianza: i conteggi
+per tabella e i totali degli importi devono essere **identici** fra il database
+di partenza e la copia. Annotali prima del ripristino (per esempio con
+`SELECT COUNT(*)` su `ip_invoices`, `ip_quotes`, `ip_clients`, `ip_payments`,
+`ip_expenses` e sul totale di `ip_invoice_amounts`) e confrontali dopo: se
+coincidono, `migrate:status` è pulito e le pagine si aprono, il dump è integro.
+La stessa verifica vale su MySQL/MariaDB.
 
 ## Checklist dopo un aggiornamento
 

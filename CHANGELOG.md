@@ -14,6 +14,8 @@ ancora in sviluppo (0.x) il numero minore sale a ogni versione pubblicata.
   collegamento fra i documenti).
 - Il fornitore della fixture di test ora ha un'azienda: senza, i test che lo
   cercano nell'azienda attiva lo saltavano.
+- Test sul `pg_dump` da usare: versione letta dal server, scelta del primo
+  binario abbastanza recente e ripiego sul più nuovo disponibile.
 - Analisi statica con PHPStan (livello 3) e `composer audit` in CI, più il
   comando `composer analyse` per eseguirla in locale.
 - Guida `docs/installazione-e-aggiornamento.md`: aggiornamento, backup,
@@ -36,6 +38,13 @@ ancora in sviluppo (0.x) il numero minore sale a ogni versione pubblicata.
   esiste: ogni giorno il job finiva in 404 e nel log sembrava un guasto. I
   solleciti si inviano a mano dalla scheda della fattura e la riga è stata
   tolta.
+- Il backup automatico non produceva nessun file quando il `pg_dump` nel PATH
+  era di versione inferiore al server (16 contro 17.11): ora l'endpoint sceglie
+  il binario adatto fra i percorsi installati, e `backup.pgDumpPath` resta la
+  scelta esplicita.
+- Un backup fallito rispondeva `200` con il messaggio d'errore nel corpo, e il
+  cron-runner lo registrava come riuscito: ora risponde `500`, viene annotato
+  `FALLITO` e riprovato al giro successivo.
 
 ## [v0.1] — 2026-11-11
 
