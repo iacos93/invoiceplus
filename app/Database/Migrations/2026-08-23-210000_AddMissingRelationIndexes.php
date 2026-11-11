@@ -2,6 +2,7 @@
 
 namespace App\Database\Migrations;
 
+use App\Database\IndexCatalog;
 use CodeIgniter\Database\Migration;
 
 /**
@@ -30,53 +31,13 @@ use CodeIgniter\Database\Migration;
  */
 class AddMissingRelationIndexes extends Migration
 {
-    /** [tabella, nome indice, colonne] */
-    private const INDEXES = [
-        ['ip_expenses',      'idx_supplier',    'supplier_id'],
-        ['ip_invoice_items', 'idx_task',        'item_task_id'],
-        ['ip_projects',      'idx_client',      'client_id'],
-        ['ip_tasks',         'idx_project',     'project_id'],
-        ['ip_user_clients',  'idx_client',      'client_id'],
-    ];
-
     public function up()
     {
-        foreach (self::INDEXES as [$table, $name, $columns]) {
-            if (!$this->db->tableExists($table) || $this->indexExists($table, $name)) {
-                continue;
-            }
-
-            $missing = false;
-            foreach (explode(',', $columns) as $column) {
-                if (!$this->db->fieldExists(trim($column), $table)) {
-                    $missing = true;
-                }
-            }
-            if ($missing) {
-                continue;
-            }
-
-            $this->db->query("CREATE INDEX {$name} ON {$table} ({$columns})");
-        }
+        IndexCatalog::ensure($this->db, IndexCatalog::RELATIONS);
     }
 
     public function down()
     {
-        foreach (self::INDEXES as [$table, $name, $columns]) {
-            if ($this->db->tableExists($table) && $this->indexExists($table, $name)) {
-                $this->db->query("DROP INDEX {$name}" . ($this->db->DBDriver === 'MySQLi' ? " ON {$table}" : ''));
-            }
-        }
-    }
-
-    private function indexExists(string $table, string $name): bool
-    {
-        foreach ($this->db->getIndexData($table) as $index) {
-            if ($index->name === $name) {
-                return true;
-            }
-        }
-
-        return false;
+        IndexCatalog::drop($this->db, IndexCatalog::RELATIONS);
     }
 }

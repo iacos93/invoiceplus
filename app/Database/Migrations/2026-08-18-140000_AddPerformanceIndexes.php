@@ -2,6 +2,7 @@
 
 namespace App\Database\Migrations;
 
+use App\Database\IndexCatalog;
 use CodeIgniter\Database\Migration;
 
 /**
@@ -19,64 +20,20 @@ use CodeIgniter\Database\Migration;
  *    invoice_date_due, expense_date, payment_date...), finora tutte scansioni
  *    complete.
  *
+ * L'elenco e il modo di creare gli indici stanno in IndexCatalog: su
+ * PostgreSQL il nome di un indice e' unico per schema, quindi `idx_client` su
+ * ip_invoices impediva di crearlo su ip_quotes e le altre tabelle restavano
+ * senza. Il nome definitivo e' `<tabella>_<nome storico>`.
+ *
  * ip_settings.setting_key diventa UNIQUE: l'indice esisteva ma non univoco,
  * e un ON DUPLICATE KEY UPDATE su quella colonna inseriva righe doppie
  * invece di aggiornarle.
  */
 class AddPerformanceIndexes extends Migration
 {
-    /** [tabella, nome indice, colonne] */
-    private const INDEXES = [
-        ['ip_invoices',          'idx_company_date',   'company_id, invoice_date_created'],
-        ['ip_invoices',          'idx_client',         'client_id'],
-        ['ip_invoices',          'idx_date_due',       'invoice_date_due'],
-        ['ip_invoices',          'idx_group',          'invoice_group_id'],
-        ['ip_quotes',            'idx_company_date',   'company_id, quote_date_created'],
-        ['ip_quotes',            'idx_client',         'client_id'],
-        ['ip_quotes',            'idx_group',          'invoice_group_id'],
-        ['ip_clients',           'idx_company',        'company_id'],
-        ['ip_products',          'idx_company',        'company_id'],
-        ['ip_products',          'idx_family',         'family_id'],
-        ['ip_invoice_groups',    'idx_company',        'company_id'],
-        ['ip_email_senders',     'idx_company',        'company_id'],
-        ['ip_bank_accounts',     'idx_company',        'company_id'],
-        ['ip_f24',               'idx_company',        'company_id'],
-        ['ip_expenses',          'idx_company_date',   'company_id, expense_date'],
-        ['ip_expenses',          'idx_category',       'expense_category_id'],
-        ['ip_expenses',          'idx_bank_account',   'bank_account_id'],
-        ['ip_delivery_notes',    'idx_company_date',   'company_id, delivery_note_date'],
-        ['ip_delivery_notes',    'idx_client',         'client_id'],
-        ['ip_delivery_notes',    'idx_invoice',        'invoice_id'],
-        ['ip_bank_transactions', 'idx_company_date',   'company_id, transaction_date'],
-        ['ip_bank_transactions', 'idx_bank_account',   'bank_account_id'],
-        ['ip_payments',          'idx_payment_date',   'payment_date'],
-        ['ip_delivery_note_items', 'idx_delivery_note', 'delivery_note_id'],
-    ];
-
     public function up()
     {
-        foreach (self::INDEXES as [$table, $name, $columns]) {
-            if (!$this->db->tableExists($table) || $this->indexExists($table, $name)) {
-                continue;
-            }
-
-            // Una colonna citata nell'elenco ma assente dallo schema (per
-            // esempio in un'installazione a cui manca una migrazione
-            // successiva) deve saltare l'indice, non far fallire la migrazione.
-            $missing = false;
-            foreach (explode(',', $columns) as $column) {
-                if (!$this->db->fieldExists(trim($column), $table)) {
-                    $missing = true;
-                }
-            }
-            if ($missing) {
-                continue;
-            }
-
-            // CREATE INDEX senza IF NOT EXISTS: MySQL non lo accetta, e qui
-            // l'indice manca gia' per il controllo qui sopra.
-            $this->db->query("CREATE INDEX {$name} ON {$table} ({$columns})");
-        }
+        IndexCatalog::ensure($this->db, IndexCatalog::PERFORMANCE);
 
         // setting_key: da indice semplice a univoco.
         if ($this->db->tableExists('ip_settings') && !$this->indexExists('ip_settings', 'setting_key_unique')) {
@@ -110,11 +67,7 @@ class AddPerformanceIndexes extends Migration
 
     public function down()
     {
-        foreach (self::INDEXES as [$table, $name, $columns]) {
-            if ($this->db->tableExists($table) && $this->indexExists($table, $name)) {
-                $this->db->query("DROP INDEX {$name}" . ($this->db->DBDriver === 'MySQLi' ? " ON {$table}" : ''));
-            }
-        }
+        IndexCatalog::drop($this->db, IndexCatalog::PERFORMANCE);
 
         if ($this->db->tableExists('ip_settings') && $this->indexExists('ip_settings', 'setting_key_unique')) {
             $this->db->query('DROP INDEX setting_key_unique' . ($this->db->DBDriver === 'MySQLi' ? ' ON ip_settings' : ''));
