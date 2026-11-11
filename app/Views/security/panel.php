@@ -284,7 +284,7 @@
                     <div class="ip-backup-actions__save">
                         <button type="button" class="btn btn-sm btn-primary" id="ip-backup-download"
                                 data-filename="invoiceplane-codici-recupero-<?= date('Y-m-d') ?>.txt"
-                                data-header="<?= esc(trans('mfa_backup_codes_file_header', '', 'InvoicePlane - codici di recupero'), 'attr') ?>">
+                                data-header="<?= esc(trans('mfa_backup_codes_file_header', '', 'Invoice+ - codici di recupero'), 'attr') ?>">
                             <i class="fa fa-solid fa-download fa-margin" aria-hidden="true"></i> <?= trans('mfa_backup_codes_download', '', 'Scarica .txt') ?>
                         </button>
                         <button type="button" class="btn btn-sm btn-default" id="ip-backup-copy"

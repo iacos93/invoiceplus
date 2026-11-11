@@ -55,6 +55,7 @@ final class GuestDocumentAccessTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
+        $this->ripristinaAssegnazioni();
         $this->restoreConnections();
 
         parent::tearDown();
@@ -68,8 +69,8 @@ final class GuestDocumentAccessTest extends CIUnitTestCase
         session()->set([
             'user_id'      => 1,
             'user_type'    => 2,
-            'user_clients' => [(int) $fattura['client_id']],
         ]);
+        $this->assegna((int) $fattura['client_id']);
 
         $html = $controller->view((int) $fattura['invoice_id']);
 
@@ -90,8 +91,8 @@ final class GuestDocumentAccessTest extends CIUnitTestCase
         session()->set([
             'user_id'      => 1,
             'user_type'    => 2,
-            'user_clients' => [$estraneo],
         ]);
+        $this->assegna($estraneo);
 
         $this->expectException(PageNotFoundException::class);
 
@@ -107,8 +108,8 @@ final class GuestDocumentAccessTest extends CIUnitTestCase
             session()->set([
                 'user_id'      => 1,
                 'user_type'    => 2,
-                'user_clients' => [(int) $preventivo['client_id']],
             ]);
+            $this->assegna((int) $preventivo['client_id']);
 
             $response = $controller->approve((int) $preventivo['quote_id']);
 
@@ -146,6 +147,42 @@ final class GuestDocumentAccessTest extends CIUnitTestCase
         } finally {
             $this->ripristinaPreventivo($preventivo);
         }
+    }
+
+    /** @var list<array<string, mixed>>|null assegnazioni dell'utente 1 prima del test */
+    private ?array $assegnazioniOriginali = null;
+
+    /**
+     * Assegna all'utente 1 quel solo cliente, scrivendolo in ip_user_clients.
+     *
+     * Il portale legge le assegnazioni dal database a ogni richiesta (una
+     * revoca deve valere subito): metterle in sessione, come facevano questi
+     * test, non apre più nessuna porta. Le righe originali tornano al loro
+     * posto in tearDown().
+     */
+    private function assegna(int $clientId): void
+    {
+        $tabella = $this->testDb->table('ip_user_clients');
+
+        $this->assegnazioniOriginali ??= $tabella->where('user_id', 1)->get()->getResultArray();
+
+        $this->testDb->table('ip_user_clients')->where('user_id', 1)->delete();
+        $this->testDb->table('ip_user_clients')->insert(['user_id' => 1, 'client_id' => $clientId]);
+    }
+
+    private function ripristinaAssegnazioni(): void
+    {
+        if ($this->assegnazioniOriginali === null || $this->testDb === null) {
+            return;
+        }
+
+        $this->testDb->table('ip_user_clients')->where('user_id', 1)->delete();
+
+        foreach ($this->assegnazioniOriginali as $riga) {
+            $this->testDb->table('ip_user_clients')->insert($riga);
+        }
+
+        $this->assegnazioniOriginali = null;
     }
 
     private function controller(string $class): object

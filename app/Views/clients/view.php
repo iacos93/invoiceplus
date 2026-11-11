@@ -180,7 +180,12 @@ $actions = '<div class="btn-group btn-group-sm">'
                 $client['client_address_2'],
                 trim(($client['client_zip'] ?? '') . ' ' . ($client['client_city'] ?? '')),
                 $client['client_state'],
-                $countries[$client['client_country']] ?? $client['client_country'],
+                // Chiave '' e non null quando il cliente non ha paese: passare
+                // null come indice di array è deprecato da PHP 8.4, e ogni
+                // apertura di una scheda senza nazione scriveva un avviso nel
+                // log. Il fallback resta il valore grezzo del campo, che poi
+                // array_filter scarta se vuoto.
+                $countries[$client['client_country'] ?? ''] ?? $client['client_country'],
             ]);
             $client_address = implode(', ', $loc_parts);
             ?>
@@ -536,30 +541,33 @@ $actions = '<div class="btn-group btn-group-sm">'
                             </div>
                         </div>
                         <div class="card-body">
-                            <div id="notes_list">
+                            <?php /* Le note sono voci di un registro, non card dentro la
+                                     card: prima ognuna era un .card.small con piè di card
+                                     grigio per la sola data, e tre note facevano tre
+                                     scatole nella scatola. Qui restano testo e data,
+                                     separati da un filetto (stile in custom.css, sezione
+                                     della scheda cliente). */ ?>
+                            <div id="notes_list" class="ip-note-list">
                                 <?php foreach ($client_notes as $note): ?>
-                                    <div class="card small">
-                                        <div class="card-body">
-                                            <?= nl2br(esc($note['client_note'])) ?>
-                                        </div>
-                                        <div class="card-footer text-muted">
-                                            <?= esc(date_from_mysql($note['client_note_date'])) ?>
-                                        </div>
-                                    </div>
+                                    <article class="ip-note">
+                                        <p class="ip-note__text"><?= nl2br(esc($note['client_note'])) ?></p>
+                                        <p class="ip-note__date"><?= esc(date_from_mysql($note['client_note_date'])) ?></p>
+                                    </article>
                                 <?php endforeach; ?>
                                 <?php if (empty($client_notes)): ?>
-                                    <p class="text-muted"><?= trans('no_notes') ?></p>
+                                    <p class="ip-card-empty"><?= trans('no_notes') ?></p>
                                 <?php endif; ?>
                             </div>
-                            <form method="POST" action="<?= site_url('clients/ajax/save_client_note') ?>">
+                            <form method="POST" action="<?= site_url('clients/ajax/save_client_note') ?>" class="ip-note-form">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="client_id" id="client_id"
                                        value="<?= $client['client_id'] ?>">
                                 <label for="client_note" class="visually-hidden"><?= trans('add_note') ?></label>
-                                <div class="input-group">
-                                    <textarea id="client_note" name="client_note" class="form-control" rows="2"
-                                              style="resize:none"></textarea>
-                                    <button type="submit" class="btn btn-secondary">
+                                <textarea id="client_note" name="client_note" class="form-control" rows="2"
+                                          placeholder="<?= esc(trans('note_placeholder', '', 'Scrivi una nota…'), 'attr') ?>"></textarea>
+                                <div class="ip-note-form__actions">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="fa fa-solid fa-plus" aria-hidden="true"></i>
                                         <?= trans('add_note') ?>
                                     </button>
                                 </div>

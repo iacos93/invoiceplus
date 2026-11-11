@@ -64,7 +64,7 @@ class Security extends BaseController
         ];
 
         if ($data['totp_pending']) {
-            $issuer = get_setting('custom_title', '', true) ?: 'InvoicePlane';
+            $issuer = get_setting('custom_title', '', true) ?: 'Invoice+';
             $uri    = Totp::uri($data['totp_pending'], $issuer, $user['user_email']);
 
             $data['totp_uri'] = $uri;

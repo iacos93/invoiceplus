@@ -17,7 +17,7 @@ final class QuoteDecision
     public const REJECT  = 'reject';
 
     /** Stati dai quali una decisione è ancora possibile. */
-    private const OPEN_STATUSES = [2, 3];
+    public const OPEN_STATUSES = [2, 3];
 
     /**
      * Messaggio d'errore quando la decisione non è possibile, null se lo è.

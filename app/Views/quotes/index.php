@@ -203,7 +203,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                 <th class="ip-fav-col ip-hide-on-mobile" scope="col"><span class="visually-hidden"><?= trans('favourite', '', 'Preferito') ?></span></th>
                 <th scope="col"><?= trans('status') ?></th>
                 <th scope="col"><?= trans('quote') ?></th>
-                <th scope="col"><?= trans('created') ?></th>
+                <th scope="col" class="ip-col-secondary"><?= trans('created') ?></th>
                 <th scope="col"><?= trans('expires') ?></th>
                 <th scope="col"><?= trans('client_name') ?></th>
                 <th scope="col"><?= trans('invoice', '', 'Fattura') ?></th>
@@ -252,7 +252,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                             <span class="ip-num"><?= esc($quote['quote_number'] ?: $quote['quote_id']) ?></span>
                         </a>
                     </td>
-                    <td class="ip-hide-on-mobile" data-label="<?= esc(trans('created')) ?>"><?= esc(date_from_mysql($quote['quote_date_created'])) ?></td>
+                    <td class="ip-hide-on-mobile ip-col-secondary" data-label="<?= esc(trans('created')) ?>"><?= esc(date_from_mysql($quote['quote_date_created'])) ?></td>
                     <td data-cell="due" data-label="<?= esc(trans('expires')) ?>"><?= esc(date_from_mysql($quote['quote_date_expires'])) ?></td>
                     <td data-cell="client" data-label="<?= esc(trans('client_name')) ?>">
                         <a href="<?= site_url('clients/view/' . $quote['client_id']) ?>">

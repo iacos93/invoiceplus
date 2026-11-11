@@ -126,14 +126,17 @@ foreach ($filterGroups as $filterGroup) {
     }
 }
 
+// Niente "Importa XML" nella barra della lista: l'importazione delle fatture
+// emesse ha già la sua voce sotto Fatture nella sidebar, e l'ingresso dei dati
+// sta nell'hub Importa / Esporta. Un terzo pulsante in testa alla lista
+// spingeva "Nuova fattura" — l'azione che si cerca davvero qui — più a destra,
+// senza aprire una strada che non fosse già a un clic di distanza.
 $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle d-lg-none"'
          . ' data-bs-toggle="collapse" data-bs-target="#ip-status-submenu-collapse"'
          . ' aria-controls="ip-status-submenu-collapse" aria-expanded="false">'
          . '<i class="fa fa-solid fa-filter" aria-hidden="true"></i> ' . trans('filter', '', 'Filtra')
          . ($activeFilters > 0 ? ' <span class="ip-btn-count">' . $activeFilters . '</span>' : '')
          . '</button>'
-         . '<a class="btn btn-sm btn-secondary" href="' . site_url('invoices/import') . '">'
-         . '<i class="fa fa-solid fa-upload" aria-hidden="true"></i> ' . trans('import_xml', '', 'Importa XML') . '</a>'
          . '<a class="btn btn-sm btn-primary" href="' . site_url('invoices/form_create') . '">'
          . '<i class="fa fa-solid fa-plus" aria-hidden="true"></i> ' . trans('new_invoice', '', 'Nuova fattura') . '</a>';
 ?>
@@ -256,7 +259,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                     <th class="ip-fav-col ip-hide-on-mobile" scope="col"><span class="visually-hidden"><?= trans('favourite', '', 'Preferito') ?></span></th>
                     <th scope="col"><?= trans('status', '', 'Stato') ?></th>
                     <th scope="col"><?= trans('invoice', '', 'Fattura') ?></th>
-                    <th class="ip-hide-on-mobile" scope="col"><?= trans('created', '', 'Creata') ?></th>
+                    <th class="ip-hide-on-mobile ip-col-secondary" scope="col"><?= trans('created', '', 'Creata') ?></th>
                     <th scope="col"><?= trans('due_date', '', 'Scadenza') ?></th>
                     <th scope="col"><?= trans('client_name', '', 'Cliente') ?></th>
                     <?php
@@ -265,7 +268,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                     // su cui allinearsi e finiva sotto l'importo lordo.
                     // L'IVA compare solo sugli schermi larghi (>= 1400 px).
                     ?>
-                    <th class="amount ip-hide-on-mobile" scope="col"><?= trans('subtotal', '', 'Imponibile') ?></th>
+                    <th class="amount ip-hide-on-mobile ip-col-secondary" scope="col"><?= trans('subtotal', '', 'Imponibile') ?></th>
                     <th class="amount d-none d-xxl-table-cell" scope="col"><?= trans('vat', '', 'IVA') ?></th>
                     <th class="amount" scope="col"><?= trans('total', '', 'Totale') ?></th>
                     <th class="amount" scope="col"><?= trans('balance', '', 'Saldo') ?></th>
@@ -351,7 +354,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                             <?php endif; ?>
                         </td>
 
-                        <td class="ip-hide-on-mobile" data-label="<?= esc(trans('created', '', 'Creata')) ?>">
+                        <td class="ip-hide-on-mobile ip-col-secondary" data-label="<?= esc(trans('created', '', 'Creata')) ?>">
                             <?= date_from_mysql($invoice['invoice_date_created']) ?>
                         </td>
 
@@ -368,7 +371,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                             </a>
                         </td>
 
-                        <td class="amount ip-hide-on-mobile" data-label="<?= esc(trans('subtotal', '', 'Imponibile')) ?>">
+                        <td class="amount ip-hide-on-mobile ip-col-secondary" data-label="<?= esc(trans('subtotal', '', 'Imponibile')) ?>">
                             <?= format_currency($invoice['invoice_item_subtotal']) ?>
                         </td>
 
@@ -468,6 +471,10 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                 <?= $this->include('layout/list_totals', [
                     'totals'        => $period_totals ?? [],
                     'label_colspan' => 7,
+                    // "Creata" (dentro le 7) e "Imponibile" sono colonne
+                    // secondarie: il piede deve sparire con loro.
+                    'secondary_before' => 1,
+                    'net_secondary'    => true,
                 ]) ?>
 
             </table>

@@ -262,7 +262,14 @@ class GuestView extends BaseController
             return redirect()->to('/guest/view/quote/' . $quoteUrlKey);
         }
 
-        $quoteModel->approveQuoteByKey($quoteUrlKey);
+        // Il controllo sopra e l'UPDATE non sono atomici: se nel frattempo
+        // un'altra decisione e' passata, niente e' cambiato e va detto.
+        if (!$quoteModel->approveQuoteByKey($quoteUrlKey)) {
+            session()->setFlashdata('alert_error', (string) QuoteDecision::error([], QuoteDecision::APPROVE));
+
+            return redirect()->to('/guest/view/quote/' . $quoteUrlKey);
+        }
+
         session()->setFlashdata('flash_message', trans('quote_approved', '', 'Preventivo approvato'));
 
         return redirect()->to('/guest/view/quote/' . $quoteUrlKey);
@@ -293,7 +300,14 @@ class GuestView extends BaseController
             return redirect()->to('/guest/view/quote/' . $quoteUrlKey);
         }
 
-        $quoteModel->rejectQuoteByKey($quoteUrlKey);
+        // Il controllo sopra e l'UPDATE non sono atomici: se nel frattempo
+        // un'altra decisione e' passata, niente e' cambiato e va detto.
+        if (!$quoteModel->rejectQuoteByKey($quoteUrlKey)) {
+            session()->setFlashdata('alert_error', (string) QuoteDecision::error([], QuoteDecision::REJECT));
+
+            return redirect()->to('/guest/view/quote/' . $quoteUrlKey);
+        }
+
         session()->setFlashdata('flash_message', trans('quote_rejected', '', 'Preventivo rifiutato'));
 
         return redirect()->to('/guest/view/quote/' . $quoteUrlKey);

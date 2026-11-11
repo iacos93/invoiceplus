@@ -1080,7 +1080,34 @@ class InvoiceModel extends IpBaseModel
         }
 
         $this->withFullJoins()->whereIn('ip_invoices.client_id', $clientIds);
+        $this->applyGuestStatus($status);
 
+        return $this->orderBy('ip_invoices.invoice_id', 'DESC')->findAll();
+    }
+
+    /**
+     * Quante fatture vedrebbe getForGuestClients() con lo stesso filtro.
+     *
+     * La dashboard del portale mostra solo il numero: caricare l'elenco con
+     * tutti i join per poi contarlo in PHP costava l'intero archivio del
+     * cliente a ogni apertura. I filtri di stato guardano solo ip_invoices,
+     * quindi il conteggio non ha bisogno dei join.
+     */
+    public function countForGuestClients(array $clientIds, string $status = 'open'): int
+    {
+        if (empty($clientIds)) {
+            return 0;
+        }
+
+        $this->whereIn('ip_invoices.client_id', $clientIds);
+        $this->applyGuestStatus($status);
+
+        return $this->countAllResults();
+    }
+
+    /** Filtro di stato del portale: un posto solo per elenco e conteggio. */
+    private function applyGuestStatus(string $status): void
+    {
         switch ($status) {
             case 'paid':
                 $this->isPaid();
@@ -1092,8 +1119,6 @@ class InvoiceModel extends IpBaseModel
                 $this->isOpen();
                 break;
         }
-
-        return $this->orderBy('ip_invoices.invoice_id', 'DESC')->findAll();
     }
 
     /**

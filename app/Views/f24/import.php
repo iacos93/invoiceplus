@@ -8,7 +8,7 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('f24') . '">'
 ?>
 <?= $this->include('layout/headerbar', ['title' => trans('import_f24_receipts', '', 'Importa quietanze F24'), 'actions' => $actions]) ?>
 
-<div id="content" class="ip-doc-form">
+<div id="content" class="ip-doc-form ip-import-layout">
     <?php if ($results !== null): ?>
         <?php
         /* L'esito resta sulla pagina invece di finire in un toast: chi
@@ -72,12 +72,31 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('f24') . '">'
                 <h2 class="ip-doc-section__title"><?= trans('select_files', '', 'Quietanze da importare') ?></h2>
             </div>
             <div class="ip-doc-section__body">
-                <div class="ip-doc-field ip-import-drop">
+                <div class="ip-doc-field ip-file-drop">
                     <label class="ip-doc-label" for="receipts"><?= trans('f24_receipts_pdf', '', 'Quietanze (PDF)') ?></label>
                     <input type="file" name="receipts[]" id="receipts" class="ip-file-input" multiple
                            accept=".pdf,application/pdf" aria-describedby="receipts_help">
-                    <p class="ip-field-help" id="receipts_help"><?= trans('f24_import_help', '', 'Trascina qui le quietanze scaricate da Entratel/Fisconline o dall\'home banking. Ogni quietanza viene allegata all\'F24 con lo stesso importo ancora senza quietanza (pagato o da pagare); se non ce n\'è uno, l\'F24 viene creato dalla quietanza. Quelle già importate (stesso protocollo) vengono saltate.') ?></p>
+                    <p class="ip-field-help" id="receipts_help"><?= trans('f24_import_hint', '', 'Trascina qui le quietanze scaricate da Entratel/Fisconline o dall\'home banking.') ?></p>
                 </div>
+            </div>
+        </section>
+
+        <?php
+        // Come vengono abbinate le quietanze: prima era un paragrafo unico da
+        // quattro righe sotto il campo. Qui è un elenco accanto, la stessa
+        // frase spezzata sui suoi periodi, così si vede prima di caricare.
+        ?>
+        <section class="ip-doc-section">
+            <div class="ip-doc-section__head">
+                <span class="ip-doc-step"><i class="fa fa-solid fa-circle-info" aria-hidden="true"></i></span>
+                <h2 class="ip-doc-section__title"><?= trans('import_what_happens', '', 'Cosa succede all\'importazione') ?></h2>
+            </div>
+            <div class="ip-doc-section__body">
+                <ul class="ip-import-notes">
+                    <li><i class="fa fa-solid fa-check" aria-hidden="true"></i> <?= trans('f24_import_note_match', '', 'Ogni quietanza viene allegata all\'F24 con lo stesso importo ancora senza quietanza (pagato o da pagare).') ?></li>
+                    <li><i class="fa fa-solid fa-check" aria-hidden="true"></i> <?= trans('f24_import_note_create', '', 'Se non ce n\'è uno, l\'F24 viene creato dalla quietanza.') ?></li>
+                    <li><i class="fa fa-solid fa-check" aria-hidden="true"></i> <?= trans('f24_import_note_dupes', '', 'Quelle già importate (stesso protocollo) vengono saltate.') ?></li>
+                </ul>
             </div>
         </section>
     </form>

@@ -44,15 +44,30 @@ class QueueWorker extends BaseCommand
         $redisQueue = RedisQueue::instance();
 
         if ($once) {
+            // pop() risponde true anche per un job fallito e riaccodato:
+            // "eseguito" sarebbe una promessa che il worker non può fare.
             $executed = $redisQueue->pop($queue);
-            CLI::write($executed ? 'Job eseguito.' : 'Nessun job in coda.', $executed ? 'green' : 'yellow');
+            CLI::write($executed ? 'Job prelevato: l\'esito è nel log.' : 'Nessun job in coda.', $executed ? 'green' : 'yellow');
             return;
         }
 
         $this->handleSignals();
 
         while ($this->shouldRun) {
-            $redisQueue->pop($queue, 5);
+            try {
+                $redisQueue->pop($queue, 5);
+            } catch (\Throwable $e) {
+                // Redis riavviato, rete caduta, payload illeggibile: un
+                // worker che esce alla prima eccezione lascia la coda ferma
+                // finché qualcuno non se ne accorge. Si registra, si aspetta
+                // (per non girare a vuoto su un Redis ancora giù) e si riprova.
+                log_message('error', 'queue:work: errore sulla coda {queue}: {msg}', [
+                    'queue' => $queue,
+                    'msg'   => $e->getMessage(),
+                ]);
+                CLI::write('Errore: ' . $e->getMessage() . ' — nuovo tentativo fra 5 secondi.', 'red');
+                sleep(5);
+            }
         }
 
         CLI::write('Worker fermato.', 'yellow');

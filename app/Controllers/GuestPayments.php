@@ -3,7 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\PaymentModel;
-use App\Models\UserClientModel;
+use App\Traits\ResolvesGuestClients;
 
 /**
  * GuestPayments controller
@@ -13,24 +13,13 @@ use App\Models\UserClientModel;
  */
 class GuestPayments extends BaseController
 {
+    // Stesso elenco clienti delle altre porte del portale: qui ne restava
+    // una copia a parte, con la sua cache in sessione.
+    use ResolvesGuestClients;
+
     public function index()
     {
-        $clientIds = session('user_clients');
-
-        if (!is_array($clientIds) || empty($clientIds)) {
-            $userId = (int) session('user_id');
-            $clientIds = [];
-
-            if ($userId) {
-                $clientIds = array_map(
-                    static fn (array $row) => (int) $row['client_id'],
-                    (new UserClientModel())->assignedTo($userId)
-                );
-                session()->set('user_clients', $clientIds);
-            }
-        } else {
-            $clientIds = array_values(array_map('intval', $clientIds));
-        }
+        $clientIds = $this->clientIds();
 
         $data = [
             'title'    => trans('payments'),

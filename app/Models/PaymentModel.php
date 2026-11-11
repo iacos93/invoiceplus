@@ -304,10 +304,13 @@ class PaymentModel extends IpBaseModel
         $balance       = (float) ($invoiceAmount['invoice_balance'] ?? 0);
         $total         = (float) ($invoiceAmount['invoice_total'] ?? 0);
 
-        // In modifica, il pagamento corrente fa già parte del saldo
+        // In modifica, il pagamento corrente fa già parte del saldo — ma solo
+        // del saldo della sua fattura. Il form permette di spostarlo su
+        // un'altra: sommarlo anche lì gonfiava il saldo della fattura di
+        // arrivo, che accettava un incasso superiore al dovuto.
         if ($paymentId) {
             $current = $this->find($paymentId);
-            if ($current) {
+            if ($current && (int) $current['invoice_id'] === $invoiceId) {
                 $balance += (float) $current['payment_amount'];
             }
         }
@@ -370,6 +373,21 @@ class PaymentModel extends IpBaseModel
             ->orderBy('ip_payments.payment_date', 'DESC')
             ->orderBy('ip_payments.payment_id', 'DESC')
             ->findAll();
+    }
+
+    /**
+     * Quanti pagamenti vedrebbe getForGuestClients(): stessi join (da li'
+     * arriva il perimetro azienda), ma senza caricare le righe.
+     */
+    public function countForGuestClients(array $clientIds): int
+    {
+        if (empty($clientIds)) {
+            return 0;
+        }
+
+        return $this->withJoins()
+            ->whereIn('ip_invoices.client_id', $clientIds)
+            ->countAllResults();
     }
 
     /**

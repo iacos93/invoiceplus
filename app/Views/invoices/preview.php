@@ -139,7 +139,7 @@ $actions .= '</ul></div></div>';
         <aside class="ip-preview__side">
 
             <div class="card mb-3">
-                <div class="card-header"><?= trans('summary', '', 'Riepilogo') ?></div>
+                <div class="card-header"><h2 class="ip-card-heading"><?= trans('summary', '', 'Riepilogo') ?></h2></div>
                 <div class="card-body">
                     <dl class="ip-preview__totals">
                         <dt><?= trans('client', '', 'Cliente') ?></dt>
@@ -191,7 +191,7 @@ $actions .= '</ul></div></div>';
 
             <div class="card">
                 <div class="card-header">
-                    <?= trans('payments', '', 'Pagamenti') ?>
+                    <h2 class="ip-card-heading"><?= trans('payments', '', 'Pagamenti') ?></h2>
                     <a class="btn btn-sm btn-secondary float-end"
                        href="<?= site_url('payments/form?invoice_id=' . (int) $invoice_id) ?>">
                         <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('enter_payment', '', 'Aggiungi') ?>
@@ -217,7 +217,7 @@ $actions .= '</ul></div></div>';
             <?php if (!empty($sdi_transmission)): ?>
                 <div class="card mt-3">
                     <div class="card-header">
-                        <?= trans('sdi_transmission', '', 'Sistema di Interscambio (SdI)') ?>
+                        <h2 class="ip-card-heading"><?= trans('sdi_transmission', '', 'Sistema di Interscambio (SdI)') ?></h2>
                     </div>
                     <div class="card-body">
                         <dl class="ip-preview__totals">

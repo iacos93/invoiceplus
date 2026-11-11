@@ -13,26 +13,29 @@ use App\Models\UserClientModel;
  */
 trait ResolvesGuestClients
 {
+    /** @var list<int>|null letti una volta per richiesta */
+    private ?array $guestClientIds = null;
+
     /**
-     * Id dei clienti assegnati all'utente guest: dalla sessione
-     * 'user_clients' oppure, come fallback, dalla tabella ip_user_clients.
+     * Id dei clienti assegnati all'utente guest, letti da ip_user_clients.
+     *
+     * Prima l'elenco veniva messo in sessione ('user_clients') e riletto da
+     * li': una revoca fatta dall'amministratore non aveva effetto finche'
+     * l'utente non usciva, e nel frattempo poteva ancora vedere i documenti
+     * e decidere sui preventivi. E' un controllo di accesso: vale una query
+     * a richiesta. Quella chiave di sessione resta ai soli form utenti
+     * dell'area admin, che la usano per altro.
      */
     protected function clientIds(): array
     {
-        $clientIds = session('user_clients');
-
-        if (!is_array($clientIds) || empty($clientIds)) {
-            $userId = (int) session('user_id');
-
-            if ($userId) {
-                $clientIds = array_map(
-                    static fn (array $row) => (int) $row['client_id'],
-                    (new UserClientModel())->assignedTo($userId)
-                );
-                session()->set('user_clients', $clientIds);
-            }
+        if ($this->guestClientIds !== null) {
+            return $this->guestClientIds;
         }
 
-        return is_array($clientIds) ? array_values(array_map('intval', $clientIds)) : [];
+        $userId = (int) session('user_id');
+
+        return $this->guestClientIds = $userId
+            ? (new UserClientModel())->clientIdsFor($userId)
+            : [];
     }
 }

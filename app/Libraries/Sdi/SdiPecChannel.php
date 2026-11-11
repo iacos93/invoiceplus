@@ -54,7 +54,7 @@ class SdiPecChannel implements SdiChannelInterface
         $email->setMessage(
             'Fattura elettronica ' . ($invoice['invoice_number'] ?? '') . "\n"
             . "Allegato: {$filename}\n"
-            . "Inviata da InvoicePlane il " . date('d/m/Y H:i')
+            . "Inviata da Invoice+ il " . date('d/m/Y H:i')
         );
 
         // attach() con nome esplicito: altrimenti l'allegato prende il
@@ -124,7 +124,7 @@ class SdiPecChannel implements SdiChannelInterface
 
         $from = $sender['sender_email'] ?? '';
         if ($from !== '') {
-            $email->setFrom($from, $sender['sender_name'] ?? (string) get_setting('company_name', 'InvoicePlane'));
+            $email->setFrom($from, $sender['sender_name'] ?? (string) get_setting('company_name', 'Invoice+'));
         }
     }
 

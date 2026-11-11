@@ -52,7 +52,8 @@ $mix = static function (array $y): array {
                     <th scope="col"><?= trans('ires_irap', '', 'IRES / IRAP') ?></th>
                     <th scope="col"><?= trans('surcharges', '', 'Addizionali') ?></th>
                     <th scope="col"><?= trans('flat_rate_scheme', '', 'Forfettario') ?></th>
-                    <th scope="col" class="ip-fyear-profile-col"><?= trans('rate_profile', '', 'Profilo aliquote') ?></th>
+                    <?php /* Secondaria: la barra ridisegna cifre già scritte nelle altre colonne, quindi alle larghezze intermedie esce lei (vedi .ip-col-secondary). */ ?>
+                    <th scope="col" class="ip-fyear-profile-col ip-col-secondary"><?= trans('rate_profile', '', 'Profilo aliquote') ?></th>
                     <th scope="col"><?= trans('status', '', 'Stato') ?></th>
                     <th scope="col"><?= trans('options', '', 'Opzioni') ?></th>
                 </tr></thead>
@@ -92,7 +93,7 @@ $mix = static function (array $y): array {
                         <td data-label="<?= esc(trans('flat_rate_scheme', '', 'Forfettario')) ?>">
                             <span class="ip-num"><?= format_amount($y['fiscal_forf_ordinaria']) ?>% / <?= format_amount($y['fiscal_forf_startup']) ?>%</span>
                         </td>
-                        <td class="ip-fyear-profile-col" data-label="<?= esc(trans('rate_profile', '', 'Profilo aliquote')) ?>">
+                        <td class="ip-fyear-profile-col ip-col-secondary" data-label="<?= esc(trans('rate_profile', '', 'Profilo aliquote')) ?>">
                             <div class="ip-fyear-bar" role="img"
                                  aria-label="<?= esc(trans('rate_profile_aria', '', 'Composizione delle aliquote: ') .
                                      'IRES ' . format_amount($y['fiscal_ires_aliquota']) . '%, ' .

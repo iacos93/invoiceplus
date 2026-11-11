@@ -160,8 +160,6 @@ $actions .= '</div>';
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="ip-doc-field"><!-- riempie la terza colonna --></div>
-
                     <div class="ip-doc-field">
                         <label class="ip-doc-label" for="invoice_date_created"><?= trans('date', '', 'Data') ?></label>
                         <input type="text" name="invoice_date_created" id="invoice_date_created"

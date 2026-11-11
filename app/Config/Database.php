@@ -24,6 +24,10 @@ class Database extends Config
      *
      * @var array<string, mixed>
      */
+    // La connessione di produzione (host, utente, password, nome del database)
+    // sta nel .env, sotto database.default.*: CI4 la sovrascrive qui dentro con
+    // BaseConfig::initEnvValue. Scritta in questo file finirebbe in chiaro nella
+    // storia di git, cioè in ogni clone del repository.
     public array $default = [
         'DSN'        => '',
         'hostname'   => 'localhost',
@@ -161,8 +165,8 @@ class Database extends Config
     public array $tests = [
         'DSN'         => '',
         'hostname'    => '127.0.0.1',
-        'username'    => '',
-        'password'    => '',
+        'username'   => '',
+        'password'   => '',
         'database'    => ':memory:',
         'DBDriver'    => 'SQLite3',
         'DBPrefix'    => 'db_',  // Needed to ensure we're working correctly with prefixes live. DO NOT REMOVE FOR CI DEVS

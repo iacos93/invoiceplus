@@ -235,22 +235,68 @@ class BankReconciler
     /**
      * Il numero compare nella causale?
      *
-     * Il confronto ignora separatori e zeri iniziali: "2026/A/447", "2026-A-447"
-     * e "447" nella causale indicano lo stesso documento, e le banche
-     * normalizzano le causali a modo loro.
+     * Il confronto è per parole, non per sottostringa: tolti i separatori e
+     * cercato "447" dentro la causale, lo si trovava anche in un CRO o in un
+     * IBAN ("0034471209"), e il documento saliva in cima con 60 punti per
+     * una coincidenza di cifre. Le parole sono le sequenze di lettere e
+     * cifre, con gli zeri iniziali tolti ai numeri ("000447" vale "447").
+     *
+     * Il documento è citato quando:
+     *   - tutte le parti del numero compaiono di seguito ("2026/A/447",
+     *     "2026-A-447", "2026 A 447") o fuse in una parola sola ("2026A447");
+     *   - oppure compare da solo il progressivo, cioè l'unica parte numerica
+     *     che non è un anno ("FATT 447", "447/2026"): le banche e i clienti
+     *     abbreviano così. Deve avere almeno tre cifre, altrimenti "12"
+     *     coinciderebbe con un giorno o un mese.
      */
     private function mentions(string $description, string $number): bool
     {
-        $clean = static fn(string $v): string => strtoupper(preg_replace('/[^A-Z0-9]/i', '', $v));
+        $words  = self::words($description);
+        $parts  = self::words($number);
+        $joined = implode('', $parts);
 
-        $haystack = $clean($description);
-        $needle   = $clean($number);
-
-        if ($needle === '' || strlen($needle) < 3) {
+        if ($parts === [] || strlen($joined) < 3) {
             return false;
         }
 
-        return str_contains($haystack, $needle);
+        if (in_array($joined, $words, true)) {
+            return true;
+        }
+
+        $count = count($parts);
+
+        for ($i = 0, $last = count($words) - $count; $i <= $last; $i++) {
+            if (array_slice($words, $i, $count) === $parts) {
+                return true;
+            }
+        }
+
+        // Solo il progressivo: ha senso se nel numero ce n'è uno solo.
+        $progressives = array_values(array_filter(
+            $parts,
+            static fn(string $p): bool => ctype_digit($p) && !preg_match('/^(19|20)\d{2}$/', $p)
+        ));
+
+        return $count > 1
+            && count($progressives) === 1
+            && strlen($progressives[0]) >= 3
+            && in_array($progressives[0], $words, true);
+    }
+
+    /**
+     * Parole di una stringa: sequenze di lettere e cifre in maiuscolo, con i
+     * numeri senza zeri iniziali.
+     *
+     * @return list<string>
+     */
+    private static function words(string $value): array
+    {
+        preg_match_all('/[A-Z0-9]+/', strtoupper($value), $matches);
+
+        return array_map(
+            static fn(string $w): string => ctype_digit($w) ? (ltrim($w, '0') ?: '0') : $w,
+            $matches[0]
+        );
     }
 
     private function daysBetween(string $a, string $b): ?int

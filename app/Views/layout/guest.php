@@ -15,7 +15,7 @@ $is_public_view = !empty($public_view);
 <head>
     <title>
         <?php
-        $app_title  = get_setting('custom_title', '', true) ?: 'InvoicePlane';
+        $app_title  = get_setting('custom_title', '', true) ?: 'Invoice+';
         $page_title = trim($pageTitle ?? '');
         echo esc($page_title === '' ? $app_title : $page_title . ' · ' . $app_title);
         ?>
@@ -26,6 +26,9 @@ $is_public_view = !empty($public_view);
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="robots" content="NOINDEX,NOFOLLOW">
     <meta name="_csrf" content="<?= csrf_hash() ?>">
+
+    <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/core/img/favicon.svg') ?>">
+
 
     <link rel="icon" type="image/png" href="<?= base_url('assets/core/img/favicon.png') ?>">
 
@@ -76,10 +79,13 @@ $is_public_view = !empty($public_view);
     <div class="ip-topbar-inner">
         <div class="ip-topbar-left">
             <a class="ip-brand" href="<?= $is_public_view ? site_url('/') : site_url('guest') ?>">
-                <svg class="ip-brand-mark" viewBox="240 76 138 108" aria-hidden="true" focusable="false">
-                    <path class="ip-brand-under" d="M294.392 145.867l11.403 5.462 8.872 3.179-21.734 27.092z"/>
-                    <path class="ip-brand-fold" d="M273.067 133.027L374.4 78.933l-79.864 67.035-1.59 35.632-11.733-23.794z"/>
-                    <path class="ip-brand-body" d="M243.067 123.146l4.708-2.857 13.083-9.693L374.4 78.933l-101.383 54.134-17.475-4.526zM294.533 145.992l10.8 6 14.962 5.608 24.332-6.696 29.773-71.97z"/>
+                <svg class="ip-brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path class="ip-mark-sheet" d="M5.75 2h7.95L20 8.3v10.2A2.5 2.5 0 0 1 17.5 21H5.75A2.75 2.75 0 0 1 3 18.25V4.75A2.75 2.75 0 0 1 5.75 2Z"/>
+                    <path class="ip-mark-fold" d="M13.7 2 20 8.3h-4.6a1.7 1.7 0 0 1-1.7-1.7Z"/>
+                    <rect class="ip-mark-line" x="6.2" y="10.6" width="7.4" height="1.5" rx=".75"/>
+                    <rect class="ip-mark-line" x="6.2" y="14" width="4.6" height="1.5" rx=".75"/>
+                    <circle class="ip-mark-badge" cx="17.4" cy="17.4" r="5"/>
+                    <path class="ip-mark-plus" d="M16.5 14.4h1.8v2.1h2.1v1.8h-2.1v2.1h-1.8v-2.1h-2.1v-1.8h2.1Z"/>
                 </svg>
                 <span class="ip-brand-text">
                     <span class="ip-brand-name"><?= esc($app_title) ?></span>

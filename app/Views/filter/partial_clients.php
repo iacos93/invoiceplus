@@ -20,8 +20,11 @@ $clients = $records ?? $clients ?? [];
         <thead>
         <tr>
             <th scope="col"><?= trans('client_name') ?></th>
-            <th scope="col"><?= trans('email_address') ?></th>
-            <th scope="col"><?= trans('phone_number') ?></th>
+            <?php // Etichette corte come nella lista (e nei fornitori): qui e in
+                  // clients/index.php la tabella è la stessa e deve restare tale
+                  // anche dopo una ricerca. ?>
+            <th scope="col"><?= trans('email') ?></th>
+            <th scope="col"><?= trans('phone') ?></th>
             <th class="amount" scope="col"><?= trans('balance') ?></th>
             <th scope="col"><?= trans('options') ?></th>
         </tr>
@@ -32,9 +35,10 @@ $clients = $records ?? $clients ?? [];
             <?php
             // Stesse regole della lista: nome completo con fallback, trattino
             // sulle celle vuote, riga spenta per le anagrafiche non attive.
-            $clientName = ($client['client_fullname'] ?? '') ?: format_client($client);
-            $clientBal  = (float) ($client['client_invoice_balance'] ?? 0);
-            $isActive   = db_bool($client['client_active'] ?? false);
+            $clientName  = ($client['client_fullname'] ?? '') ?: format_client($client);
+            $clientBal   = (float) ($client['client_invoice_balance'] ?? 0);
+            $clientPhone = (string) (($client['client_phone'] ?? '') ?: (($client['client_mobile'] ?? '') ?: ''));
+            $isActive    = db_bool($client['client_active'] ?? false);
             ?>
             <tr class="<?= $isActive ? '' : 'ip-status-empty' ?>">
                 <?= $this->include('layout/anagrafica_nome', [
@@ -45,9 +49,9 @@ $clients = $records ?? $clients ?? [];
                     'meta'   => client_type_badge($client['client_type'] ?? null),
                     'cell'   => 'number',
                 ]) ?>
-                <td data-cell="client" data-label="<?= esc(trans('email_address')) ?>"><?= esc(($client['client_email'] ?? '') ?: '—') ?></td>
-                <td class="ip-hide-on-mobile" data-label="<?= esc(trans('phone_number')) ?>"><?= esc(($client['client_phone'] ?? '') ?: (($client['client_mobile'] ?? '') ?: '—')) ?></td>
-                <td class="amount" data-cell="amount" data-label="<?= esc(trans('balance')) ?>"><?= $clientBal != 0.0 ? format_currency($clientBal) : '—' ?></td>
+                <td data-cell="client" data-label="<?= esc(trans('email')) ?>"><?= ($client['client_email'] ?? '') ? esc($client['client_email']) : '<span class="ip-cell-empty">—</span>' ?></td>
+                <td class="ip-hide-on-mobile" data-label="<?= esc(trans('phone')) ?>"><?= $clientPhone !== '' ? esc($clientPhone) : '<span class="ip-cell-empty">—</span>' ?></td>
+                <td class="amount" data-cell="amount" data-label="<?= esc(trans('balance')) ?>"><?= $clientBal != 0.0 ? format_currency($clientBal) : '<span class="ip-cell-empty">—</span>' ?></td>
                 <td class="ip-hide-on-mobile" data-label="<?= esc(trans('options')) ?>">
                     <div class="options btn-group">
                         <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">

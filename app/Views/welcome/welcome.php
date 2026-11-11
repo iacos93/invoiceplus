@@ -4,7 +4,7 @@
     <title>
         <?php
         $page_title = trim($pageTitle ?? '');
-        if ($page_title === '') { $page_title = get_setting('custom_title', '', true) ?: 'InvoicePlane'; }
+        if ($page_title === '') { $page_title = get_setting('custom_title', '', true) ?: 'Invoice+'; }
         echo esc($page_title);
         ?>
     </title>
@@ -13,6 +13,9 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="NOINDEX,NOFOLLOW">
+
+    <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/core/img/favicon.svg') ?>">
+
 
     <link rel="icon" type="image/png" href="<?= base_url('assets/core/img/favicon.png') ?>">
 
@@ -35,10 +38,10 @@
                     <div class="card-body">
 
                         <img src="<?= base_url('assets/core/img/logo_400x200.png') ?>"
-                             alt="InvoicePlane" class="img-fluid d-block mx-auto"
+                             alt="Invoice+" class="img-fluid d-block mx-auto"
                              style="max-width:300px;margin-bottom:20px">
 
-                        <h1><?= trans('welcome', '', 'Benvenuto in InvoicePlane CI4') ?></h1>
+                        <h1><?= trans('welcome', '', 'Benvenuto in Invoice+') ?></h1>
 
                         <p class="text-muted">
                             <?= trans('welcome_message', '', 'Sistema di fatturazione portato da CodeIgniter 3 a CodeIgniter 4.') ?>

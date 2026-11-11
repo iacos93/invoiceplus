@@ -29,10 +29,10 @@ class Guest extends BaseController
 
         $data = [
             'title'              => trans('dashboard'),
-            'open_invoices'      => count($invoiceModel->getForGuestClients($clientIds, 'open')),
-            'overdue_invoices'   => count($invoiceModel->getForGuestClients($clientIds, 'overdue')),
-            'open_quotes'        => count($quoteModel->getForGuestClients($clientIds, 'open')),
-            'payments'           => count($paymentModel->getForGuestClients($clientIds)),
+            'open_invoices'      => $invoiceModel->countForGuestClients($clientIds, 'open'),
+            'overdue_invoices'   => $invoiceModel->countForGuestClients($clientIds, 'overdue'),
+            'open_quotes'        => $quoteModel->countForGuestClients($clientIds, 'open'),
+            'payments'           => $paymentModel->countForGuestClients($clientIds),
         ];
 
         return view('guest/index', $data);

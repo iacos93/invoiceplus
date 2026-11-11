@@ -36,6 +36,16 @@ class Invoices extends BaseController
 
     public function index()
     {
+        // Questo salto intermedio consumava il flashdata: chi rimandava qui
+        // (eliminazione, import, azioni di gruppo senza "back") impostava un
+        // messaggio che l'utente non vedeva mai. Lo si conserva per la
+        // richiesta successiva, una volta per tutti i chiamanti.
+        // Una chiave alla volta: markAsFlashdata() con un array si arrende
+        // alla prima chiave assente e non conserva nemmeno le altre.
+        foreach (['alert_success', 'alert_error', 'alert_info', 'alert_warning'] as $key) {
+            session()->keepFlashdata($key);
+        }
+
         return redirect()->to('/invoices/status/all');
     }
 

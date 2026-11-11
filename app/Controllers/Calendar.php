@@ -96,7 +96,7 @@ class Calendar extends BaseController
                     'apple'   => $webcalUrl,
                     'google'  => 'https://calendar.google.com/calendar/render?cid=' . rawurlencode($webcalUrl),
                     'outlook' => 'https://outlook.live.com/calendar/0/addfromweb?url=' . rawurlencode($httpUrl)
-                        . '&name=' . rawurlencode('InvoicePlane'),
+                        . '&name=' . rawurlencode('Invoice+'),
                 ];
             })() : null,
             // Riepilogo del mese aperto, per chi vuole solo la lista.
@@ -154,7 +154,7 @@ class Calendar extends BaseController
 
         $ics = (new CalendarService())->toIcs(
             (new CalendarService())->events(),
-            (trim((string) ($company['company_name'] ?? '')) ?: 'InvoicePlane') . ' — Scadenze'
+            (trim((string) ($company['company_name'] ?? '')) ?: 'Invoice+') . ' — Scadenze'
         );
 
         return $this->response

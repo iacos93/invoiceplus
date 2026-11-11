@@ -74,14 +74,16 @@ foreach ($filterGroups as $filterGroup) {
     }
 }
 
+// Niente "Importa XML" nella barra della lista, come in Fatture: l'import
+// delle fatture ricevute ha già la sua voce sotto Spese nella sidebar. Resta
+// invece la chiamata all'import nello stato vuoto, dove è l'uscita utile
+// quando non c'è ancora nulla da guardare.
 $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle d-lg-none"'
          . ' data-bs-toggle="collapse" data-bs-target="#ip-status-submenu-collapse"'
          . ' aria-controls="ip-status-submenu-collapse" aria-expanded="false">'
          . '<i class="fa fa-solid fa-filter" aria-hidden="true"></i> ' . trans('filter', '', 'Filtra')
          . ($activeFilters > 0 ? ' <span class="ip-btn-count">' . $activeFilters . '</span>' : '')
          . '</button>'
-         . '<a class="btn btn-sm btn-secondary" href="' . site_url('expenses/import') . '">'
-         . '<i class="fa fa-solid fa-upload" aria-hidden="true"></i> ' . trans('import_xml', '', 'Importa XML') . '</a>'
          . '<a class="btn btn-sm btn-primary" href="' . site_url('expenses/form') . '">'
          . '<i class="fa fa-solid fa-plus" aria-hidden="true"></i> ' . trans('add_expense', '', 'Nuova spesa') . '</a>';
 ?>
@@ -203,8 +205,8 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                     <th scope="col"><?= trans('number', '', 'Numero') ?></th>
                     <th scope="col"><?= trans('status', '', 'Stato') ?></th>
                     <th scope="col"><?= trans('supplier', '', 'Fornitore') ?></th>
-                    <th scope="col"><?= trans('category', '', 'Categoria') ?></th>
-                    <th scope="col" class="amount"><?= trans('subtotal', '', 'Imponibile') ?></th>
+                    <th scope="col" class="ip-col-secondary"><?= trans('category', '', 'Categoria') ?></th>
+                    <th scope="col" class="amount ip-col-secondary"><?= trans('subtotal', '', 'Imponibile') ?></th>
                     <?php
                     // IVA solo sugli schermi larghi (>= 1400 px): è la differenza
                     // fra Totale e Imponibile, e sotto quella larghezza la tabella
@@ -258,8 +260,8 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                                 <br><small class="text-muted"><?= esc($expense['supplier_vat']) ?></small>
                             <?php endif; ?>
                         </td>
-                        <td class="ip-hide-on-mobile" data-label="<?= esc(trans('category', '', 'Categoria')) ?>"><?= esc($expense['expense_category_name'] ?? '—') ?></td>
-                        <td class="amount ip-hide-on-mobile" data-label="<?= esc(trans('subtotal', '', 'Imponibile')) ?>"><?= format_currency($expense['expense_amount']) ?></td>
+                        <td class="ip-hide-on-mobile ip-col-secondary" data-label="<?= esc(trans('category', '', 'Categoria')) ?>"><?= esc($expense['expense_category_name'] ?? '—') ?></td>
+                        <td class="amount ip-hide-on-mobile ip-col-secondary" data-label="<?= esc(trans('subtotal', '', 'Imponibile')) ?>"><?= format_currency($expense['expense_amount']) ?></td>
                         <td class="amount d-none d-xxl-table-cell" data-label="<?= esc(trans('vat', '', 'IVA')) ?>"><?= format_currency($expense['expense_tax']) ?></td>
                         <td class="amount" data-cell="amount" data-label="<?= esc(trans('total', '', 'Totale')) ?>"><?= format_currency($expense['expense_total']) ?></td>
                         <?php
@@ -326,6 +328,10 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                     'totals'        => $period_totals ?? [],
                     // Selezione, data, numero, stato, fornitore, categoria.
                     'label_colspan' => 6,
+                    // "Categoria" (dentro le 6) e "Imponibile" sono colonne
+                    // secondarie: il piede deve sparire con loro.
+                    'secondary_before' => 1,
+                    'net_secondary'    => true,
                 ]) ?>
             </table>
         </div>

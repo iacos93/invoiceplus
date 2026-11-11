@@ -110,7 +110,7 @@ class CalendarService
         $lines = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
-            'PRODID:-//InvoicePlane//Calendario Scadenze//IT',
+            'PRODID:-//Invoice+//Calendario Scadenze//IT',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
             'X-WR-CALNAME:' . $this->escape($calendarName),

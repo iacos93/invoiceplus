@@ -60,7 +60,11 @@ class GuestQuotes extends BaseController
     {
         $quote = $this->quoteModel->getByIdWithJoins($quoteId);
 
-        if (!$quote || !in_array((int) $quote['client_id'], $this->clientIds(), true)) {
+        // Stessi stati del PDF: una bozza non e' ancora un documento per il
+        // cliente, e senza questo controllo si apriva cambiando l'id.
+        if (!$quote
+            || !in_array((int) $quote['client_id'], $this->clientIds(), true)
+            || !in_array((int) $quote['quote_status_id'], [2, 3, 4, 5], true)) {
             throw PageNotFoundException::forPageNotFound();
         }
 
@@ -122,7 +126,14 @@ class GuestQuotes extends BaseController
             return redirect()->to('/guest/quotes/view/' . $quoteId);
         }
 
-        $this->quoteModel->approveQuoteById($quoteId);
+        // Il controllo sopra e l'UPDATE non sono atomici: se nel frattempo
+        // un'altra decisione e' passata, niente e' cambiato e va detto.
+        if (!$this->quoteModel->approveQuoteById($quoteId)) {
+            session()->setFlashdata('alert_error', (string) QuoteDecision::error([], QuoteDecision::APPROVE));
+
+            return redirect()->to('/guest/quotes/view/' . $quoteId);
+        }
+
         session()->setFlashdata('alert_success', trans('quote_approved', '', 'Preventivo approvato'));
 
         return redirect()->to('/guest/quotes/view/' . $quoteId);
@@ -147,7 +158,14 @@ class GuestQuotes extends BaseController
             return redirect()->to('/guest/quotes/view/' . $quoteId);
         }
 
-        $this->quoteModel->rejectQuoteById($quoteId);
+        // Il controllo sopra e l'UPDATE non sono atomici: se nel frattempo
+        // un'altra decisione e' passata, niente e' cambiato e va detto.
+        if (!$this->quoteModel->rejectQuoteById($quoteId)) {
+            session()->setFlashdata('alert_error', (string) QuoteDecision::error([], QuoteDecision::REJECT));
+
+            return redirect()->to('/guest/quotes/view/' . $quoteId);
+        }
+
         session()->setFlashdata('alert_success', trans('quote_rejected', '', 'Preventivo rifiutato'));
 
         return redirect()->to('/guest/quotes/view/' . $quoteId);

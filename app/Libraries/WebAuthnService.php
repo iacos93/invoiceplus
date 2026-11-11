@@ -29,7 +29,7 @@ class WebAuthnService
     {
         $rpName = get_setting('custom_title', '', true);
         if ($rpName === '') {
-            $rpName = 'InvoicePlane';
+            $rpName = 'Invoice+';
         }
 
         return new WebAuthn($rpName, self::rpId(), null, true);

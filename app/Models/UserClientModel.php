@@ -37,6 +37,24 @@ class UserClientModel extends IpBaseModel
     }
 
     /**
+     * Soli id dei clienti assegnati a un utente: e' la lettura del controllo
+     * di accesso del portale (ResolvesGuestClients), fatta a ogni richiesta,
+     * quindi senza i join di assignedTo().
+     *
+     * @return list<int>
+     */
+    public function clientIdsFor(int $userId): array
+    {
+        $rows = $this->db->table($this->table)
+            ->select('client_id')
+            ->where('user_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        return array_values(array_map('intval', array_column($rows, 'client_id')));
+    }
+
+    /**
      * Assegna tutti i clienti attivi agli utenti indicati.
      *
      * @param int|array<int> $usersId

@@ -20,6 +20,16 @@
  *   $has_balance    bool  se mostrare la colonna saldo (default true)
  *   $has_options    bool  se la tabella ha una colonna opzioni in coda
  *                         (default true)
+ *   $secondary_before int quante colonne .ip-col-secondary stanno fra quelle
+ *                         coperte dall'etichetta (default 0). Quelle colonne
+ *                         spariscono alle larghezze intermedie: un colspan
+ *                         fisso continuerebbe a contarle, il piede avrebbe una
+ *                         colonna più del corpo e allargherebbe la tabella.
+ *                         Per ognuna si stampa una cella vuota con la stessa
+ *                         classe, che sparisce insieme alla colonna.
+ *   $net_secondary  bool  se la colonna imponibile è .ip-col-secondary
+ *                         (default false): la sua cella la segue, e la riga
+ *                         dell'imponibile, rimasta senza cifra, esce con lei.
  */
 $_lt = (array) ($this->renderVars['options'] ?? []);
 
@@ -27,6 +37,10 @@ $totals       = $_lt['totals'] ?? ($totals ?? []);
 $labelColspan = max(1, (int) ($_lt['label_colspan'] ?? ($label_colspan ?? 7)));
 $hasBalance   = (bool) ($_lt['has_balance'] ?? ($has_balance ?? true));
 $hasOptions   = (bool) ($_lt['has_options'] ?? ($has_options ?? true));
+$secondaryBefore = max(0, min($labelColspan - 1, (int) ($_lt['secondary_before'] ?? 0)));
+$netSecondary    = (bool) ($_lt['net_secondary'] ?? false);
+$labelColspan   -= $secondaryBefore;
+$secondaryCells  = str_repeat('<td class="ip-col-secondary"></td>', $secondaryBefore);
 
 // 'count' arriva dagli stessi totali aggregati della lista: se è zero, la
 // lista è vuota e il piede non ha niente da riassumere.
@@ -42,12 +56,13 @@ $saldo = (float) ($totals['balance'] ?? 0);
 // Le colonne imponibile e IVA seguono la stessa visibilità delle colonne
 // corrispondenti nel corpo tabella: imponibile nascosto in modalità card,
 // IVA solo sugli schermi larghi.
-$netClass = 'amount ip-hide-on-mobile';
+$netClass = 'amount ip-hide-on-mobile' . ($netSecondary ? ' ip-col-secondary' : '');
 $taxClass = 'amount d-none d-xxl-table-cell';
 $balanceLabel = trans('balance', '', 'Saldo');
 ?>
 <tfoot class="ip-list-totals">
-    <tr class="ip-list-totals__row">
+    <tr class="ip-list-totals__row<?= $netSecondary ? ' ip-list-totals__row--secondary' : '' ?>">
+        <?= $secondaryCells ?>
         <th colspan="<?= $labelColspan ?>" scope="row" class="ip-list-totals__label">
             <?= trans('net_total', '', 'Totale imponibile netto') ?>
         </th>
@@ -57,7 +72,8 @@ $balanceLabel = trans('balance', '', 'Saldo');
         <?php if ($hasBalance): ?><td class="amount"></td><?php endif; ?>
         <?php if ($hasOptions): ?><td class="ip-hide-on-mobile"></td><?php endif; ?>
     </tr>
-    <tr class="ip-list-totals__row">
+    <tr class="ip-list-totals__row ip-list-totals__row--tax">
+        <?= $secondaryCells ?>
         <th colspan="<?= $labelColspan ?>" scope="row" class="ip-list-totals__label">
             <?= trans('vat', '', 'IVA') ?>
         </th>
@@ -68,6 +84,7 @@ $balanceLabel = trans('balance', '', 'Saldo');
         <?php if ($hasOptions): ?><td class="ip-hide-on-mobile"></td><?php endif; ?>
     </tr>
     <tr class="ip-list-totals__row ip-list-totals__row--grand">
+        <?= $secondaryCells ?>
         <th colspan="<?= $labelColspan ?>" scope="row" class="ip-list-totals__label">
             <?= trans('gross_total', '', 'Totale lordo (IVA inclusa)') ?>
         </th>

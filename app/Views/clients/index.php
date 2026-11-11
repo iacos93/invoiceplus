@@ -28,12 +28,17 @@
 
         <div id="clients-table-wrap">
             <div class="table-responsive">
-                <table class="table table-hover ip-clickable-rows ip-table-card-collapse">
+                <table class="table table-hover ip-clickable-rows ip-table-card-collapse" id="clients-list-table">
                     <thead>
                     <tr>
                         <th scope="col"><?= trans('client_name') ?></th>
-                        <th scope="col"><?= trans('email_address') ?></th>
-                        <th scope="col"><?= trans('phone_number') ?></th>
+                        <?php // "Email" e "Telefono", non "Indirizzo email" e "Numero di
+                              // telefono": sono le stesse colonne dei fornitori, che le
+                              // chiamano così, e un'intestazione di tre parole allarga la
+                              // colonna spingendo verso il centro il nome, l'unico dato che
+                              // si scorre davvero. ?>
+                        <th scope="col"><?= trans('email') ?></th>
+                        <th scope="col"><?= trans('phone') ?></th>
                         <th class="amount" scope="col"><?= trans('balance') ?></th>
                         <th scope="col"><?= trans('options') ?></th>
                     </tr>
@@ -48,8 +53,9 @@
                         // Le celle vuote mostrano un trattino, non uno spazio muto:
                         // sul telefono una cella vuota è indistinguibile da un dato
                         // che non è stato caricato.
-                        $clientName = $client['client_fullname'] ?: format_client($client);
-                        $clientBal  = (float) ($client['client_invoice_balance'] ?? 0);
+                        $clientName  = $client['client_fullname'] ?: format_client($client);
+                        $clientBal   = (float) ($client['client_invoice_balance'] ?? 0);
+                        $clientPhone = (string) ($client['client_phone'] ?: ($client['client_mobile'] ?: ''));
                         ?>
                         <tr class="<?= db_bool($client['client_active']) ? '' : 'ip-status-empty' ?>">
                             <?= $this->include('layout/anagrafica_nome', [
@@ -63,12 +69,12 @@
                                 // sinistra, saldo a destra, email sotto).
                                 'cell'   => 'number',
                             ]) ?>
-                            <td data-cell="client" data-label="<?= esc(trans('email_address')) ?>"><?= esc($client['client_email'] ?: '—') ?></td>
+                            <td data-cell="client" data-label="<?= esc(trans('email')) ?>"><?= $client['client_email'] ? esc($client['client_email']) : '<span class="ip-cell-empty">—</span>' ?></td>
                             <?php // Telefono e opzioni restano nella vista tabellare:
                                   // sulla scheda sarebbero due righe in più, e il
                                   // numero/link al cliente aprono già la scheda. ?>
-                            <td class="ip-hide-on-mobile" data-label="<?= esc(trans('phone_number')) ?>"><?= esc($client['client_phone'] ?: ($client['client_mobile'] ?: '—')) ?></td>
-                            <td class="amount" data-cell="amount" data-label="<?= esc(trans('balance')) ?>"><?= $clientBal != 0.0 ? format_currency($clientBal) : '—' ?></td>
+                            <td class="ip-hide-on-mobile" data-label="<?= esc(trans('phone')) ?>"><?= $clientPhone !== '' ? esc($clientPhone) : '<span class="ip-cell-empty">—</span>' ?></td>
+                            <td class="amount" data-cell="amount" data-label="<?= esc(trans('balance')) ?>"><?= $clientBal != 0.0 ? format_currency($clientBal) : '<span class="ip-cell-empty">—</span>' ?></td>
                             <td class="ip-hide-on-mobile" data-label="<?= esc(trans('options')) ?>">
                                 <div class="options btn-group">
                                     <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">

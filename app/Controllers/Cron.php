@@ -658,7 +658,7 @@ class Cron extends BaseController
         $companyId ??= active_company_id();
         $company   = $companyId ? (new CompanyModel())->find($companyId) : null;
 
-        return trim((string) ($company['company_name'] ?? '')) ?: 'InvoicePlane';
+        return trim((string) ($company['company_name'] ?? '')) ?: 'Invoice+';
     }
 
     /** Riga di una scadenza nel digest (titolo, data, importo, link). */

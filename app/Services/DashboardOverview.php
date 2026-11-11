@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\DeliveryNoteModel;
 use App\Models\ExpenseModel;
+use App\Models\FiscalYearModel;
 use App\Models\InvoiceAmountModel;
 use App\Models\InvoiceModel;
 use App\Models\ProjectModel;
@@ -149,14 +150,14 @@ class DashboardOverview
             $prevExpenses = $expenseModel->totalsForPeriod($prevFrom, $prevTo);
             $prevInvoiceNet = $invoiceAmountModel->totalsForPeriod($prevFrom, $prevTo)['net'];
             $prevProfit   = $prevInvoiceNet - $prevExpenses['net'];
-            $profitDelta  = $this->percentDelta($profitTotal, $prevProfit);
+            $profitDelta  = $this->signedPercentDelta($profitTotal, $prevProfit);
             $expensesDelta = $this->percentDelta($expensesTotal, $prevExpenses['total']);
 
             $prevIvaSales   = $invoiceAmountModel->taxForPeriod($prevFrom, $prevTo, false);
             $prevIvaSplit   = $invoiceAmountModel->taxForPeriod($prevFrom, $prevTo, true);
             $prevIvaPayable = $prevIvaSales - $prevIvaSplit;
             $prevIvaTotal   = $prevIvaPayable - $prevExpenses['tax'];
-            $ivaDelta       = $this->percentDelta($ivaTotal, $prevIvaTotal);
+            $ivaDelta       = $this->signedPercentDelta($ivaTotal, $prevIvaTotal);
         }
 
         $chartMax = 0.0;
@@ -230,7 +231,7 @@ class DashboardOverview
 
         $taskModel = new TaskModel();
         $tasks     = $projectsEnabled ? $taskModel->getLatest(5) : [];
-        $openTasks = $taskModel->where('task_status !=', 4)->countAllResults();
+        $openTasks = $taskModel->countOpen();
 
         // Avviso "anno fiscale non configurato". Il ripiego silenzioso di
         // paramsForYear() è corretto per gli anni storici, ma per l'anno
@@ -240,9 +241,11 @@ class DashboardOverview
         // anno configurato) e l'anno corrente non ha la sua riga: senza
         // quella condizione, chi non usa i parametri fiscali vedrebbe un
         // banner permanente e lo ignorerebbe insieme a quelli importanti.
-        $fiscalYears = (new \App\Models\FiscalYearModel())->getAllOrdered();
-        $fiscalYearWarning = !empty($fiscalYears)
-            && !(new \App\Models\FiscalYearModel())->findByYear((int) date('Y'));
+        // Basta sapere se esiste almeno una riga: una pagina da 1 invece
+        // dell'intera tabella, e un solo model per le due domande.
+        $fiscalYearModel   = new FiscalYearModel();
+        $fiscalYearWarning = $fiscalYearModel->getAllOrdered(1) !== []
+            && !$fiscalYearModel->findByYear((int) date('Y'));
 
         $data = [
             'invoice_status_totals' => $invoiceStatusTotals,
@@ -339,5 +342,23 @@ class DashboardOverview
         }
 
         return ($current - $previous) / $previous * 100.0;
+    }
+
+    /**
+     * Delta per grandezze con segno (utile, saldo IVA).
+     *
+     * percentDelta() scarta un anno precedente <= 0, giusto per i totali di
+     * fatturato ma non qui: un anno in perdita o a credito IVA faceva sparire
+     * il trend proprio quando il cambiamento e' piu' netto. Il denominatore e'
+     * il valore assoluto, cosi' da -2.000 a +5.000 il delta resta positivo.
+     * Solo lo zero non ha un confronto percentuale sensato.
+     */
+    public static function signedPercentDelta(float $current, ?float $previous): ?float
+    {
+        if ($previous === null || abs($previous) < 0.005) {
+            return null;
+        }
+
+        return ($current - $previous) / abs($previous) * 100.0;
     }
 }

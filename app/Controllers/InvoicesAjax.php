@@ -162,7 +162,7 @@ class InvoicesAjax extends BaseController
 
             // Attività fatturata: marcata come tale (stato 4), come Ajax CI3.
             if (!empty($post['item_task_id'] ?? null)) {
-                $this->model(TaskModel::class)->updateStatus((int) $post['item_task_id'], 4);
+                $this->setTaskStatus((int) $post['item_task_id'], 4);
             }
 
             // Il "+" delle righe manda stay=1: aggiungere una riga non e' finire
@@ -233,7 +233,7 @@ class InvoicesAjax extends BaseController
         // come l'Ajax CI3 (update_status(4, item_task_id) a ogni salvataggio)
         foreach ($items as $item) {
             if (!empty($item['item_task_id'] ?? null)) {
-                $this->model(TaskModel::class)->updateStatus((int) $item['item_task_id'], 4);
+                $this->setTaskStatus((int) $item['item_task_id'], 4);
             }
         }
 
@@ -422,7 +422,7 @@ class InvoicesAjax extends BaseController
         // Riga di attività rimossa dalla fattura: il task torna completato
         // (stato 3), come l'Ajax CI3 (update_status(3, item_task_id)).
         if (!empty($item['item_task_id'] ?? null)) {
-            $this->model(TaskModel::class)->updateStatus((int) $item['item_task_id'], 3);
+            $this->setTaskStatus((int) $item['item_task_id'], 3);
         }
 
         session()->setFlashdata('alert_success', trans('item_deleted', '', 'Riga eliminata'));
@@ -660,7 +660,6 @@ class InvoicesAjax extends BaseController
     private function syncItems(int $invoiceId, $rawItems, string $deletedRaw): void
     {
         $itemModel = $this->model(ItemModel::class);
-        $taskModel = $this->model(TaskModel::class);
 
         $items = is_array($rawItems) ? $rawItems : json_decode((string) $rawItems, true);
 
@@ -694,7 +693,7 @@ class InvoicesAjax extends BaseController
             // Riga di attività rimossa: il task torna completato (stato 3),
             // come fa deleteItem() del controller.
             if (!empty($item['item_task_id'])) {
-                $taskModel->updateStatus((int) $item['item_task_id'], 3);
+                $this->setTaskStatus((int) $item['item_task_id'], 3);
             }
         }
 
@@ -732,20 +731,24 @@ class InvoicesAjax extends BaseController
             $item['invoice_id'] = $invoiceId;
             $item['item_order'] = $item['item_order'] ?? $order;
 
-            $itemModel->saveItem($itemId, $itemModel->dbArrayFromItem($item));
+            // Senza ricalcolo della fattura: lo fa una volta sola il
+            // calculate() dopo il ciclo.
+            $itemModel->saveItem($itemId, $itemModel->dbArrayFromItem($item), false);
 
             // Attività fatturata: marcata come tale (stato 4).
             if (!empty($item['item_task_id'])) {
-                $taskModel->updateStatus((int) $item['item_task_id'], 4);
+                $this->setTaskStatus((int) $item['item_task_id'], 4);
             }
 
             $order++;
         }
 
-        // saveItem()/deleteItem() ricalcolano già a ogni riga, ma con un batch
-        // in cui *tutte* le righe sono state saltate (documento svuotato via
-        // deleted_items) nessuno dei due sarebbe passato di qui.
+        // Unico ricalcolo della fattura per tutto il batch (le righe sopra
+        // sono salvate senza), e anche quando tutte le righe sono state
+        // saltate o rimosse. La cache del report va svuotata qui, perché
+        // saveItem() senza ricalcolo non lo fa.
         $this->model(InvoiceAmountModel::class)->calculate($invoiceId);
+        invalidate_finance_cache();
 
         session()->setFlashdata('alert_success', trans('invoice_updated', '', 'Fattura aggiornata correttamente'));
     }
@@ -756,6 +759,18 @@ class InvoicesAjax extends BaseController
      * Solo le chiavi effettivamente inviate: un POST parziale (riga singola,
      * cambio stato) non deve azzerare quello che non tocca.
      */
+    private function setTaskStatus(int $taskId, int $statusId): void
+    {
+        // L'id dell'attivita' arriva dal POST come tutti gli altri, e come gli
+        // altri va ricondotto all'azienda attiva: senza, un id estraneo
+        // segnava "fatturata" (o riapriva) l'attivita' di un'altra azienda.
+        $taskModel = $this->model(TaskModel::class);
+
+        if ($taskId > 0 && $taskModel->findScoped($taskId)) {
+            $taskModel->updateStatus($taskId, $statusId);
+        }
+    }
+
     private function einvoiceFieldsFromPost(array $post): array
     {
         $fields = [];
@@ -809,8 +824,16 @@ class InvoicesAjax extends BaseController
         if (array_key_exists('invoice_discount_amount', $update)
             || array_key_exists('invoice_discount_percent', $update)) {
             $current = $this->invoiceModel->find($invoiceId);
-            $amount  = (float) ($update['invoice_discount_amount'] ?? $current['invoice_discount_amount'] ?? 0);
-            $percent = (float) ($update['invoice_discount_percent'] ?? $current['invoice_discount_percent'] ?? 0);
+            // array_key_exists e non ??: un campo svuotato arriva qui come
+            // null, e con ?? si tornava al valore salvato. Passando da importo
+            // fisso a percentuale, il controllo vedeva vecchio importo + nuova
+            // percentuale e scartava uno sconto valido.
+            $amount  = (float) (array_key_exists('invoice_discount_amount', $update)
+                ? $update['invoice_discount_amount']
+                : ($current['invoice_discount_amount'] ?? 0));
+            $percent = (float) (array_key_exists('invoice_discount_percent', $update)
+                ? $update['invoice_discount_percent']
+                : ($current['invoice_discount_percent'] ?? 0));
             $lines   = InvoiceMath::linesFromItems($this->model(ItemModel::class)->getByInvoice($invoiceId));
 
             if (InvoiceMath::discountExceedsBase($lines, $amount, $percent)) {

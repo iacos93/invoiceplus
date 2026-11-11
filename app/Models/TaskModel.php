@@ -240,8 +240,35 @@ class TaskModel extends IpBaseModel
         ];
     }
 
+    /**
+     * Ultime attivita' dell'azienda attiva.
+     *
+     * ip_tasks non ha company_id: senza il passaggio da progetto e cliente
+     * (lo stesso di getAllWithProject()) la Panoramica mostrava le attivita'
+     * di tutte le aziende.
+     */
     public function getLatest(int $limit = 5): array
     {
-        return $this->orderBy('task_id', 'DESC')->limit($limit)->findAll();
+        return $this->select('ip_tasks.*')
+            ->join('ip_projects', 'ip_projects.project_id = ip_tasks.project_id', 'left')
+            ->join('ip_clients', 'ip_clients.client_id = ip_projects.client_id', 'left')
+            ->scopeToCompany(null, 'ip_clients')
+            ->orderBy('ip_tasks.task_id', 'DESC')
+            ->limit($limit)
+            ->findAll();
+    }
+
+    /**
+     * Attivita' non ancora fatturate dell'azienda attiva (badge della
+     * Panoramica): stesso perimetro di getLatest().
+     */
+    public function countOpen(): int
+    {
+        $builder = $this->db->table('ip_tasks')
+            ->join('ip_projects', 'ip_projects.project_id = ip_tasks.project_id', 'left')
+            ->join('ip_clients', 'ip_clients.client_id = ip_projects.client_id', 'left')
+            ->where('ip_tasks.task_status !=', 4);
+
+        return scope_builder_to_company($builder, 'ip_clients')->countAllResults();
     }
 }

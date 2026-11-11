@@ -64,8 +64,11 @@
                         <?php /* Email sulla seconda riga della scheda, come nei
                                  clienti; numero documenti e opzioni restano
                                  nella vista tabellare. */ ?>
-                        <td data-cell="client" data-label="<?= esc(trans('email', '', 'Email')) ?>"><?= esc($supplier['supplier_email'] ?: '—') ?></td>
-                        <td class="amount ip-hide-on-mobile" data-label="<?= esc(trans('expenses', '', 'Spese')) ?>"><?= (int) $supplier['expense_count'] ?></td>
+                        <td data-cell="client" data-label="<?= esc(trans('email', '', 'Email')) ?>"><?= $supplier['supplier_email'] ? esc($supplier['supplier_email']) : '<span class="ip-cell-empty">—</span>' ?></td>
+                        <?php // Conteggio, non importo: resta nella colonna numerica
+                              // ma spento (.ip-col-count), altrimenti il "4" e il totale
+                              // in euro affiancati sembravano la stessa grandezza. ?>
+                        <td class="amount ip-hide-on-mobile ip-col-count" data-label="<?= esc(trans('expenses', '', 'Spese')) ?>"><?= (int) $supplier['expense_count'] ?></td>
                         <td class="amount" data-cell="amount" data-label="<?= esc(trans('total', '', 'Totale')) ?>"><?= format_currency($supplier['expense_total']) ?></td>
                         <?php
                         // Il residuo si mostra con il proprio segno: con un
@@ -75,7 +78,7 @@
                         // fornitore fosse in pari. È la stessa regola della
                         // lista clienti e della lista spese.
                         ?>
-                        <td class="amount" data-cell="balance" data-label="<?= esc(trans('balance', '', 'Da pagare')) ?>"><?= round($open, 2) != 0.0 ? format_currency($open) : '—' ?></td>
+                        <td class="amount" data-cell="balance" data-label="<?= esc(trans('balance', '', 'Da pagare')) ?>"><?= round($open, 2) != 0.0 ? format_currency($open) : '<span class="ip-cell-empty">—</span>' ?></td>
                         <td class="ip-hide-on-mobile" data-label="<?= esc(trans('options', '', 'Opzioni')) ?>">
                             <div class="options btn-group">
                                 <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">

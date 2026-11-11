@@ -123,7 +123,7 @@ final class SimulazioneFunzionamentoTest extends CIUnitTestCase
         $metodo     = $this->id('SELECT payment_method_id FROM ip_payment_methods ORDER BY payment_method_id DESC LIMIT 1');
         $categoria  = $this->id('SELECT expense_category_id FROM ip_expense_categories ORDER BY expense_category_id DESC LIMIT 1');
         $famiglia   = $this->id('SELECT family_id FROM ip_families ORDER BY family_id DESC LIMIT 1');
-        $annoFisc   = $this->id('SELECT fiscal_year_id FROM ip_fiscal_years ORDER BY fiscal_year_id DESC LIMIT 1');
+        $annoFisc   = $this->id('SELECT fiscal_id FROM ip_fiscal_years ORDER BY fiscal_id DESC LIMIT 1');
         $conto      = $this->id('SELECT bank_account_id FROM ip_bank_accounts ORDER BY bank_account_id DESC LIMIT 1');
         $template   = $this->id('SELECT email_template_id FROM ip_email_templates ORDER BY email_template_id DESC LIMIT 1');
         $gruppo     = $this->id('SELECT invoice_group_id FROM ip_invoice_groups WHERE company_id = 1 ORDER BY invoice_group_id ASC LIMIT 1');
@@ -617,13 +617,19 @@ final class SimulazioneFunzionamentoTest extends CIUnitTestCase
         }
     }
 
+    /**
+     * Valore della prima riga, oppure null se la tabella è vuota.
+     *
+     * L'errore SQL non viene più inghiottito e restituito come "nessun dato":
+     * era così che un riferimento a una colonna inesistente restava invisibile
+     * per mesi. Una query sbagliata faceva sparire in silenzio la pagina
+     * corrispondente dall'elenco da aprire, e il test restava verde mentre il
+     * log si riempiva di errori. Un'eccezione qui fa fallire il test, che è
+     * quello che deve succedere.
+     */
     private function id(string $sql): ?int
     {
-        try {
-            $row = $this->testDb->query($sql)->getRow();
-        } catch (\Throwable $e) {
-            return null;
-        }
+        $row = $this->testDb->query($sql)->getRow();
 
         return $row ? (int) array_values((array) $row)[0] : null;
     }

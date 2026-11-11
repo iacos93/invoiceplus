@@ -103,7 +103,6 @@ class DocumentPdfBuilder
             $data['invoice']           = DocumentRow::wrap($document);
             $data['invoice_tax_rates'] = array_map([DocumentRow::class, 'wrap'], $taxRates);
             $data['payment_method']    = $this->paymentMethod($document);
-            $data['custom_fields']     = [];
             // Conto indicato sulla fattura, o il predefinito: cosi' le
             // istruzioni di pagamento riportano l'IBAN giusto.
             $data['bank_account']      = (new BankAccountModel())->forInvoice(
@@ -145,21 +144,24 @@ class DocumentPdfBuilder
      */
     private function templateName(string $type, ?string $template): string
     {
+        // basename(): il nome arriva anche dal form di invio email, e con un
+        // "../" is_file() avrebbe accettato qualsiasi vista sotto app/Views,
+        // resa poi come PDF. Un template e' un file di questa cartella.
         if ($type === self::INVOICE) {
-            $name = (string) preg_replace(
+            $name = basename((string) preg_replace(
                 '/\.(pdf\.php|php)$/',
                 '',
-                (string) ($template ?? get_setting('pdf_invoice_template', 'default'))
-            );
+                str_replace('\\', '/', (string) ($template ?? get_setting('pdf_invoice_template', 'default')))
+            ));
 
             return is_file(APPPATH . 'Views/invoice_templates/' . $name . '.pdf.php') ? $name : 'default';
         }
 
-        $name = (string) preg_replace(
+        $name = basename((string) preg_replace(
             '/\.php$/',
             '',
-            trim((string) ($template ?? get_setting('pdf_quote_template', 'InvoicePlane')))
-        );
+            str_replace('\\', '/', trim((string) ($template ?? get_setting('pdf_quote_template', 'InvoicePlane'))))
+        ));
 
         return ($name !== '' && is_file(APPPATH . 'Views/quote_templates/pdf/' . $name . '.php')) ? $name : 'InvoicePlane';
     }

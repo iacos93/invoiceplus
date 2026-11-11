@@ -1426,6 +1426,20 @@ a:focus-visible,
 }
 .btn-warning:hover { background: var(--ip-warning); border-color: var(--ip-warning); }
 .btn-sm, .btn-group-sm > .btn { font-size: var(--ip-text-sm); padding: 5px 10px; min-height: var(--ip-control-h-sm); }
+/* Il <button> centra da sé il contenuto quando min-height lo allunga a 40px;
+   un <a> no: resta un blocco e il testo parte dal padding superiore. Nella
+   stessa barra convivono le due forme ("Filtra" è un <button>, "Crea
+   preventivo" un <a>) e nella misura i due riquadri risultavano alti entrambi
+   40px (68→108) ma il centro dell'etichetta stava a 87,75px nel button e
+   82,75px nell'anchor: stesso pulsante, testo 5px più in alto. Qui l'anchor
+   diventa inline-flex e centra. Il gap sostituisce lo spazio fra icona e
+   testo, che in un contenitore flex fra due elementi non viene reso. */
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
 /* Icone dentro bottoni: leggero margine e dimensione coerente */
 .btn .fa.fa-margin { margin-right: 4px; }
 /* pulsante delle dropdown "Opzioni": tono più sobrio */
@@ -3626,6 +3640,18 @@ svg.ip-spark {
     font-size: var(--ip-text-sm);
     white-space: normal;
   }
+  /* Cella che contiene solo il trattino di "dato assente" (le viste delle
+     anagrafiche e il partial della ricerca lo emettono dentro .ip-cell-empty):
+     in modalità card sarebbe una riga intera — o due, con l'etichetta — per
+     dire che non c'è niente. Nella tabella larga il trattino resta e tiene
+     la colonna; qui l'assenza si legge da sola.
+     Sta in fondo al blocco e con la stessa specificità della regola che
+     rimette in pagina le celle della scheda a due colonne
+     ("tbody tr:has(td[data-cell]) td:not(.ip-hide-on-mobile)"): più in alto,
+     o più leggera, perdeva e le celle vuote tornavano visibili. */
+  .ip-table-card table.ip-table-card-collapse tbody tr:has(td[data-cell]) td:has(> .ip-cell-empty:only-child) {
+    display: none;
+  }
 }
 /* ---- ex saas.css ---- */
 /* =============================================================================
@@ -3857,8 +3883,10 @@ html[data-theme="dark"] .ip-theme-toggle__label[data-action="dark"] { display: n
 .ip-sidebar-toggle:hover { background: var(--ip-hover); color: var(--ip-text); }
 .ip-sidebar-toggle:focus-visible { outline: 2px solid var(--ip-primary); outline-offset: 1px; }
 @media (min-width: 992px) { .ip-sidebar-toggle { display: none; } }
-/* Marchio: aeroplanino di carta (tre pieghe: corpo-inchiostro, ala-verde,
-   ombra-vermiglio) + nome in Fraunces. Le pieghe riprendono la palette. */
+/* Marchio: un foglio con l'angolo piegato e un "+" in un tondo scuro — il
+   documento e la parte "plus" del nome — con il nome accanto nel font
+   display. Sostituisce l'aeroplanino di InvoicePlane, che era il loro logo
+   (nome e logo sono coperti dal loro avviso sul marchio). */
 .ip-brand {
   display: flex;
   align-items: center;
@@ -3866,10 +3894,12 @@ html[data-theme="dark"] .ip-theme-toggle__label[data-action="dark"] { display: n
   text-decoration: none;
   min-width: 0;
 }
-/* Il marchio non galleggia più da solo: ha una "casa" — un chip arrotondato
-   tinteggiato con i blu del logo, così l'aeroplanino si legge come un emblema
-   e non come un glifo scollegato dal nome. box-sizing: content-box perche'
-   il padding allarghi il chip senza schiacciare il tracciato SVG. */
+/* Il chip dietro il segno serviva a far leggere l'aeroplanino come emblema,
+   perché il tracciato era sottile e sui fondi chiari spariva. Il nuovo segno
+   ha già massa propria (foglio chiaro, piega, tondo scuro) e sta bene su
+   entrambi i fondi; il chip resta quindi solo nella barra scura, dove serve a
+   staccare il segno dal navy. box-sizing: content-box perché il padding
+   allarghi il chip senza schiacciare il tracciato SVG. */
 .ip-brand-mark {
   width: 26px;
   height: 26px;
@@ -3877,21 +3907,30 @@ html[data-theme="dark"] .ip-theme-toggle__label[data-action="dark"] { display: n
   display: block;
   padding: 5px;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(66, 154, 225, 0.24), rgba(30, 115, 184, 0.14));
+  background: transparent;
   box-sizing: content-box;
   transition: background var(--ip-transition);
 }
+.ip-topbar .ip-brand-mark {
+  background: rgba(255, 255, 255, 0.10);
+}
 .ip-brand:hover .ip-brand-mark,
 .ip-brand:focus .ip-brand-mark {
-  background: linear-gradient(180deg, rgba(66, 154, 225, 0.38), rgba(30, 115, 184, 0.22));
+  background: rgba(30, 115, 184, 0.16);
 }
-/* Logo InvoicePlane originale: aeroplano di carta in tre toni di blu
-   (html/assets/core/img/logo.svg). È un marchio a colori fissi, non un'icona
-   che deve intonarsi ai token neutri del tema — motivo per cui qui i fill
-   sono i tre esadecimali originali e non variabili. */
-.ip-brand-under { fill: #1E73B8; }
-.ip-brand-fold  { fill: #2181CE; }
-.ip-brand-body  { fill: #429AE1; }
+.ip-topbar .ip-brand:hover .ip-brand-mark,
+.ip-topbar .ip-brand:focus .ip-brand-mark {
+  background: rgba(255, 255, 255, 0.18);
+}
+/* Colori del marchio (sorgenti: public/assets/core/img/mark.svg, favicon.svg,
+   logo.svg). Sono tre esadecimali fissi, non token del tema: un marchio non
+   si ritinteggia cambiando tema, e il segno deve restare uguale nella barra
+   scura, nella colonna chiara, nella favicon e nel logo del README. */
+.ip-mark-sheet { fill: #429AE1; }
+.ip-mark-fold  { fill: #2181CE; }
+.ip-mark-badge { fill: #1E73B8; stroke: #fff; stroke-width: 1.2; }
+.ip-mark-line  { fill: #fff; opacity: .85; }
+.ip-mark-plus  { fill: #fff; }
 .ip-brand-name {
   font-family: var(--ip-display);
   font-size: var(--ip-text-xl);
@@ -5380,6 +5419,51 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-contact-list a { color: var(--ip-text); text-decoration: none; }
 .ip-contact-list a:hover { color: var(--ip-primary); text-decoration: underline; }
 
+/* Note del cliente: registro, non card annidate. Ogni nota era un .card.small
+   con bordo e piè di card grigio per la sola data: tre note facevano tre
+   scatole dentro la scatola e la data occupava una riga intera. Qui la voce
+   è testo + data separati da un filetto, come le righe di un registro. Il
+   tetto di altezza evita che dieci note allunghino la coppia di card e
+   lascino la rubrica contatti accanto mezza vuota. */
+.ip-note-list {
+  display: grid;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-bottom: var(--ip-space-6);
+  padding-right: var(--ip-space-2);
+}
+.ip-note {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ip-border-soft);
+}
+.ip-note:first-child { padding-top: 0; }
+.ip-note:last-child { padding-bottom: 0; border-bottom: 0; }
+.ip-note__text {
+  margin: 0;
+  font-size: var(--ip-text-md);
+  color: var(--ip-text);
+  overflow-wrap: anywhere;
+}
+.ip-note__date {
+  margin: var(--ip-space-2) 0 0;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Compositore: campo a tutta larghezza e azione sotto, allineata a destra.
+   L'input-group teneva il pulsante dentro il bordo del campo e toglieva al
+   testo 131px: su telefono restavano poche decine di pixel utili per riga. */
+.ip-note-form .form-control {
+  min-height: 56px;
+  resize: vertical;
+}
+.ip-note-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--ip-space-4);
+}
+
 /* La spunta "cliente attivo" vive nella testata della prima card del form:
    resetta il margin-bottom di .form-badge per allinearsi alla riga icona+label. */
 .ip-table-card-header > .form-badge.ip-card-header-badge { margin: 0; }
@@ -6155,7 +6239,15 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--ip-space-7);
 }
-@media (max-width: 1099.98px) {
+/* Sotto i 1200px le due colonne non bastano più alle tabelle "recenti":
+   a 1100px la colonna scende sotto i 500px e le cinque colonne di
+   fatture/preventivi sforavano di 20-50px, con la finestra che scorreva di
+   lato senza che lo si vedesse (niente barra, niente indizio). Stessa soglia
+   delle liste .ip-table-card, che sotto 1200 riattivano lo scorrimento
+   interno: qui invece si passa a una colonna sola, così la tabella resta
+   intera — togliere una colonna o lasciarla scorrere dentro una card a metà
+   pagina costava più di quanto la coppia affiancata rendesse. */
+@media (max-width: 1199.98px) {
   .ip-window-split { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -7107,6 +7199,63 @@ dall'altra) avevano quindi intestazioni di altezza diversa. */
 @media (max-width: 575.98px) {
   .ip-doc-duo { flex-direction: column; }
 }
+
+/* Un pulsante dentro un campo non deve allargarsi come il controllo: .ip-doc-field
+   è una colonna flex, quindi per default i figli si stendono a tutta larghezza.
+   "Aggiungi metodo" diventava una fascia trasparente larga quanto la scheda con
+   la scritta centrata, e sembrava una riga di testo orfana in mezzo al form.
+   Le azioni di un campo stanno a sinistra e larghe quanto il loro testo. */
+.ip-doc-field > .btn,
+.ip-doc-field > .btn-group { align-self: flex-start; }
+
+/* Ripartizione di un pagamento su più metodi: una riga per metodo. L'importo
+   sta stretto perché sono cifre, il metodo si allarga fino a una misura
+   leggibile (non oltre: in una sezione a tutta pagina un select elastico
+   diventerebbe lungo un metro e mezzo per scegliere fra sei voci), e il
+   pulsante di rimozione resta attaccato alla riga. */
+.payment-split-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-4);
+}
+/* Senza righe il contenitore non deve lasciare il proprio posto nel gap del
+   campo: il pulsante salirebbe di 6px rispetto all'aiuto sopra. */
+.payment-split-rows:empty { display: none; }
+.payment-split-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  /* Su schermo stretto importo, metodo e cestino non ci stanno su una riga:
+     invece di comprimere il select fino a nascondere il nome del metodo,
+     la riga va a capo. */
+  flex-wrap: wrap;
+}
+.payment-split-row .payment-split-amount { flex: 0 0 9rem; }
+/* La misura va sul contenitore di IPSelect, non sul <select>: IPSelect avvolge
+   il controllo in .ip-select, che porta width:100% e nel flex contava come
+   base il 100% della riga — la select occupava tutto lo spazio e sospingeva
+   il cestino fuori dalla card (visibile solo clippato dall'overflow:hidden).
+   Il <select> nativo resta nell'elenco per il caso in cui IPSelect non sia
+   ancora passato a inizializzare la riga appena clonata. */
+.payment-split-row .ip-select,
+.payment-split-row select.form-control {
+  flex: 0 1 22rem;
+  width: auto;
+  min-width: 0;
+}
+.payment-split-row .payment-split-remove { flex: 0 0 auto; }
+/* Sotto i 576px la riga si organizza su due righe invece di comprimersi:
+   l'importo prende la prima, perché è il dato che si legge e si controlla, e
+   metodo + cestino stanno sulla seconda. Con le misure da schermo largo il
+   cestino finiva da solo su una terza riga, staccato dal metodo che cancella. */
+@media (max-width: 575.98px) {
+  .payment-split-row .payment-split-amount { flex: 1 1 100%; }
+  .payment-split-row .ip-select,
+  .payment-split-row select.form-control { flex: 1 1 8rem; }
+}
+/* L'aiuto della ripartizione spiega un caso raro in una frase lunga: a tutta
+   sezione supererebbe i 160 caratteri per riga e si rileggerebbe con fatica. */
+.payment-split-help { max-width: 78ch; }
 
 /* Etichetta di campo: una sola definizione (prima la tipografia stava in una
    regola duplicata 4000 righe più avanti, insieme al resto del blocco export).
@@ -9030,8 +9179,11 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
   box-shadow: var(--ip-shadow-focus), 0 3px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* Scorciatoia "/": indicata sul campo perché altrimenti resterebbe una
-   funzione invisibile. Sparisce quando il campo e' in uso. */
+/* Scorciatoia (Ctrl K, che su Mac diventa ⌘ K): indicata sul campo perché
+   altrimenti resterebbe una funzione invisibile. Una sola forma, non due:
+   con "Ctrl + K / Cmd + K" l'etichetta era larga 103px, più della metà del
+   campo su telefono, e correva sotto il segnaposto. Sparisce quando il campo
+   e' in uso. */
 .ip-global-search__kbd {
   position: absolute;
   right: 10px;
@@ -9336,10 +9488,42 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
 }
 .ip-client-type i { font-size: var(--ip-text-xs); }
 
-/* Riga del tipo sotto il nome negli elenchi: rientrata della larghezza
-   dell'avatar (22px + margine) perché parta allineata al testo del nome. */
-.ip-anagrafica-meta { margin-top: 2px; padding-left: 30px; line-height: 1.2; }
-.ip-anagrafica-meta .ip-client-type { font-size: var(--ip-text-xs); }
+/* Riga secondaria del nome negli elenchi di anagrafiche (tipo cliente,
+   partita IVA). Rientrata della larghezza dell'avatar (22px + margine) perché
+   parta allineata al testo del nome.
+   Colore e corpo stanno qui, non nei figli: clienti e fornitori mettono nella
+   stessa riga due cose diverse — il timbro del tipo e la P. IVA — e le due
+   liste le mostravano in modo diverso, il tipo grigio a 11px e la P. IVA nera
+   a 12px in semibold. Nella stessa posizione lo stesso ruolo: testo
+   secondario, più piccolo e spento del nome che sta sopra. Così la riga
+   scala uguale in entrambe le tabelle e il nome resta l'unico elemento
+   marcato della cella. */
+.ip-anagrafica-meta {
+  margin-top: 2px;
+  padding-left: 30px;
+  line-height: 1.2;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+}
+.ip-anagrafica-meta .ip-client-type,
+.ip-anagrafica-meta .ip-num {
+  font-size: inherit;
+  font-weight: 400;
+  color: inherit;
+}
+/* Conteggio in una colonna numerica (es. "Spese" nei fornitori): è un numero
+   da leggere, non una cifra da confrontare. Resta tabulare e allineato a
+   destra come gli importi (porta .amount accanto), ma si spegne: due numeri
+   affiancati dello stesso nero — un conteggio e un totale in euro — si
+   leggono come se fossero la stessa grandezza. */
+/* Il selettore non è "solo" .ip-col-count: Bootstrap dipinge il colore del
+   testo direttamente sulla cella con .table > :not(caption) > * > *, che ha
+   specificità (0,1,2) e batte una classe singola. Con .table davanti la
+   regola vince, e resta confinata alle tabelle. */
+.table .ip-col-count {
+  color: var(--ip-text-muted);
+  font-weight: 400;
+}
 
 /* La tipologia accanto al nome nel titolo di scheda: dimensione e peso del
    testo secondario, non dell'intestazione che accompagna. */
@@ -11587,38 +11771,106 @@ html[data-theme="dark"] .ip-import-outcome.is-error{ background:#2c1c19; color:#
   }
 }
 
-/* Pagine di import XML (fatture emesse e ricevute): campo file largo e
-   pronto al trascinamento, testi brevi a misura di lettura. */
-.ip-import-drop {
-  max-width: 640px;
+/* Pagine di import XML (fatture emesse e ricevute, quietanze F24): il campo
+   file è la zona su cui si trascina, quindi alto e tratteggiato, e i testi
+   stanno a misura di lettura.
+
+   Il tratteggio sta sul controllo e non su un contenitore attorno: prima un
+   .ip-import-drop avvolgeva etichetta, controllo e aiuto e disegnava un
+   secondo riquadro tratteggiato attorno a quello vero. Sembrava una zona di
+   rilascio e non lo era — il drop lo ascolta .ip-file__control — e in più
+   l'etichetta del campo finiva al centro del riquadro come un titolo. */
+.ip-file-drop {
+  /* Larghezza piena del corpo, non 640px: la zona tratteggiata è il bersaglio
+     del trascinamento, quindi più è grande più è facile centrarla, e a 640px
+     lasciava vuota la metà destra del corpo mentre l'aiuto andava a capo
+     cinque volte su una frase sola. */
+  max-width: none;
 }
 /* ...ma non nelle card dell'import CSV, dove la zona deve riempire la card:
    questa regola, pensata per le pagine XML, la lasciava a metà larghezza. */
 .ip-import-card .ip-import-drop { max-width: none; }
-.ip-import-drop .ip-file__control {
+.ip-file-drop .ip-file__control {
   min-height: 72px;
   border-style: dashed;
+  /* Nome e pulsante restano un gruppo solo, centrato nella zona: a tutta
+     larghezza il nome stava a sinistra e "Scegli file" a un metro di
+     distanza, e il campo leggeva come una barra vuota. */
+  justify-content: center;
+}
+.ip-file-drop .ip-file__name {
+  /* flex-grow 0: altrimenti il nome si prende tutto lo spazio libero e
+     risospinge il pulsante a destra, annullando la centratura. */
+  flex: 0 1 auto;
 }
 .ip-file.is-dragover .ip-file__control {
   border-color: var(--ip-primary);
   background: var(--ip-primary-soft);
 }
-.ip-import-drop .ip-field-help,
-.ip-import-notes {
-  max-width: 65ch;
+/* Ora che l'aiuto sta su una riga piena serve una misura di lettura: oltre
+   80ch una frase da 200 caratteri diventa una riga che attraversa tutto lo
+   schermo e si rilegge con fatica. */
+.ip-file-drop .ip-field-help { max-width: 80ch; }
+
+/* Due card affiancate: a sinistra il gesto (il campo, la categoria), a destra
+   cosa succede al caricamento. Su una riga sola le istruzioni finivano sotto
+   il campo e la card del gesto si allungava di quattro righe mentre metà
+   pagina restava vuota; di fianco leggono come il riquadro d'aiuto che sono.
+   La colonna di destra è stretta e fissa (340px): è testo da consultare, non
+   deve competere con il campo. Sotto i 992px le card tornano una sotto
+   l'altra, il gesto prima e le istruzioni dopo. */
+.ip-import-layout form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ip-space-7);
+  align-items: start;
+  /* Oltre i 1600px il campo diventerebbe una scatola vuota lunga un metro e
+     mezzo: la coppia di card si ferma lì e lo spazio che resta è margine,
+     non una zona di rilascio più larga di quanto serva. */
+  max-width: 1600px;
 }
+/* Il distacco fra le due card lo dal gap della griglia; il margine che
+   .ip-doc-section porta con sé serve quando le card sono impilate, dove
+   separa il gesto dalle istruzioni invece di sommare spazio al gap. */
+.ip-import-layout .ip-doc-section { margin-bottom: 0; }
+@media (min-width: 992px) {
+  .ip-import-layout form { grid-template-columns: minmax(0, 1fr) 340px; }
+}
+
 .ip-import-notes {
   list-style: none;
-  margin: 16px 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--ip-space-3);
+  /* 12px fra una nota e l'altra, contro i 6,5px che separano due righe della
+     stessa nota: a 8px i due ritmi si assomigliavano e le quattro voci
+     leggevano come un paragrafo unico spezzato a caso. */
+  gap: var(--ip-space-6);
   color: var(--ip-text-muted);
-  font-size: var(--ip-text-md);
+  font-size: var(--ip-text-base);
   line-height: 1.5;
 }
+/* Spunta appesa al margine sinistro e testo rientrato di 24px: nella card da
+   340px ogni nota va a capo, e con l'icona in linea col testo la seconda riga
+   riparte da sotto la spunta invece che dal testo. Il rientro vale per tutto
+   il blocco, quindi anche un <strong> o un <code> dentro la nota resta dentro
+   la stessa colonna di testo; con una griglia, invece, testo ed elemento
+   diventerebbero due celle affiancate e la riga si spezzerebbe. */
+.ip-import-notes li {
+  position: relative;
+  padding-left: 24px;
+  /* A capo più equilibrati dove il browser lo supporta: senza, l'ultima riga
+     resta di una o due parole e l'elenco sembra una scaletta. */
+  text-wrap: pretty;
+}
 .ip-import-notes .fa {
+  position: absolute;
+  left: 0;
+  top: 2px;
   width: 16px;
+  /* Centrata nella colonna dell'icona, così le spunte formano una fila
+     verticale pulita invece di dipendere dalla larghezza del glifo. */
+  text-align: center;
   color: var(--ip-success, #468847);
 }
 .ip-import-category {
@@ -12392,4 +12644,222 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   .ip-recon-row { grid-template-columns: 44px minmax(0, 1fr) auto; gap: var(--ip-space-5); padding: var(--ip-space-5); }
   .ip-recon-dir { display: none; }
   .ip-recon-amount { font-size: var(--ip-text-md); }
+}
+
+/* -----------------------------------------------------------------------------
+   Revisione design (novembre 2026)
+   --------------------------------------------------------------------------
+   Correzioni nate guardando Bacheca, elenco e scheda fattura a 375px, a
+   desktop e in tema scuro. Stanno insieme, in coda, perché toccano regole
+   sparse nel foglio e ognuna è un'eccezione motivata alla scala: tenerle
+   vicine fa vedere cosa è stato deciso e perché.
+   -------------------------------------------------------------------------- */
+
+/* Campi su telefono. Sotto i 16px iOS ingrandisce la pagina a ogni tocco su
+   un campo, e la pagina resta ingrandita finché non la si rimpicciolisce a
+   mano; 36px di altezza sono sotto i 44 che un dito centra senza mirare.
+   Si alzano i token delle altezze, così ogni controllo che li usa segue da
+   solo, e il testo dei soli campi (non dell'interfaccia) sale a 16px. */
+@media (max-width: 767.98px) {
+  :root {
+    --ip-control-h: 44px;
+    --ip-control-h-sm: 40px;
+  }
+  input.form-control,
+  select.form-control,
+  textarea.form-control,
+  .form-select,
+  .ip-select__control,
+  .ip-select__search input {
+    /* !important voluto: le varianti compatte (righe della fattura, campi
+       input-sm) fissano 12px con selettori più specifici, e basta un solo
+       campo sotto i 16px perché iOS ingrandisca la pagina. */
+    font-size: 16px !important;
+  }
+  input.form-control,
+  select.form-control,
+  .form-select,
+  .ip-select__control {
+    min-height: var(--ip-control-h);
+  }
+  input.form-control.input-sm,
+  input.form-control.form-control-sm,
+  .ip-select--sm .ip-select__control {
+    min-height: var(--ip-control-h-sm);
+  }
+  .btn { min-height: var(--ip-control-h-sm); }
+}
+
+/* Cifre da leggere, non etichette. --ip-text-xs (11px) va bene per una
+   didascalia in maiuscolo, ma qui sotto ci sono importi: imponibile e IVA
+   delle card della Bacheca, il totale di ogni mese, i metadati delle righe.
+   Un gradino in più (12px) senza cambiare il peso visivo del blocco. I timbri
+   di stato passano da 10 a 11px: in maiuscolo con il bordo restano compatti. */
+.ip-iva-detail,
+.ip-period-month-amount,
+.ip-recent-table .ip-row-meta {
+  font-size: var(--ip-text-sm);
+}
+.badge.ip-status {
+  font-size: var(--ip-text-xs);
+}
+
+/* Bersagli di almeno 24x24 (WCAG 2.5.8). La "x" che svuota una select era
+   18px, le frecce che spostano una riga 20x12, la maniglia 21x18: tre
+   controlli che si usano con precisione proprio mentre si compila. L'icona
+   resta della sua misura, cresce l'area che risponde al clic. */
+.ip-select__clear {
+  width: 24px;
+  height: 24px;
+}
+.ip-item-row__handle,
+.ip-item-row__move {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+/* Il focus di questi due era il solo fondo al 6%: da tastiera non si vedeva
+   dove si era. Stesso contorno d'accento del resto dell'interfaccia. */
+.ip-item-row__handle:focus-visible,
+.ip-item-row__move:focus-visible:not(:disabled) {
+  outline: 2px solid var(--ip-primary);
+  outline-offset: 1px;
+}
+
+/* Barra dei mesi con l'arco intero selezionato. Tredici blocchi pieni erano
+   l'elemento più scuro della pagina e pesavano più di "Nuova fattura", pur
+   dicendo solo "nessun filtro". La logica non cambia (i dodici mesi restano
+   selezionati, vedi period_nav.php): quando è acceso l'interruttore generale
+   i mesi usano la tinta leggera, e il pieno resta a chi dice qualcosa — il
+   singolo mese o l'intervallo scelto. */
+.ip-period-month--all.is-active ~ .ip-period-month.is-active {
+  background: var(--ip-primary-soft);
+  color: var(--ip-text);
+  font-weight: 500;
+  box-shadow: none;
+}
+.ip-period-month--all.is-active ~ .ip-period-month.is-active:hover {
+  background: var(--ip-hover);
+}
+
+/* Riepilogo sotto la barra dei mesi, su telefono. Cinque voci in flex
+   centrato andavano a capo dove capitava: "IVA" restava da sola in mezzo alla
+   riga. Due colonne allineate a sinistra, cifre un gradino sotto: stanno in
+   tre righe ordinate e la lista sale di un centinaio di pixel. */
+@media (max-width: 575.98px) {
+  .ip-period-nav .ip-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ip-space-4) var(--ip-space-6);
+    justify-content: stretch;
+  }
+  .ip-period-nav .ip-summary-item,
+  .ip-period-nav .ip-summary-item:first-child {
+    padding: 2px 0 2px 10px;
+    border-left: 2px solid var(--ip-border);
+  }
+  .ip-period-nav .ip-summary-value {
+    font-size: var(--ip-text-xl);
+  }
+}
+
+/* Select del cliente nella scheda documento. Ereditava i 120px pensati per
+   l'aliquota nella riga di aggiunta (.ip-doc-newrow .ip-select) e troncava il
+   nome a "ICS Piero For…" con mezza card libera accanto. */
+.ip-doc-client .ip-doc-newrow .ip-select {
+  flex: 1 1 240px;
+  width: auto;
+  max-width: 360px;
+}
+
+/* Titolo di una card come intestazione vera (<h2>): chi usa uno screen
+   reader salta fra le sezioni della scheda. L'aspetto resta quello della
+   testata della card. */
+.ip-card-heading {
+  display: inline;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+/* Colonne secondarie delle liste a larghezze intermedie.
+   Fra 768 e 1280px la tabella fatture era più larga del suo contenitore
+   (956px di minimo contro 715-960 disponibili, perché la barra laterale ne
+   toglie 236): Saldo e Opzioni finivano fuori vista dietro uno scorrimento
+   orizzontale che nessuno cerca, cioè sparivano proprio le azioni. I
+   breakpoint di Bootstrap (d-xxl-table-cell sull'IVA) guardano il viewport,
+   non lo spazio rimasto alla tabella.
+   .ip-col-secondary marca le colonne che si possono ricavare dalle altre o
+   dalla scheda (data di creazione, imponibile): in quella fascia escono, e
+   le celle stringono il margine. Sotto i 576px la tabella diventa a schede e
+   decide .ip-hide-on-mobile, come prima.
+   La fascia partiva da 768px e lasciava scoperto il tratto 576-767: lì la
+   tabella non era ancora a schede ma nessuna colonna usciva, quindi le liste
+   documento (10 colonne, 832px di minimo) scorrevano dentro la card di 130px
+   e le ultime due colonne — totale e Opzioni — finivano fuori dalla card,
+   invisibili. È la larghezza dell'iPad in verticale (744), dove le azioni
+   sparivano. Con la fascia estesa la tabella scende a 662px e ci sta (702
+   disponibili a 744). */
+@media (min-width: 576px) and (max-width: 1279.98px) {
+  .ip-table-card .ip-col-secondary {
+    display: none;
+  }
+  .ip-table-card table.ip-table-card-collapse > thead > tr > th,
+  .ip-table-card table.ip-table-card-collapse > tbody > tr > td,
+  .ip-table-card table.ip-table-card-collapse > tfoot > tr > * {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .ip-table-card table.ip-table-card-collapse > * > tr > :first-child { padding-left: 18px; }
+  .ip-table-card table.ip-table-card-collapse > * > tr > :last-child  { padding-right: 18px; }
+}
+
+/* Piede dei totali: una riga senza la sua cifra non dice niente.
+   La cella dell'IVA segue la colonna IVA (visibile solo da 1400px), quindi
+   sotto quella larghezza restava l'etichetta "IVA" con accanto il vuoto; lo
+   stesso succede alla riga dell'imponibile quando la sua colonna è secondaria.
+   Le due cifre restano nel riepilogo in testa alla lista. Su telefono (sotto
+   576px) il piede è a blocchi e mostra tutto, quindi lì non si tocca. */
+@media (min-width: 576px) and (max-width: 1399.98px) {
+  .ip-list-totals__row--tax { display: none; }
+}
+/* Stessa fascia della regola qui sopra: da quando le colonne secondarie
+   escono anche fra 576 e 767px, il piede non deve mostrarne la cifra. */
+@media (min-width: 576px) and (max-width: 1279.98px) {
+  .ip-list-totals__row--secondary { display: none; }
+}
+
+/* Piede dei totali su telefono: la cella dell'IVA portava d-none (la colonna
+   IVA esiste solo da 1400px) e nel piede a blocchi restava l'etichetta "IVA"
+   senza cifra. Qui non c'è una colonna da rispettare: la cifra si mostra. */
+@media (max-width: 575.98px) {
+  .ip-table-card table.ip-table-card-collapse tfoot .ip-list-totals__row--tax td.ip-list-totals__value {
+    display: block !important;
+  }
+}
+
+/* Liste "recenti" della Bacheca nelle finestre a mezza larghezza. Sotto i
+   1440px la tabella dei preventivi era più larga della finestra (data e
+   "· scade il…" sulla stessa riga, 150px di colonna) e scorreva di lato per
+   una ventina di pixel, tagliando il saldo. La scadenza scende sotto la data,
+   come già succede su telefono: la colonna torna stretta e nulla si perde. */
+@media (min-width: 768px) and (max-width: 1439.98px) {
+  .ip-recent-table .ip-row-meta {
+    display: block;
+    margin-left: 0;
+    margin-top: 2px;
+    /* Può andare a capo: "· Scadenza 17/11/2026" su una riga sola è da solo
+       più largo della data, e la colonna non si stringeva. */
+    white-space: normal;
+  }
+  .ip-recent-table > thead > tr > th,
+  .ip-recent-table > tbody > tr > td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .ip-recent-table > * > tr > :first-child { padding-left: 14px; }
+  .ip-recent-table > * > tr > :last-child  { padding-right: 14px; }
 }

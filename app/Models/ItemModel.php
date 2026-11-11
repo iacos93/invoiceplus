@@ -139,11 +139,21 @@ class ItemModel extends IpBaseModel
      *
      * @param array|null $dbArray
      */
-    public function saveItem(?int $id = null, $dbArray = null): int
+    /**
+     * @param bool $recalculateInvoice false quando il chiamante salva piu'
+     *        righe in blocco e ricalcola la fattura una volta sola alla fine
+     *        (InvoicesAjax::syncItems): altrimenti ogni riga rifaceva il
+     *        calcolo completo del documento, N volte per N righe.
+     */
+    public function saveItem(?int $id = null, $dbArray = null, bool $recalculateInvoice = true): int
     {
         $savedId = (int) $this->saveRecord($id, is_object($dbArray) ? (array) $dbArray : $dbArray);
 
         (new ItemAmountModel())->calculate($savedId);
+
+        if (!$recalculateInvoice) {
+            return $savedId;
+        }
 
         if (is_object($dbArray) && isset($dbArray->invoice_id)) {
             (new InvoiceAmountModel())->calculate($dbArray->invoice_id);

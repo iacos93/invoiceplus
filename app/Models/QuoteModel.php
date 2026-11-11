@@ -562,36 +562,48 @@ class QuoteModel extends IpBaseModel
 
     /**
      * Marca il preventivo come approvato (stato 4).
+     *
+     * Ritorna true solo se la riga e' cambiata davvero: il controllo di
+     * QuoteDecision e l'UPDATE non sono atomici, e con due decisioni
+     * concorrenti (due tab, portale e link pubblico) la seconda trova il
+     * preventivo gia' deciso. Il chiamante deve poterlo dire invece di
+     * mostrare un successo mai avvenuto. Gli stati aperti sono quelli di
+     * QuoteDecision, cosi' verifica e scrittura non possono divergere.
      */
-    public function approveQuoteById(int $quoteId): void
+    public function approveQuoteById(int $quoteId): bool
     {
-        $this->whereIn('quote_status_id', [2, 3])
-             ->update($quoteId, ['quote_status_id' => 4]);
+        return $this->decide(['quote_id' => $quoteId], 4);
     }
 
-    public function approveQuoteByKey(string $quoteUrlKey): void
+    public function approveQuoteByKey(string $quoteUrlKey): bool
     {
-        $this->whereIn('quote_status_id', [2, 3])
-             ->where('quote_url_key', $quoteUrlKey)
-             ->set(['quote_status_id' => 4])
-             ->update();
+        return $this->decide(['quote_url_key' => $quoteUrlKey], 4);
     }
 
     /**
-     * Marca il preventivo come rifiutato (stato 5).
+     * Marca il preventivo come rifiutato (stato 5). Vedi approveQuoteById().
      */
-    public function rejectQuoteById(int $quoteId): void
+    public function rejectQuoteById(int $quoteId): bool
     {
-        $this->whereIn('quote_status_id', [2, 3])
-             ->update($quoteId, ['quote_status_id' => 5]);
+        return $this->decide(['quote_id' => $quoteId], 5);
     }
 
-    public function rejectQuoteByKey(string $quoteUrlKey): void
+    public function rejectQuoteByKey(string $quoteUrlKey): bool
     {
-        $this->whereIn('quote_status_id', [2, 3])
-             ->where('quote_url_key', $quoteUrlKey)
-             ->set(['quote_status_id' => 5])
-             ->update();
+        return $this->decide(['quote_url_key' => $quoteUrlKey], 5);
+    }
+
+    /**
+     * UPDATE condizionato sugli stati aperti; true se ha toccato una riga.
+     */
+    private function decide(array $where, int $statusId): bool
+    {
+        $this->db->table($this->table)
+            ->where($where)
+            ->whereIn('quote_status_id', \App\Services\QuoteDecision::OPEN_STATUSES)
+            ->update(['quote_status_id' => $statusId]);
+
+        return $this->db->affectedRows() > 0;
     }
 
     /**
@@ -732,7 +744,30 @@ class QuoteModel extends IpBaseModel
         }
 
         $this->withFullJoins()->whereIn('ip_quotes.client_id', $clientIds);
+        $this->applyGuestStatus($status);
 
+        return $this->orderBy('ip_quotes.quote_id', 'DESC')->findAll();
+    }
+
+    /**
+     * Quanti preventivi vedrebbe getForGuestClients() con lo stesso filtro
+     * (vedi InvoiceModel::countForGuestClients()).
+     */
+    public function countForGuestClients(array $clientIds, string $status = 'open'): int
+    {
+        if (empty($clientIds)) {
+            return 0;
+        }
+
+        $this->whereIn('ip_quotes.client_id', $clientIds);
+        $this->applyGuestStatus($status);
+
+        return $this->countAllResults();
+    }
+
+    /** Filtro di stato del portale: un posto solo per elenco e conteggio. */
+    private function applyGuestStatus(string $status): void
+    {
         switch ($status) {
             case 'approved':
                 $this->isApproved();
@@ -747,8 +782,6 @@ class QuoteModel extends IpBaseModel
                 $this->isOpen();
                 break;
         }
-
-        return $this->orderBy('ip_quotes.quote_id', 'DESC')->findAll();
     }
 
     /**

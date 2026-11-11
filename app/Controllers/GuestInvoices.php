@@ -59,7 +59,13 @@ class GuestInvoices extends BaseController
     {
         $invoice = $this->invoiceModel->getById($invoiceId);
 
-        if (!$invoice || !in_array((int) $invoice['client_id'], $this->clientIds(), true)) {
+        // Stessi stati del PDF (inviata, vista, pagata): una bozza non e'
+        // ancora un documento per il cliente. Senza questo controllo bastava
+        // cambiare l'id nell'indirizzo per leggerla, e markViewed() poteva
+        // perfino renderla di sola lettura a chi la stava compilando.
+        if (!$invoice
+            || !in_array((int) $invoice['client_id'], $this->clientIds(), true)
+            || !in_array((int) $invoice['invoice_status_id'], [2, 3, 4], true)) {
             throw PageNotFoundException::forPageNotFound();
         }
 
