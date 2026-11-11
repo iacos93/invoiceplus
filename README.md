@@ -53,6 +53,20 @@ I documenti che l'applicazione produce:
 
 ![Preventivo di esempio: intestazione, righe e totali](docs/img/preventivo.png)
 
+## Documentazione
+
+Guida alle funzioni, area per area: cosa fa ogni schermata e cosa sapere prima
+di usarla.
+
+- [Panoramica e indice](docs/funzioni.md)
+- [Anagrafiche](docs/funzioni/anagrafiche.md)
+- [Preventivi](docs/funzioni/preventivi.md)
+- [Fatture e DDT](docs/funzioni/fatture-e-ddt.md)
+- [Incassi e spese](docs/funzioni/incassi-e-spese.md)
+- [Fisco e analisi](docs/funzioni/fisco-e-analisi.md)
+- [Accesso e integrazioni](docs/funzioni/accesso-e-integrazioni.md)
+- [Impostazioni](docs/funzioni/impostazioni.md)
+
 ## Requisiti
 
 - PHP **8.4** o superiore, con le estensioni `intl`, `mbstring`, `json`,
