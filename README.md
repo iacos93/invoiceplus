@@ -29,6 +29,15 @@ dati reali senza backup.
 
 Lingue disponibili: italiano e inglese.
 
+## Schermate
+
+I documenti che l'applicazione produce. Sono generati dai dati di prova
+(`tests/fixtures/ci_seed.sql`), non da clienti veri:
+
+![Fattura di esempio: intestazione, righe con codice articolo, totali e saldo](docs/img/fattura.png)
+
+![Preventivo di esempio: intestazione, righe e totali](docs/img/preventivo.png)
+
 ## Requisiti
 
 - PHP **8.4** o superiore, con le estensioni `intl`, `mbstring`, `json`,
