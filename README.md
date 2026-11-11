@@ -250,9 +250,11 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-Il progetto non ha ancora release taggate: si usa il ramo `main`, che la CI
-verifica a ogni push. Quando il progetto uscirà dallo stato di sviluppo, le
-versioni seguiranno [Semantic Versioning](https://semver.org/).
+La prima versione è la `v0.1`: il ramo `main`, verificato dalla CI a ogni push.
+Le modifiche sono elencate in [`CHANGELOG.md`](CHANGELOG.md). Da qui in avanti
+le versioni seguono [Semantic Versioning](https://semver.org/): il numero
+minore sale quando cambia qualcosa di visibile, il maggiore quando il progetto
+esce dallo stato di sviluppo.
 
 ## Strumenti di sviluppo e debug
 
@@ -286,15 +288,16 @@ perché verificano PDF, XML FatturaPA e pagine complete:
 composer test
 ```
 
-Senza un database quei 25 test si saltano, e la suite resta verde avendo
+Senza un database quei test si saltano, e la suite resta verde avendo
 verificato meno. Per eseguirli in locale basta una copia del database di lavoro
 (`createdb -T <database> invoiceplane_posttest`) oppure un altro database
 indicato con `IP_PDF_TEST_DB`.
 
-Il workflow `.github/workflows/ci.yml` gira a ogni push e pull request su PHP
-8.4 e 8.5: avvia un PostgreSQL, crea lo schema con le migrazioni, carica
-`tests/fixtures/ci_seed.sql` e fallisce se un test risulta saltato. I dettagli
-sono in [`tests/README.md`](tests/README.md).
+Il workflow `.github/workflows/ci.yml` gira a ogni push e pull request. Un job
+usa PostgreSQL su PHP 8.4 e 8.5, un secondo usa MariaDB su PHP 8.5: in
+entrambi crea lo schema con le migrazioni, carica la fixture del motore
+(`tests/fixtures/ci_seed.sql` o `ci_seed_mysql.sql`) e fallisce se un test
+risulta saltato. I dettagli sono in [`tests/README.md`](tests/README.md).
 
 ## Community e supporto
 
@@ -303,8 +306,8 @@ Non ci sono forum o canali esterni: il progetto vive su GitHub.
 - Per un dubbio o un problema apri una
   [issue](https://github.com/iacos93/invoiceplus/issues), indicando versione di
   PHP, database e i passi per riprodurre.
-- Per un problema di sicurezza non aprire una issue pubblica: contatta
-  l'autore tramite GitHub.
+- Per un problema di sicurezza non aprire una issue pubblica: usa il canale
+  privato descritto in [`SECURITY.md`](SECURITY.md).
 
 ## Contribuire
 
