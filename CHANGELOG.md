@@ -3,6 +3,18 @@
 Le versioni seguono [Semantic Versioning](https://semver.org/): con il progetto
 ancora in sviluppo (0.x) il numero minore sale a ogni versione pubblicata.
 
+## [Non pubblicata]
+
+### Aggiunto
+
+- Test d'integrazione sugli incassi (eliminazione, modifica dell'importo,
+  importo oltre il saldo, fattura inesistente), sulle spese (totale derivato,
+  tendine vuote, fornitore digitato a mano, modifica, fornitore mancante) e
+  sulla conversione preventivo → fattura (righe, sconto di riga, data e
+  collegamento fra i documenti).
+- Il fornitore della fixture di test ora ha un'azienda: senza, i test che lo
+  cercano nell'azienda attiva lo saltavano.
+
 ## [v0.1] — 2026-11-11
 
 Prima versione pubblica. Comprende fatture e note di credito con fatturazione

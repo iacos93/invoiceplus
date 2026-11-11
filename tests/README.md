@@ -48,8 +48,8 @@ In locale la copia si crea dal database di lavoro, senza toccarlo:
 createdb -T invoiceplane invoiceplane_posttest
 ```
 
-Da quel momento `vendor/bin/phpunit` esegue anche i 35 test d'integrazione: la
-suite completa conta 319 test e 1402 asserzioni. Senza la copia quei test si
+Da quel momento `vendor/bin/phpunit` esegue anche i 45 test d'integrazione: la
+suite completa conta 329 test e 1499 asserzioni. Senza la copia quei test si
 saltano, e la suite resta verde avendo verificato meno di quello che dice. Un
 altro database si indica con `IP_PDF_TEST_DB`, che è una variabile di processo,
 non una chiave di `.env`:

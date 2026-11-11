@@ -175,8 +175,8 @@ VALUES (1, 1, 'Progetto di prova');
 INSERT INTO ip_tasks (task_id, project_id, task_name, task_description, task_price, task_status)
 VALUES (1, 1, 'Attivita'' di prova', 'Voce da fatturare.', 100, 1);
 
-INSERT INTO ip_suppliers (supplier_id, supplier_name, supplier_active)
-VALUES (1, 'Fornitore di prova', true);
+INSERT INTO ip_suppliers (supplier_id, supplier_name, supplier_active, company_id)
+VALUES (1, 'Fornitore di prova', true, 1);
 
 -- Fattura 1: emessa (stato 3), con righe e saldo aperto. E' quella che i test
 -- prendono per i PDF, per l'XML e per il link pubblico.

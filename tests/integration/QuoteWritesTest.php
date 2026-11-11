@@ -148,6 +148,92 @@ final class QuoteWritesTest extends CIUnitTestCase
     }
 
     /**
+     * Conversione in fattura: righe, sconto di riga e importi devono seguire
+     * il preventivo, la fattura nasce in bozza e il collegamento resta su
+     * entrambi i documenti.
+     *
+     * La fattura prende la data di oggi, non quella del preventivo: un
+     * preventivo di un mese fa convertito adesso non deve produrre un
+     * documento retrodatato, che sullo SdI sarebbe una data di emissione
+     * falsa e fuori ordine rispetto alla numerazione.
+     */
+    public function testConversioneInFatturaCopiaRigheEImporti(): void
+    {
+        $cliente    = $this->cliente();
+        $dataPrev   = date('Y-m-d', strtotime('-1 month'));
+
+        $creazione = $this->inviaConToken('/quotes/ajax/create', [
+            'client_id'          => $cliente,
+            'quote_date_created' => $dataPrev,
+            'invoice_group_id'   => $this->gruppo(),
+            'items'              => json_encode([
+                ['item_name' => 'Voce A', 'item_quantity' => '1', 'item_price' => '100', 'item_tax_rate_id' => 0],
+                ['item_name' => 'Voce B', 'item_quantity' => '1', 'item_price' => '50', 'item_tax_rate_id' => 0, 'item_discount_percent' => '10'],
+            ]),
+        ], '/quotes/form_create');
+
+        $posizione = (string) $creazione->response()->getHeaderLine('Location');
+        $this->assertStringContainsString('/quotes/view/', $posizione, 'Preventivo non creato');
+
+        $preventivo = (int) basename(parse_url($posizione, PHP_URL_PATH));
+
+        $totalePrev = (float) $this->testDb->query(
+            'SELECT quote_total FROM ip_quote_amounts WHERE quote_id = ?',
+            [$preventivo]
+        )->getRow()->quote_total;
+
+        $this->assertSame(145.0, $totalePrev, 'Preventivo: totale atteso 100 + 45');
+
+        $conversione = $this->inviaConToken('/quotes/ajax/quote_to_invoice', [
+            'quote_id' => $preventivo,
+        ], '/quotes/view/' . $preventivo);
+
+        $posizione = (string) $conversione->response()->getHeaderLine('Location');
+        $this->assertStringContainsString('/invoices/view/', $posizione, 'Conversione: nessun redirect alla fattura');
+
+        $fattura = (int) basename(parse_url($posizione, PHP_URL_PATH));
+        $this->assertNotSame(0, $fattura, 'Conversione: fattura non creata');
+
+        $testata = $this->testDb->query(
+            'SELECT client_id, invoice_status_id, invoice_date_created, invoice_group_id
+             FROM ip_invoices WHERE invoice_id = ?',
+            [$fattura]
+        )->getRowArray();
+
+        $this->assertSame($cliente, (int) $testata['client_id'], 'Fattura: cliente diverso dal preventivo');
+        $this->assertSame(1, (int) $testata['invoice_status_id'], 'Fattura: deve nascere come bozza');
+        $this->assertSame(date('Y-m-d'), substr((string) $testata['invoice_date_created'], 0, 10), 'Fattura: data di oggi, non quella del preventivo');
+        $this->assertGreaterThan(0, (int) $testata['invoice_group_id'], 'Fattura: gruppo di numerazione mancante');
+
+        $this->assertSame(2, (int) $this->testDb->query(
+            'SELECT COUNT(*) AS n FROM ip_invoice_items WHERE invoice_id = ?',
+            [$fattura]
+        )->getRow()->n, 'Fattura: righe non copiate');
+
+        $sconto = (float) $this->testDb->query(
+            "SELECT item_discount_percent FROM ip_invoice_items
+             WHERE invoice_id = ? AND item_name = 'Voce B'",
+            [$fattura]
+        )->getRow()->item_discount_percent;
+
+        $this->assertSame(10.0, $sconto, 'Fattura: sconto percentuale di riga perso');
+
+        $totale = (float) $this->testDb->query(
+            'SELECT invoice_total FROM ip_invoice_amounts WHERE invoice_id = ?',
+            [$fattura]
+        )->getRow()->invoice_total;
+
+        $this->assertSame($totalePrev, $totale, 'Fattura: totale diverso dal preventivo');
+
+        $collegato = (int) $this->testDb->query(
+            'SELECT invoice_id FROM ip_quotes WHERE quote_id = ?',
+            [$preventivo]
+        )->getRow()->invoice_id;
+
+        $this->assertSame($fattura, $collegato, 'Preventivo: non è stato collegato alla fattura');
+    }
+
+    /**
      * Cliente senza aliquota predefinita: QuoteModel::create() ne copia la
      * preferenza su ip_quote_tax_rates, e un'imposta di documento si
      * sommerebbe alle righe portando il totale oltre i 150 attesi.
