@@ -284,6 +284,18 @@ class QuotesAjax extends BaseController
     {
         $post = $this->request->getPost();
 
+        // Le regole vanno caricate esplicitamente: il model non ha
+        // $validationRules propri e validate() senza regole risponde sempre
+        // "valido". E cleanValidationRules() scarta comunque le regole dei
+        // campi assenti dal POST: senza le chiavi qui sotto un preventivo
+        // senza cliente o senza gruppo arrivava all'insert, falliva e la
+        // pagina finiva su /quotes/view/0 (o su un errore nel calcolo degli
+        // importi). Portandole a null, le regole "required" vengono eseguite
+        // e il form si riapre con il messaggio.
+        $post += ['client_id' => null, 'quote_date_created' => null, 'invoice_group_id' => null];
+
+        $this->quoteModel->setValidationRules($this->quoteModel->validationRulesLegacy());
+
         if ($this->quoteModel->validate($post)) {
             $quoteId = $this->quoteModel->create($this->quoteModel->dbArrayFromPost($post));
 

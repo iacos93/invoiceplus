@@ -177,13 +177,19 @@ class InvoicesAjax extends BaseController
         }
 
         // Creazione di una nuova fattura (form_create): dati fattura + righe.
-        // Senza questa validazione, un client_id vuoto fa fallire l'insert
-        // silenziosamente (create() del model ritorna false) e l'utente
-        // atterra su una 404 anonima "/invoices/view/" senza id.
         // Le regole vanno caricate esplicitamente: il model non ha
         // $validationRules propri, e validate() senza regole risponde sempre
         // "valido" — anche alle lunghezze dei campi FE (CIG, ordine...) che
         // ora arrivano fino all'insert e lo farebbero fallire.
+        //
+        // Non basta però: cleanValidationRules() del Model scarta le regole
+        // dei campi che non compaiono nel POST, quindi un client_id mai
+        // inviato non arrivava mai a "required", l'insert falliva in silenzio
+        // e si atterrava su /invoices/view/0. Portando le chiavi obbligatorie
+        // a null, le regole vengono eseguite e il form si riapre con il
+        // messaggio invece di perdere i dati digitati.
+        $post += ['client_id' => null, 'invoice_date_created' => null, 'invoice_group_id' => null];
+
         $this->invoiceModel->setValidationRules($this->invoiceModel->validationRulesLegacy());
 
         if (!$this->invoiceModel->validate($post)) {
@@ -255,13 +261,12 @@ class InvoicesAjax extends BaseController
 
         $post = $request->getPost();
 
-        // QuotesAjax::create() valida sempre (client_id/data/gruppo required)
-        // e torna al form con un messaggio se manca qualcosa. Qui mancava del
-        // tutto: con client_id vuoto l'insert falliva silenziosamente
-        // (create() del model ritorna false) e l'utente atterrava su una 404
-        // anonima — "/invoices/view/" senza id — senza sapere perché.
-        // Regole caricate esplicitamente, come in save(): senza, validate()
-        // risponde sempre "valido".
+        // Come nel ramo di creazione di save(): regole caricate a mano, e
+        // chiavi obbligatorie presenti anche quando il POST non le manda.
+        // Senza, cleanValidationRules() le scarta e la creazione senza
+        // cliente finisce su /invoices/view/0 invece che sul form.
+        $post += ['client_id' => null, 'invoice_date_created' => null, 'invoice_group_id' => null];
+
         $this->invoiceModel->setValidationRules($this->invoiceModel->validationRulesLegacy());
 
         if (!$this->invoiceModel->validate($post)) {
