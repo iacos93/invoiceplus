@@ -27,6 +27,14 @@
    1. Hub dei report — griglia di card cliccabili
    -------------------------------------------------------------------------- */
 
+.ip-report-intro {
+    max-width: 72ch;
+    margin: 0 0 16px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ip-text-muted);
+}
+
 .ip-report-hub {
     display: grid;
     /* 250px, non 280: a 1440 i quattro report stanno sulla stessa riga
@@ -100,22 +108,22 @@
     letter-spacing: -0.01em;
 }
 
-/* La freccia compare solo al passaggio del mouse: a riposo le quattro card
-   sono identiche e la pagina resta calma, ma appena una e' sotto il cursore
-   dice dove porta. */
+/* La freccia resta visibile, in tono spento: a riposo dice che la card si
+   apre, e diventa piena sotto il cursore. Prima compariva solo all'hover e le
+   quattro card sembravano schede informative invece che collegamenti. */
 .ip-report-card__go {
     margin-left: auto;
     font-size: 12px;
     color: var(--ip-text-muted);
-    opacity: 0;
-    transform: translateX(-3px);
+    opacity: .35;
+    transform: translateX(0);
     transition: opacity var(--ip-transition), transform var(--ip-transition);
 }
 
 .ip-report-card:hover .ip-report-card__go,
 .ip-report-card:focus-visible .ip-report-card__go {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateX(2px);
 }
 
 .ip-report-card__desc {
@@ -454,6 +462,23 @@
     font-weight: 500;
 }
 
+/* Nome cliente cliccabile nelle tabelle dei report: da un prospetto si
+   arriva alla scheda con i documenti senza tornare indietro. Il colore resta
+   quello del testo — sono dati, non una chiamata all'azione — e il segnale
+   arriva al passaggio del mouse. */
+.ip-report-client {
+    color: var(--ip-text);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.ip-report-client:hover,
+.ip-report-client:focus-visible {
+    color: var(--ip-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 /* -----------------------------------------------------------------------------
    6bis. Vendite per cliente — la classifica
    -------------------------------------------------------------------------- */
@@ -765,13 +790,62 @@
    8. Responsive
    -------------------------------------------------------------------------- */
 
+/* Su tablet le sette colonne dell'aging non stanno nella viewport e la
+   tabella scorre: il nome del cliente resta fermo a sinistra, altrimenti
+   scorrendo verso le fasce lontane non si sa piu' di chi e' la riga. */
+@media (min-width: 576px) and (max-width: 1199.98px) {
+    /* Il selettore ripete .ip-table-card perche' l'header di colonna dentro la
+       card e' gia' sticky (top, z-index 5) con una regola piu' specifica:
+       senza, la prima intestazione scorreva via mentre il nome cliente
+       restava fermo, e le fasce passavano sopra la colonna del cliente. */
+    .ip-table-card .ip-aging-table thead th:first-child,
+    .ip-table-card .ip-aging-table tbody td:first-child {
+        position: sticky;
+        left: 0;
+        /* --bs-table-bg e' il fondo che Bootstrap dipinge sulle celle: bianco
+           di giorno, canvas scuro di notte. Fissare --ip-bg-card lasciava
+           una banda piu' chiara sulla colonna solo in tema scuro. */
+        background: var(--bs-table-bg, var(--ip-bg-card));
+        box-shadow: 1px 0 0 var(--ip-border-soft);
+    }
+
+    .ip-table-card .ip-aging-table tbody td:first-child {
+        z-index: 2;
+    }
+
+    /* Sopra le altre intestazioni, che restano sticky in verticale a z-index
+       5: la colonna del cliente deve coprirle quando scorrono sotto di lei. */
+    .ip-table-card .ip-aging-table thead th:first-child {
+        z-index: 6;
+        background: var(--ip-bg);
+    }
+
+    /* L'hover della riga e' una tinta trasparente che lascia vedere il fondo
+       della card: qui il fondo lo dipinge la cella sticky, quindi la tinta
+       va sovrapposta esplicitamente, altrimenti la colonna resterebbe ferma. */
+    .ip-table-card .ip-aging-table.table-hover > tbody > tr:hover > td:first-child {
+        background-color: var(--ip-bg-card);
+        background-image: linear-gradient(var(--ip-primary-soft), var(--ip-primary-soft));
+    }
+
+    .ip-aging-table tbody tr.ip-report-total > td:first-child,
+    .ip-table-card .ip-aging-table.table-hover > tbody > tr.ip-report-total:hover > td:first-child {
+        background: var(--ip-bg);
+    }
+}
+
 @media (max-width: 575.98px) {
     .ip-report-hub {
         grid-template-columns: 1fr;
     }
 
+    /* Quattro KPI in flex lasciavano il quarto da solo su una riga a meta':
+       in griglia da due colonne stanno in due righe pari, con le cifre
+       allineate fra loro. */
     .ip-report-kpis {
-        gap: 16px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 16px 20px;
     }
 
     .ip-report-kpi__value {
@@ -844,6 +918,26 @@
         flex: 0 0 100%;
         max-width: 120px;
         margin-left: auto;
+    }
+
+    /* Crediti scaduti in card: si mostrano solo le fasce con un importo.
+       Cinque righe "–" per cliente sarebbero una scheda alta il doppio per
+       dire che non c'e' nulla, e il dato utile e' proprio quale fascia pesa. */
+    .ip-table-card table.ip-aging-table.ip-table-card-collapse tbody td.ip-aging-range.is-empty {
+        display: none;
+    }
+
+    .ip-table-card table.ip-aging-table.ip-table-card-collapse tbody td .ip-aging-bar {
+        flex: 0 0 100%;
+        max-width: none;
+        margin-top: 8px;
+    }
+
+    /* Nella card il nome e' il titolo della riga, non un valore da allineare
+       a destra: parte dal bordo come le altre rientranze. */
+    .ip-table-card table.ip-aging-table.ip-table-card-collapse tbody td:first-child {
+        justify-content: flex-start;
+        text-align: left;
     }
 }
 

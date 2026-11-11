@@ -1,12 +1,22 @@
 <?= $this->extend('layout/base') ?>
 <?= $this->section('content') ?>
 <?php $this->setVar('pageTitle', trans('sales_by_date')); ?>
-<?= $this->include('layout/headerbar', ['title' => trans('sales_by_date')]) ?>
+<?= $this->include('layout/headerbar', [
+    'title' => trans('sales_by_date'),
+    'meta'  => trans('sales_by_year_meta', '', 'Il fatturato per trimestre, per confrontare anni e stagionalità.'),
+]) ?>
 
 <div id="content">
 
     <?= $this->include('reports/partial_nav', ['current' => trans('sales_by_date')]) ?>
 
+    <?php
+    // Il pulsante rapido si accende quando il periodo nei campi e' proprio
+    // quello che produrrebbe: ancora all'anno del contesto, come il report.
+    $ipRangeSpan   = (int) $year_to - (int) $year_from + 1;
+    $ipRangeAnchor = (int) ($range_anchor ?? (int) date('Y'));
+    $ipIsRange     = static fn (int $years): bool => (int) $year_to === $ipRangeAnchor && $ipRangeSpan === $years;
+    ?>
     <div class="card ip-report-filter">
         <form method="post" action="<?= site_url('reports/sales_by_year') ?>">
             <?= csrf_field() ?>
@@ -18,18 +28,38 @@
                     <button type="submit" name="btn_submit" value="1" class="btn btn-sm btn-success">
                         <i class="fa fa-solid fa-chart-column" aria-hidden="true"></i> <?= trans('run_report') ?>
                     </button>
+                    <button type="submit" name="btn_submit_pdf" value="1" class="btn btn-sm btn-secondary">
+                        <i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> <?= trans('export_pdf', '', 'Esporta PDF') ?>
+                    </button>
                 </div>
             </div>
 
             <div class="card-body">
+                <div class="ip-quick-range">
+                    <span class="ip-quick-range__label"><?= trans('quick_range', '', 'Periodo rapido:') ?></span>
+                    <?php foreach ([1 => trans('report_range_year', '', "Solo l'anno"), 2 => trans('report_range_2y', '', 'Ultimi 2 anni'), 3 => trans('report_range_3y', '', 'Ultimi 3 anni'), 5 => trans('report_range_5y', '', 'Ultimi 5 anni')] as $ipYears => $ipLabel): ?>
+                        <button type="submit" name="btn_range" value="<?= $ipYears ?>"
+                                class="ip-quick-range__btn<?= $ipIsRange($ipYears) ? ' is-active' : '' ?>"
+                                aria-pressed="<?= $ipIsRange($ipYears) ? 'true' : 'false' ?>"><?= esc($ipLabel) ?></button>
+                    <?php endforeach; ?>
+                </div>
+
                 <div class="ip-report-filter__fields">
                     <div class="ip-report-filter__field">
                         <label class="ip-doc-label" for="year_from"><?= trans('year_from') ?></label>
-                        <input type="number" name="year_from" id="year_from" min="1000" max="9999" class="form-control" value="<?= (int) $year_from ?>" required>
+                        <select name="year_from" id="year_from" class="form-select" required>
+                            <?php foreach ($year_options as $ipYear): ?>
+                                <option value="<?= (int) $ipYear ?>" <?= (int) $ipYear === (int) $year_from ? 'selected' : '' ?>><?= (int) $ipYear ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="ip-report-filter__field">
                         <label class="ip-doc-label" for="year_to"><?= trans('year_to') ?></label>
-                        <input type="number" name="year_to" id="year_to" min="1000" max="9999" class="form-control" value="<?= (int) $year_to ?>" required>
+                        <select name="year_to" id="year_to" class="form-select" required>
+                            <?php foreach ($year_options as $ipYear): ?>
+                                <option value="<?= (int) $ipYear ?>" <?= (int) $ipYear === (int) $year_to ? 'selected' : '' ?>><?= (int) $ipYear ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="ip-report-filter__field">
                         <label class="ip-doc-label" for="minQuantity"><?= trans('report_min_sales', '', 'Fatturato minimo (€)') ?></label>
@@ -176,7 +206,10 @@
                     <tbody>
                     <?php foreach ($results as $row): ?>
                         <tr>
-                            <td><?= esc(format_client($row)) ?></td>
+                            <td>
+                                <a class="ip-report-client"
+                                   href="<?= site_url('clients/view/' . (int) ($row['client_id'] ?? 0)) ?>"><?= esc(format_client($row)) ?></a>
+                            </td>
                             <td class="ip-vat-id"><?= esc($row['VAT_ID'] ?? '') ?></td>
                             <?php foreach ($yearList as $y): ?>
                                 <?php for ($q = 1; $q <= 4; $q++): ?>

@@ -241,6 +241,75 @@ class Reports extends BaseController
         ]);
     }
 
+    /**
+     * Crediti scaduti in PDF — la copia che si manda al commercialista o si
+     * porta in riunione. È una lettura, quindi GET: non cambia nulla e non ha
+     * bisogno di un pulsante dentro il form dei filtri (che qui non esiste).
+     */
+    public function invoiceAgingPdf()
+    {
+        $results = (new ReportModel())->invoiceAging();
+        usort($results, static fn ($a, $b) => (float) ($b['total_balance'] ?? 0) <=> (float) ($a['total_balance'] ?? 0));
+
+        $ranges = [
+            1 => [trans('invoice_aging_1_30', '', '1 - 30 giorni'), trans('aging_risk_1', '', 'recente')],
+            2 => [trans('invoice_aging_31_60', '', '31 - 60 giorni'), trans('aging_risk_2', '', 'scaduto')],
+            3 => [trans('invoice_aging_61_90', '', '61 - 90 giorni'), trans('aging_risk_3', '', 'arretrato')],
+            4 => [trans('invoice_aging_91_120', '', '91 - 120 giorni'), trans('aging_risk_4', '', 'critico')],
+            5 => [trans('invoice_aging_above_120', '', 'Oltre 120 giorni'), trans('aging_risk_5', '', 'sofferenza')],
+        ];
+
+        $rangeTotals = array_fill_keys(array_keys($ranges), 0.0);
+        $grandTotal  = 0.0;
+
+        $html = '<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">'
+            . '<style>'
+            . '@page{size:A4 landscape;margin:12mm}'
+            . 'body{font-family:DejaVu Sans,Arial,sans-serif;font-size:10px;color:#222}'
+            . 'h2{font-size:16px;margin:0 0 4px}'
+            . '.sub{color:#555;margin:0 0 12px}'
+            . 'table{width:100%;border-collapse:collapse}'
+            . 'th,td{border:1px solid #bbb;padding:4px 5px}'
+            . 'thead th{background:#eee;text-align:right}'
+            . 'thead th:first-child,td:first-child{text-align:left}'
+            . 'td.num{text-align:right}'
+            . 'tfoot td{font-weight:bold;background:#f6f6f6}'
+            . '</style></head><body>'
+            . '<h2>' . htmlsc(trans('invoice_aging')) . '</h2>'
+            . '<p class="sub">' . htmlsc(trans('as_of', '', 'al')) . ' ' . htmlsc(date_from_mysql(date('Y-m-d'))) . '</p>'
+            . '<table><thead><tr><th>' . htmlsc(trans('client')) . '</th>';
+
+        foreach ($ranges as [$label, $risk]) {
+            $html .= '<th>' . htmlsc($label) . '<br><small>' . htmlsc($risk) . '</small></th>';
+        }
+        $html .= '<th>' . htmlsc(trans('total_balance')) . '</th></tr></thead><tbody>';
+
+        if ($results === []) {
+            $html .= '<tr><td colspan="7">' . htmlsc(trans('no_overdue_invoices', '', 'Nessuna fattura scaduta.')) . '</td></tr>';
+        }
+
+        foreach ($results as $row) {
+            $html .= '<tr><td>' . htmlsc(format_client($row)) . '</td>';
+
+            foreach ($ranges as $i => $range) {
+                $value = (float) ($row['range_' . $i] ?? 0);
+                $rangeTotals[$i] += $value;
+                $html .= '<td class="num">' . ($value > 0 ? format_amount($value) : '&ndash;') . '</td>';
+            }
+
+            $grandTotal += (float) ($row['total_balance'] ?? 0);
+            $html .= '<td class="num"><strong>' . format_amount($row['total_balance'] ?? 0) . '</strong></td></tr>';
+        }
+
+        $html .= '</tbody><tfoot><tr><td>' . htmlsc(trans('total')) . '</td>';
+        foreach ($rangeTotals as $value) {
+            $html .= '<td class="num">' . format_amount($value) . '</td>';
+        }
+        $html .= '<td class="num">' . format_amount($grandTotal) . '</td></tr></tfoot></table></body></html>';
+
+        pdf_create($html, 'report_invoice_aging_' . date('Y-m-d') . '.pdf');
+    }
+
     public function salesByYear()
     {
         $request = service('request');
@@ -259,17 +328,29 @@ class Reports extends BaseController
         $hasResults  = false;
 
         if ($request->getMethod() === 'POST') {
-            $yearFromPost = (int) $request->getPost('year_from');
-            $yearToPost   = (int) $request->getPost('year_to');
+            // Scorciatoie "ultimi N anni": sono pulsanti di invio, quindi
+            // arrivano con gli altri campi, ma l'intervallo lo decide il
+            // pulsante. L'ancora è l'anno del contesto (lo stesso da cui parte
+            // il report), non l'anno di oggi: chi sta guardando il 2025 si
+            // aspetta 2023-2025, non 2023-2026.
+            $rangeYears = (int) $request->getPost('btn_range');
+            if (in_array($rangeYears, [1, 2, 3, 5], true)) {
+                $yearFrom = $currentYear - ($rangeYears - 1);
+                $yearTo   = $currentYear;
+            } else {
+                $yearFromPost = (int) $request->getPost('year_from');
+                $yearToPost   = (int) $request->getPost('year_to');
 
-            if ($yearFromPost < 1000 || $yearFromPost > 9999 || $yearToPost < 1000 || $yearToPost > 9999
-                || $yearFromPost > $yearToPost) {
-                session()->setFlashdata('alert_error', 'Gli anni inseriti non sono validi');
-                return redirect()->to('/reports/sales_by_year');
+                if ($yearFromPost < 1000 || $yearFromPost > 9999 || $yearToPost < 1000 || $yearToPost > 9999
+                    || $yearFromPost > $yearToPost) {
+                    session()->setFlashdata('alert_error', 'Gli anni inseriti non sono validi');
+                    return redirect()->to('/reports/sales_by_year');
+                }
+
+                $yearFrom = $yearFromPost;
+                $yearTo   = $yearToPost;
             }
 
-            $yearFrom    = $yearFromPost;
-            $yearTo      = $yearToPost;
             $minQuantity = $request->getPost('minQuantity') !== null && $request->getPost('minQuantity') !== ''
                 ? (int) $request->getPost('minQuantity') : null;
             $maxQuantity = $request->getPost('maxQuantity') !== null && $request->getPost('maxQuantity') !== ''
@@ -278,6 +359,10 @@ class Reports extends BaseController
 
             $results    = (new ReportModel())->salesByYear($yearFrom, $yearTo, $minQuantity, $maxQuantity, $checkboxTax);
             $hasResults = true;
+
+            if ($request->getPost('btn_submit_pdf')) {
+                $this->salesByYearPdf($results, $yearFrom, $yearTo, $checkboxTax);
+            }
         }
 
         if (!$hasResults) {
@@ -285,9 +370,22 @@ class Reports extends BaseController
             $hasResults = true;
         }
 
+        // Anni selezionabili: quelli con documenti, più i due del periodo in
+        // corso e l'anno di oggi. Il report può essere aperto su un anno senza
+        // fatture e i campi devono comunque mostrarlo.
+        $yearOptions = available_years();
+        foreach ([$yearFrom, $yearTo, (int) date('Y')] as $year) {
+            if (!in_array($year, $yearOptions, true)) {
+                $yearOptions[] = $year;
+            }
+        }
+        rsort($yearOptions);
+
         return view('reports/sales_by_year_index', [
             'year_from'    => $yearFrom,
             'year_to'      => $yearTo,
+            'year_options' => $yearOptions,
+            'range_anchor' => $currentYear,
             'min_quantity' => $minQuantity,
             'max_quantity' => $maxQuantity,
             'checkbox_tax' => $checkboxTax,
@@ -295,5 +393,92 @@ class Reports extends BaseController
             'has_results'  => $hasResults,
             'title'        => trans('sales_by_date'),
         ]);
+    }
+
+    /**
+     * Vendite per anno in PDF: la stessa matrice della pagina, senza tinte di
+     * calore (su carta stampata il grigio non si distingue dal bianco) e in
+     * orizzontale, perché due anni sono già dieci colonne.
+     */
+    private function salesByYearPdf(array $results, int $from, int $to, bool $withTax): void
+    {
+        $years = range($from, $to);
+
+        $grandTotal    = 0.0;
+        $quarterTotals = [];
+        foreach ($results as $row) {
+            $grandTotal += (float) ($row['total_payment'] ?? 0);
+            foreach ($years as $year) {
+                for ($q = 1; $q <= 4; $q++) {
+                    $key = 'payment_t' . $q . '_' . $year;
+                    $quarterTotals[$key] = ($quarterTotals[$key] ?? 0.0) + (float) ($row[$key] ?? 0);
+                }
+            }
+        }
+
+        $period = $from === $to ? (string) $from : $from . '–' . $to;
+
+        $html = '<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">'
+            . '<style>'
+            . '@page{size:A4 landscape;margin:10mm}'
+            . 'body{font-family:DejaVu Sans,Arial,sans-serif;font-size:9px;color:#222}'
+            . 'h2{font-size:16px;margin:0 0 4px}'
+            . '.sub{color:#555;margin:0 0 12px}'
+            . 'table{width:100%;border-collapse:collapse}'
+            . 'th,td{border:1px solid #bbb;padding:3px 5px}'
+            . 'thead th{background:#eee}'
+            . 'th.client,td.client{text-align:left}'
+            . 'td.num,th.num{text-align:right}'
+            . 'th.year{text-align:center}'
+            . 'tfoot td{font-weight:bold;background:#f6f6f6}'
+            . '</style></head><body>'
+            . '<h2>' . htmlsc(trans('sales_by_date')) . '</h2>'
+            . '<p class="sub">' . htmlsc($period)
+            . ($withTax ? ' · ' . htmlsc(trans('values_with_taxes')) : '') . '</p>'
+            . '<table><thead><tr>'
+            . '<th rowspan="2" class="client">' . htmlsc(trans('client')) . '</th>'
+            . '<th rowspan="2" class="client">' . htmlsc(trans('vat_id')) . '</th>';
+
+        foreach ($years as $year) {
+            $html .= '<th colspan="4" class="year">' . $year . '</th>';
+        }
+        $html .= '<th rowspan="2" class="num">' . htmlsc(trans('total')) . '</th></tr><tr>';
+
+        foreach ($years as $year) {
+            for ($q = 1; $q <= 4; $q++) {
+                $html .= '<th class="num">T' . $q . '</th>';
+            }
+        }
+        $html .= '</tr></thead><tbody>';
+
+        if ($results === []) {
+            $html .= '<tr><td colspan="' . (2 + count($years) * 4 + 1) . '">'
+                . htmlsc(trans('report_no_rows', '', 'Nessun dato nel periodo scelto.')) . '</td></tr>';
+        }
+
+        foreach ($results as $row) {
+            $html .= '<tr><td class="client">' . htmlsc(format_client($row)) . '</td>'
+                . '<td class="client">' . htmlsc($row['VAT_ID'] ?? '') . '</td>';
+
+            foreach ($years as $year) {
+                for ($q = 1; $q <= 4; $q++) {
+                    $value = (float) ($row['payment_t' . $q . '_' . $year] ?? 0);
+                    $html .= '<td class="num">' . ($value > 0 ? format_amount($value) : '&ndash;') . '</td>';
+                }
+            }
+
+            $html .= '<td class="num"><strong>' . format_amount($row['total_payment'] ?? 0) . '</strong></td></tr>';
+        }
+
+        $html .= '</tbody><tfoot><tr><td colspan="2">' . htmlsc(trans('total')) . '</td>';
+        foreach ($years as $year) {
+            for ($q = 1; $q <= 4; $q++) {
+                $value = $quarterTotals['payment_t' . $q . '_' . $year] ?? 0.0;
+                $html .= '<td class="num">' . ($value > 0 ? format_amount($value) : '&ndash;') . '</td>';
+            }
+        }
+        $html .= '<td class="num">' . format_amount($grandTotal) . '</td></tr></tfoot></table></body></html>';
+
+        pdf_create($html, 'report_sales_by_year_' . $from . '_' . $to . '.pdf');
     }
 }

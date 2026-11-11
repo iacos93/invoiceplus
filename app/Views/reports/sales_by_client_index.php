@@ -1,7 +1,10 @@
 <?= $this->extend('layout/base') ?>
 <?= $this->section('content') ?>
 <?php $this->setVar('pageTitle', trans('sales_by_client')); ?>
-<?= $this->include('layout/headerbar', ['title' => trans('sales_by_client')]) ?>
+<?= $this->include('layout/headerbar', [
+    'title' => trans('sales_by_client'),
+    'meta'  => trans('sales_by_client_meta', '', 'Chi fattura di più nel periodo, con quante fatture e quanto pesa.'),
+]) ?>
 
 <div id="content">
 
@@ -73,6 +76,16 @@
         // tabella e' ordinata: mescolare le due basi darebbe percentuali che
         // non corrispondono all'ordine delle righe.
         $share = static fn(float $v): float => $sumNet > 0 ? $v / $sumNet * 100 : 0.0;
+
+        // Concentrazione: le prime tre posizioni dicono se il fatturato sta in
+        // piedi su pochi clienti. E' un rischio che la classifica mostra riga
+        // per riga ma che nessuno somma a mente.
+        $top3Net   = 0.0;
+        foreach (array_slice($results, 0, 3) as $row) {
+            $top3Net += (float) ($row['sales'] ?? 0);
+        }
+        $top3Share = $share($top3Net);
+        $top3Class = $top3Share >= 50 ? 'is-warning' : 'is-muted';
         ?>
         <div class="ip-report-kpis">
             <div class="ip-report-kpi">
@@ -86,6 +99,12 @@
             <div class="ip-report-kpi">
                 <span class="ip-report-kpi__label"><?= trans('sales') ?></span>
                 <span class="ip-report-kpi__value"><?= format_currency($sumNet) ?></span>
+            </div>
+            <div class="ip-report-kpi">
+                <span class="ip-report-kpi__label" title="<?= esc(trans('report_top3_hint', '', 'Peso dei primi tre clienti sul fatturato del periodo.'), 'attr') ?>">
+                    <?= trans('report_top3_share', '', 'Quota primi 3') ?>
+                </span>
+                <span class="ip-report-kpi__value <?= $top3Class ?>"><?= format_amount($top3Share) ?>%</span>
             </div>
         </div>
 
@@ -119,7 +138,8 @@
                         <tr>
                             <td class="ip-rank<?= $i < 3 ? ' is-podium' : '' ?>" data-label="<?= esc(trans('position', '', 'Posizione'), 'attr') ?>"><?= $i + 1 ?></td>
                             <td class="ip-rank-name" data-label="<?= esc(trans('client'), 'attr') ?>">
-                                <span class="ip-rank-client"><?= esc(format_client($row)) ?></span>
+                                <a class="ip-rank-client ip-report-client"
+                                   href="<?= site_url('clients/view/' . (int) ($row['client_id'] ?? 0)) ?>"><?= esc(format_client($row)) ?></a>
                                 <?php if ($rowShare > 0): ?>
                                     <span class="ip-share-bar" role="img"
                                           aria-label="<?= esc(sprintf(trans('share_aria', '', '%s del fatturato del periodo'), format_amount($rowShare) . '%'), 'attr') ?>">

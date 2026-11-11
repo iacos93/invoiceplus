@@ -1,7 +1,10 @@
 <?= $this->extend('layout/base') ?>
 <?= $this->section('content') ?>
 <?php $this->setVar('pageTitle', trans('invoice_aging')); ?>
-<?= $this->include('layout/headerbar', ['title' => trans('invoice_aging')]) ?>
+<?= $this->include('layout/headerbar', [
+    'title' => trans('invoice_aging'),
+    'meta'  => trans('invoice_aging_meta', '', 'Quanto è aperto, da quanto tempo e per quali clienti.'),
+]) ?>
 
 <div id="content">
 
@@ -46,16 +49,24 @@
         // "Oltre 90 giorni" e' la soglia oltre la quale un credito smette di
         // essere un ritardo e diventa un problema di recupero: e' la cifra da
         // guardare per prima, quindi sale nei KPI accanto all'esposizione.
-        $overNinety = $rangeTotals[4] + $rangeTotals[5];
+        // La quota dice se e' un caso isolato o la fetta principale del
+        // portafoglio: il numero assoluto da solo non lo chiarisce.
+        $overNinety      = $rangeTotals[4] + $rangeTotals[5];
+        $overNinetyShare = $grandTotal > 0 ? $overNinety / $grandTotal * 100 : 0.0;
+        $shareClass      = $overNinetyShare >= 50 ? 'is-danger' : ($overNinetyShare > 0 ? 'is-warning' : 'is-muted');
         ?>
         <div class="ip-report-kpis">
             <div class="ip-report-kpi">
                 <span class="ip-report-kpi__label"><?= trans('total_balance') ?></span>
-                <span class="ip-report-kpi__value is-danger"><?= format_currency($grandTotal) ?></span>
+                <span class="ip-report-kpi__value"><?= format_currency($grandTotal) ?></span>
             </div>
             <div class="ip-report-kpi">
                 <span class="ip-report-kpi__label"><?= trans('aging_over_90', '', 'Oltre 90 giorni') ?></span>
                 <span class="ip-report-kpi__value <?= $overNinety > 0 ? 'is-warning' : 'is-muted' ?>"><?= format_currency($overNinety) ?></span>
+            </div>
+            <div class="ip-report-kpi">
+                <span class="ip-report-kpi__label"><?= trans('aging_share_over_90', '', 'Quota oltre 90') ?></span>
+                <span class="ip-report-kpi__value <?= $shareClass ?>"><?= $overNinetyShare > 0 ? format_amount($overNinetyShare) . '%' : '&ndash;' ?></span>
             </div>
             <div class="ip-report-kpi">
                 <span class="ip-report-kpi__label"><?= trans('clients') ?></span>
@@ -71,9 +82,12 @@
                     <span class="badge text-bg-secondary"><?= count($results) ?></span>
                     <span class="ip-report-period"><?= esc(trans('as_of', '', 'al')) ?> <?= esc(date_from_mysql(date('Y-m-d'))) ?></span>
                 </div>
+                <a class="btn btn-sm btn-secondary" href="<?= site_url('reports/invoice_aging/pdf') ?>">
+                    <i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> <?= trans('export_pdf', '', 'Esporta PDF') ?>
+                </a>
             </div>
             <div class="table-responsive ip-report-scroll">
-                <table class="table table-hover ip-aging-table">
+                <table class="table table-hover ip-aging-table ip-table-card-collapse">
                     <thead>
                     <tr>
                         <th scope="col"><?= trans('client') ?></th>
@@ -101,7 +115,8 @@
                         ?>
                         <tr>
                             <td>
-                                <span class="ip-aging-client"><?= esc(format_client($row)) ?></span>
+                                <a class="ip-aging-client ip-report-client"
+                                   href="<?= site_url('clients/view/' . (int) ($row['client_id'] ?? 0)) ?>"><?= esc(format_client($row)) ?></a>
                                 <?php if ($rowSum > 0): ?>
                                     <?php
                                     // La descrizione elenca le fasce con un importo:
@@ -128,19 +143,20 @@
                             </td>
                             <?php foreach ($values as $i => $value): ?>
                                 <td class="ip-aging-range<?= $value > 0 ? '' : ' is-empty' ?>"
+                                    data-label="<?= esc($ip_aging_ranges[$i]['label'], 'attr') ?>"
                                     title="<?= esc($ip_aging_ranges[$i]['label'], 'attr') ?>">
                                     <?= $value > 0 ? format_currency($value) : '&ndash;' ?>
                                 </td>
                             <?php endforeach; ?>
-                            <td class="ip-aging-total"><?= format_currency($row['total_balance'] ?? 0) ?></td>
+                            <td class="ip-aging-total" data-label="<?= esc(trans('total_balance'), 'attr') ?>"><?= format_currency($row['total_balance'] ?? 0) ?></td>
                         </tr>
                     <?php endforeach; ?>
                     <tr class="ip-report-total">
                         <td><?= trans('total') ?></td>
-                        <?php foreach ($rangeTotals as $value): ?>
-                            <td class="amount"><?= format_currency($value) ?></td>
+                        <?php foreach ($rangeTotals as $i => $value): ?>
+                            <td class="amount ip-aging-range<?= $value > 0 ? '' : ' is-empty' ?>" data-label="<?= esc($ip_aging_ranges[$i]['label'], 'attr') ?>"><?= format_currency($value) ?></td>
                         <?php endforeach; ?>
-                        <td class="amount"><?= format_currency($grandTotal) ?></td>
+                        <td class="amount" data-label="<?= esc(trans('total_balance'), 'attr') ?>"><?= format_currency($grandTotal) ?></td>
                     </tr>
                     </tbody>
                 </table>

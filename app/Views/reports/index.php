@@ -38,6 +38,12 @@
     ];
     ?>
 
+    <p class="ip-report-intro">
+        Quattro prospetti sui dati dell'azienda attiva. Si aprono già calcolati
+        sul periodo scelto nel contesto e ognuno conserva i propri filtri: da
+        qui si sceglie la domanda, nella pagina si cambia il periodo.
+    </p>
+
     <div class="ip-report-hub">
         <?php foreach ($ip_reports as $report): ?>
             <a href="<?= site_url('reports/' . $report['slug']) ?>" class="ip-report-card">

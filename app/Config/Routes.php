@@ -440,6 +440,7 @@ $routes->group('', ['filter' => 'auth'], static function ($routes) {
     $routes->post('year_filter/set', 'YearFilter::set');
 
     $routes->get('reports/invoice_aging', 'Reports::invoiceAging');
+    $routes->get('reports/invoice_aging/pdf', 'Reports::invoiceAgingPdf');
     $routes->get('reports/sales_by_year', 'Reports::salesByYear');
     $routes->post('reports/sales_by_year', 'Reports::salesByYear');
 

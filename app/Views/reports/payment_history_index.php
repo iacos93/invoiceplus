@@ -1,7 +1,10 @@
 <?= $this->extend('layout/base') ?>
 <?= $this->section('content') ?>
 <?php $this->setVar('pageTitle', trans('payment_history')); ?>
-<?= $this->include('layout/headerbar', ['title' => trans('payment_history')]) ?>
+<?= $this->include('layout/headerbar', [
+    'title' => trans('payment_history'),
+    'meta'  => trans('payment_history_meta', '', 'Cosa è entrato e quando, raggruppato per mese.'),
+]) ?>
 
 <div id="content">
 
@@ -141,7 +144,10 @@
                             <td data-label="<?= esc(trans('invoice'), 'attr') ?>">
                                 <a class="ip-num" href="<?= site_url('invoices/view/' . (int) $row['invoice_id']) ?>"><?= esc($row['invoice_number']) ?></a>
                             </td>
-                            <td data-label="<?= esc(trans('client'), 'attr') ?>"><?= esc(format_client($row)) ?></td>
+                            <td data-label="<?= esc(trans('client'), 'attr') ?>">
+                                <a class="ip-report-client"
+                                   href="<?= site_url('clients/view/' . (int) ($row['client_id'] ?? 0)) ?>"><?= esc(format_client($row)) ?></a>
+                            </td>
                             <td data-label="<?= esc(trans('payment_method'), 'attr') ?>"><?= esc($row['payment_method_name'] ?? '') ?></td>
                             <td data-label="<?= esc(trans('notes'), 'attr') ?>"><?= esc($row['payment_note'] ?? '') ?></td>
                             <td class="amount" data-label="<?= esc(trans('amount'), 'attr') ?>"><?= format_currency($row['payment_amount']) ?></td>

@@ -252,7 +252,7 @@ final class NavItemStateTest extends CIUnitTestCase
             ['reports/invoice_aging', 'Storico fatture'],
             ['reports/payment_history', 'Storico pagamenti'],
             ['reports/sales_by_client', 'Vendite per cliente'],
-            ['reports/sales_by_year', 'Vendite per data'],
+            ['reports/sales_by_year', 'Vendite per anno'],
         ];
 
         $hub = $this->state('/reports', 'reports', $children);
