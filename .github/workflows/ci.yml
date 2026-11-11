@@ -14,6 +14,25 @@ jobs:
         php: ['8.4', '8.5']
     name: PHP ${{ matrix.php }}
 
+    # I test d'integrazione leggono da un database vero: le migrazioni creano
+    # lo schema e tests/fixtures/ci_seed.sql i dati minimi. Senza, quei 25 test
+    # si saltano e la suite resta verde senza aver mai generato un PDF, un XML
+    # FatturaPA o aperto il portale.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: invoiceplus_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,14 +40,25 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: intl, mbstring, json, curl, gd, zip, pdo_sqlite, sqlite3
+          extensions: intl, mbstring, json, curl, gd, zip, pdo_sqlite, sqlite3, pgsql, pdo_pgsql
           coverage: none
 
       - name: Installa le dipendenze
         run: composer install --prefer-dist --no-progress --no-interaction
 
+      # I valori finiscono in .env e non in variabili d'ambiente: CodeIgniter
+      # legge il .env per primo e le variabili di processo non lo scavalcano.
       - name: Configura l'ambiente
-        run: cp env .env
+        run: |
+          cp env .env
+          cat >> .env <<'EOF'
+          database.default.hostname = 127.0.0.1
+          database.default.database = invoiceplus_test
+          database.default.username = postgres
+          database.default.password = postgres
+          database.default.DBDriver = Postgre
+          database.default.port = 5432
+          EOF
 
       # Senza chiave l'app registra errori di decrypt_secret durante i test:
       # non fanno fallire la suite, ma rendono il log del CI inutilizzabile.
@@ -37,5 +67,18 @@ jobs:
       - name: Genera la chiave di cifratura
         run: php spark key:generate
 
+      # Due passi distinti: prima lo schema dalle migrazioni, poi i dati. Se la
+      # fixture non si applica il passo fallisce qui, invece di far saltare i
+      # test e sembrare tutto a posto.
+      - name: Crea lo schema di prova
+        run: php spark migrate
+
+      - name: Popola i dati di prova
+        run: psql -h 127.0.0.1 -U postgres -d invoiceplus_test -v ON_ERROR_STOP=1 -f tests/fixtures/ci_seed.sql
+        env:
+          PGPASSWORD: postgres
+
       - name: Esegue i test
         run: vendor/bin/phpunit --no-coverage
+        env:
+          IP_PDF_TEST_DB: invoiceplus_test
