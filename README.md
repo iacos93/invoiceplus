@@ -251,13 +251,13 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.1.1`, che porta
-l'analisi statica in CI, la guida all'aggiornamento e corregge il backup
-automatico. Il ramo `main` è verificato dalla CI a ogni push. Le modifiche sono
-elencate in [`CHANGELOG.md`](CHANGELOG.md): le versioni seguono
-[Semantic Versioning](https://semver.org/), quindi il numero di patch sale per
-le correzioni, il minore quando cambia qualcosa di visibile e il maggiore
-quando il progetto esce dallo stato di sviluppo.
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.2`, che aggiunge la
+pagina "Stato del sistema" (backup, automazioni, permessi, schema) e porta il
+backup automatico anche su MySQL/MariaDB. Il ramo `main` è verificato dalla CI
+a ogni push. Le modifiche sono elencate in [`CHANGELOG.md`](CHANGELOG.md): le
+versioni seguono [Semantic Versioning](https://semver.org/), quindi il numero
+di patch sale per le correzioni, il minore quando cambia qualcosa di visibile e
+il maggiore quando il progetto esce dallo stato di sviluppo.
 
 ## Strumenti di sviluppo e debug
 

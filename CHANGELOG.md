@@ -4,25 +4,29 @@ Le versioni seguono [Semantic Versioning](https://semver.org/): la patch sale
 per le correzioni, il numero minore quando cambia qualcosa di visibile. Il
 progetto è ancora in sviluppo (0.x), quindi il maggiore resta 0.
 
-## [Non pubblicata]
+## [v0.2] — 2026-11-11
 
 ### Aggiunto
 
+- **Gestione > Stato del sistema**: pagina in sola lettura con i controlli che
+  possono guastarsi in silenzio — versione di PHP, cartelle scrivibili,
+  connessione al database, migrazioni da applicare, età dell'ultimo backup,
+  ultima esecuzione delle automazioni. Un backup assente o vecchio, o un
+  cron-runner fermo, ora si vedono senza aprire i log del server.
 - Il backup automatico funziona anche su MySQL/MariaDB: l'endpoint sceglie
   `pg_dump` o `mysqldump` dal motore configurato (`backup_*.dump` e
   `backup_*.sql`), con rotazione separata per formato. Prima lanciava sempre
   `pg_dump`, quindi su un'installazione MariaDB falliva parlando di PostgreSQL.
   Il binario di `mysqldump` si può indicare in `backup.mysqldumpPath`.
 - Test sul comando di dump (argomenti, password fuori dalla riga di comando,
-  quotatura dei nomi) e sulla rotazione.
-- **Gestione > Stato del sistema**: pagina in sola lettura con i controlli che
-  possono guastarsi in silenzio — versione di PHP, cartelle scrivibili,
-  connessione al database, migrazioni da applicare, età dell'ultimo backup,
-  ultima esecuzione delle automazioni. Un backup assente o vecchio, o un
-  cron-runner fermo, ora si vedono senza aprire i log del server.
-- `tools/cron-runner.sh` scrive log e stato dei job in `writable/cron` (con
-  ripiego sulla home se la cartella non è scrivibile), così la pagina può
-  leggerli.
+  quotatura dei nomi), sulla rotazione e sui controlli di stato.
+
+### Modificato
+
+- `tools/cron-runner.sh` scrive log e stato dei job in `writable/cron` invece
+  che in `~/.invoiceplane-cron` (con ripiego sulla home se la cartella non è
+  scrivibile): è il posto da cui la pagina "Stato del sistema" legge se le
+  automazioni girano. Un log fuori dall'applicazione non lo guarda nessuno.
 
 ## [v0.1.1] — 2026-11-11
 
