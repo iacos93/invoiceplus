@@ -50,6 +50,15 @@
 # database.tests.port = 3306
 
 #--------------------------------------------------------------------
+# BACKUP
+#--------------------------------------------------------------------
+# Percorso esplicito dei binari di dump, se non sono nel PATH o se ce ne
+# sono piu' versioni installate. pg_dump deve essere almeno della stessa
+# versione del server PostgreSQL: una versione precedente rifiuta il dump.
+# backup.pgDumpPath = /usr/lib/postgresql/17/bin/pg_dump
+# backup.mysqldumpPath = /usr/bin/mysqldump
+
+#--------------------------------------------------------------------
 # ENCRYPTION
 #--------------------------------------------------------------------
 

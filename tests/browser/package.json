@@ -1,0 +1,11 @@
+{
+  "name": "invoiceplus-browser-tests",
+  "private": true,
+  "description": "Test end-to-end nel browser: login, tema, ricerca nelle liste, componenti.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
+  }
+}

@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\BackupAlert;
 use App\Models\CompanyModel;
 use App\Models\InvoiceModel;
 use App\Models\InvoiceRecurringModel;
@@ -523,11 +524,58 @@ class Cron extends BaseController
         } catch (\Throwable $e) {
             log_message('error', 'Backup DB fallito: ' . $e->getMessage());
 
+            $this->notifyBackupFailure($e->getMessage());
+
             return $this->backupFailed('Backup fallito: ' . $e->getMessage());
         }
 
+        // Un backup riuscito chiude l'allarme: il prossimo guasto avviserà
+        // subito, senza aspettare che scada il freno di quello precedente.
+        (new BackupAlert(WRITEPATH . 'cron'))->clear();
+
         return 'Backup salvato: ' . basename($result['file'])
             . ($result['removed'] ? ' (eliminati ' . $result['removed'] . ' vecchi)' : '');
+    }
+
+    /**
+     * Avvisa via email che il backup non è riuscito.
+     *
+     * Il fallimento finiva solo nel log e in un 500 per il cron-runner: chi
+     * non guarda writable/logs non lo scopriva finché non serviva il backup.
+     * La pagina Stato del sistema lo segnala, ma è passiva: va aperta.
+     *
+     * Il freno di BackupAlert evita una email a ogni tentativo (il runner
+     * riprova a ogni giro); se l'invio non riesce non si scrive il
+     * segnaposto, così il giro successivo ci riprova.
+     */
+    private function notifyBackupFailure(string $errore): void
+    {
+        $alert = new BackupAlert(WRITEPATH . 'cron');
+
+        if (! $alert->shouldNotify()) {
+            return;
+        }
+
+        $corpo = "Il backup automatico del database non è riuscito.\n\n"
+            . 'Errore: ' . $errore . "\n\n"
+            . "Il cron riproverà al prossimo giro. Finché non riesce, l'ultima copia valida è quella precedente.\n\n"
+            . 'Stato del sistema: ' . site_url('system/status') . "\n";
+
+        try {
+            $inviata = $this->sendNotificationEmail('Backup del database fallito — ' . $this->companyName(), $corpo);
+        } catch (\Throwable $e) {
+            log_message('error', 'Notifica di backup fallito non inviata: ' . $e->getMessage());
+
+            $inviata = false;
+        }
+
+        if (! $inviata) {
+            return;
+        }
+
+        $alert->markNotified();
+
+        log_message('info', 'Notifica di backup fallito inviata');
     }
 
     /**

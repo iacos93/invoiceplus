@@ -103,9 +103,17 @@ registra come `FALLITO`, quindi riprova al giro successivo. Con un 200 e il
 testo "Backup fallito" nel corpo, il log lo annotava come riuscito e non
 riprovava fino al giorno dopo.
 
+Il fallimento manda anche una email alla casella di sistema (o al primo
+amministratore, se la casella non è configurata), con l'errore e il link a
+Stato del sistema. Per non riempire la posta con un avviso a ogni tentativo,
+se ne manda al massimo uno ogni dodici ore; il primo backup riuscito azzera il
+freno, quindi un guasto successivo avvisa subito.
+
 Il dump contiene i dati fiscali completi. **Va portato fuori dal server**:
 `writable/backups` è una copia di lavoro, non un archivio. Se il server si
-perde, si perdono anche i backup che stanno dentro.
+perde, si perdono anche i backup che stanno dentro. Il file viene creato con
+permessi **0600**: lo legge solo l'utente del processo PHP, non ogni utente
+locale.
 
 Per portarlo fuori si può partire da **Gestione > Stato del sistema**: il
 controllo "Backup del database" mostra **Scarica l'ultimo backup** e consegna

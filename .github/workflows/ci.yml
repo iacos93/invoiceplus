@@ -202,3 +202,196 @@ jobs:
       # che si accorge di una vulnerabilita' corretta a monte.
       - name: Verifica le dipendenze
         run: composer audit --locked
+
+  # La copertura non era misurata: `--no-coverage` in tutti i job teneva la CI
+  # veloce ma lasciava invisibile quanto codice nessun test tocca. Qui si
+  # produce il clover, si stampa il riepilogo e una soglia minima impedisce un
+  # crollo silenzioso.
+  copertura:
+    runs-on: ubuntu-latest
+    name: Copertura / PHP 8.5
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: invoiceplus_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installa PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, mbstring, json, curl, gd, zip, pdo_sqlite, sqlite3, pgsql, pdo_pgsql
+          coverage: pcov
+
+      - name: Installa le dipendenze
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Configura l'ambiente
+        run: |
+          cp env .env
+          cat >> .env <<'EOF'
+          database.default.hostname = 127.0.0.1
+          database.default.database = invoiceplus_test
+          database.default.username = postgres
+          database.default.password = postgres
+          database.default.DBDriver = Postgre
+          database.default.port = 5432
+          EOF
+
+      - name: Genera la chiave di cifratura
+        run: php spark key:generate
+
+      - name: Crea lo schema di prova
+        run: php spark migrate
+
+      - name: Popola i dati di prova
+        run: psql -h 127.0.0.1 -U postgres -d invoiceplus_test -v ON_ERROR_STOP=1 -f tests/fixtures/ci_seed.sql
+        env:
+          PGPASSWORD: postgres
+
+      - name: Esegue i test con la copertura
+        run: |
+          set -o pipefail
+          vendor/bin/phpunit --coverage-clover build/logs/clover.xml 2>&1 | tee phpunit.log
+          if grep -q 'Skipped:' phpunit.log; then
+            echo "Alcuni test si sono saltati: la copertura non vale."
+            exit 1
+          fi
+        env:
+          IP_PDF_TEST_DB: invoiceplus_test
+
+      # Soglia sotto il valore attuale di proposito: deve cogliere un crollo,
+      # non trasformare ogni refactoring in un negoziato.
+      - name: Verifica la soglia di copertura
+        run: php tools/coverage_gate.php 45
+
+      - name: Conserva il report di copertura
+        uses: actions/upload-artifact@v4
+        with:
+          name: copertura
+          path: build/logs/clover.xml
+          retention-days: 14
+
+  # Il JavaScript (tema, ricerca nelle liste, scorciatoie) non passa da
+  # PHPUnit. Playwright guida Chrome sull'applicazione avviata da `spark
+  # serve`: e' l'unico job che accorge di una regressione solo lato browser.
+  browser:
+    runs-on: ubuntu-latest
+    name: Browser / PHP 8.5
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: invoiceplus_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # Le sessioni e la cache usano Redis (Predis) anche in sviluppo: senza
+      # questo servizio il primo POST del browser non conserva la sessione e
+      # il login end-to-end fallisce per un motivo che non c'entra col codice.
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installa PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, mbstring, json, curl, gd, zip, pdo_sqlite, sqlite3, pgsql, pdo_pgsql
+          coverage: none
+
+      - name: Installa le dipendenze
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Configura l'ambiente
+        run: |
+          cp env .env
+          cat >> .env <<'EOF'
+          database.default.hostname = 127.0.0.1
+          database.default.database = invoiceplus_test
+          database.default.username = postgres
+          database.default.password = postgres
+          database.default.DBDriver = Postgre
+          database.default.port = 5432
+          EOF
+
+      - name: Genera la chiave di cifratura
+        run: php spark key:generate
+
+      - name: Crea lo schema di prova
+        run: php spark migrate
+
+      - name: Popola i dati di prova
+        run: psql -h 127.0.0.1 -U postgres -d invoiceplus_test -v ON_ERROR_STOP=1 -f tests/fixtures/ci_seed.sql
+        env:
+          PGPASSWORD: postgres
+
+      # La password del seed non e' nota: qui si imposta quella dei test.
+      # L'hash bcrypt contiene "$", quindi passa da una variabile psql e non
+      # dal testo della shell.
+      - name: Imposta la password dell'utente di prova
+        run: |
+          HASH=$(php -r 'echo password_hash("e2e-password", PASSWORD_DEFAULT);')
+          psql -h 127.0.0.1 -U postgres -d invoiceplus_test -v ON_ERROR_STOP=1 -v hash="$HASH" <<'SQL'
+          UPDATE ip_users SET user_password = :'hash', user_mfa_enabled = false WHERE user_id = 1;
+          SQL
+        env:
+          PGPASSWORD: postgres
+
+      - name: Installa Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tests/browser/package-lock.json
+
+      - name: Installa Playwright
+        working-directory: tests/browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Esegue i test nel browser
+        working-directory: tests/browser
+        run: npx playwright test
+        env:
+          E2E_EMAIL: admin@example.com
+          E2E_PASSWORD: e2e-password
+
+      - name: Conserva il report in caso di errore
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/browser/playwright-report/
+          retention-days: 7

@@ -49,7 +49,7 @@ createdb -T invoiceplane invoiceplane_posttest
 ```
 
 Da quel momento `vendor/bin/phpunit` esegue anche i 46 test d'integrazione: la
-suite completa conta 394 test e 1653 asserzioni. Senza la copia quei test si
+suite completa conta 399 test e 1662 asserzioni. Senza la copia quei test si
 saltano, e la suite resta verde avendo verificato meno di quello che dice. Un
 altro database si indica con `IP_PDF_TEST_DB`, che è una variabile di processo,
 non una chiave di `.env`:
@@ -66,8 +66,8 @@ si vuole.
 ## Come girano in CI
 
 In CI non esiste nessuna copia, quindi il database viene costruito da zero a
-ogni esecuzione. Il workflow ha due job con la stessa sequenza, per i due motori
-supportati:
+ogni esecuzione. Il workflow ha quattro job: due con la stessa sequenza (uno per
+motore) più copertura e browser. I due job sui motori supportati sono:
 
 1. un servizio `postgres:17` oppure `mariadb:11` (definiti in
    `.github/workflows/ci.yml`);
@@ -89,6 +89,42 @@ Panoramica verifica le relazioni fra i numeri, non solo che le pagine si
 aprano. Chi aggiunge un test che legge tabelle nuove deve allargare la fixture,
 altrimenti in CI quel test fallisce — che è il comportamento giusto, meglio di
 un salto silenzioso.
+
+## Test nel browser
+
+PHPUnit non esegue il JavaScript: tema chiaro/scuro, ricerca nelle liste e
+scorciatoie da tastiera vivono solo nel browser. `tests/browser` usa Playwright
+per guidare Chrome sull'applicazione avviata da `php spark serve` e copre
+accesso, cambio tema persistente, filtro in elenco e `Ctrl+K`.
+
+In locale serve un database di prova con l'utente `admin@example.com` e la
+password `e2e-password` (o `E2E_EMAIL` / `E2E_PASSWORD`), più Redis per sessioni
+e cache:
+
+```console
+cd tests/browser
+npm install
+npx playwright install chromium
+npx playwright test
+```
+
+In CI il job `browser` prepara PostgreSQL, applica migrazioni e seed, imposta la
+password dell'utente di prova e lancia gli stessi test. I dettagli stanno in
+`tests/browser/README.md`.
+
+## Copertura
+
+Un test verde non dice quanto codice tocca. Il clover si produce con:
+
+```console
+vendor/bin/phpunit --coverage-clover build/logs/clover.xml
+php tools/coverage_gate.php 45
+```
+
+`coverage_gate.php` conta le righe eseguibili (non i metodi) e fallisce sotto la
+soglia. La soglia in CI è **45%**, sotto il valore attuale di proposito: deve
+cogliere un crollo, non trasformare ogni refactoring in un negoziato. Il job
+`copertura` usa pcov e conserva il clover fra gli artifact.
 
 ## Collaudo sui dati veri
 
@@ -113,6 +149,7 @@ in transazione con rollback: la copia resta com'era.
 - `tests/collaudo` — percorsi completi su una copia dei dati veri, a mano.
 - `tests/database` — migrazioni, seed e integrità dello schema.
 - `tests/session` — gestione della sessione e dell'autenticazione.
+- `tests/browser` — test end-to-end con Playwright (JavaScript, tema, ricerca).
 - `tests/_support` — classi di supporto, migrazioni e seed usati dai test.
 - `tests/fixtures` — dati di prova per la CI.
 

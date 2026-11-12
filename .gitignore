@@ -27,3 +27,8 @@ builds
 # nessun test si salti; chi lo lancia in locale non deve trovarselo in git.
 phpunit.log
 writable/cron/
+# Test nel browser: dipendenze e artefatti non sono progetto.
+tests/browser/node_modules/
+tests/browser/test-results/
+tests/browser/playwright-report/
+tests/browser/.last-run.json

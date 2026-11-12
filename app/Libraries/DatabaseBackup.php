@@ -108,6 +108,16 @@ final class DatabaseBackup
             throw new RuntimeException($messaggio !== '' ? mb_substr($messaggio, 0, 300) : 'nessun output dal comando, file non prodotto');
         }
 
+        // Il dump contiene dati personali e fiscali: nasce con l'umask del
+        // processo (di solito 0644, leggibile da ogni utente locale). Qui si
+        // restringe a 0600 prima che il file resti in writable/backups per
+        // due settimane. Se il permesso non si può cambiare lo si dice: un
+        // backup leggibile da tutti è comunque meglio di nessun backup, ma
+        // non è quello che si voleva.
+        if (! @chmod($file, 0600)) {
+            log_message('warning', 'Backup: impossibile impostare i permessi 0600 su ' . $file);
+        }
+
         $removed = self::rotate($this->dir, 'backup_', $engine === self::ENGINE_POSTGRES ? '.dump' : '.sql');
 
         return ['file' => $file, 'bytes' => (int) filesize($file), 'removed' => $removed];

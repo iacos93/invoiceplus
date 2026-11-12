@@ -159,6 +159,42 @@ final class DatabaseBackupTest extends CIUnitTestCase
         );
     }
 
+    /**
+     * I dump contengono dati fiscali e personali: devono nascere chiusi
+     * (0600), non 0644 come li lascia l'umask del processo. Il permesso si
+     * imposta dopo che il binario ha scritto il file e prima della rotazione.
+     */
+    public function testIlDumpVieneScrittoConPermessiRistretti(): void
+    {
+        $bin = $this->dir . '/finto-mysqldump';
+        file_put_contents($bin, "#!/bin/sh\n"
+            . "for arg in \"\$@\"; do\n"
+            . "  case \"\$arg\" in\n"
+            . "    --result-file=*) printf 'dump di prova' > \"\${arg#--result-file=}\" ;;\n"
+            . "  esac\n"
+            . "done\n"
+            . "exit 0\n");
+        chmod($bin, 0755);
+
+        putenv('backup.mysqldumpPath=' . $bin);
+
+        try {
+            $backup = new DatabaseBackup([
+                'DBDriver' => 'MySQLi',
+                'hostname' => 'localhost',
+                'username' => 'app',
+                'database' => 'invoiceplane',
+            ], $this->dir);
+
+            $esito = $backup->dump();
+        } finally {
+            putenv('backup.mysqldumpPath');
+        }
+
+        $this->assertFileExists($esito['file']);
+        $this->assertSame(0600, fileperms($esito['file']) & 0777, 'Il dump deve essere leggibile solo dall\'utente del processo PHP');
+    }
+
     public function testRotazioneTieneGliUltimiDump(): void
     {
         foreach (range(1, 16) as $n) {

@@ -15,6 +15,15 @@ Le regole per scrivere le voci e preparare una release sono in
   **Scarica l'ultimo backup**, per portare la copia fuori dal server. Il file
   è sempre l'ultimo dump valido (niente percorsi nell'URL), il pulsante compare
   solo se esiste e il download resta riservato agli amministratori.
+- Un backup fallito manda una **email** alla casella di sistema (o al primo
+  amministratore): prima restava solo nel log e in un HTTP 500. Il freno è di
+  dodici ore, azzerato dal primo backup riuscito.
+- **Test nel browser** con Playwright (login, tema chiaro/scuro persistente,
+  ricerca nelle liste, Ctrl+K) e job dedicato in CI.
+- **Misura della copertura** in CI, con soglia minima sotto il valore attuale
+  per intercettare un crollo senza bloccare i refactoring.
+- `backup.pgDumpPath` e `backup.mysqldumpPath` sono nel `env` di esempio, dove
+  chi installa li cerca, oltre che nella guida.
 
 ### Modificato
 
@@ -32,6 +41,14 @@ Le regole per scrivere le voci e preparare una release sono in
   piena un errore scritto la mattina restava invisibile e la pagina diceva
   "nessun errore". Ora scorre tutto il file una riga per volta e indica l'ora
   dell'ultimo errore; un log non leggibile è un avviso, non un "tutto ok".
+
+### Sicurezza
+
+- I dump nascono con permessi **0600** invece di 0644: contengono dati
+  personali e fiscali e non devono essere leggibili da ogni utente locale.
+- Un test verifica che `custom.min.css` corrisponda alla minificazione fresca di
+  `custom.css`: in produzione si serve il compilato, e senza questa guardia una
+  modifica al foglio poteva non arrivare mai alla pagina.
 
 ## [v0.3] — 2026-11-12
 
