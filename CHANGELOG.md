@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.3] — 2026-11-12
+
 ### Aggiunto
 
 - `php spark backup:verify`: prova che l'ultimo dump si ripristini davvero.
@@ -146,4 +148,6 @@ portale pubblico per i documenti e API per l'automazione.
   dai test automatici. `tag_check.php` resta come strumento di sviluppo in
   `tools/`.
 
+[v0.3]: https://github.com/iacos93/invoiceplus/releases/tag/v0.3
+[v0.2]: https://github.com/iacos93/invoiceplus/releases/tag/v0.2
 [v0.1]: https://github.com/iacos93/invoiceplus/releases/tag/v0.1

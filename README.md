@@ -251,10 +251,11 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.2`, che aggiunge la
-pagina "Stato del sistema" (backup, automazioni, permessi, schema) e porta il
-backup automatico anche su MySQL/MariaDB. Il ramo `main` è verificato dalla CI
-a ogni push. Le modifiche sono elencate in [`CHANGELOG.md`](CHANGELOG.md): le
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.3`, che aggiunge la
+prova del ripristino del backup (`php spark backup:verify`: carica l'ultimo
+dump in un database temporaneo e confronta i conteggi), la esegue una volta a
+settimana dal cron-runner e porta a dieci i controlli della pagina "Stato del
+sistema". Il ramo `main` è verificato dalla CI a ogni push. Le modifiche sono elencate in [`CHANGELOG.md`](CHANGELOG.md): le
 versioni seguono [Semantic Versioning](https://semver.org/), quindi il numero
 di patch sale per le correzioni, il minore quando cambia qualcosa di visibile e
 il maggiore quando il progetto esce dallo stato di sviluppo. Come si scrive una
