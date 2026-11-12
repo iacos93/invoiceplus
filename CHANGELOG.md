@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.9.1] — 2026-11-12
+
 ### Corretto
 
 - **Il secondo fattore non rifiuta più codici giusti per pochi secondi di
