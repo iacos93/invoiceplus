@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.4] — 2026-11-12
+
 ### Aggiunto
 
 - **Gestione > Stato del sistema**: il controllo "Backup del database" offre
