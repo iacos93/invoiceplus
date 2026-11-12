@@ -86,14 +86,19 @@ test("l'interruttore del tracciamento email si salva davvero", async ({ page }) 
     const salva = page.locator('.ip-email-config-form button[type="submit"]');
 
     await casella.uncheck();
-    await Promise.all([page.waitForURL(/\/email_senders(\?|$)/), salva.click()]);
+    await salva.click();
+    // L'avviso è la prova che il POST è arrivato e il redirect è stato
+    // servito: ricaricare subito, con la navigazione ancora in corso, chiudeva
+    // la pagina sotto Playwright ("Not attached to an active page").
+    await expect(page.locator('.ip-toast--success')).toContainText('Configurazione email salvata');
     await page.reload();
     await expect(casella).not.toBeChecked();
 
     // Rimettere tutto com'era: le impostazioni sono globali e gli altri test
     // non devono ereditare un tracciamento spento.
     await casella.check();
-    await Promise.all([page.waitForURL(/\/email_senders(\?|$)/), salva.click()]);
+    await salva.click();
+    await expect(page.locator('.ip-toast--success')).toContainText('Configurazione email salvata');
     await page.reload();
     await expect(casella).toBeChecked();
 });
