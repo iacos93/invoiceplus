@@ -9,6 +9,14 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Aggiunto
+
+- **Indicatore delle email nelle liste**: fatture e preventivi mostrano sotto
+  il numero l'esito dell'ultimo invio — "Aperta" con la data della prima
+  apertura, oppure "Non aperta" — così non serve aprire ogni documento per
+  sapere quali email sono state lette. Il dettaglio nel tooltip riporta
+  destinatario e numero di aperture; i documenti mai inviati non hanno nota.
+
 ## [v0.7.1] — 2026-11-12
 
 ### Aggiunto

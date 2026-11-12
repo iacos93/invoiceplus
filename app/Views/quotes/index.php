@@ -251,6 +251,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                         <a href="<?= site_url('quotes/view/' . $quote['quote_id']) ?>">
                             <span class="ip-num"><?= esc($quote['quote_number'] ?: $quote['quote_id']) ?></span>
                         </a>
+                        <?= email_track_note($email_map[$quote['quote_id']] ?? null) ?>
                     </td>
                     <td class="ip-hide-on-mobile ip-col-secondary" data-label="<?= esc(trans('created')) ?>"><?= esc(date_from_mysql($quote['quote_date_created'])) ?></td>
                     <td data-cell="due" data-label="<?= esc(trans('expires')) ?>"><?= esc(date_from_mysql($quote['quote_date_expires'])) ?></td>

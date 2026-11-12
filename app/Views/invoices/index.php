@@ -352,6 +352,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                                 </span>
                                 <?php endif; ?>
                             <?php endif; ?>
+                            <?= email_track_note($email_map[$invoice['invoice_id']] ?? null) ?>
                         </td>
 
                         <td class="ip-hide-on-mobile ip-col-secondary" data-label="<?= esc(trans('created', '', 'Creata')) ?>">

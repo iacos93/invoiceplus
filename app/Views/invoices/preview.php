@@ -274,7 +274,7 @@ $actions .= '</ul></div></div>';
                 </div>
             <?php endif; ?>
 
-            <div class="card mt-3">
+            <div class="card mt-3" id="ip-email-tracks">
                 <div class="card-header">
                     <h2 class="ip-card-heading"><?= trans('email_tracking_emails_sent', '', 'Email inviate') ?></h2>
                 </div>

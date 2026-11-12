@@ -146,6 +146,43 @@ final class EmailTrackingLibraryTest extends CIUnitTestCase
         $this->assertSame('2020-01-01 10:00:00', $dopoSeconda['track_opened_at']);
     }
 
+    /**
+     * La mappa che alimenta le liste: un solo invio per documento (l'ultimo
+     * partito), nessun invio mai partito, nessuna riga di altri documenti.
+     */
+    public function testLaMappaDelleListeUsaLUltimoInvioPartito(): void
+    {
+        $this->impostaTracciamento('1');
+
+        $tracker = new EmailTracking();
+
+        $primo = $tracker->start('invoice', 999201, 'primo@example.com', 'Fattura');
+        $tracker->markSent((int) $primo['track_id']);
+
+        $secondo = $tracker->start('invoice', 999201, 'secondo@example.com', 'Sollecito');
+        $tracker->markSent((int) $secondo['track_id']);
+
+        // Mai partito: non deve coprire quello riuscito.
+        $tracker->start('invoice', 999201, 'bozza@example.com', 'Bozza');
+
+        // Altro documento e altro tipo: fuori dalla mappa richiesta.
+        $altro = $tracker->start('invoice', 999202, 'altro@example.com', 'Fattura');
+        $tracker->markSent((int) $altro['track_id']);
+
+        $preventivo = $tracker->start('quote', 999201, 'preventivo@example.com', 'Preventivo');
+        $tracker->markSent((int) $preventivo['track_id']);
+
+        $model = new EmailTrackModel();
+
+        $this->assertSame([], $model->latestMap('invoice', []), 'Senza documenti la mappa deve essere vuota');
+
+        $mappa = $model->latestMap('invoice', [999201, 999202]);
+
+        $this->assertCount(2, $mappa);
+        $this->assertSame('secondo@example.com', $mappa[999201]['track_recipient'], 'La mappa non mostra l\'ultimo invio partito');
+        $this->assertSame('altro@example.com', $mappa[999202]['track_recipient']);
+    }
+
     public function testLaPotaturaToglieVecchieERigheSenzaDocumento(): void
     {
         $this->impostaTracciamento('1');

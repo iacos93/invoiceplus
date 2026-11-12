@@ -11785,6 +11785,25 @@ html[data-theme="dark"] .ip-import-outcome.is-error{ background:#2c1c19; color:#
   margin-right: 2px;
 }
 
+/* Tracciamento email nella lista: sotto il numero, come la nota SdI, così
+   l'icona non allarga la colonna. Il verde segnala l'apertura, che è
+   l'informazione cercata; "non aperta" resta discreto perché può voler dire
+   solo che il programma di posta ha bloccato le immagini. */
+.ip-email-note {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-email-note .fa {
+  font-size: var(--ip-text-xs);
+  margin-right: 2px;
+}
+.ip-email-note--opened {
+  color: var(--ip-success-text);
+}
+
 /* Badge accanto a un numero documento (XML nella lista costi): sotto il
    numero, non di fianco — i numeri dei fornitori sono lunghi
    (2026F001340825) e il badge in linea allargava la colonna. */

@@ -66,6 +66,10 @@ class Quotes extends BaseController
             // parla dello stesso perimetro della lista.
             'period_totals'  => $this->quoteModel->getPeriodTotals($status, $year, $months, $favourite),
             'month_totals'   => $this->quoteModel->getMonthlyTotals($status, $year, $favourite),
+            // Ultimo invio per riga: la lista dice se l'email è stata aperta,
+            // con una sola query per pagina (vedi email_track_note()).
+            'email_map'      => (new \App\Models\EmailTrackModel())
+                ->latestMap('quote', array_column($quotes, 'quote_id')),
         ];
 
         return view('quotes/index', $data);

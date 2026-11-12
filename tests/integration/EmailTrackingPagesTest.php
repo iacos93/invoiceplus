@@ -95,7 +95,7 @@ final class EmailTrackingPagesTest extends CIUnitTestCase
 
     public function testIlPreventivoMostraLeEmailInviate(): void
     {
-        $id = $this->primoDocumento('ip_quotes', 'quote_id');
+        $id = $this->documentoInCima('ip_quotes', 'quote_id', 'quote_date_created');
         $this->inviaTracciata('quote', $id);
 
         $vista = $this->withSession($this->sessione())->get('/quotes/view/' . $id);
@@ -108,6 +108,72 @@ final class EmailTrackingPagesTest extends CIUnitTestCase
         $this->assertStringContainsString('Prima apertura il', $html, 'Un\'email aperta non risulta aperta');
         $this->assertStringContainsString('2 aperture', $html, 'Manca il numero di aperture');
         $this->assertStringContainsString('Il conteggio è indicativo', $html, 'Manca l\'avviso sui limiti del tracciamento');
+    }
+
+    public function testLaListaFattureMostraSeLEmailEStataAperta(): void
+    {
+        $id = $this->documentoInCima('ip_invoices', 'invoice_id', 'invoice_date_created');
+        $this->inviaTracciata('invoice', $id);
+
+        $pagina = $this->withSession($this->sessione())->get('/invoices/status/all?year=0');
+        $this->assertSame(200, $pagina->response()->getStatusCode(), 'La lista fatture non si apre');
+
+        $html = (string) $pagina->response()->getBody();
+
+        $this->assertStringContainsString(
+            'ip-email-note--opened',
+            $html,
+            'La riga della fattura non segnala l\'email aperta'
+        );
+        $this->assertStringContainsString('Prima apertura il', $html, 'Manca la data della prima apertura');
+    }
+
+    public function testLaListaPreventiviMostraSeLEmailEStataAperta(): void
+    {
+        $id = $this->documentoInCima('ip_quotes', 'quote_id', 'quote_date_created');
+        $this->inviaTracciata('quote', $id);
+
+        $pagina = $this->withSession($this->sessione())->get('/quotes/status/all?year=0');
+        $this->assertSame(200, $pagina->response()->getStatusCode(), 'La lista preventivi non si apre');
+
+        $html = (string) $pagina->response()->getBody();
+
+        $this->assertStringContainsString(
+            'ip-email-note--opened',
+            $html,
+            'La riga del preventivo non segnala l\'email aperta'
+        );
+        $this->assertStringContainsString('Prima apertura il', $html, 'Manca la data della prima apertura');
+    }
+
+    /**
+     * Un invio che il pixel non ha mai visto resta una nota discreta, non un
+     * silenzio: chi guarda la lista deve poter distinguere "non inviata" da
+     * "inviata ma non risulta aperta".
+     */
+    public function testLaListaDistingueLInvioNonAperto(): void
+    {
+        $id     = $this->documentoInCima('ip_invoices', 'invoice_id', 'invoice_date_created');
+        $adesso = date('Y-m-d H:i:s');
+
+        $this->testDb->table('ip_email_tracks')->insert([
+            'track_token'         => bin2hex(random_bytes(24)),
+            'track_document_type' => 'invoice',
+            'track_document_id'   => $id,
+            'track_company_id'    => $this->azienda,
+            'track_recipient'     => 'cliente@example.com',
+            'track_subject'       => 'Documento in allegato',
+            'track_sent_at'       => $adesso,
+            'track_open_count'    => 0,
+            'track_created_at'    => $adesso,
+        ]);
+
+        $pagina = $this->withSession($this->sessione())->get('/invoices/status/all?year=0');
+        $html   = (string) $pagina->response()->getBody();
+
+        $this->assertStringContainsString('ip-email-note', $html, 'Manca la nota dell\'invio');
+        $this->assertStringContainsString('Non aperta', $html, 'Un invio non aperto deve dirlo');
+        $this->assertStringNotContainsString('ip-email-note--opened', $html, 'Un invio non aperto non deve sembrare aperto');
     }
 
     public function testLElencoEmailHaLInterruttore(): void
@@ -192,6 +258,23 @@ final class EmailTrackingPagesTest extends CIUnitTestCase
     {
         $riga = $this->testDb->query(
             "SELECT {$chiave} AS id FROM {$tabella} WHERE company_id = ? ORDER BY {$chiave} DESC LIMIT 1",
+            [$this->azienda]
+        )->getRow();
+
+        $this->assertNotNull($riga, "Nessun documento in {$tabella} per l'azienda di prova");
+
+        return (int) $riga->id;
+    }
+
+    /**
+     * Il documento che la lista mostra per primo: stesso ordine della query
+     * (data discendente, poi id), così il test non dipende dalla paginazione
+     * — una nota di credito vecchia per data finirebbe in fondo.
+     */
+    private function documentoInCima(string $tabella, string $chiave, string $data): int
+    {
+        $riga = $this->testDb->query(
+            "SELECT {$chiave} AS id FROM {$tabella} WHERE company_id = ? ORDER BY {$data} DESC, {$chiave} DESC LIMIT 1",
             [$this->azienda]
         )->getRow();
 

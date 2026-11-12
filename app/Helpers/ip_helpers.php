@@ -1098,6 +1098,60 @@ if (!function_exists('format_client')) {
     }
 }
 
+if (!function_exists('email_track_note')) {
+    /**
+     * Nota compatta sotto il numero del documento: dice se l'ultima email
+     * inviata è stata aperta.
+     *
+     * Sta nelle liste di fatture e preventivi, dove una riga per documento
+     * deve restare leggibile: il testo visibile è una parola, il dettaglio
+     * (prima apertura, destinatario, numero di aperture) sta nel title e in
+     * una porzione nascosta per gli screen reader. Restituisce stringa vuota
+     * se il documento non ha invii: nessuna icona senza informazione.
+     */
+    function email_track_note($track): string
+    {
+        if (!is_array($track) || empty($track['track_sent_at'])) {
+            return '';
+        }
+
+        $destinatario = trim((string) ($track['track_recipient'] ?? ''));
+
+        if (!empty($track['track_opened_at'])) {
+            $dettaglio = sprintf(
+                trans('email_tracking_opened_on'),
+                datetime_from_mysql($track['track_opened_at'])
+            );
+
+            if ((int) ($track['track_open_count'] ?? 0) > 1) {
+                $dettaglio .= ' · ' . sprintf(trans('email_tracking_opens'), (int) $track['track_open_count']);
+            }
+
+            if ($destinatario !== '') {
+                $dettaglio .= ' · ' . $destinatario;
+            }
+
+            return '<span class="ip-email-note ip-email-note--opened" title="' . esc($dettaglio, 'attr') . '">'
+                . '<i class="fa fa-solid fa-envelope-open" aria-hidden="true"></i> '
+                . esc(trans('email_tracking_list_opened'))
+                . '<span class="visually-hidden"> — ' . esc($dettaglio) . '</span>'
+                . '</span>';
+        }
+
+        $dettaglio = trans('email_tracking_list_sent') . ' — ' . trans('email_tracking_list_sent_help');
+
+        if ($destinatario !== '') {
+            $dettaglio .= ' ' . $destinatario . '.';
+        }
+
+        return '<span class="ip-email-note" title="' . esc($dettaglio, 'attr') . '">'
+            . '<i class="fa fa-solid fa-envelope" aria-hidden="true"></i> '
+            . esc(trans('email_tracking_list_sent'))
+            . '<span class="visually-hidden"> — ' . esc(trans('email_tracking_list_sent_help')) . '</span>'
+            . '</span>';
+    }
+}
+
 if (!function_exists('expense_status_badge')) {
     /**
      * Stato di una spesa passiva, per la colonna "Stato" della lista.

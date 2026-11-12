@@ -99,11 +99,12 @@ dump sono dati fiscali in chiaro e non vanno lasciati sotto la document root.
   ripiego) e casella PEC per il canale SdI, scelte per azienda.
 - **Tracciamento aperture**: le email di fatture e preventivi portano un pixel
   invisibile e la pagina del documento mostra gli invii con data, destinatario
-  e prima apertura. Il dato è indicativo — chi blocca le immagini non carica il
-  pixel, e alcuni client le scaricano in anticipo — e si spegne da **Email e
-  mittenti**. L'IP è salvato in forma anonima, lo user agent non viene
-  memorizzato; il cron settimanale elimina le righe più vecchie di un anno e
-  quelle di documenti eliminati (`php spark email:prune`).
+  e prima apertura; nelle liste fatture e preventivi una nota sotto il numero
+  dice se l'ultimo invio è stato aperto. Il dato è indicativo — chi blocca le
+  immagini non carica il pixel, e alcuni client le scaricano in anticipo — e si
+  spegne da **Email e mittenti**. L'IP è salvato in forma anonima, lo user
+  agent non viene memorizzato; il cron settimanale elimina le righe più vecchie
+  di un anno e quelle di documenti eliminati (`php spark email:prune`).
 - **Template email**: testi e segnaposto per invio documenti, solleciti e
   notifiche. Si modificano da Impostazioni senza toccare il codice.
 - **Coda**: con Redis attivo gli invii possono passare da una coda

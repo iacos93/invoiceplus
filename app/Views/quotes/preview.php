@@ -120,7 +120,7 @@ $actions .= '</ul></div></div>';
                 </div>
             </div>
 
-            <div class="card mt-3">
+            <div class="card mt-3" id="ip-email-tracks">
                 <div class="card-header"><?= trans('email_tracking_emails_sent', '', 'Email inviate') ?></div>
                 <div class="card-body">
                     <?php if (empty($email_tracks)): ?>

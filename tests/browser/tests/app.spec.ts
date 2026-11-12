@@ -71,3 +71,42 @@ test('Ctrl+K porta il focus nella ricerca globale', async ({ page }) => {
 
     await expect(page.locator('#ip-global-search-input')).toBeFocused();
 });
+
+test("l'interruttore del tracciamento email si salva davvero", async ({ page }) => {
+    await login(page);
+    await page.goto('/email_senders');
+
+    // La casella è dentro il form delle impostazioni, non in una modale: il
+    // test la usa come farebbe una persona e ricarica per leggere il valore
+    // dal database, non dalla pagina appena inviata.
+    const casella = page.locator('input[name="settings[email_tracking_enabled]"][type="checkbox"]');
+    await expect(casella).toBeVisible();
+    await expect(casella).toBeChecked();
+
+    const salva = page.locator('.ip-email-config-form button[type="submit"]');
+
+    await casella.uncheck();
+    await Promise.all([page.waitForURL(/\/email_senders(\?|$)/), salva.click()]);
+    await page.reload();
+    await expect(casella).not.toBeChecked();
+
+    // Rimettere tutto com'era: le impostazioni sono globali e gli altri test
+    // non devono ereditare un tracciamento spento.
+    await casella.check();
+    await Promise.all([page.waitForURL(/\/email_senders(\?|$)/), salva.click()]);
+    await page.reload();
+    await expect(casella).toBeChecked();
+});
+
+test('la scheda Email inviate compare nella pagina del documento', async ({ page }) => {
+    await login(page);
+    await page.goto('/invoices/status/all?year=0');
+
+    const primoNumero = page.locator('td[data-cell="number"] a').first();
+    await expect(primoNumero).toBeVisible();
+    await primoNumero.click();
+
+    const scheda = page.locator('#ip-email-tracks');
+    await expect(scheda).toBeVisible();
+    await expect(scheda.locator('.ip-preview__empty, .ip-preview__payments--tracks')).toBeVisible();
+});

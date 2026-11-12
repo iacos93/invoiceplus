@@ -196,6 +196,10 @@ class Invoices extends BaseController
             'month_totals'     => $monthTotals,
             'sdi_map'          => (new \App\Models\SdiTransmissionModel())
                 ->latestMap(array_column($invoices, 'invoice_id')),
+            // Ultimo invio per riga: la lista mostra se l'email è stata aperta
+            // senza una query per fattura (vedi email_track_note()).
+            'email_map'        => (new \App\Models\EmailTrackModel())
+                ->latestMap('invoice', array_column($invoices, 'invoice_id')),
         ];
 
         return view('invoices/index', $data);

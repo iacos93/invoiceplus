@@ -43,6 +43,38 @@ class EmailTrackModel extends Model
             ->findAll($limit);
     }
 
+    /**
+     * Mappa document_id => ultimo invio partito, per le liste di fatture e
+     * preventivi. Una sola query per pagina, come fa SdiTransmissionModel:
+     * senza questa, ogni riga della lista chiederebbe il proprio invio.
+     *
+     * Si leggono tutte le righe della finestra e l'ultima vince: gli invii per
+     * documento sono pochi (uno per sollecito), quindi non serve la subquery
+     * con MAX che renderebbe la query diversa tra PostgreSQL e MySQL.
+     */
+    public function latestMap(string $type, array $documentIds): array
+    {
+        $documentIds = array_values(array_unique(array_filter(array_map('intval', $documentIds))));
+
+        if ($documentIds === []) {
+            return [];
+        }
+
+        $rows = $this->where('track_document_type', $type)
+            ->whereIn('track_document_id', $documentIds)
+            ->where('track_sent_at IS NOT NULL')
+            ->orderBy('track_id', 'ASC')
+            ->findAll();
+
+        $map = [];
+
+        foreach ($rows as $row) {
+            $map[(int) $row['track_document_id']] = $row;
+        }
+
+        return $map;
+    }
+
     public function findByToken(string $token): ?array
     {
         return $this->where('track_token', $token)->first();
