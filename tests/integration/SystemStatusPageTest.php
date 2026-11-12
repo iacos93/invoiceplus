@@ -93,6 +93,14 @@ final class SystemStatusPageTest extends CIUnitTestCase
             substr_count($html, 'badge text-bg-'),
             'Ogni controllo deve avere il suo stato, non solo l\'etichetta'
         );
+
+        $this->assertStringContainsString('ip-status-hero', $html, 'Manca il riepilogo in testa');
+        $this->assertStringContainsString('Rilevato il', $html, 'Manca l\'orario di rilevamento');
+        $this->assertSame(
+            10,
+            substr_count($html, 'class="ip-status-row ip-status-row--'),
+            'I controlli devono essere una riga ciascuno'
+        );
     }
 
     /** @return array<string, mixed> */

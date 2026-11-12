@@ -9,6 +9,19 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Modificato
+
+- **Gestione > Stato del sistema**: riepilogo in testa con esito complessivo e
+  conteggi per stato; i controlli sono una lista con icona, etichetta,
+  dettaglio e suggerimento a tutta larghezza, invece di una tabella a tre
+  colonne. Guasti e avvisi salgono in cima; in testa ci sono l'orario del
+  rilevamento e il pulsante "Aggiorna".
+
+### Corretto
+
+- Il dettaglio delle migrazioni diceva "1 migrazioni da applicare": ora dice
+  "1 migrazione".
+
 ## [v0.3] — 2026-11-12
 
 ### Aggiunto

@@ -211,6 +211,24 @@ final class SystemStatusTest extends CIUnitTestCase
         $this->assertNotSame('', $check['hint']);
     }
 
+    /**
+     * Un guasto in fondo alla lista si legge solo se si scorre tutto: i
+     * controlli da sistemare vanno in cima, e a parità di stato resta
+     * l'ordine di arrivo.
+     */
+    public function testIControlliGuastiVengonoPrima(): void
+    {
+        $ordinati = SystemStatus::bySeverity([
+            ['key' => 'a', 'label' => 'A', 'state' => SystemStatus::OK, 'detail' => '', 'hint' => ''],
+            ['key' => 'b', 'label' => 'B', 'state' => SystemStatus::ERROR, 'detail' => '', 'hint' => ''],
+            ['key' => 'c', 'label' => 'C', 'state' => SystemStatus::WARNING, 'detail' => '', 'hint' => ''],
+            ['key' => 'd', 'label' => 'D', 'state' => SystemStatus::OK, 'detail' => '', 'hint' => ''],
+            ['key' => 'e', 'label' => 'E', 'state' => SystemStatus::ERROR, 'detail' => '', 'hint' => ''],
+        ]);
+
+        $this->assertSame(['b', 'e', 'c', 'a', 'd'], array_column($ordinati, 'key'));
+    }
+
     public function testSenzaVerificaDelRipristinoEAvviso(): void
     {
         $check = $this->stato()->restoreCheck();

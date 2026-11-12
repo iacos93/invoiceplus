@@ -12863,3 +12863,249 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   .ip-recent-table > * > tr > :first-child { padding-left: 14px; }
   .ip-recent-table > * > tr > :last-child  { padding-right: 14px; }
 }
+
+/* =============================================================================
+   Stato del sistema — riepilogo in testa e lista dei controlli
+   -----------------------------------------------------------------------------
+   La pagina nasceva come una tabella a tre colonne (controllo, stato,
+   dettaglio). Funzionava, ma per rispondere alla domanda con cui la si apre —
+   "devo preoccuparmi?" — bisognava leggere dieci badge uno per uno, e i
+   suggerimenti lunghi finivano in una colonna stretta.
+
+   Ora c'è un riepilogo che dà l'esito in una riga (stato peggiore, conteggi)
+   e una lista in cui ogni controllo è una riga con icona, etichetta, dettaglio
+   e suggerimento su tutta la larghezza. Il colore non è l'unico segnale:
+   icona, parola ("regolare", "da controllare", "guasto") e numero dei
+   conteggi restano leggibili anche senza distinguere le tinte.
+   -------------------------------------------------------------------------- */
+
+/* Un solo insieme di token per stato, usato sia dal riepilogo sia dalle
+   righe: la tinta piena per barra, icona e pallino; la variante -text per il
+   testo (l'ambra piena su fondo chiaro sta intorno a 2:1). */
+.ip-status-hero--ok,
+.ip-status-row--ok,
+.ip-status-count--ok {
+  --ip-stato:      var(--ip-success);
+  --ip-stato-bg:   var(--ip-success-bg);
+  --ip-stato-text: var(--ip-success-text);
+}
+.ip-status-hero--warning,
+.ip-status-row--warning,
+.ip-status-count--warning {
+  --ip-stato:      var(--ip-warning);
+  --ip-stato-bg:   var(--ip-warning-bg);
+  --ip-stato-text: var(--ip-warning-text);
+}
+.ip-status-hero--error,
+.ip-status-row--error,
+.ip-status-count--error {
+  --ip-stato:      var(--ip-danger);
+  --ip-stato-bg:   var(--ip-danger-bg);
+  --ip-stato-text: var(--ip-danger-text);
+}
+
+/* Riepilogo: fondo tinto dallo stato peggiore, barra piena a sinistra (lo
+   stesso segno di .ip-window--alert, così "c'è un problema" si vede dal
+   bordo della pagina senza leggere). */
+.ip-status-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--ip-space-7);
+  margin: var(--ip-space-7) 0 0;
+  padding: var(--ip-space-7) var(--ip-space-8);
+  background: var(--ip-stato-bg);
+  border: 1px solid color-mix(in srgb, var(--ip-stato) 30%, var(--ip-border));
+  border-left: 4px solid var(--ip-stato);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-sm);
+}
+/* L'icona sta su fondo card, non sulla tinta: il glifo in --ip-stato-text
+   resta sopra 4,5:1 in entrambi i temi, mentre il pieno ambra con il bianco
+   scendeva a 2,28:1. */
+.ip-status-hero__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ip-bg-card);
+  border: 1px solid color-mix(in srgb, var(--ip-stato) 35%, transparent);
+  color: var(--ip-stato-text);
+  font-size: var(--ip-text-xl);
+}
+.ip-status-hero__body {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.ip-status-hero__eyebrow {
+  margin: 0 0 2px;
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ip-stato-text);
+}
+.ip-status-hero__title {
+  margin: 0;
+  font-size: var(--ip-text-2xl);
+  line-height: 1.2;
+}
+.ip-status-hero__lead {
+  margin: var(--ip-space-2) 0 0;
+  /* Il testo sta sulla tinta di stato, non sulla card: --ip-text-muted è
+     tarato sul canvas e qui va verificato a occhio. A 13px resta sopra
+     4,5:1 su tutte e tre le tinte. */
+  color: var(--ip-text);
+  font-size: var(--ip-text-base);
+  max-width: 70ch;
+}
+
+/* Conteggi: tre numeri, non tre badge. Il pallino porta il colore, la cifra
+   resta in inchiostro — uno zero rosso sembrerebbe un guasto anche quando
+   non c'è. */
+.ip-status-hero__counts {
+  display: flex;
+  gap: var(--ip-space-8);
+  margin: 0 0 0 auto;
+  padding: 0;
+}
+.ip-status-count {
+  min-width: 76px;
+}
+.ip-status-count dt {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-status-count dd {
+  margin: 2px 0 0;
+  font-size: var(--ip-text-2xl);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text);
+}
+.ip-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ip-stato);
+}
+
+/* Lista dei controlli: righe separate da un filo, senza hover — non sono
+   cliccabili, e un fondo che si accende al passaggio del mouse prometterebbe
+   un'azione che non c'è. */
+.ip-status-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ip-status-row {
+  display: flex;
+  gap: var(--ip-space-6);
+  padding: var(--ip-card-head-y) var(--ip-card-pad-x);
+  border-top: 1px solid var(--ip-border-soft);
+}
+.ip-status-row:first-child {
+  border-top: 0;
+}
+.ip-status-row__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-stato-bg);
+  color: var(--ip-stato-text);
+  font-size: var(--ip-text-base);
+}
+.ip-status-row__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ip-status-row__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ip-space-2) var(--ip-space-6);
+}
+.ip-status-row__label {
+  margin: 0;
+  font-size: var(--ip-text-md);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.ip-status-row__head .badge {
+  margin-left: auto;
+}
+.ip-status-row__detail {
+  margin: var(--ip-space-2) 0 0;
+  font-size: var(--ip-text-base);
+  line-height: 1.5;
+  color: var(--ip-text);
+  /* Un dettaglio con un percorso o un messaggio di errore lungo non deve
+     allargare la riga oltre la lettura comoda. */
+  max-width: 78ch;
+  overflow-wrap: anywhere;
+}
+.ip-status-row__hint {
+  display: flex;
+  gap: var(--ip-space-3);
+  margin: var(--ip-space-3) 0 0;
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  color: var(--ip-text-muted);
+  max-width: 78ch;
+}
+/* L'icona del suggerimento resta neutra: colorata di stato sarebbe un
+   secondo allarme sulla stessa riga, e il punto lo fa già il badge. */
+.ip-status-row__hint i {
+  flex: 0 0 auto;
+  margin-top: 3px;
+  color: var(--ip-text-muted);
+}
+
+/* Sotto i 992px i conteggi passano sotto il testo: in orizzontale rubavano
+   la larghezza al titolo, che andava a capo a metà parola. */
+@media (max-width: 991.98px) {
+  .ip-status-hero__counts {
+    width: 100%;
+    margin-left: 0;
+    padding-top: var(--ip-space-5);
+    border-top: 1px solid color-mix(in srgb, var(--ip-stato) 25%, transparent);
+    justify-content: space-between;
+  }
+}
+@media (max-width: 575.98px) {
+  .ip-status-hero {
+    padding: var(--ip-space-6) var(--ip-space-7);
+    gap: var(--ip-space-5);
+  }
+  .ip-status-hero__icon {
+    width: 38px;
+    height: 38px;
+    font-size: var(--ip-text-lg);
+  }
+  .ip-status-hero__counts {
+    gap: var(--ip-space-4);
+  }
+  /* Su telefono la riga resta leggibile: il badge va sotto l'etichetta
+     invece di comprimerla, e il dettaglio occupa tutta la larghezza. */
+  .ip-status-row {
+    padding: var(--ip-space-6) var(--ip-space-7);
+  }
+  .ip-status-row__head .badge {
+    margin-left: 0;
+  }
+}

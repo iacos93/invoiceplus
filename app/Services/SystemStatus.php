@@ -443,6 +443,31 @@ final class SystemStatus
     }
 
     /**
+     * Mette in cima i controlli guasti, poi gli avvisi, poi i regolari.
+     *
+     * La pagina si apre per trovare le cose da sistemare: con dieci controlli
+     * tutti allo stesso livello, un guasto in fondo alla lista si legge solo
+     * se si scorre tutto. L'ordinamento è stabile (PHP 8), quindi a parità di
+     * stato resta l'ordine in cui i controlli sono stati prodotti.
+     *
+     * @param list<array{key: string, label: string, state: string, detail: string, hint: string}> $checks
+     *
+     * @return list<array{key: string, label: string, state: string, detail: string, hint: string}>
+     */
+    public static function bySeverity(array $checks): array
+    {
+        $gravita = [
+            self::ERROR   => 0,
+            self::WARNING => 1,
+            self::OK      => 2,
+        ];
+
+        usort($checks, static fn (array $a, array $b): int => ($gravita[$a['state']] ?? 3) <=> ($gravita[$b['state']] ?? 3));
+
+        return $checks;
+    }
+
+    /**
      * Ultimi $bytes di un file, senza caricarlo tutto in memoria: i log
      * possono essere grandi e qui interessa solo la coda.
      */

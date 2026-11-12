@@ -98,7 +98,9 @@ class SystemStatus extends BaseController
             'key'    => 'migrations',
             'label'  => 'Migrazioni',
             'state'  => SystemStatusService::ERROR,
-            'detail' => count($pendenti) . ' migrazioni da applicare: ' . $elenco,
+            'detail' => count($pendenti) === 1
+                ? '1 migrazione da applicare: ' . $elenco
+                : count($pendenti) . ' migrazioni da applicare: ' . $elenco,
             'hint'   => 'Dopo un aggiornamento esegui `php spark migrate`. Con lo schema indietro rispetto al codice, le pagine possono fallire su colonne che il codice si aspetta.',
         ];
     }
