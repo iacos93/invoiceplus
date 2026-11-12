@@ -295,6 +295,11 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                                         <i class="fa fa-regular fa-file-pdf fa-margin" aria-hidden="true"></i> <?= trans('pdf') ?>
                                     </a>
                                 </li>
+                                <li>
+                                    <a href="<?= site_url('mailer/quote/' . $quote['quote_id']) ?>">
+                                        <i class="fa fa-solid fa-envelope fa-margin" aria-hidden="true"></i> <?= trans('email_quote', '', 'Invia preventivo') ?>
+                                    </a>
+                                </li>
                                 <?php if ((int) $quote['quote_status_id'] === 1): ?>
                                 <li>
                                     <?php /* La modifica di un preventivo esistente sta in

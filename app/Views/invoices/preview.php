@@ -52,6 +52,12 @@ $actions = '<div class="ip-doc-actions">'
     . '<a class="btn btn-sm btn-secondary" href="' . site_url('invoices/generate_pdf/' . $invoice_id) . '">'
     . '<i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> ' . trans('download_pdf', '', 'PDF') . '</a>';
 
+// Invio per email: apre la schermata del Mailer con l'anteprima del messaggio,
+// il template e il PDF allegabile. La stessa pagina mostra come configurare
+// un mittente se non ce n'e' ancora uno.
+$actions .= '<a class="btn btn-sm btn-secondary" href="' . site_url('mailer/invoice/' . $invoice_id) . '">'
+    . '<i class="fa fa-solid fa-envelope" aria-hidden="true"></i> ' . trans('email_invoice', '', 'Invia fattura') . '</a>';
+
 // Anche per le note di credito: escono come TD04 con importi positivi e
 // riferimento alla fattura d'origine (Invoices::generateXml), quindi il
 // tracciato e' valido e va mostrato e scaricato come per le fatture.

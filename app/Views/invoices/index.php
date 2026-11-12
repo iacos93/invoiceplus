@@ -410,6 +410,11 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                                         </a>
                                     </li>
                                     <li>
+                                        <a href="<?= site_url('mailer/invoice/' . (int) $invoice['invoice_id']) ?>">
+                                            <i class="fa fa-solid fa-envelope fa-margin" aria-hidden="true"></i> <?= trans('email_invoice', '', 'Invia fattura') ?>
+                                        </a>
+                                    </li>
+                                    <li>
                                         <a href="<?= site_url('invoices/preview_xml/' . (int) $invoice['invoice_id']) ?>">
                                             <i class="fa fa-regular fa-file-code fa-margin" aria-hidden="true"></i> <?= trans('xml_preview', '', 'Anteprima fattura elettronica') ?>
                                         </a>

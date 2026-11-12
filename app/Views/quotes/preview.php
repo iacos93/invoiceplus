@@ -39,6 +39,10 @@ $actions = '<div class="ip-doc-actions">'
     . '<i class="fa fa-solid fa-pencil" aria-hidden="true"></i> ' . trans('edit', '', 'Modifica') . '</a>'
     . '<a class="btn btn-sm btn-secondary" href="' . site_url('quotes/generate_pdf/' . $quote_id) . '">'
     . '<i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> ' . trans('download_pdf', '', 'PDF') . '</a>'
+    // Invio per email: stessa schermata della fattura, con template, mittente
+    // e allegato PDF del preventivo.
+    . '<a class="btn btn-sm btn-secondary" href="' . site_url('mailer/quote/' . $quote_id) . '">'
+    . '<i class="fa fa-solid fa-envelope" aria-hidden="true"></i> ' . trans('email_quote', '', 'Invia preventivo') . '</a>'
     . '<form action="' . site_url('quotes/ajax/quote_to_invoice') . '" method="POST">' . csrf_field()
     . '<input type="hidden" name="quote_id" value="' . $quote_id . '">'
     . '<button type="submit" class="btn btn-sm btn-secondary"><i class="fa fa-regular fa-file-text" aria-hidden="true"></i> '
