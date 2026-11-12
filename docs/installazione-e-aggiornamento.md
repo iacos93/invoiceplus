@@ -107,6 +107,12 @@ Il dump contiene i dati fiscali completi. **Va portato fuori dal server**:
 `writable/backups` è una copia di lavoro, non un archivio. Se il server si
 perde, si perdono anche i backup che stanno dentro.
 
+Per portarlo fuori si può partire da **Gestione > Stato del sistema**: il
+controllo "Backup del database" mostra **Scarica l'ultimo backup** e consegna
+il dump più recente. Il pulsante compare solo quando un file valido esiste; il
+nome non si sceglie nell'URL (è sempre l'ultimo prodotto), quindi non è un modo
+per leggere altri file. Il download resta dietro l'accesso da amministratore.
+
 Su MySQL/MariaDB si può indicare il binario allo stesso modo, se `mysqldump`
 non è nel PATH o è di una versione sbagliata:
 

@@ -21,7 +21,8 @@ class SystemStatus extends BaseController
 {
     public function index()
     {
-        $checks = SystemStatusService::fromApp()->checks();
+        $service = SystemStatusService::fromApp();
+        $checks  = $service->checks();
 
         $checks[] = $this->databaseCheck();
         $checks[] = $this->migrationCheck();
@@ -29,7 +30,47 @@ class SystemStatus extends BaseController
         return view('system/status', [
             'title'  => trans('system_status', '', 'Stato del sistema'),
             'checks' => $checks,
+            // Serve alla riga "Backup del database" per mostrare il pulsante
+            // di download solo quando c'è davvero un file da scaricare.
+            'backup' => $service->latestBackup(),
         ]);
+    }
+
+    /**
+     * Scarica l'ultimo dump del database.
+     *
+     * La copia off-site non si può automatizzare da qui (non c'è un servizio
+     * di destinazione configurato), quindi la pagina mette a disposizione il
+     * file: chi amministra lo salva fuori dal server. Il nome non arriva
+     * dall'URL, così non esiste un percorso da manipolare per leggere altri
+     * file; il controllo su realpath è la seconda rete, per i collegamenti
+     * simbolici.
+     */
+    public function downloadBackup()
+    {
+        $backup = SystemStatusService::fromApp()->latestBackup();
+
+        if ($backup === null) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Nessun backup da scaricare');
+        }
+
+        $base = realpath(WRITEPATH . 'backups');
+        $file = realpath($backup['path']);
+
+        if ($base === false
+            || $file === false
+            || ! str_starts_with($file, $base . DIRECTORY_SEPARATOR)
+            || ! is_file($file)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        log_message('info', 'Backup scaricato: {file} ({size} byte) da utente {user}', [
+            'file' => $backup['name'],
+            'size' => $backup['size'],
+            'user' => (int) session('user_id'),
+        ]);
+
+        return $this->response->download($file, null);
     }
 
     /**

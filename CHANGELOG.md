@@ -9,6 +9,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Aggiunto
+
+- **Gestione > Stato del sistema**: il controllo "Backup del database" offre
+  **Scarica l'ultimo backup**, per portare la copia fuori dal server. Il file
+  è sempre l'ultimo dump valido (niente percorsi nell'URL), il pulsante compare
+  solo se esiste e il download resta riservato agli amministratori.
+
 ### Modificato
 
 - **Gestione > Stato del sistema**: riepilogo in testa con esito complessivo e

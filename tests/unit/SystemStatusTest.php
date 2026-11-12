@@ -177,6 +177,37 @@ final class SystemStatusTest extends CIUnitTestCase
         $this->assertStringContainsString('backup_20261110_030000.dump', $check['detail']);
     }
 
+    /**
+     * Il download prende l'ultimo dump valido: un file da 0 byte o un
+     * "backup_*" che non è un dump non devono diventare la copia che si porta
+     * fuori dal server.
+     */
+    public function testUltimoBackupScaricabileSaltaFileNonValidi(): void
+    {
+        $valido = $this->backups . '/backup_20261110_030000.dump';
+        $vuoto  = $this->backups . '/backup_20261112_030000.dump';
+        $altro  = $this->backups . '/backup_20261111_030000.txt';
+
+        file_put_contents($valido, 'dump vero');
+        file_put_contents($vuoto, '');
+        file_put_contents($altro, 'non è un dump');
+
+        touch($valido, $this->now - 3600);
+        touch($vuoto, $this->now);
+        touch($altro, $this->now - 60);
+
+        $backup = $this->stato()->latestBackup();
+
+        $this->assertNotNull($backup);
+        $this->assertSame('backup_20261110_030000.dump', $backup['name']);
+        $this->assertSame(9, $backup['size']);
+    }
+
+    public function testSenzaBackupNonCEDaScaricareNiente(): void
+    {
+        $this->assertNull($this->stato()->latestBackup());
+    }
+
     public function testSenzaEsecuzioniDelCronEAvviso(): void
     {
         $check = $this->stato()->cronCheck();

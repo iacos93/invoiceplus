@@ -27,6 +27,9 @@ final class SystemStatusPageTest extends CIUnitTestCase
 
     private int $utente = 1;
 
+    /** Dump finto creato per verificare il download senza toccare i dati veri. */
+    private ?string $dumpDiProva = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,10 +57,28 @@ final class SystemStatusPageTest extends CIUnitTestCase
 
         $row          = $this->testDb->query('SELECT user_id FROM ip_users ORDER BY user_id LIMIT 1')->getRow();
         $this->utente = (int) ($row->user_id ?? 1);
+
+        // Il download si prova su un dump finto e recente: in locale la
+        // cartella contiene i backup veri (con dati personali) e non devono
+        // uscire dai test.
+        $dir = WRITEPATH . 'backups';
+
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $this->dumpDiProva = $dir . '/backup_test_' . bin2hex(random_bytes(4)) . '.dump';
+        file_put_contents($this->dumpDiProva, "contenuto di prova\n");
+        touch($this->dumpDiProva, time());
     }
 
     protected function tearDown(): void
     {
+        if ($this->dumpDiProva !== null) {
+            @unlink($this->dumpDiProva);
+            $this->dumpDiProva = null;
+        }
+
         $this->restoreConnections();
 
         parent::tearDown();
@@ -101,6 +122,67 @@ final class SystemStatusPageTest extends CIUnitTestCase
             substr_count($html, 'class="ip-status-row ip-status-row--'),
             'I controlli devono essere una riga ciascuno'
         );
+    }
+
+    public function testLaPaginaOffreIlDownloadDelBackup(): void
+    {
+        $risposta = $this->withSession($this->sessione())->get('/system/status');
+        $html     = html_entity_decode((string) $risposta->response()->getBody(), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        $this->assertStringContainsString('Scarica l\'ultimo backup', $html, 'Manca il pulsante di download');
+        $this->assertStringContainsString(site_url('system/status/backup'), $html, 'Il pulsante non punta al download');
+    }
+
+    /**
+     * Il download serve a portare la copia fuori dal server: deve consegnare
+     * proprio l'ultimo dump, con il suo nome e la sua dimensione.
+     */
+    public function testIlDownloadRestituisceLUltimoDump(): void
+    {
+        $risposta = $this->withSession($this->sessione())->get('/system/status/backup');
+        $response = $risposta->response();
+
+        // Il corpo parte solo all'invio: qui interessano gli header, che
+        // dicono quale file è stato scelto e quanti byte ha.
+        $response->buildHeaders();
+
+
+        $this->assertSame(200, $response->getStatusCode(), 'Download del backup: atteso un file, non un errore');
+        $this->assertStringContainsString('attachment', (string) $response->getHeaderLine('Content-Disposition'));
+        $this->assertStringContainsString(basename((string) $this->dumpDiProva), (string) $response->getHeaderLine('Content-Disposition'));
+        $this->assertSame((string) filesize((string) $this->dumpDiProva), (string) $response->getHeaderLine('Content-Length'));
+    }
+
+    public function testIlDownloadSenzaSessioneRimandaAlLogin(): void
+    {
+        $risposta = $this->get('/system/status/backup');
+
+        $this->assertSame(302, $risposta->response()->getStatusCode(), 'Il download non è pubblico');
+        $this->assertStringContainsString('sessions/login', (string) $risposta->response()->getHeaderLine('Location'));
+    }
+
+    /**
+     * Un collegamento simbolico chiamato backup_* non deve far uscire dalla
+     * cartella: il nome del file non si sceglie dall'URL, ma un link è un
+     * secondo modo per arrivare altrove.
+     */
+    public function testUnCollegamentoFuoriDallaCartellaNonSiScarica(): void
+    {
+        $esterno = sys_get_temp_dir() . '/ip-fuori-' . bin2hex(random_bytes(4)) . '.dump';
+        file_put_contents($esterno, 'fuori dalla cartella');
+        touch($esterno, time() + 5);
+
+        $link = WRITEPATH . 'backups/backup_zzz_' . bin2hex(random_bytes(4)) . '.dump';
+        symlink($esterno, $link);
+
+        try {
+            $this->expectException(\CodeIgniter\Exceptions\PageNotFoundException::class);
+
+            $this->withSession($this->sessione())->get('/system/status/backup');
+        } finally {
+            @unlink($link);
+            @unlink($esterno);
+        }
     }
 
     /** @return array<string, mixed> */

@@ -118,6 +118,18 @@ $rilevato = '<i class="fa-regular fa-clock" aria-hidden="true"></i> Rilevato il 
 
                         <p class="ip-status-row__detail"><?= esc($check['detail']) ?></p>
 
+                        <?php if ($check['key'] === 'backup' && !empty($backup)): ?>
+                            <div class="ip-status-row__actions">
+                                <a class="btn btn-sm btn-secondary" href="<?= site_url('system/status/backup') ?>" download="<?= esc($backup['name'], 'attr') ?>">
+                                    <i class="fa fa-solid fa-download" aria-hidden="true"></i>
+                                    <?= esc(trans('system_status_backup_download', '', 'Scarica l\'ultimo backup')) ?>
+                                </a>
+                                <span class="ip-status-row__actions-note">
+                                    <?= esc(trans('system_status_backup_download_note', '', 'Salvalo fuori dal server: in writable/backups viene ruotato e resta sullo stesso disco dell\'applicazione.')) ?>
+                                </span>
+                            </div>
+                        <?php endif; ?>
+
                         <?php if (!empty($check['hint'])): ?>
                             <p class="ip-status-row__hint">
                                 <i class="fa fa-solid fa-circle-info" aria-hidden="true"></i>

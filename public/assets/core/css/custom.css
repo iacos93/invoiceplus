@@ -13076,6 +13076,25 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   color: var(--ip-text-muted);
 }
 
+/* Azioni della riga (per ora solo il download del backup). Stanno sotto il
+   dettaglio e non nell'header: il badge lì è lo stato, e un pulsante accanto
+   lo farebbe sembrare parte del giudizio. La nota accanto spiega perché
+   scaricare non è un doppione del backup automatico. */
+.ip-status-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ip-space-4);
+  margin-top: var(--ip-space-4);
+}
+.ip-status-row__actions-note {
+  flex: 1 1 260px;
+  min-width: 0;
+  font-size: var(--ip-text-sm);
+  line-height: 1.45;
+  color: var(--ip-text-muted);
+}
+
 /* Sotto i 992px i conteggi passano sotto il testo: in orizzontale rubavano
    la larghezza al titolo, che andava a capo a metà parola. */
 @media (max-width: 991.98px) {

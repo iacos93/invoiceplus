@@ -171,6 +171,42 @@ final class SystemStatus
     }
 
     /**
+     * L'ultimo dump del database, quello che la pagina offre da scaricare.
+     *
+     * Il backup vive dentro writable/backups e viene ruotato: portarlo fuori
+     * dal server è l'unica cosa che lo rende una copia e non un file sullo
+     * stesso disco che si guasta. Il download passa da qui (e non da un
+     * percorso scelto nell'URL) proprio perché il nome del file non deve
+     * diventare un modo per leggere altro.
+     *
+     * @return array{path: string, name: string, size: int}|null
+     */
+    public function latestBackup(): ?array
+    {
+        foreach ($this->newestFiles($this->backupDir, 'backup_*') as [$file]) {
+            // Nella cartella può esserci di tutto: conta solo un dump vero e
+            // non vuoto. Un file da 0 byte non è un backup da conservare.
+            if (preg_match('/\.(dump|sql)$/', $file) !== 1 || ! is_file($file)) {
+                continue;
+            }
+
+            $size = (int) filesize($file);
+
+            if ($size <= 0) {
+                continue;
+            }
+
+            return [
+                'path' => $file,
+                'name' => basename($file),
+                'size' => $size,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
      * @return array{key: string, label: string, state: string, detail: string, hint: string}
      */
     public function cronCheck(): array

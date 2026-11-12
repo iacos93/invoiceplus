@@ -300,6 +300,10 @@ $routes->group('', ['filter' => 'auth'], static function ($routes) {
     // delle automazioni. Serve a vedere i guasti silenziosi (un backup che non
     // viene prodotto) senza dover leggere i log del server.
     $routes->get('system/status', 'SystemStatus::index');
+    // Download dell'ultimo backup, per portarlo fuori dal server. GET perché
+    // è una lettura: non crea né modifica niente. Il file non si sceglie
+    // nell'URL, lo decide il servizio (l'ultimo dump valido).
+    $routes->get('system/status/backup', 'SystemStatus::downloadBackup');
 
     // --- Modulo: integrazione MCP (chiave e perimetro fuori da Impostazioni) ---
     $routes->get('mcp/settings', 'McpSettings::index');
