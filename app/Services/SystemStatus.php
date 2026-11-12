@@ -385,13 +385,38 @@ final class SystemStatus
             ];
         }
 
-        $errori = 0;
+        $handle = @fopen($file, 'rb');
 
-        foreach (explode("\n", $this->tail($file, 200 * 1024)) as $riga) {
-            if (preg_match('/^(ERROR|CRITICAL)\b/', $riga) === 1) {
-                $errori++;
+        if ($handle === false) {
+            return [
+                'key'    => 'logs',
+                'label'  => 'Errori nel log',
+                'state'  => self::WARNING,
+                'detail' => 'Log di oggi non leggibile: ' . basename($file),
+                'hint'   => 'Il processo PHP non riesce ad aprire il file: controlla i permessi di writable/logs.',
+            ];
+        }
+
+        $errori = 0;
+        $ultimo = '';
+
+        // Si legge tutto il file, una riga per volta. Prima si guardava solo
+        // la coda di 200 KB: in una giornata di log lunga un errore scritto
+        // la mattina restava invisibile, e la pagina diceva "nessun errore"
+        // proprio quando ce n'era uno.
+        while (($riga = fgets($handle)) !== false) {
+            if (preg_match('/^(ERROR|CRITICAL)\b/', $riga) !== 1) {
+                continue;
+            }
+
+            $errori++;
+
+            if (preg_match('/^(?:ERROR|CRITICAL) - \d{4}-\d{2}-\d{2} (\d{2}:\d{2}):\d{2}/', $riga, $m) === 1) {
+                $ultimo = $m[1];
             }
         }
+
+        fclose($handle);
 
         if ($errori === 0) {
             return [
@@ -407,7 +432,8 @@ final class SystemStatus
             'key'    => 'logs',
             'label'  => 'Errori nel log',
             'state'  => self::WARNING,
-            'detail' => $errori . ($errori === 1 ? ' voce' : ' voci') . ' ERROR/CRITICAL in ' . basename($file),
+            'detail' => $errori . ($errori === 1 ? ' voce' : ' voci') . ' ERROR/CRITICAL in ' . basename($file)
+                . ($ultimo !== '' ? ' (l\'ultima alle ' . $ultimo . ')' : ''),
             'hint'   => 'Apri writable/logs/' . basename($file) . ': un errore singolo può essere un caso, uno ripetuto è un guasto che sta lavorando in silenzio.',
         ];
     }
@@ -465,30 +491,6 @@ final class SystemStatus
         usort($checks, static fn (array $a, array $b): int => ($gravita[$a['state']] ?? 3) <=> ($gravita[$b['state']] ?? 3));
 
         return $checks;
-    }
-
-    /**
-     * Ultimi $bytes di un file, senza caricarlo tutto in memoria: i log
-     * possono essere grandi e qui interessa solo la coda.
-     */
-    private function tail(string $file, int $bytes): string
-    {
-        $handle = @fopen($file, 'rb');
-
-        if ($handle === false) {
-            return '';
-        }
-
-        $size = (int) @filesize($file);
-
-        if ($size > $bytes) {
-            fseek($handle, $size - $bytes);
-        }
-
-        $contenuto = (string) stream_get_contents($handle);
-        fclose($handle);
-
-        return $contenuto;
     }
 
     /**

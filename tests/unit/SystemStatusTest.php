@@ -399,6 +399,58 @@ final class SystemStatusTest extends CIUnitTestCase
         $this->assertSame(SystemStatus::WARNING, $check['state']);
         $this->assertStringContainsString('2 voci', $check['detail']);
         $this->assertStringContainsString(date('Y-m-d', $this->now), $check['detail']);
+        $this->assertStringContainsString('l\'ultima alle 10:02', $check['detail']);
+    }
+
+    /**
+     * Un errore scritto la mattina non deve sparire quando il log cresce:
+     * la versione precedente leggeva solo gli ultimi 200 KB e in una giornata
+     * piena diceva "nessun errore" con l'errore ancora dentro il file.
+     */
+    public function testErroriFuoriDallaFineDelLogVengonoContati(): void
+    {
+        mkdir($this->writable . '/logs', 0775, true);
+
+        $riempimento = str_repeat("INFO - 2026-11-12 10:30:00 --> richiesta gestita\n", 8000);
+
+        file_put_contents(
+            $this->writable . '/logs/log-' . date('Y-m-d', $this->now) . '.log',
+            "CRITICAL - 2026-11-12 06:00:00 --> disco pieno durante il backup\n"
+            . $riempimento
+            . "INFO - 2026-11-12 11:00:00 --> tutto bene\n"
+        );
+
+        $check = $this->stato()->logCheck();
+
+        $this->assertSame(SystemStatus::WARNING, $check['state']);
+        $this->assertStringContainsString('1 voce', $check['detail']);
+        $this->assertStringContainsString('l\'ultima alle 06:00', $check['detail']);
+    }
+
+    /**
+     * Il log può esistere e non essere leggibile (permessi sbagliati dopo un
+     * ripristino): va detto, non interpretato come "nessun errore".
+     */
+    public function testLogNonLeggibileEAvviso(): void
+    {
+        mkdir($this->writable . '/logs', 0775, true);
+
+        $file = $this->writable . '/logs/log-' . date('Y-m-d', $this->now) . '.log';
+        file_put_contents($file, "INFO - 2026-11-12 10:00:00 --> tutto bene\n");
+        chmod($file, 0000);
+
+        try {
+            $check = $this->stato()->logCheck();
+
+            // Da root (CI in container) chmod 0000 non toglie la lettura.
+            if ($check['state'] === SystemStatus::WARNING && str_contains($check['detail'], 'non leggibile')) {
+                $this->assertStringContainsString('permessi', $check['hint']);
+            } else {
+                $this->assertSame(SystemStatus::OK, $check['state']);
+            }
+        } finally {
+            chmod($file, 0644);
+        }
     }
 
     /**

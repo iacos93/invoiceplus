@@ -21,6 +21,10 @@ Le regole per scrivere le voci e preparare una release sono in
 
 - Il dettaglio delle migrazioni diceva "1 migrazioni da applicare": ora dice
   "1 migrazione".
+- **Errori nel log** leggeva solo gli ultimi 200 KB del file: in una giornata
+  piena un errore scritto la mattina restava invisibile e la pagina diceva
+  "nessun errore". Ora scorre tutto il file una riga per volta e indica l'ora
+  dell'ultimo errore; un log non leggibile è un avviso, non un "tutto ok".
 
 ## [v0.3] — 2026-11-12
 
