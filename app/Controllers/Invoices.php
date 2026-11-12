@@ -495,6 +495,7 @@ class Invoices extends BaseController
             'payments'        => $this->invoiceModel->getPayments($invoiceId),
             'statuses'        => $this->invoiceModel->statuses(),
             'sdi_transmission' => (new \App\Models\SdiTransmissionModel())->latestForInvoice($invoiceId),
+            'email_tracks'    => (new \App\Models\EmailTrackModel())->latestFor('invoice', $invoiceId),
         ]);
     }
 

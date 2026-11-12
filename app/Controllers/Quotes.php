@@ -137,6 +137,7 @@ class Quotes extends BaseController
             'quote'          => $quote,
             'quote_id'       => $quoteId,
             'quote_statuses' => $this->quoteModel->statuses(),
+            'email_tracks'   => (new \App\Models\EmailTrackModel())->latestFor('quote', $quoteId),
         ]);
     }
 

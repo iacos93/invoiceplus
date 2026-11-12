@@ -274,6 +274,47 @@ $actions .= '</ul></div></div>';
                 </div>
             <?php endif; ?>
 
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h2 class="ip-card-heading"><?= trans('email_tracking_emails_sent', '', 'Email inviate') ?></h2>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($email_tracks)): ?>
+                        <p class="ip-preview__empty"><?= trans('email_tracking_none', '', 'Nessuna email inviata dal gestionale.') ?></p>
+                    <?php else: ?>
+                        <ul class="ip-preview__payments ip-preview__payments--tracks">
+                            <?php foreach ($email_tracks as $track): ?>
+                                <?php
+                                $opened = !empty($track['track_opened_at']);
+                                $label  = $opened
+                                    ? sprintf(trans('email_tracking_opened_on', '', 'Aperta il %s'), datetime_from_mysql($track['track_opened_at']))
+                                    : trans('email_tracking_not_opened', '', 'Non aperta');
+
+                                if ($opened && (int) ($track['track_open_count'] ?? 0) > 1) {
+                                    $label .= ' · ' . sprintf(trans('email_tracking_opens', '', '%s aperture'), (int) $track['track_open_count']);
+                                }
+                                ?>
+                                <li>
+                                    <span class="ip-preview__payment-date"><?= esc(datetime_from_mysql($track['track_sent_at'])) ?></span>
+                                    <span class="ip-preview__payment-method ip-preview__track-recipient"><?= esc($track['track_recipient'] ?? '') ?></span>
+                                    <span class="ip-preview__payment-amount">
+                                        <?php if ($opened): ?>
+                                            <span class="badge text-bg-success"><?= esc($label) ?></span>
+                                        <?php else: ?>
+                                            <span class="text-muted"><?= esc($label) ?></span>
+                                        <?php endif; ?>
+                                    </span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+
+                        <p class="text-muted small mt-2 mb-0">
+                            <?= trans('email_tracking_help', '', 'Il conteggio è indicativo: molti programmi di posta bloccano le immagini e non caricano il pixel.') ?>
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
         </aside>
     </div>
 </div>

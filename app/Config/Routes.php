@@ -41,6 +41,11 @@ $routes->post('guest/view/reject_quote/(:any)', 'GuestView::rejectQuote/$1');
 // --- Pubblica: pagina di benvenuto ---
 $routes->get('welcome', 'Welcome::index');
 
+// --- Pubblica: pixel di tracciamento delle aperture email ---
+// Lo carica il programma di posta del destinatario, senza sessione. Il token
+// è casuale e non contiene l'id del documento.
+$routes->get('t/open/(:segment)', 'EmailTracking::open/$1');
+
 // --- Area amministrativa (richiede login, user_type 1) ---
 $routes->group('', ['filter' => 'auth'], static function ($routes) {
 

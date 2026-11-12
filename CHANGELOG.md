@@ -9,6 +9,23 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Aggiunto
+
+- **Tracciamento delle aperture email** per fatture e preventivi: le email
+  portano un pixel invisibile e la pagina del documento mostra gli invii con
+  data, destinatario e apertura. Il conteggio è indicativo, perché chi blocca
+  le immagini non carica il pixel e alcuni client le scaricano in anticipo;
+  la nota è scritta accanto all'elenco. Si spegne da **Email e mittenti**. Se
+  il tracciamento non è raggiungibile l'email parte lo stesso, e un invio
+  fallito non lascia righe nella pagina del documento.
+
+### Modificato
+
+- **Le email partono in HTML**: i a capo del testo semplice non si perdono e i
+  caratteri speciali (`&`, `<`) non vengono interpretati come markup. Prima il
+  corpo era inviato così com'era, con i `<br>` del testo semplice visibili in
+  alcuni client.
+
 ## [v0.6] — 2026-11-12
 
 ### Aggiunto

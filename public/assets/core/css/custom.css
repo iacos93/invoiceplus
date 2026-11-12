@@ -7888,6 +7888,11 @@ dall'altra) avevano quindi intestazioni di altezza diversa. */
 .ip-preview__payment-method { color: var(--ip-text-muted); }
 .ip-preview__payment-amount { font-weight: 600; font-variant-numeric: tabular-nums; }
 
+/* Invii email: il destinatario è un indirizzo lungo e senza spazi, e nella
+   colonna stretta dell'anteprima allargherebbe la card invece di andare a capo. */
+.ip-preview__payments--tracks li { grid-template-columns: auto minmax(0, 1fr) auto; }
+.ip-preview__track-recipient { overflow-wrap: anywhere; }
+
 /* -----------------------------------------------------------------------------
    32. Preferiti e riferimenti incrociati nelle liste
    -------------------------------------------------------------------------- */

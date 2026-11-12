@@ -10,6 +10,7 @@ use App\Models\QuoteCustomModel;
 use App\Models\QuoteModel;
 use App\Models\UploadModel;
 use App\Models\UserCustomModel;
+use App\Libraries\EmailTracking;
 use App\Services\DocumentPdfBuilder;
 use CodeIgniter\Email\Email;
 use CodeIgniter\Exceptions\PageNotFoundException;
@@ -177,7 +178,6 @@ class Mailer extends BaseController
         }
 
         $email->setSubject($subject);
-        $email->setMessage($body === '' ? ' ' : $body);
 
         // Allegato PDF della fattura (se richiesto dal setting o dal form)
         $attachPdf = (int) get_setting('email_pdf_attachment', 0) === 1
@@ -211,8 +211,35 @@ class Mailer extends BaseController
             }
         }
 
+        // Corpo e tracciamento si compongono solo ora: prima di questo punto
+        // restano uscite anticipate (PDF non generato, allegato mancante) che
+        // non devono lasciare una riga di tracciamento orfana.
+        $tracking    = new EmailTracking();
+        $track       = $tracking->start(
+            EmailTracking::TYPE_INVOICE,
+            $invoiceId,
+            $to,
+            $subject,
+            active_company_id() ?: null
+        );
+        $messageBody = $this->htmlBody($body, $tracking);
+
+        if ($track !== null) {
+            $messageBody = $tracking->appendPixel($messageBody, $track);
+        }
+
+        $email->setMailType('html');
+        $email->setMessage($messageBody);
+
         $sent = $email->send();
 
+        if ($track !== null) {
+            if ($sent) {
+                $tracking->markSent((int) $track['track_id']);
+            } else {
+                $tracking->discard((int) $track['track_id']);
+            }
+        }
 
         if ($sent) {
             $invoiceModel->markSent($invoiceId);
@@ -309,7 +336,6 @@ class Mailer extends BaseController
         }
 
         $email->setSubject($subject);
-        $email->setMessage($body === '' ? ' ' : $body);
 
         // Allegato PDF del preventivo (se richiesto dal setting o dal form)
         $attachPdf = (int) get_setting('email_pdf_attachment', 0) === 1
@@ -338,8 +364,34 @@ class Mailer extends BaseController
             }
         }
 
+        // Come per la fattura: nessuna riga di tracciamento prima dei
+        // controlli che possono fermare l'invio.
+        $tracking    = new EmailTracking();
+        $track       = $tracking->start(
+            EmailTracking::TYPE_QUOTE,
+            $quoteId,
+            $to,
+            $subject,
+            active_company_id() ?: null
+        );
+        $messageBody = $this->htmlBody($body, $tracking);
+
+        if ($track !== null) {
+            $messageBody = $tracking->appendPixel($messageBody, $track);
+        }
+
+        $email->setMailType('html');
+        $email->setMessage($messageBody);
+
         $sent = $email->send();
 
+        if ($track !== null) {
+            if ($sent) {
+                $tracking->markSent((int) $track['track_id']);
+            } else {
+                $tracking->discard((int) $track['track_id']);
+            }
+        }
 
         if ($sent) {
             $quoteModel->markSent($quoteId);
@@ -426,15 +478,34 @@ class Mailer extends BaseController
     }
 
     /**
-     * Corpo email: decodifica HTML (stesso comportamento di CI3).
+     * Corpo dell'email in HTML.
+     *
+     * Il testo arriva da una textarea: se non contiene tag è testo semplice e
+     * va codificato (escape) prima di trasformare gli a capo in <br>, altrimenti
+     * un `&` o un `<` verrebbero letti come markup e le righe si perderebbero.
+     * Un corpo già scritto in HTML resta com'è. Il messaggio parte sempre in
+     * HTML perché il pixel di tracciamento è un'immagine: in modalità testo il
+     * client mostrerebbe il suo indirizzo.
+     */
+    private function htmlBody(string $body, EmailTracking $tracking): string
+    {
+        $body = $body === '' ? ' ' : $body;
+
+        if (strlen($body) === strlen(strip_tags($body))) {
+            return $tracking->textToHtml($body);
+        }
+
+        return $body;
+    }
+
+    /**
+     * Corpo email: riporta i caratteri codificati dal browser. Il testo
+     * semplice resta con i suoi a capo veri e viene convertito in HTML solo
+     * all'invio, dove si sa se il corpo contiene già tag.
      */
     private function prepareBody(string $body): string
     {
-        if (strlen($body) !== strlen(strip_tags($body))) {
-            return htmlspecialchars_decode($body);
-        }
-
-        return htmlspecialchars_decode(nl2br($body));
+        return htmlspecialchars_decode($body);
     }
 
     /**

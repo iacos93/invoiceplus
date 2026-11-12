@@ -43,6 +43,22 @@ $actions = '<a class="btn btn-sm btn-primary" href="' . site_url('email_senders/
                         </div>
 
                         <div class="ip-doc-field">
+                            <label class="ip-doc-label" for="settings[email_tracking_enabled]">
+                                <?= trans('email_tracking_enabled', '', 'Tracciare le aperture delle email') ?>
+                            </label>
+                            <div class="form-check">
+                                <input type="hidden" name="settings[email_tracking_enabled]" value="0">
+                                <input type="checkbox" class="form-check-input" name="settings[email_tracking_enabled]" value="1"
+                                       id="settings[email_tracking_enabled]"
+                                    <?= check_select(get_setting('email_tracking_enabled', 1), '1', '==', true) ?>>
+                                <label class="form-check-label" for="settings[email_tracking_enabled]"><?= trans('yes') ?></label>
+                            </div>
+                            <small class="text-muted">
+                                <?= trans('email_tracking_enabled_help', '', 'Aggiunge un pixel invisibile alle email di fatture e preventivi e mostra nella pagina del documento se sono state aperte. Il dato è indicativo: chi blocca le immagini risulta non aver aperto, e alcuni client le scaricano in anticipo.') ?>
+                            </small>
+                        </div>
+
+                        <div class="ip-doc-field">
                             <label class="ip-doc-label" for="settings[company_system_sender_id]">
                                 <?= trans('system_email_sender') ?>
                             </label>
