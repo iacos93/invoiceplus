@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.7.1] — 2026-11-12
+
 ### Aggiunto
 
 - **Pulizia del tracciamento email**: il cron settimanale elimina le righe più

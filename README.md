@@ -251,18 +251,21 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.7`, che aggiunge il
-tracciamento delle aperture delle email di fatture e preventivi, visibile nella
-pagina del documento e spegnibile da "Email e mittenti", e invia le email in
-HTML per non perdere a capo e caratteri speciali. La `v0.6` divide "Stato del
-sistema" in problemi da sistemare e controlli regolari, spiega la selezione
-multipla dei mesi nelle liste e corregge il polling SdI, il log del download del
-backup e la migrazione fornitori su PostgreSQL. La `v0.5` aveva reso
-raggiungibile l'invio di fatture e preventivi per email dalla pagina del
-documento e dall'elenco (il Mailer c'era, ma non aveva un punto d'ingresso),
-dopo la `v0.4` che ridisegna "Stato del sistema", aggiunge il download
-dell'ultimo backup, avvisa via email quando il backup fallisce e crea i dump
-con permessi `0600`. Il ramo `main` è verificato dalla CI a ogni push,
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.7.1`, che rende
+anonimo l'IP del tracciamento email, non memorizza lo user agent, elimina le
+righe vecchie o di documenti eliminati e aggiunge i test della libreria. La
+`v0.7` aveva aggiunto il tracciamento delle aperture delle email di fatture e
+preventivi, visibile nella pagina del documento e spegnibile da "Email e
+mittenti", e invia le email in HTML per non perdere a capo e caratteri speciali.
+La `v0.6` divide "Stato del sistema" in problemi da sistemare e controlli
+regolari, spiega la selezione multipla dei mesi nelle liste e corregge il
+polling SdI, il log del download del backup e la migrazione fornitori su
+PostgreSQL. La `v0.5` aveva reso raggiungibile l'invio di fatture e preventivi
+per email dalla pagina del documento e dall'elenco (il Mailer c'era, ma non
+aveva un punto d'ingresso), dopo la `v0.4` che ridisegna "Stato del sistema",
+aggiunge il download dell'ultimo backup, avvisa via email quando il backup
+fallisce e crea i dump con permessi `0600`. Il ramo `main` è verificato dalla CI
+a ogni push,
 compresi i test nel browser e la misura della copertura. Le modifiche sono
 elencate in [`CHANGELOG.md`](CHANGELOG.md): le
 versioni seguono [Semantic Versioning](https://semver.org/), quindi il numero
