@@ -9,6 +9,14 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Aggiunto
+
+- **Selezione multipla dei mesi** spiegata sotto la barra del periodo in
+  fatture, preventivi e spese: un clic sceglie un mese, Shift+clic estende
+  l'intervallo, Ctrl/⌘+clic aggiunge o toglie un mese. La funzione c'era già,
+  ma senza istruzioni restava invisibile. La riga compare solo con JavaScript
+  attivo, perché senza script i mesi sono link singoli.
+
 ## [v0.5] — 2026-11-12
 
 ### Aggiunto

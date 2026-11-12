@@ -393,6 +393,7 @@ return array (
   'pdf_template_overdue' => 'Overdue PDF Template',
   'pdf_watermark' => 'Enable PDF Watermarks',
   'period' => 'Period',
+  'period_hint_multiselect' => 'A click selects one month. Shift+click extends the range; Ctrl/⌘+click adds or removes a month.',
   'personal_information' => 'Personal Information',
   'phone' => 'Phone',
   'phone_abbr' => 'P',

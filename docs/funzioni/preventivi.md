@@ -32,6 +32,13 @@ segnarlo **preferito**, applicare azioni di gruppo (segna come inviato,
 elimina) e **ricalcolare** gli importi di tutti i preventivi dopo una modifica
 alle aliquote.
 
+**Filtro per periodo.** Sopra l'elenco c'è la barra dei mesi: un clic mostra
+un mese solo, **Shift+clic** estende l'intervallo dal mese già scelto,
+**Ctrl/⌘+clic** aggiunge o toglie un mese singolo. Così si guardano, per
+esempio, solo i preventivi di settembre e ottobre senza cambiare pagina.
+**Anno intero** riaccende tutti e dodici i mesi; l'anno si sceglie dal filtro
+globale in alto, e i totali sotto la barra seguono la selezione.
+
 ## Inviare e far approvare
 
 - **Email**: dal documento si apre la schermata di invio con il template

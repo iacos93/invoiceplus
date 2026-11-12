@@ -29,6 +29,12 @@ Il ciclo passivo: fatture e note ricevute dai fornitori.
 - anteprima e download dell'XML della fattura di acquisto, quando la spesa
   arriva da un file FatturaPA.
 
+**Filtro per periodo.** Anche qui sopra l'elenco c'è la barra dei mesi: un
+clic mostra un mese solo, **Shift+clic** estende l'intervallo dal mese già
+scelto, **Ctrl/⌘+clic** aggiunge o toglie un mese singolo. Serve a isolare,
+per esempio, le spese di un trimestre; i totali sotto la barra seguono la
+selezione e **Anno intero** riaccende tutti e dodici i mesi.
+
 **Spese > Importa XML** importa fatture di acquisto in blocco. La deduplica
 evita di creare due volte la stessa spesa: un file già importato viene
 saltato e l'esito lo dice. Se un file non entra, resta disponibile per

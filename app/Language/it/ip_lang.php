@@ -401,6 +401,7 @@ return array (
   'pdf_template_overdue' => 'Modello PDF per fatture scadute',
   'pdf_watermark' => 'Abilita le filigrane nel PDF',
   'period' => 'Periodo',
+  'period_hint_multiselect' => 'Un clic sceglie un mese. Con Shift+clic si estende l’intervallo; con Ctrl/⌘+clic si aggiunge o si toglie un mese.',
   'personal_information' => 'Informazioni personali',
   'phone' => 'Telefono',
   'phone_abbr' => 'Tel.',

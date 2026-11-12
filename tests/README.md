@@ -49,7 +49,7 @@ createdb -T invoiceplane invoiceplane_posttest
 ```
 
 Da quel momento `vendor/bin/phpunit` esegue anche i 49 test d'integrazione: la
-suite completa conta 402 test e 1674 asserzioni. Senza la copia quei test si
+suite completa conta 404 test e 1679 asserzioni. Senza la copia quei test si
 saltano, e la suite resta verde avendo verificato meno di quello che dice. Un
 altro database si indica con `IP_PDF_TEST_DB`, che è una variabile di processo,
 non una chiave di `.env`:

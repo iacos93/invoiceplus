@@ -110,7 +110,8 @@ $navBase = site_url($base_url);
          data-base="<?= esc($navBase, 'attr') ?>"
          data-year="<?= (int) $year ?>"
          data-extra="<?= esc(json_encode((object) $extra), 'attr') ?>"
-         data-selected="<?= esc(implode(',', $months), 'attr') ?>">
+         data-selected="<?= esc(implode(',', $months), 'attr') ?>"
+         aria-describedby="ip-period-hint">
         <a class="ip-period-month ip-period-month--all <?= $isAllSelected ? 'is-active' : '' ?>"
            data-month="0"
            href="<?= esc($urlFor($allMonths)) ?>"
@@ -189,6 +190,22 @@ $navBase = site_url($base_url);
         ]]) ?>
     <?php endif; ?>
 
+    <?php
+    /* La selezione multipla esisteva già ma non era scritta da nessuna parte:
+       chi voleva due mesi li apriva uno per volta. La riga compare solo con
+       JavaScript attivo — lo script qui sotto toglie `hidden` — perché senza
+       script i mesi restano link singoli e promettere shift+clic sarebbe
+       falso. */
+    ?>
+    <p class="ip-period-hint" id="ip-period-hint" data-ip-period-hint hidden>
+        <i class="fa fa-solid fa-circle-info" aria-hidden="true"></i>
+        <?= esc(trans(
+            'period_hint_multiselect',
+            '',
+            'Un clic sceglie un mese. Con Shift+clic si estende l’intervallo; con Ctrl/⌘+clic si aggiunge o si toglie un mese.'
+        )) ?>
+    </p>
+
 </div>
 
 <script>
@@ -198,6 +215,13 @@ $navBase = site_url($base_url);
         return;
     }
     nav.dataset.bound = '1';
+
+    // Le istruzioni della selezione multipla compaiono solo ora che lo
+    // script c'è: senza, i mesi sarebbero link a un mese solo.
+    var hint = document.getElementById('ip-period-hint');
+    if (hint) {
+        hint.hidden = false;
+    }
 
     var base = nav.dataset.base || '';
     var year = nav.dataset.year || '0';

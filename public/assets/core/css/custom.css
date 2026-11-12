@@ -6535,6 +6535,27 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .08);
 }
 
+/* Istruzioni della selezione multipla (Shift/clic e Ctrl/clic). Senza una
+   riga di testo la funzione restava invisibile: chi voleva due mesi ne
+   apriva uno per volta. Compare solo con JavaScript attivo, perché lo
+   script del partial toglie `hidden`; senza script i mesi sono link singoli
+   e l'istruzione sarebbe una promessa falsa. */
+.ip-period-hint {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 8px;
+  margin: 0;
+  font-size: var(--ip-text-xs);
+  line-height: 1.45;
+  color: var(--ip-text-muted);
+  text-align: center;
+}
+.ip-period-hint[hidden] { display: none; }
+.ip-period-hint i { opacity: .7; }
+
 /* Adattamento alla larghezza reale del contenuto (non del viewport).
    Sotto i 1000px le tredici voci fisse non stanno su una riga: la striscia
    diventa una griglia, "Tutti i mesi" occupa la riga intera come interruttore

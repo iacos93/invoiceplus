@@ -46,6 +46,13 @@ bozza; se è accesa, la bozza consuma subito la numerazione vera.
   attiva: serve dopo una modifica alle aliquote, non è un'operazione da fare
   per abitudine.
 
+**Filtro per periodo.** Sopra l'elenco c'è la barra dei mesi: un clic mostra
+un mese solo, **Shift+clic** estende l'intervallo dal mese già scelto,
+**Ctrl/⌘+clic** aggiunge o toglie un mese singolo. La selezione multipla vale
+anche per i totali sotto la barra (documenti, imponibile, IVA, lordo, saldo).
+**Anno intero** riaccende tutti e dodici i mesi; l'anno si sceglie dal filtro
+globale in alto.
+
 ## PDF, XML e invio
 
 - **PDF**: anteprima dal documento, modello scelto nelle impostazioni
