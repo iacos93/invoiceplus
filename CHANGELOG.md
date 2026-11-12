@@ -7,7 +7,7 @@ progetto è ancora in sviluppo (0.x), quindi il maggiore resta 0.
 Le regole per scrivere le voci e preparare una release sono in
 [docs/changelog.md](docs/changelog.md).
 
-## [Non pubblicata]
+## [v0.8.0] — 2026-11-12
 
 ### Aggiunto
 

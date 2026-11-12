@@ -251,7 +251,9 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.7.1`, che rende
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.8.0`, che mostra
+nelle liste di fatture e preventivi se l'ultima email inviata è stata aperta,
+con prima apertura e numero di aperture nel dettaglio. La `v0.7.1` rende
 anonimo l'IP del tracciamento email, non memorizza lo user agent, elimina le
 righe vecchie o di documenti eliminati e aggiunge i test della libreria. La
 `v0.7` aveva aggiunto il tracciamento delle aperture delle email di fatture e
