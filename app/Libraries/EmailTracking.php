@@ -106,6 +106,43 @@ class EmailTracking
     }
 
     /**
+     * Versione testuale di un corpo HTML, per la parte `text/plain` dello
+     * stesso messaggio.
+     *
+     * I client che non mostrano HTML, o che lo preferiscono, leggono questa.
+     * Non è lo HTML con i tag tolti alla leggera: la fine di paragrafi, righe
+     * e intestazioni diventa un a capo, le entità tornano caratteri veri e le
+     * righe vuote ripetute si riducono. Un corpo già in testo semplice resta
+     * com'è, a capo compresi.
+     */
+    public function htmlToText(string $html): string
+    {
+        if (trim($html) === '') {
+            return ' ';
+        }
+
+        if (strlen($html) === strlen(strip_tags($html))) {
+            return $html;
+        }
+
+        // Style, script e testa non sono contenuto: senza toglierli, il CSS
+        // finirebbe nella parte testuale come una riga di selettori.
+        $text = preg_replace('/<(style|script|head)\b[^>]*>.*?<\/\1>/is', '', $html) ?? $html;
+        $text = preg_replace('/<br\b[^>]*>/i', "\n", $text) ?? $text;
+        $text = preg_replace('/<\/(p|div|h[1-6]|table)\b[^>]*>/i', "\n\n", $text) ?? $text;
+        $text = preg_replace('/<\/(tr|li)\b[^>]*>/i', "\n", $text) ?? $text;
+        $text = preg_replace('/<\/td\b[^>]*>/i', '  ', $text) ?? $text;
+        $text = strip_tags($text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = str_replace("\u{00A0}", ' ', $text);
+        $text = preg_replace("/[ \t]+\n/", "\n", $text) ?? $text;
+        $text = preg_replace("/\n{3,}/", "\n\n", $text) ?? $text;
+        $text = trim($text);
+
+        return $text === '' ? ' ' : $text;
+    }
+
+    /**
      * Aggiunge il pixel al corpo HTML. Se c'è un </body> il pixel va lì,
      * altrimenti in fondo: alcuni client tagliano il contenuto dopo il primo
      * metro di testo e un pixel a metà messaggio non verrebbe mai richiesto.

@@ -40,6 +40,48 @@ final class EmailTrackingTest extends CIUnitTestCase
     }
 
     /**
+     * La parte text/plain è quella che legge chi ha un client senza HTML: i
+     * paragrafi devono restare separati, le entità tornare caratteri e il CSS
+     * non deve comparire come testo.
+     */
+    public function testIlCorpoHtmlHaUnaVersioneTestualeLeggibile(): void
+    {
+        $testo = $this->tracking->htmlToText(
+            '<html><head><style>p { color: red; }</style></head><body>'
+            . '<p>Gentile cliente,</p><p>la fattura &egrave; in allegato.<br>Grazie &amp; saluti</p>'
+            . '</body></html>'
+        );
+
+        $this->assertSame("Gentile cliente,\n\nla fattura è in allegato.\nGrazie & saluti", $testo);
+        $this->assertStringNotContainsString('color: red', $testo);
+    }
+
+    /** Un corpo già in testo semplice non va toccato: gli a capo sono già suoi. */
+    public function testIlTestoSempliceRestaIdentico(): void
+    {
+        $testo = "Gentile cliente,\n\nprezzo < 10 & IVA inclusa";
+
+        $this->assertSame($testo, $this->tracking->htmlToText($testo));
+    }
+
+    /** Un corpo vuoto non deve produrre una parte testuale vuota. */
+    public function testUnCorpoVuotoNonLasciaLaParteTestualeVuota(): void
+    {
+        $this->assertSame(' ', $this->tracking->htmlToText(''));
+        $this->assertSame(' ', $this->tracking->htmlToText("  \n "));
+    }
+
+    /** Le celle di una tabella restano separate, non incollate. */
+    public function testLeTabelleNonIncollanoLeCelle(): void
+    {
+        $testo = $this->tracking->htmlToText(
+            '<table><tr><td>Voce</td><td>Importo</td></tr><tr><td>Riga</td><td>10,00</td></tr></table>'
+        );
+
+        $this->assertSame("Voce  Importo\nRiga  10,00", $testo);
+    }
+
+    /**
      * Con un </body> il pixel va prima della chiusura: alcuni client tagliano
      * il contenuto dopo il primo metro di testo, e un pixel a metà messaggio
      * non verrebbe mai richiesto.

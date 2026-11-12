@@ -198,6 +198,17 @@ jobs:
       - name: Analisi statica
         run: composer analyse
 
+      # Gli script della prova locale non sono PHP: senza un controllo, un
+      # errore di sintassi si scopre solo quando qualcuno li lancia. Qui si
+      # leggono senza eseguirli. PowerShell e' presente anche sui runner Linux.
+      - name: Verifica gli script di prova locale
+        shell: pwsh
+        run: |
+          bash -n tools/quickstart/quickstart.sh
+          $errori = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/tools/quickstart/quickstart.ps1", [ref]$null, [ref]$errori) | Out-Null
+          if ($errori) { $errori | Format-List; exit 1 }
+
       # Fallisce se una dipendenza ha un advisory noto: e' l'unico controllo
       # che si accorge di una vulnerabilita' corretta a monte.
       - name: Verifica le dipendenze

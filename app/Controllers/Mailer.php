@@ -230,6 +230,10 @@ class Mailer extends BaseController
 
         $email->setMailType('html');
         $email->setMessage($messageBody);
+        // Stesso contenuto in testo semplice: i client che non mostrano HTML
+        // leggono una versione ordinata invece del solo avviso "questo
+        // messaggio è in HTML". Il pixel resta solo nella parte HTML.
+        $email->setAltMessage($tracking->htmlToText($body));
 
         $sent = $email->send();
 
@@ -382,6 +386,8 @@ class Mailer extends BaseController
 
         $email->setMailType('html');
         $email->setMessage($messageBody);
+        // Come per la fattura: parte anche la versione testuale.
+        $email->setAltMessage($tracking->htmlToText($body));
 
         $sent = $email->send();
 

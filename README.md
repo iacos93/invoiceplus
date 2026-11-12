@@ -45,6 +45,7 @@ cassa previdenziale. L'interfaccia è in italiano e in inglese.
 - [Requisiti software](#requisiti-software)
 - [Requisiti hardware](#requisiti-hardware)
 - [Installazione rapida](#installazione-rapida)
+- [Prova in locale](#prova-in-locale)
 - [Installazione](#installazione)
 - [Versioni](#versioni)
 - [Strumenti di sviluppo e debug](#strumenti-di-sviluppo-e-debug)
@@ -189,6 +190,23 @@ php spark key:generate
 
 Poi completa la configurazione del database (vedi sotto), crea lo schema con
 `php spark migrate` e avvia l'applicazione.
+
+## Prova in locale
+
+Per vedere l'applicazione con dati inventati, senza configurare un server:
+
+```console
+# macOS e Linux
+bash tools/quickstart/quickstart.sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File tools\quickstart\quickstart.ps1
+```
+
+Lo script crea un database separato `invoiceplane_demo`, carica i dati demo e
+avvia l'applicazione su <http://localhost:8080>. Credenziali:
+`admin@example.com` / `demo1234`. Requisiti, opzioni e problemi comuni sono in
+[Prova in locale con dati demo](docs/installazione-locale.md).
 
 ## Installazione
 

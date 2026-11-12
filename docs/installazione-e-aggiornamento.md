@@ -1,8 +1,9 @@
 # Installazione, aggiornamento e ripristino
 
 Questa guida riguarda un'installazione reale. Per provare l'applicazione in
-locale bastano i comandi del README (`composer install`, `php spark migrate`,
-`php spark serve`).
+locale, con un database separato e dati demo, vedi
+[installazione-locale.md](installazione-locale.md): su macOS e Linux basta
+`bash tools/quickstart/quickstart.sh`, su Windows lo script PowerShell.
 
 ## Installazione
 

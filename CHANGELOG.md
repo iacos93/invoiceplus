@@ -7,6 +7,22 @@ progetto è ancora in sviluppo (0.x), quindi il maggiore resta 0.
 Le regole per scrivere le voci e preparare una release sono in
 [docs/changelog.md](docs/changelog.md).
 
+## [Non pubblicata]
+
+### Aggiunto
+
+- **Prova in locale con dati demo**: guida e script per macOS, Linux e Windows
+  che creano un database separato (`invoiceplane_demo`), caricano dati
+  inventati e avviano l'applicazione su localhost. Non serve Redis: per la
+  prova cache e sessioni usano file. Non tocca il database di lavoro.
+
+### Modificato
+
+- **Email con alternativa testuale**: oltre alla parte HTML parte anche la
+  versione `text/plain`, così i client che non mostrano HTML leggono il
+  messaggio invece del solo avviso. Il pixel di tracciamento resta nella parte
+  HTML: la versione testuale non viene conteggiata.
+
 ## [v0.8.0] — 2026-11-12
 
 ### Aggiunto
