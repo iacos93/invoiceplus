@@ -35,8 +35,7 @@ class EmailTracking extends Controller
 
             (new Tracker())->recordOpen(
                 $token,
-                (string) $request->getIPAddress(),
-                (string) $request->getUserAgent()
+                (string) $request->getIPAddress()
             );
         }
 

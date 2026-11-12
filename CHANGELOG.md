@@ -9,6 +9,22 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Aggiunto
+
+- **Pulizia del tracciamento email**: il cron settimanale elimina le righe più
+  vecchie di un anno e quelle di fatture o preventivi eliminati. Prima la
+  tabella cresceva a ogni invio e non calava mai, e i documenti cancellati
+  lasciavano righe che nessuna pagina poteva più mostrare.
+
+### Modificato
+
+- **Privacy del tracciamento**: l'indirizzo IP viene salvato in forma anonima
+  (rete, non singolo host) e lo user agent non viene più memorizzato. Erano
+  dati personali che nessuna schermata mostrava.
+- **"Prima apertura il …"** invece di "Aperta il …": il pixel dice quando è
+  stata rilevata la prima richiesta dell'immagine, non quando la persona ha
+  letto il messaggio.
+
 ## [v0.7] — 2026-11-12
 
 ### Aggiunto

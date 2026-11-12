@@ -81,4 +81,16 @@ final class EmailTrackingTest extends CIUnitTestCase
         $this->assertSame('<p>Fattura</p>', $this->tracking->appendPixel('<p>Fattura</p>', []));
         $this->assertSame('<p>Fattura</p>', $this->tracking->appendPixel('<p>Fattura</p>', ['track_token' => '']));
     }
+
+    /**
+     * L'IP serve solo a distinguere aperture ripetute, non a identificare la
+     * persona: IPv4 perde l'ultimo ottetto, IPv6 la seconda metà.
+     */
+    public function testLIndirizzoIpVieneAnonimizzato(): void
+    {
+        $this->assertSame('192.168.1.0', $this->tracking->anonymizeIp('192.168.1.77'));
+        $this->assertSame('2001:db8:1:2::', $this->tracking->anonymizeIp('2001:db8:1:2:3:4:5:6'));
+        $this->assertSame('', $this->tracking->anonymizeIp('non-un-indirizzo'));
+        $this->assertSame('', $this->tracking->anonymizeIp(''));
+    }
 }

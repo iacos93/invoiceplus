@@ -47,4 +47,44 @@ class EmailTrackModel extends Model
     {
         return $this->where('track_token', $token)->first();
     }
+
+    /**
+     * Pota il registro: righe più vecchie di $days giorni e righe rimaste
+     * senza il documento (fattura o preventivo eliminato). Senza questa
+     * pulizia la tabella cresce a ogni invio e non cala mai.
+     *
+     * @return array{expired: int, orphans: int}
+     */
+    public function prune(int $days = 365): array
+    {
+        $days   = max(1, $days);
+        $cutoff = date('Y-m-d H:i:s', strtotime('-' . $days . ' days'));
+
+        $this->groupStart()
+            ->where('track_created_at <', $cutoff)
+            ->orWhere('track_created_at', null)
+            ->groupEnd()
+            ->delete();
+
+        $expired = $this->db->affectedRows();
+
+        // Un documento eliminato non deve lasciare righe di tracciamento che
+        // nessuna pagina può più mostrare. La sottoquery sta su un'altra
+        // tabella, quindi funziona sia su PostgreSQL sia su MySQL/MariaDB.
+        $this->db->query(
+            "DELETE FROM {$this->table}
+             WHERE track_document_type = 'invoice'
+               AND track_document_id NOT IN (SELECT invoice_id FROM ip_invoices)"
+        );
+        $orphans = $this->db->affectedRows();
+
+        $this->db->query(
+            "DELETE FROM {$this->table}
+             WHERE track_document_type = 'quote'
+               AND track_document_id NOT IN (SELECT quote_id FROM ip_quotes)"
+        );
+        $orphans += $this->db->affectedRows();
+
+        return ['expired' => $expired, 'orphans' => $orphans];
+    }
 }

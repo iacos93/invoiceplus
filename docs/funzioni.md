@@ -51,7 +51,8 @@ L'ordine in cui le schermate si aspettano di essere configurate:
    gestione.
 4. **Conti di saldo** (banca/cassa), usati da riconciliazione e RiBa.
 5. **Email e mittenti**: casella di sistema e template, per invii, solleciti,
-   notifiche SdI e reset password.
+   notifiche SdI e reset password; da qui si attiva anche il tracciamento delle
+   aperture.
 6. **Utenti e sicurezza**: gli account dell'area amministrativa e, se serve,
    gli account cliente per l'area guest.
 

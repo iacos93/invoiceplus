@@ -88,7 +88,7 @@ final class EmailTrackingPagesTest extends CIUnitTestCase
 
         $this->assertStringContainsString('Email inviate', $html, 'Manca la scheda degli invii');
         $this->assertStringContainsString('cliente@example.com', $html, 'Manca il destinatario dell\'invio');
-        $this->assertStringContainsString('Aperta il', $html, 'Un\'email aperta non risulta aperta');
+        $this->assertStringContainsString('Prima apertura il', $html, 'Un\'email aperta non risulta aperta');
         $this->assertStringContainsString('2 aperture', $html, 'Manca il numero di aperture');
         $this->assertStringContainsString('Il conteggio è indicativo', $html, 'Manca l\'avviso sui limiti del tracciamento');
     }
@@ -105,7 +105,7 @@ final class EmailTrackingPagesTest extends CIUnitTestCase
 
         $this->assertStringContainsString('Email inviate', $html, 'Manca la scheda degli invii');
         $this->assertStringContainsString('cliente@example.com', $html, 'Manca il destinatario dell\'invio');
-        $this->assertStringContainsString('Aperta il', $html, 'Un\'email aperta non risulta aperta');
+        $this->assertStringContainsString('Prima apertura il', $html, 'Un\'email aperta non risulta aperta');
         $this->assertStringContainsString('2 aperture', $html, 'Manca il numero di aperture');
         $this->assertStringContainsString('Il conteggio è indicativo', $html, 'Manca l\'avviso sui limiti del tracciamento');
     }

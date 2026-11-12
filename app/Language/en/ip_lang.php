@@ -143,7 +143,7 @@ return array (
   'email_tracking_emails_sent' => 'Emails sent',
   'email_tracking_none' => 'No emails sent from the app yet.',
   'email_tracking_not_opened' => 'Not opened',
-  'email_tracking_opened_on' => 'Opened on %s',
+  'email_tracking_opened_on' => 'First opened on %s',
   'email_tracking_opens' => '%s opens',
   'email_tracking_help' => 'The count is indicative: many mail clients block images and never load the pixel.',
   'email_quote' => 'Email Quote',

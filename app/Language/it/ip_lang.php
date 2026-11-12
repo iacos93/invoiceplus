@@ -146,7 +146,7 @@ return array (
   'email_tracking_emails_sent' => 'Email inviate',
   'email_tracking_none' => 'Nessuna email inviata dal gestionale.',
   'email_tracking_not_opened' => 'Non aperta',
-  'email_tracking_opened_on' => 'Aperta il %s',
+  'email_tracking_opened_on' => 'Prima apertura il %s',
   'email_tracking_opens' => '%s aperture',
   'email_tracking_help' => 'Il conteggio è indicativo: molti programmi di posta bloccano le immagini e non caricano il pixel.',
   'email_quote' => 'Invia preventivo',

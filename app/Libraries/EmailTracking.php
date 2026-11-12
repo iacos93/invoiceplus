@@ -24,6 +24,10 @@ use App\Models\EmailTrackModel;
  * riceve `track_sent_at` solo quando il server SMTP accetta il messaggio e
  * viene eliminata se l'invio fallisce: nella pagina del documento non devono
  * comparire email mai partite.
+ *
+ * L'indirizzo IP viene salvato solo in forma anonima (rete, non singolo host) e
+ * lo user agent non viene memorizzato: sono dati personali che nessuna schermata
+ * usa, e il conteggio delle aperture non ha bisogno di identificare chi legge.
  */
 class EmailTracking
 {
@@ -150,11 +154,43 @@ class EmailTracking
     }
 
     /**
+     * Riduce l'indirizzo IP alla sua rete: per IPv4 azzera l'ultimo ottetto,
+     * per IPv6 tiene i primi 64 bit. Basta a distinguere aperture ripetute
+     * senza conservare l'indirizzo della singola persona, che non serve a
+     * nessuna schermata e sarebbe un dato personale in più.
+     */
+    public function anonymizeIp(string $ip): string
+    {
+        $ip = trim($ip);
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+            $parts    = explode('.', $ip);
+            $parts[3] = '0';
+
+            return implode('.', $parts);
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+            $binary = inet_pton($ip);
+
+            if ($binary === false) {
+                return '';
+            }
+
+            $masked = inet_ntop(substr($binary, 0, 8) . str_repeat("\0", 8));
+
+            return $masked === false ? '' : $masked;
+        }
+
+        return '';
+    }
+
+    /**
      * Registra un caricamento del pixel. Il token sconosciuto o non ancora
      * inviato non produce niente: la rotta risponde comunque con l'immagine,
      * così un token sbagliato non diventa un modo per capire quali esistono.
      */
-    public function recordOpen(string $token, string $ip = '', string $userAgent = ''): bool
+    public function recordOpen(string $token, string $ip = ''): bool
     {
         $track = $this->model->findByToken($token);
 
@@ -164,8 +200,7 @@ class EmailTracking
 
         $update = [
             'track_open_count' => (int) ($track['track_open_count'] ?? 0) + 1,
-            'track_last_ip'    => mb_substr($ip, 0, 45),
-            'track_user_agent' => mb_substr($userAgent, 0, 255),
+            'track_last_ip'    => $this->anonymizeIp($ip),
         ];
 
         // La prima apertura resta quella che conta per la data mostrata:

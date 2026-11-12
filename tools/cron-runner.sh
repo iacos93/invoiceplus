@@ -17,8 +17,9 @@
 #        */15 * * * * /percorso/ci4-invoiceplane/tools/cron-runner.sh
 #
 # Frequenze interne (modificabili nella tabella run_job più sotto):
-#   sdi_poll ogni 15 min, recur e backup una volta al giorno, digest una volta
-#   alla settimana. I solleciti per le fatture scadute si inviano a mano dalla
+#   sdi_poll ogni 15 min; recur e backup una volta al giorno; potatura del
+#   tracciamento email, verifica del ripristino e digest una volta alla
+#   settimana. I solleciti per le fatture scadute si inviano a mano dalla
 #   scheda della fattura: non c'è un endpoint automatico per loro.
 
 BASE_URL=""       # es. https://fatture.tuodominio.it/index.php
@@ -161,6 +162,9 @@ run_job      sdi_poll     $((15 * 60))  120   "/cron/sdi_poll/"
 run_job      recur        $DAY          300   "/cron/recur/"
 run_job      digest       $WEEK         300   "/cron/digest/"
 run_job      backup       $DAY          900   "/cron/backup/"
+# Potatura del tracciamento email: righe più vecchie di un anno e righe di
+# documenti eliminati. Gira senza sessione, come gli altri comandi del cron.
+run_cli      email_tracks $WEEK         600   "$PHP_BIN" spark email:prune
 # Dopo il backup: il dump appena creato viene ripristinato in un database
 # temporaneo e confrontato. Fallisce se serve un utente senza permesso di
 # creazione database; in quel caso la pagina "Stato del sistema" lo dice.

@@ -21,10 +21,10 @@ restano le cose che si dimenticano e che non danno errore subito.
   vanno reinseriti a mano. Se finisce in un repository, va considerata
   compromessa e sostituita.
 - **Le automazioni non partono da sole.** Fatture ricorrenti, interrogazione
-  SdI, riepilogo scadenze e backup passano da `tools/cron-runner.sh`, da
-  mettere in crontab come spiegato nello script. Indirizzo e cron key si
-  mettono in `writable/cron-runner.conf`: il file non è versionato, così la
-  chiave non finisce nel repository.
+  SdI, riepilogo scadenze, backup e potatura del tracciamento email passano da
+  `tools/cron-runner.sh`, da mettere in crontab come spiegato nello script.
+  Indirizzo e cron key si mettono in `writable/cron-runner.conf`: il file non è
+  versionato, così la chiave non finisce nel repository.
 
 ## Aggiornamento
 
