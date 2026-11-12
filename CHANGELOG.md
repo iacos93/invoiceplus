@@ -9,14 +9,17 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
-## [v0.4] — 2026-11-12
-
 ### Aggiunto
 
 - **Invia fattura** e **Invia preventivo** per email dalla pagina del documento
   e dall'elenco: apre la schermata con template, mittente, destinatari e PDF
   allegabile. Il Mailer c'era già, ma ci si arrivava solo dallo scadenzario e
   dal sollecito, quindi dalla fattura sembrava che la funzione non esistesse.
+
+## [v0.4] — 2026-11-12
+
+### Aggiunto
+
 - **Gestione > Stato del sistema**: il controllo "Backup del database" offre
   **Scarica l'ultimo backup**, per portare la copia fuori dal server. Il file
   è sempre l'ultimo dump valido (niente percorsi nell'URL), il pulsante compare
