@@ -135,10 +135,18 @@ final class DatabaseBackup
                 '-Fc', '--no-owner', '--no-acl',
                 '-h', $host,
                 '-p', (string) $port,
-                '-U', $user,
-                '-f', $file,
-                $name,
             ];
+
+            // Con username vuoto la connessione usa l'utente di sistema:
+            // passare `-U ''` è diverso e su alcune configurazioni non funziona.
+            if ($user !== '') {
+                $args[] = '-U';
+                $args[] = $user;
+            }
+
+            $args[] = '-f';
+            $args[] = $file;
+            $args[] = $name;
             $envName = 'PGPASSWORD';
         } else {
             // --single-transaction: dump coerente su InnoDB senza bloccare le
@@ -150,10 +158,14 @@ final class DatabaseBackup
                 '--no-tablespaces', '--default-character-set=utf8mb4',
                 '--host=' . $host,
                 '--port=' . $port,
-                '--user=' . $user,
-                '--result-file=' . $file,
-                $name,
             ];
+
+            if ($user !== '') {
+                $args[] = '--user=' . $user;
+            }
+
+            $args[] = '--result-file=' . $file;
+            $args[] = $name;
             $envName = 'MYSQL_PWD';
         }
 

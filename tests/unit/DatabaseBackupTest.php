@@ -128,6 +128,37 @@ final class DatabaseBackupTest extends CIUnitTestCase
         $this->assertStringContainsString(escapeshellarg("db dell'ufficio"), $comando['command']);
     }
 
+    /**
+     * Con username vuoto la connessione usa l'utente di sistema: passare
+     * `-U ''` è una cosa diversa, e su alcune configurazioni non funziona.
+     */
+    public function testUtenteVuotoNonVienePassatoAllaRigaDiComando(): void
+    {
+        $pg = new DatabaseBackup([
+            'DBDriver' => 'Postgre',
+            'hostname' => 'localhost',
+            'username' => '',
+            'database' => 'invoiceplane',
+        ], $this->dir);
+
+        $this->assertStringNotContainsString(
+            "'-U'",
+            $pg->command(DatabaseBackup::ENGINE_POSTGRES, '/usr/bin/pg_dump', '/tmp/b.dump')['command']
+        );
+
+        $my = new DatabaseBackup([
+            'DBDriver' => 'MySQLi',
+            'hostname' => 'localhost',
+            'username' => '',
+            'database' => 'invoiceplane',
+        ], $this->dir);
+
+        $this->assertStringNotContainsString(
+            "'--user='",
+            $my->command(DatabaseBackup::ENGINE_MYSQL, '/usr/bin/mysqldump', '/tmp/b.sql')['command']
+        );
+    }
+
     public function testRotazioneTieneGliUltimiDump(): void
     {
         foreach (range(1, 16) as $n) {

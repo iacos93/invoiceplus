@@ -69,7 +69,9 @@ final class SystemStatusPageTest extends CIUnitTestCase
 
         $this->assertSame(200, $risposta->response()->getStatusCode(), 'Stato del sistema: la pagina deve aprirsi');
 
-        $html = (string) $risposta->response()->getBody();
+        // Le etichette passano da esc(): l'apostrofo di "Ambiente dell'applicazione"
+        // arriva come entità HTML, quindi si confronta il testo decodificato.
+        $html = html_entity_decode((string) $risposta->response()->getBody(), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         foreach ([
             'Versione di PHP',
@@ -77,13 +79,17 @@ final class SystemStatusPageTest extends CIUnitTestCase
             'Database',
             'Migrazioni',
             'Backup del database',
+            'Verifica del ripristino',
             'Automazioni',
+            'Ambiente dell\'applicazione',
+            'Spazio su disco',
+            'Errori nel log',
         ] as $controllo) {
             $this->assertStringContainsString($controllo, $html, 'Manca il controllo: ' . $controllo);
         }
 
         $this->assertGreaterThanOrEqual(
-            6,
+            10,
             substr_count($html, 'badge text-bg-'),
             'Ogni controllo deve avere il suo stato, non solo l\'etichetta'
         );

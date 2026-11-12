@@ -26,3 +26,4 @@ builds
 # Il passo dei test del workflow scrive qui il risultato per controllare che
 # nessun test si salti; chi lo lancia in locale non deve trovarselo in git.
 phpunit.log
+writable/cron/

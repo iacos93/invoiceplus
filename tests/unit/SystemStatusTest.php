@@ -65,6 +65,14 @@ final class SystemStatusTest extends CIUnitTestCase
         return new SystemStatus($this->writable, $this->backups, $this->cron, $this->now);
     }
 
+    /**
+     * @param array<string, mixed> $dati
+     */
+    private function marker(array $dati): void
+    {
+        file_put_contents($this->cron . '/backup_verify.json', json_encode($dati));
+    }
+
     public function testPhpDellaVersioneRichiestaERegolare(): void
     {
         $check = $this->stato()->phpCheck();
@@ -201,6 +209,155 @@ final class SystemStatusTest extends CIUnitTestCase
         $this->assertSame(SystemStatus::WARNING, $check['state']);
         $this->assertStringContainsString('3 ore fa', $check['detail']);
         $this->assertNotSame('', $check['hint']);
+    }
+
+    public function testSenzaVerificaDelRipristinoEAvviso(): void
+    {
+        $check = $this->stato()->restoreCheck();
+
+        $this->assertSame(SystemStatus::WARNING, $check['state']);
+        $this->assertStringContainsString('backup:verify', $check['hint']);
+    }
+
+    public function testVerificaDelRipristinoRecenteERegolare(): void
+    {
+        $backup = $this->backups . '/backup_20261110_030000.dump';
+        file_put_contents($backup, 'x');
+
+        $this->marker([
+            'time'   => $this->now - 3600,
+            'file'   => basename($backup),
+            'tables' => 12,
+            'ok'     => true,
+            'error'  => '',
+        ]);
+
+        $check = $this->stato()->restoreCheck();
+
+        $this->assertSame(SystemStatus::OK, $check['state']);
+        $this->assertStringContainsString('12 tabelle', $check['detail']);
+    }
+
+    /**
+     * Il caso peggiore: la verifica è stata fatta e il dump non si ripristina.
+     */
+    public function testVerificaDelRipristinoFallitaEGuasto(): void
+    {
+        $backup = $this->backups . '/backup_20261110_030000.dump';
+        file_put_contents($backup, 'x');
+
+        $this->marker([
+            'time'  => $this->now - 600,
+            'file'  => basename($backup),
+            'ok'    => false,
+            'error' => 'Ripristino fallito: pg_restore: error: input file does not appear to be a valid archive',
+        ]);
+
+        $check = $this->stato()->restoreCheck();
+
+        $this->assertSame(SystemStatus::ERROR, $check['state']);
+        $this->assertStringContainsString('fallita', $check['detail']);
+    }
+
+    /**
+     * La verifica vale per il dump provato: un backup nuovo non è coperto.
+     */
+    public function testNuovoBackupNonAncoraVerificatoEAvviso(): void
+    {
+        $vecchio = $this->backups . '/backup_20261109_030000.dump';
+        $nuovo   = $this->backups . '/backup_20261110_030000.dump';
+
+        file_put_contents($vecchio, 'x');
+        file_put_contents($nuovo, 'x');
+
+        touch($vecchio, $this->now - 5 * 86400);
+        touch($nuovo, $this->now - 3600);
+
+        $this->marker([
+            'time'   => $this->now - 3600,
+            'file'   => basename($vecchio),
+            'tables' => 12,
+            'ok'     => true,
+        ]);
+
+        $check = $this->stato()->restoreCheck();
+
+        $this->assertSame(SystemStatus::WARNING, $check['state']);
+        $this->assertStringContainsString(basename($nuovo), $check['detail']);
+    }
+
+    public function testVerificaTroppoVecchiaEAvviso(): void
+    {
+        $backup = $this->backups . '/backup_20261110_030000.dump';
+        file_put_contents($backup, 'x');
+
+        $this->marker([
+            'time'   => $this->now - 40 * 86400,
+            'file'   => basename($backup),
+            'tables' => 12,
+            'ok'     => true,
+        ]);
+
+        $check = $this->stato()->restoreCheck();
+
+        $this->assertSame(SystemStatus::WARNING, $check['state']);
+        $this->assertStringContainsString('40 giorni fa', $check['detail']);
+    }
+
+    public function testAmbienteDiProduzioneERegolare(): void
+    {
+        $check = $this->stato()->environmentCheck();
+
+        $this->assertSame(SystemStatus::OK, $check['state']);
+        $this->assertStringContainsString('production', $check['detail']);
+    }
+
+    public function testAmbienteDiSviluppoEAvviso(): void
+    {
+        $status = new SystemStatus($this->writable, $this->backups, $this->cron, $this->now, 'development');
+
+        $check = $status->environmentCheck();
+
+        $this->assertSame(SystemStatus::WARNING, $check['state']);
+        $this->assertStringContainsString('stack trace', $check['hint']);
+    }
+
+    public function testSpazioSuDiscoVieneRiportato(): void
+    {
+        $check = $this->stato()->diskCheck();
+
+        $this->assertContains($check['state'], [SystemStatus::OK, SystemStatus::WARNING]);
+        $this->assertStringContainsString('liberi', $check['detail']);
+    }
+
+    public function testLogSenzaErroriERegolare(): void
+    {
+        mkdir($this->writable . '/logs', 0775, true);
+        file_put_contents(
+            $this->writable . '/logs/log-' . date('Y-m-d', $this->now) . '.log',
+            "INFO - 2026-11-12 10:00:00 --> tutto bene\n"
+        );
+
+        $check = $this->stato()->logCheck();
+
+        $this->assertSame(SystemStatus::OK, $check['state']);
+    }
+
+    public function testErroriNelLogSonoUnAvviso(): void
+    {
+        mkdir($this->writable . '/logs', 0775, true);
+        file_put_contents(
+            $this->writable . '/logs/log-' . date('Y-m-d', $this->now) . '.log',
+            "ERROR - 2026-11-12 10:00:00 --> connessione persa\n"
+            . "INFO - 2026-11-12 10:01:00 --> riprovato\n"
+            . "CRITICAL - 2026-11-12 10:02:00 --> database irraggiungibile\n"
+        );
+
+        $check = $this->stato()->logCheck();
+
+        $this->assertSame(SystemStatus::WARNING, $check['state']);
+        $this->assertStringContainsString('2 voci', $check['detail']);
+        $this->assertStringContainsString(date('Y-m-d', $this->now), $check['detail']);
     }
 
     /**

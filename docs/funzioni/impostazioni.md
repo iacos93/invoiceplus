@@ -90,14 +90,17 @@ pagina: vedi [accesso-e-integrazioni.md](accesso-e-integrazioni.md).
 - **Anagrafiche**: clienti e fornitori hanno l'export CSV e l'import diretto
   dalla propria lista.
 - **Backup**: il cron `backup` produce un dump del database in
-  `writable/backups`, con rotazione. Non è un archivio: i file vanno portati
-  fuori dal server.
+  `writable/backups`, con rotazione. `php spark backup:verify` prova a
+  ripristinarlo in un database temporaneo e confronta i conteggi. Non è un
+  archivio: i file vanno portati fuori dal server.
 - **Stato del sistema** (Gestione > Stato del sistema): una pagina in sola
   lettura che dice se PHP è alla versione richiesta, se le cartelle sono
   scrivibili, se il database risponde, se lo schema è aggiornato, quando è
-  stato fatto l'ultimo backup e se le automazioni girano ancora. È il posto
-  dove si vede un guasto silenzioso (per esempio un backup che non viene più
-  prodotto) senza leggere i log del server.
+  stato fatto l'ultimo backup e se è stato provato, se le automazioni girano,
+  in che ambiente è l'applicazione, quanto spazio resta sul disco e se il log
+  di oggi contiene errori. È il posto dove si vede un guasto silenzioso (per
+  esempio un backup che non viene più prodotto, o uno che non si ripristina)
+  senza leggere i log del server.
 
 ## Da sapere
 

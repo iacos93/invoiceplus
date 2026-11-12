@@ -103,6 +103,44 @@ run_job() {
     trap - EXIT INT TERM
 }
 
+# Come run_job, ma per un comando CLI (php spark ...) invece di un endpoint.
+# La verifica del ripristino non può passare da HTTP: crea un database
+# temporaneo e confronta i conteggi, e restituisce un codice d'uscita.
+run_cli() {
+    _name=$1
+    _interval=$2
+    _timeout=$3
+    shift 3
+
+    due "$_name" "$_interval" || return 0
+
+    _lock="${LOG_DIR}/${_name}.lock"
+    if ! mkdir "$_lock" 2>/dev/null; then
+        log "$_name" "saltato: esecuzione precedente ancora in corso"
+        return 0
+    fi
+    trap 'rmdir "${_lock}" 2>/dev/null' EXIT INT TERM
+
+    if command -v timeout >/dev/null 2>&1; then
+        _out=$(cd "$APP_DIR" && timeout "$_timeout" "$@" 2>&1)
+    else
+        # macOS non ha timeout(1): il comando gira senza limite. La verifica
+        # ha un suo limite interno dettato dal database, non dai dati esterni.
+        _out=$(cd "$APP_DIR" && "$@" 2>&1)
+    fi
+    _rc=$?
+
+    if [ $_rc -eq 0 ]; then
+        mark_done "$_name"
+        log "$_name" "ok: ${_out:-nessun output}"
+    else
+        log "$_name" "FALLITO (rc=$_rc): ${_out}"
+    fi
+
+    rmdir "$_lock" 2>/dev/null
+    trap - EXIT INT TERM
+}
+
 DAY=86400
 WEEK=$((7 * DAY))
 
@@ -111,3 +149,7 @@ run_job      sdi_poll     $((15 * 60))  120   "/cron/sdi_poll/"
 run_job      recur        $DAY          300   "/cron/recur/"
 run_job      digest       $WEEK         300   "/cron/digest/"
 run_job      backup       $DAY          900   "/cron/backup/"
+# Dopo il backup: il dump appena creato viene ripristinato in un database
+# temporaneo e confrontato. Fallisce se serve un utente senza permesso di
+# creazione database; in quel caso la pagina "Stato del sistema" lo dice.
+run_cli      verify       $WEEK        1800   "$PHP_BIN" spark backup:verify

@@ -9,7 +9,32 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
-<!-- Le voci della prossima versione vanno qui, per categoria. -->
+### Aggiunto
+
+- `php spark backup:verify`: prova che l'ultimo dump si ripristini davvero.
+  Lo carica in un database temporaneo `<database>_verify_<timestamp>`,
+  confronta i conteggi delle tabelle principali e il totale fatturato, poi
+  elimina la copia; l'esito finisce in `writable/cron/backup_verify.json`.
+  Serve un utente con permesso di creazione database (`CREATEDB` su
+  PostgreSQL, `CREATE` su MySQL/MariaDB).
+- Quattro controlli nuovi in **Gestione > Stato del sistema**: verifica del
+  ripristino (con avviso se l'ultimo dump non è stato provato), ambiente
+  dell'applicazione (`CI_ENVIRONMENT`, per accorgersi di un'installazione con
+  dati veri lasciata in sviluppo), spazio libero sul disco, errori nel log di
+  oggi.
+
+### Modificato
+
+- `tools/cron-runner.sh` esegue `backup:verify` una volta a settimana dopo il
+  backup, con il binario PHP configurabile in `PHP_BIN` (in crontab il PATH è
+  ridotto).
+
+### Corretto
+
+- Con utente del database vuoto (connessione come utente di sistema) i comandi
+  di dump passavano `-U ''`; la verifica del ripristino perdeva anche il nome
+  del database da creare. Ora l'opzione viene omessa quando l'utente non è
+  configurato.
 
 ## [v0.2] — 2026-11-11
 

@@ -114,6 +114,33 @@ non è nel PATH o è di una versione sbagliata:
 backup.mysqldumpPath = /usr/bin/mysqldump
 ```
 
+### Verifica del ripristino
+
+Sapere che il dump esiste non basta: un file può essere prodotto ogni giorno e
+non essere ripristinabile (troncato, binario di versione sbagliata, tabella
+mancante). `php spark backup:verify` prende l'ultimo dump, lo carica in un
+database temporaneo `<database>_verify_<timestamp>`, confronta i conteggi delle
+tabelle principali e il totale fatturato, poi elimina la copia.
+
+```console
+php spark backup:verify
+php spark backup:verify --file writable/backups/backup_20261111_030000.dump
+```
+
+Esce con `0` se il ripristino coincide, con `1` se qualcosa non torna, e in
+entrambi i casi scrive l'esito in `writable/cron/backup_verify.json`: la pagina
+**Gestione > Stato del sistema** lo legge e segnala anche il caso in cui esista
+un dump più recente non ancora provato.
+
+Serve un utente del database con permesso di creare database — `CREATEDB` su
+PostgreSQL, `CREATE` su MySQL/MariaDB. Il database temporaneo viene eliminato
+sempre, anche quando il ripristino fallisce. Su un database grande il comando
+può durare qualche minuto: è normale.
+
+`tools/cron-runner.sh` lo esegue una volta a settimana, subito dopo il backup
+del giorno. In crontab il PATH è ridotto: se `php` non è raggiungibile, imposta
+`PHP_BIN` in cima allo script.
+
 ### Ripristino
 
 **PostgreSQL.** Il dump è in formato custom: si ripristina con `pg_restore`, in
