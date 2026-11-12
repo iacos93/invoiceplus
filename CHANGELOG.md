@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.5] — 2026-11-12
+
 ### Aggiunto
 
 - **Invia fattura** e **Invia preventivo** per email dalla pagina del documento

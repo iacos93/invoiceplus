@@ -251,12 +251,14 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.4`, che ridisegna
-"Stato del sistema" (riepilogo in testa, controlli ordinati per gravità),
-aggiunge il download dell'ultimo backup dalla stessa pagina, avvisa via email
-quando il backup fallisce e crea i dump con permessi `0600`. Il ramo `main` è
-verificato dalla CI a ogni push, compresi i test nel browser e la misura della
-copertura. Le modifiche sono elencate in [`CHANGELOG.md`](CHANGELOG.md): le
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.5`, che rende
+raggiungibile l'invio di fatture e preventivi per email dalla pagina del
+documento e dall'elenco (il Mailer c'era, ma non aveva un punto d'ingresso),
+dopo la `v0.4` che ridisegna "Stato del sistema", aggiunge il download
+dell'ultimo backup, avvisa via email quando il backup fallisce e crea i dump
+con permessi `0600`. Il ramo `main` è verificato dalla CI a ogni push,
+compresi i test nel browser e la misura della copertura. Le modifiche sono
+elencate in [`CHANGELOG.md`](CHANGELOG.md): le
 versioni seguono [Semantic Versioning](https://semver.org/), quindi il numero
 di patch sale per le correzioni, il minore quando cambia qualcosa di visibile e
 il maggiore quando il progetto esce dallo stato di sviluppo. Come si scrive una
