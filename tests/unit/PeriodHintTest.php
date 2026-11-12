@@ -58,15 +58,25 @@ final class PeriodHintTest extends CIUnitTestCase
         );
 
         // Il testo è tradotto: si verifica il riferimento alle due
-        // combinazioni, non la frase in una lingua precisa.
+        // combinazioni, non la frase in una lingua precisa. I tasti sono
+        // avvolti in <kbd> per la resa: si confronta il testo del paragrafo
+        // senza tag, altrimenti "Shift</kbd>+clic" non è più "Shift+clic" e
+        // il confronto sull'HTML intero poteva passare grazie a un commento
+        // dello script invece che grazie alla frase visibile.
+        $hint = '';
+
+        if (preg_match('/<p class="ip-period-hint"[^>]*>(.*?)<\/p>/s', $html, $m) === 1) {
+            $hint = strip_tags($m[1]);
+        }
+
         $this->assertMatchesRegularExpression(
             '/Shift\+clic/',
-            $html,
+            $hint,
             'Le istruzioni non nominano Shift+clic'
         );
         $this->assertMatchesRegularExpression(
             '/Ctrl\/⌘\+clic/',
-            $html,
+            $hint,
             'Le istruzioni non nominano Ctrl/⌘+clic'
         );
     }

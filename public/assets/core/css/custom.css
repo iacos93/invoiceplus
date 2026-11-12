@@ -6547,14 +6547,44 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   align-items: center;
   justify-content: center;
   gap: 2px 8px;
-  margin: 0;
-  font-size: var(--ip-text-xs);
+  /* Il contenitore distanzia le righe di 12px. La nota appartiene ai mesi,
+     non ai totali che la seguono: il margine negativo la avvicina alla
+     barra (6px) e lascia intero lo stacco verso la striscia di riepilogo. */
+  margin: -6px 0 0;
+  /* Un gradino sopra la prima versione (11px grigio): a quella misura la
+     nota c'era ma non si vedeva, ed era proprio il difetto da correggere.
+     Corpo 13px e colore del testo pieno la rendono leggibile a colpo
+     d'occhio; resta senza fondo né bordo per non competere con i mesi. */
+  font-size: var(--ip-text-base);
   line-height: 1.45;
-  color: var(--ip-text-muted);
+  color: var(--ip-text);
   text-align: center;
 }
 .ip-period-hint[hidden] { display: none; }
-.ip-period-hint i { opacity: .7; }
+/* L'icona nel colore primario fa da richiamo: è lei a segnalare che la riga
+   è un'istruzione e non un altro dato del periodo. */
+.ip-period-hint i { color: var(--ip-primary); }
+/* Shift, Ctrl e ⌘ in forma di tasto: sono la parte della frase che l'occhio
+   deve trovare. Bootstrap disegna <kbd> come blocco scuro a testo bianco,
+   troppo pesante dentro una nota; qui è un tasto chiaro col bordo, lo stesso
+   disegno della scorciatoia nella ricerca globale. Il bordo inferiore più
+   spesso dà il rilievo del tasto senza ricorrere a un'ombra. */
+.ip-period-hint kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border: 1px solid var(--ip-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--ip-bg, #f6f6f7);
+  color: var(--ip-text-strong);
+  font-family: inherit;
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  white-space: nowrap;
+}
 
 /* Adattamento alla larghezza reale del contenuto (non del viewport).
    Sotto i 1000px le tredici voci fisse non stanno su una riga: la striscia
@@ -12886,40 +12916,48 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 }
 
 /* =============================================================================
-   Stato del sistema — riepilogo in testa e lista dei controlli
+   Stato del sistema — riepilogo in testa e controlli in due gruppi
    -----------------------------------------------------------------------------
    La pagina nasceva come una tabella a tre colonne (controllo, stato,
    dettaglio). Funzionava, ma per rispondere alla domanda con cui la si apre —
    "devo preoccuparmi?" — bisognava leggere dieci badge uno per uno, e i
    suggerimenti lunghi finivano in una colonna stretta.
 
-   Ora c'è un riepilogo che dà l'esito in una riga (stato peggiore, conteggi)
-   e una lista in cui ogni controllo è una riga con icona, etichetta, dettaglio
-   e suggerimento su tutta la larghezza. Il colore non è l'unico segnale:
-   icona, parola ("regolare", "da controllare", "guasto") e numero dei
-   conteggi restano leggibili anche senza distinguere le tinte.
+   Il riepilogo dà l'esito in una riga (stato peggiore, una tacca per
+   controllo, conteggi). Sotto, i controlli sono divisi in "Da sistemare" e
+   "Regolari": in un elenco unico un guasto e otto righe verdi avevano lo
+   stesso peso, e l'occhio doveva scartare il verde per trovare il resto. Le
+   righe da sistemare sono ariose e portano il "cosa fare" in evidenza; quelle
+   regolari sono compatte, una riga ciascuna su schermo largo.
+
+   Il colore non è l'unico segnale: icona, parola ("regolare", "da
+   controllare", "guasto") e numero dei conteggi restano leggibili anche senza
+   distinguere le tinte.
    -------------------------------------------------------------------------- */
 
-/* Un solo insieme di token per stato, usato sia dal riepilogo sia dalle
-   righe: la tinta piena per barra, icona e pallino; la variante -text per il
-   testo (l'ambra piena su fondo chiaro sta intorno a 2:1). */
+/* Un solo insieme di token per stato, usato da riepilogo, tacche e righe: la
+   tinta piena per barra, tacca e pallino; la variante -text per il testo
+   (l'ambra piena su fondo chiaro sta intorno a 2:1). */
 .ip-status-hero--ok,
 .ip-status-row--ok,
-.ip-status-count--ok {
+.ip-status-count--ok,
+.ip-status-strip__cell--ok {
   --ip-stato:      var(--ip-success);
   --ip-stato-bg:   var(--ip-success-bg);
   --ip-stato-text: var(--ip-success-text);
 }
 .ip-status-hero--warning,
 .ip-status-row--warning,
-.ip-status-count--warning {
+.ip-status-count--warning,
+.ip-status-strip__cell--warning {
   --ip-stato:      var(--ip-warning);
   --ip-stato-bg:   var(--ip-warning-bg);
   --ip-stato-text: var(--ip-warning-text);
 }
 .ip-status-hero--error,
 .ip-status-row--error,
-.ip-status-count--error {
+.ip-status-count--error,
+.ip-status-strip__cell--error {
   --ip-stato:      var(--ip-danger);
   --ip-stato-bg:   var(--ip-danger-bg);
   --ip-stato-text: var(--ip-danger-text);
@@ -12927,14 +12965,16 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 
 /* Riepilogo: fondo tinto dallo stato peggiore, barra piena a sinistra (lo
    stesso segno di .ip-window--alert, così "c'è un problema" si vede dal
-   bordo della pagina senza leggere). */
+   bordo della pagina senza leggere). Griglia e non flex: icona, testo e
+   conteggi hanno tre larghezze di natura diversa, e con il wrap l'icona
+   restava sola sulla prima riga appena il testo andava a capo. */
 .ip-status-hero {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--ip-space-7);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(220px, 280px);
+  align-items: center;
+  gap: var(--ip-space-6) var(--ip-space-7);
   margin: var(--ip-space-7) 0 0;
-  padding: var(--ip-space-7) var(--ip-space-8);
+  padding: var(--ip-space-8) var(--ip-space-9);
   background: var(--ip-stato-bg);
   border: 1px solid color-mix(in srgb, var(--ip-stato) 30%, var(--ip-border));
   border-left: 4px solid var(--ip-stato);
@@ -12945,7 +12985,7 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
    resta sopra 4,5:1 in entrambi i temi, mentre il pieno ambra con il bianco
    scendeva a 2,28:1. */
 .ip-status-hero__icon {
-  flex: 0 0 auto;
+  align-self: start;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12958,7 +12998,6 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   font-size: var(--ip-text-xl);
 }
 .ip-status-hero__body {
-  flex: 1 1 320px;
   min-width: 0;
 }
 .ip-status-hero__eyebrow {
@@ -12971,55 +13010,104 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 }
 .ip-status-hero__title {
   margin: 0;
-  font-size: var(--ip-text-2xl);
+  font-size: var(--ip-text-3xl);
   line-height: 1.2;
+  text-wrap: balance;
 }
 .ip-status-hero__lead {
   margin: var(--ip-space-2) 0 0;
   /* Il testo sta sulla tinta di stato, non sulla card: --ip-text-muted è
-     tarato sul canvas e qui va verificato a occhio. A 13px resta sopra
-     4,5:1 su tutte e tre le tinte. */
+     tarato sul canvas e qui scenderebbe sotto 4,5:1. Resta in inchiostro. */
   color: var(--ip-text);
   font-size: var(--ip-text-base);
-  max-width: 70ch;
+  line-height: 1.5;
+  max-width: 62ch;
 }
 
-/* Conteggi: tre numeri, non tre badge. Il pallino porta il colore, la cifra
-   resta in inchiostro — uno zero rosso sembrerebbe un guasto anche quando
-   non c'è. */
+/* Tacche: una per controllo, nell'ordine della lista (guasti, avvisi,
+   regolari). Dicono la proporzione prima dei numeri — "uno su dieci" si vede,
+   non si conta. Le regolari sono attenuate: sono lo sfondo su cui devono
+   staccare le altre, e a tinta piena dieci tacche verdi gridavano più del
+   titolo. Il binario sotto è il fondo card, così le tacche non poggiano
+   sulla tinta di stato dello stesso colore. */
+.ip-status-strip {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--ip-bg-card);
+  border: 1px solid color-mix(in srgb, var(--ip-stato) 25%, transparent);
+  border-radius: var(--ip-radius-sm);
+}
+.ip-status-strip__cell {
+  flex: 1 1 0;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--ip-stato);
+}
+.ip-status-strip__cell--ok {
+  background: color-mix(in srgb, var(--ip-stato) 38%, var(--ip-bg-card));
+}
+
+/* Conteggi: legenda delle tacche, non tre KPI. Il pallino porta il colore,
+   la cifra resta in inchiostro — uno zero rosso sembrerebbe un guasto anche
+   quando non c'è; per lo stesso motivo le voci a zero si attenuano. Nel
+   sorgente l'etichetta (dt) precede la cifra (dd), come vuole una <dl>; a
+   schermo si legge "1 guasto", quindi l'ordine visivo è invertito. */
 .ip-status-hero__counts {
   display: flex;
-  gap: var(--ip-space-8);
-  margin: 0 0 0 auto;
+  flex-wrap: wrap;
+  gap: var(--ip-space-2) var(--ip-space-7);
+  margin: var(--ip-space-4) 0 0;
   padding: 0;
 }
 .ip-status-count {
-  min-width: 76px;
-}
-.ip-status-count dt {
   display: flex;
+  flex-direction: row-reverse;
   align-items: center;
-  gap: var(--ip-space-3);
-  font-size: var(--ip-text-xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ip-text-muted);
+  gap: var(--ip-space-2);
+  font-size: var(--ip-text-sm);
+  line-height: 1.4;
   white-space: nowrap;
 }
-.ip-status-count dd {
-  margin: 2px 0 0;
-  font-size: var(--ip-text-2xl);
-  font-weight: 700;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+.ip-status-count dt {
+  font-weight: 500;
   color: var(--ip-text);
 }
+.ip-status-count dd {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  margin: 0;
+  font-family: var(--ip-mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-strong);
+}
+.ip-status-count.is-zero dt,
+.ip-status-count.is-zero dd {
+  font-weight: 400;
+}
+.ip-status-count.is-zero .ip-status-dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ip-stato);
+}
 .ip-status-dot {
+  flex: 0 0 auto;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--ip-stato);
+}
+
+/* Le due card stanno vicine: sono lo stesso elenco diviso in due, non due
+   argomenti. Il titolo è un <h2> per la struttura del documento ma veste
+   come le altre etichette di card (non in Fraunces a 22px). */
+.ip-status-card {
+  margin-bottom: 0;
+}
+.ip-status-card .ip-table-card-label {
+  font-family: var(--ip-font);
+  line-height: 1.35;
 }
 
 /* Lista dei controlli: righe separate da un filo, senza hover — non sono
@@ -13030,9 +13118,16 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   margin: 0;
   padding: 0;
 }
+/* Riga a griglia: icona, nome del controllo, contenuto, timbro. Il nome ha
+   una colonna a larghezza fissa così i dettagli partono tutti dallo stesso
+   margine e la colonna si scorre in verticale come in una tabella, senza
+   esserlo (i suggerimenti lunghi in una cella stretta erano il difetto
+   della versione a tabella). */
 .ip-status-row {
-  display: flex;
-  gap: var(--ip-space-6);
+  display: grid;
+  grid-template-columns: 30px minmax(150px, 210px) minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--ip-space-2) var(--ip-space-6);
   padding: var(--ip-card-head-y) var(--ip-card-pad-x);
   border-top: 1px solid var(--ip-border-soft);
 }
@@ -13040,7 +13135,8 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   border-top: 0;
 }
 .ip-status-row__icon {
-  flex: 0 0 auto;
+  grid-column: 1;
+  grid-row: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -13051,27 +13147,30 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   color: var(--ip-stato-text);
   font-size: var(--ip-text-base);
 }
-.ip-status-row__body {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.ip-status-row__head {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--ip-space-2) var(--ip-space-6);
-}
 .ip-status-row__label {
+  grid-column: 2;
+  grid-row: 1;
   margin: 0;
+  /* Centra otticamente il nome sull'icona da 30px. */
+  padding-top: 5px;
+  font-family: var(--ip-font);
   font-size: var(--ip-text-md);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.4;
 }
-.ip-status-row__head .badge {
-  margin-left: auto;
+.ip-status-row__body {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  padding-top: 5px;
+}
+.ip-status-row__state {
+  grid-column: 4;
+  grid-row: 1;
+  margin-top: 5px;
 }
 .ip-status-row__detail {
-  margin: var(--ip-space-2) 0 0;
+  margin: 0;
   font-size: var(--ip-text-base);
   line-height: 1.5;
   color: var(--ip-text);
@@ -13080,33 +13179,74 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   max-width: 78ch;
   overflow-wrap: anywhere;
 }
-.ip-status-row__hint {
-  display: flex;
-  gap: var(--ip-space-3);
-  margin: var(--ip-space-3) 0 0;
-  font-size: var(--ip-text-sm);
-  line-height: 1.5;
-  color: var(--ip-text-muted);
-  max-width: 78ch;
+
+/* Righe regolari: una riga sola, più bassa. L'icona perde la mattonella —
+   otto quadrati verdi in colonna erano una striscia di colore più forte del
+   contenuto — e resta il solo segno di spunta. */
+.ip-status-row--ok {
+  padding-top: var(--ip-space-5);
+  padding-bottom: var(--ip-space-5);
 }
-/* L'icona del suggerimento resta neutra: colorata di stato sarebbe un
-   secondo allarme sulla stessa riga, e il punto lo fa già il badge. */
-.ip-status-row__hint i {
-  flex: 0 0 auto;
-  margin-top: 3px;
-  color: var(--ip-text-muted);
+.ip-status-row--ok .ip-status-row__icon {
+  background: transparent;
+  font-size: var(--ip-text-md);
+}
+.ip-status-row--ok .ip-status-row__label {
+  font-weight: 500;
+}
+
+/* "Cosa fare": è il motivo per cui la riga esiste, quindi non è più una nota
+   grigia sotto il dettaglio ma un riquadro tinto dallo stato, con il testo in
+   inchiostro. L'etichetta lo separa dal dettaglio, che dice cosa è stato
+   rilevato; questo dice come se ne esce. */
+.ip-status-row__hint {
+  margin: var(--ip-space-4) 0 0;
+  padding: var(--ip-space-4) var(--ip-space-6);
+  max-width: 78ch;
+  font-size: var(--ip-text-base);
+  line-height: 1.55;
+  color: var(--ip-text);
+  background: var(--ip-stato-bg);
+  border-left: 3px solid var(--ip-stato);
+  border-radius: 0 var(--ip-radius-sm) var(--ip-radius-sm) 0;
+}
+.ip-status-row__hint-label {
+  display: block;
+  margin-bottom: 1px;
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ip-stato-text);
+}
+/* Comandi e nomi di file citati nei testi: in mono, su un fondo appena
+   segnato, e selezionabili con un clic solo — sono lì per essere copiati in
+   un terminale. Il fondo è un velo dell'inchiostro e non un grigio fisso,
+   così regge sia sulla card sia sul riquadro tinto, in chiaro e in scuro. */
+.ip-status-row__detail code,
+.ip-status-row__hint code {
+  padding: 1px 5px;
+  font-family: var(--ip-mono);
+  font-size: 0.92em;
+  color: var(--ip-text-strong);
+  background: color-mix(in srgb, var(--ip-text) 8%, transparent);
+  border-radius: 3px;
+  overflow-wrap: anywhere;
+  -webkit-user-select: all;
+  user-select: all;
 }
 
 /* Azioni della riga (per ora solo il download del backup). Stanno sotto il
-   dettaglio e non nell'header: il badge lì è lo stato, e un pulsante accanto
-   lo farebbe sembrare parte del giudizio. La nota accanto spiega perché
+   dettaglio e non accanto al timbro: quello è lo stato, e un pulsante lì
+   accanto lo farebbe sembrare parte del giudizio. La nota spiega perché
    scaricare non è un doppione del backup automatico. */
 .ip-status-row__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--ip-space-4);
+  gap: var(--ip-space-4) var(--ip-space-6);
   margin-top: var(--ip-space-4);
+  max-width: 78ch;
 }
 .ip-status-row__actions-note {
   flex: 1 1 260px;
@@ -13116,36 +13256,65 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   color: var(--ip-text-muted);
 }
 
-/* Sotto i 992px i conteggi passano sotto il testo: in orizzontale rubavano
-   la larghezza al titolo, che andava a capo a metà parola. */
+.ip-status-footnote {
+  margin: var(--ip-space-7) 0 var(--ip-space-9);
+  max-width: 78ch;
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  color: var(--ip-text-muted);
+}
+
+/* Sotto i 1200px (con la barra laterale aperta il contenuto è già stretto)
+   tacche e conteggi passano sotto il testo: accanto rubavano la larghezza al
+   titolo, che andava a capo a metà frase. */
+@media (max-width: 1199.98px) {
+  .ip-status-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .ip-status-hero__tally {
+    grid-column: 1 / -1;
+  }
+}
+/* Sotto i 992px il contenuto non è più una colonna a fianco del nome: va
+   sotto, su tutta la larghezza utile, e il timbro resta in alto a destra. */
 @media (max-width: 991.98px) {
-  .ip-status-hero__counts {
-    width: 100%;
-    margin-left: 0;
-    padding-top: var(--ip-space-5);
-    border-top: 1px solid color-mix(in srgb, var(--ip-stato) 25%, transparent);
-    justify-content: space-between;
+  .ip-status-row {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+  }
+  .ip-status-row__state {
+    grid-column: 3;
+  }
+  .ip-status-row__body {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    padding-top: 0;
   }
 }
 @media (max-width: 575.98px) {
   .ip-status-hero {
-    padding: var(--ip-space-6) var(--ip-space-7);
-    gap: var(--ip-space-5);
+    padding: var(--ip-space-7);
+    gap: var(--ip-space-5) var(--ip-space-6);
   }
   .ip-status-hero__icon {
     width: 38px;
     height: 38px;
     font-size: var(--ip-text-lg);
   }
-  .ip-status-hero__counts {
-    gap: var(--ip-space-4);
+  .ip-status-hero__title {
+    font-size: var(--ip-text-2xl);
   }
-  /* Su telefono la riga resta leggibile: il badge va sotto l'etichetta
-     invece di comprimerla, e il dettaglio occupa tutta la larghezza. */
+  /* Su telefono 30px di rientro a sinistra sono un decimo dello schermo:
+     dettaglio, "cosa fare" e pulsante usano tutta la larghezza della riga. */
   .ip-status-row {
-    padding: var(--ip-space-6) var(--ip-space-7);
+    padding-left: var(--ip-space-7);
+    padding-right: var(--ip-space-7);
+    column-gap: var(--ip-space-5);
   }
-  .ip-status-row__head .badge {
-    margin-left: 0;
+  .ip-status-row__body {
+    grid-column: 1 / -1;
+  }
+  .ip-status-row__actions .btn {
+    width: 100%;
+    justify-content: center;
   }
 }

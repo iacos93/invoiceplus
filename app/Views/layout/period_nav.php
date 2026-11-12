@@ -155,6 +155,40 @@ $navBase = site_url($base_url);
     </div>
 
     <?php
+    /* La selezione multipla esisteva già ma non era scritta da nessuna parte:
+       chi voleva due mesi li apriva uno per volta. La riga compare solo con
+       JavaScript attivo — lo script in fondo toglie `hidden` — perché senza
+       script i mesi restano link singoli e promettere shift+clic sarebbe
+       falso.
+
+       Sta subito sotto i mesi, prima dei totali: in fondo alla barra, dopo
+       la striscia di riepilogo, si leggeva come una nota ai totali e non
+       come l'istruzione dei pulsanti a cui si riferisce. */
+    ?>
+    <p class="ip-period-hint" id="ip-period-hint" data-ip-period-hint hidden>
+        <i class="fa fa-solid fa-circle-info" aria-hidden="true"></i>
+        <?php
+        /* I nomi dei tasti diventano <kbd> dopo l'escape, non dentro la
+           stringa di lingua: la traduzione resta testo puro (niente HTML da
+           fidarsi nei file di lingua) e "Shift", "Ctrl", "⌘" si scrivono
+           uguali in italiano e in inglese, quindi la sostituzione vale per
+           entrambe. Lo <span> serve perché il paragrafo è un contenitore
+           flex: senza, ogni <kbd> diventerebbe una voce flex a sé e la frase
+           si spezzerebbe in blocchi. */
+        $hintText = esc(trans(
+            'period_hint_multiselect',
+            '',
+            'Un clic sceglie un mese. Con Shift+clic si estende l’intervallo; con Ctrl/⌘+clic si aggiunge o si toglie un mese.'
+        ));
+        ?>
+        <span><?= strtr($hintText, [
+            'Shift' => '<kbd>Shift</kbd>',
+            'Ctrl'  => '<kbd>Ctrl</kbd>',
+            '⌘'     => '<kbd>⌘</kbd>',
+        ]) ?></span>
+    </p>
+
+    <?php
     /* I totali del periodo escono dalla riga dei mesi e usano la striscia di
        riepilogo condivisa (layout/summary_strip): prima erano testo muto
        spinto a destra, cioè un terzo modo di mostrare gli stessi numeri che
@@ -189,22 +223,6 @@ $navBase = site_url($base_url);
             ],
         ]]) ?>
     <?php endif; ?>
-
-    <?php
-    /* La selezione multipla esisteva già ma non era scritta da nessuna parte:
-       chi voleva due mesi li apriva uno per volta. La riga compare solo con
-       JavaScript attivo — lo script qui sotto toglie `hidden` — perché senza
-       script i mesi restano link singoli e promettere shift+clic sarebbe
-       falso. */
-    ?>
-    <p class="ip-period-hint" id="ip-period-hint" data-ip-period-hint hidden>
-        <i class="fa fa-solid fa-circle-info" aria-hidden="true"></i>
-        <?= esc(trans(
-            'period_hint_multiselect',
-            '',
-            'Un clic sceglie un mese. Con Shift+clic si estende l’intervallo; con Ctrl/⌘+clic si aggiunge o si toglie un mese.'
-        )) ?>
-    </p>
 
 </div>
 

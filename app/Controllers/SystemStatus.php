@@ -64,8 +64,11 @@ class SystemStatus extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        log_message('info', 'Backup scaricato: {file} ({size} byte) da utente {user}', [
-            'file' => $backup['name'],
+        // {backup} e non {file}: {file} è un segnaposto riservato del logger
+        // CI4 e viene sostituito con il file chiamante, non con il nome del
+        // dump (il log mostrava APPPATH/Controllers/SystemStatus.php).
+        log_message('info', 'Backup scaricato: {backup} ({size} byte) da utente {user}', [
+            'backup' => $backup['name'],
             'size' => $backup['size'],
             'user' => (int) session('user_id'),
         ]);

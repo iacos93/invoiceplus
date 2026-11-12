@@ -11,7 +11,8 @@
 #      così un fallimento silenzioso del curl si vede il giorno dopo.
 #
 # Installazione:
-#   1. compila BASE_URL e CRON_KEY qui sotto;
+#   1. crea writable/cron-runner.conf con BASE_URL e CRON_KEY (il file non è
+#      versionato: una copia del repository non deve contenere la chiave);
 #   2. crontab -e  e aggiungi UNA riga:
 #        */15 * * * * /percorso/ci4-invoiceplane/tools/cron-runner.sh
 #
@@ -23,11 +24,22 @@
 BASE_URL=""       # es. https://fatture.tuodominio.it/index.php
 CRON_KEY=""
 
+# Valori locali dell'installazione, fuori dal repository. Il file è opzionale:
+# chi preferisce può compilare BASE_URL e CRON_KEY qui sopra, ma i file
+# versionati devono restare senza segreti.
+APP_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+CRON_CONF="${APP_DIR}/writable/cron-runner.conf"
+[ -f "$CRON_CONF" ] && . "$CRON_CONF"
+
+# Binario PHP per i comandi CLI (verifica del ripristino). In crontab il PATH
+# è ridotto: il percorso assoluto evita che `php` non venga trovato.
+PHP_BIN="${PHP_BIN:-/opt/homebrew/bin/php}"
+[ -x "$PHP_BIN" ] || PHP_BIN=$(command -v php)
+
 # Log e stato dei job stanno dentro writable/cron: la pagina "Stato del
 # sistema" li legge per dire se le automazioni girano ancora. In una cartella
 # fuori dall'applicazione (era ~/.invoiceplane-cron) nessuno se ne accorge, ed
 # è lo stesso motivo per cui il backup è stato fermo giorni senza avvisi.
-APP_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 LOG_DIR="${APP_DIR}/writable/cron"
 LOG_FILE="${LOG_DIR}/cron.log"
 LOG_MAX_LINES=2000
@@ -35,7 +47,7 @@ LOG_MAX_LINES=2000
 set -u
 
 if [ -z "$BASE_URL" ] || [ -z "$CRON_KEY" ]; then
-    echo "cron-runner: compila BASE_URL e CRON_KEY all'inizio dello script" >&2
+    echo "cron-runner: compila BASE_URL e CRON_KEY in writable/cron-runner.conf" >&2
     exit 1
 fi
 

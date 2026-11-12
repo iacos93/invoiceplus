@@ -238,19 +238,24 @@ class Cron extends BaseController
             return 'Cron key non valida';
         }
 
+        $host     = (string) get_setting('sdi_imap_host', '');
+        $username = (string) get_setting('sdi_imap_username', '');
+
+        // Prima la configurazione, poi l'estensione: senza casella il polling
+        // non serve, e un errore ogni 15 minuti per un'estensione che non
+        // viene usata riempiva il log di rumore (e faceva scattare l'avviso
+        // "Errori nel log" a ogni giro).
+        if ($host === '' || $username === '') {
+            return 'Casella IMAP SdI non configurata (Impostazioni > SdI)';
+        }
+
         if (!function_exists('imap_open')) {
             log_message('error', 'SdI: estensione php-imap non disponibile, polling ricevute saltato');
 
             return 'Estensione php-imap non disponibile: installala per il polling ricevute SdI';
         }
 
-        $host     = (string) get_setting('sdi_imap_host', '');
-        $username = (string) get_setting('sdi_imap_username', '');
         $password = decrypt_setting_password((string) get_setting('sdi_imap_password', ''));
-
-        if ($host === '' || $username === '') {
-            return 'Casella IMAP SdI non configurata (Impostazioni > SdI)';
-        }
 
         $mailbox = '{' . $host . ':993/imap/ssl}INBOX';
         $conn    = @imap_open($mailbox, $username, $password);

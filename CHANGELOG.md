@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.6] — 2026-11-12
+
 ### Aggiunto
 
 - **Selezione multipla dei mesi** spiegata sotto la barra del periodo in
@@ -16,6 +18,32 @@ Le regole per scrivere le voci e preparare una release sono in
   l'intervallo, Ctrl/⌘+clic aggiunge o toglie un mese. La funzione c'era già,
   ma senza istruzioni restava invisibile. La riga compare solo con JavaScript
   attivo, perché senza script i mesi sono link singoli.
+
+### Modificato
+
+- **Stato del sistema** separa i controlli che richiedono un intervento da
+  quelli regolari: i primi stanno in cima con il comando suggerito in evidenza,
+  gli altri in un gruppo a parte. Prima dieci righe dello stesso peso chiedevano
+  la stessa attenzione e un guasto si perdeva tra i "regolare".
+
+### Corretto
+
+- **Polling SdI**: quando la casella IMAP non è configurata il job si ferma
+  senza scrivere un errore nel log. Prima `cron/sdi_poll` registrava un ERROR a
+  ogni giro (ogni 15 minuti) per l'estensione `php-imap` mancante, anche se il
+  canale SdI non usava la PEC.
+- **Migrazione fornitori**: `BackfillSuppliers` inserisce `true` nella colonna
+  `supplier_active`. Su PostgreSQL l'inserimento di `1` in una colonna boolean
+  faceva fallire le migrazioni di un database nuovo.
+- **Log del download del backup**: riporta il nome del dump scaricato. Il
+  segnaposto `{file}` è riservato dal logger di CodeIgniter e veniva sostituito
+  con il file del controller (`APPPATH/Controllers/SystemStatus.php`).
+
+### Sicurezza
+
+- **Cron key fuori dal repository**: `tools/cron-runner.sh` legge `BASE_URL` e
+  `CRON_KEY` da `writable/cron-runner.conf`, che non è versionato; i file
+  tracciati restano con i segnaposto. La chiave non finisce più in un commit.
 
 ## [v0.5] — 2026-11-12
 

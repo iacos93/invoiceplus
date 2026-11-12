@@ -61,7 +61,9 @@ class BackfillSuppliers extends Migration
                 'supplier_name'         => $name,
                 'supplier_vat_id'       => $vat !== '' ? $vat : null,
                 'supplier_tax_code'     => trim((string) $row['supplier_tax_code']) ?: null,
-                'supplier_active'       => 1,
+                // true e non 1: su PostgreSQL la colonna è boolean e un
+                // intero fa fallire l'INSERT su un'installazione nuova.
+                'supplier_active'       => true,
                 'company_id'            => $companyId,
                 'supplier_date_created' => $now,
                 'supplier_date_modified' => $now,

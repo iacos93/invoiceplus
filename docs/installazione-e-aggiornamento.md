@@ -22,7 +22,9 @@ restano le cose che si dimenticano e che non danno errore subito.
   compromessa e sostituita.
 - **Le automazioni non partono da sole.** Fatture ricorrenti, interrogazione
   SdI, riepilogo scadenze e backup passano da `tools/cron-runner.sh`, da
-  mettere in crontab come spiegato nello script.
+  mettere in crontab come spiegato nello script. Indirizzo e cron key si
+  mettono in `writable/cron-runner.conf`: il file non è versionato, così la
+  chiave non finisce nel repository.
 
 ## Aggiornamento
 
@@ -158,7 +160,8 @@ normale.
 
 `tools/cron-runner.sh` lo esegue una volta a settimana, subito dopo il backup
 del giorno. In crontab il PATH è ridotto: se `php` non è raggiungibile, imposta
-`PHP_BIN` in cima allo script.
+`PHP_BIN` in `writable/cron-runner.conf`, dove stanno anche `BASE_URL` e
+`CRON_KEY`.
 
 ### Ripristino
 
