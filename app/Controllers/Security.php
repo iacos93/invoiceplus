@@ -131,11 +131,14 @@ class Security extends BaseController
 
         $codes = Totp::generateBackupCodes();
 
+        // Non si salva user_mfa_last_counter: il codice appena usato per
+        // attivare il secondo fattore non deve risultare "già consumato" se
+        // l'utente esce e rientra subito. L'anti-replay serve alle
+        // autenticazioni, non alla conferma del setup.
         (new UserModel())->updateMfaFields($userId, [
             'user_mfa_secret'        => $secret,
             'user_mfa_enabled'       => true,
             'user_mfa_backup_codes'  => json_encode(Totp::hashBackupCodes($codes)),
-            'user_mfa_last_counter'  => $counter,
         ]);
 
         session()->remove('totp_pending_secret');
@@ -193,7 +196,7 @@ class Security extends BaseController
         if ($code !== '') {
             $secret = (new UserModel())->mfaSecret($user);
 
-            if ($secret !== '' && Totp::verify($secret, $code, 2, $user['user_mfa_last_counter'])) {
+            if ($secret !== '' && Totp::verify($secret, $code, Totp::VERIFY_WINDOW, $user['user_mfa_last_counter'])) {
                 $valid = true;
             } elseif ($newJson = Totp::consumeBackupCode($code, $user['user_mfa_backup_codes'])) {
                 (new UserModel())->updateMfaFields($userId, ['user_mfa_backup_codes' => $newJson]);

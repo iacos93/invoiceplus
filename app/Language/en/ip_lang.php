@@ -279,6 +279,8 @@ return array (
   'mfa_enabled_help' => 'Sign-in requires a code from the authenticator app or a passkey.',
   'mfa_enabled_ok' => 'Two-step verification turned on.',
   'mfa_invalid_code' => 'Invalid code. Try again.',
+  'mfa_code_reused' => 'This code has already been used. Wait for the app to show a new one and try again.',
+  'mfa_clock_skew' => 'The code is correct, but the device clock seems to be off by about %s seconds. Turn on automatic date and time and try again.',
   'mfa_passkey_deleted' => 'Passkey deleted.',
   'mfa_passkey_failed' => 'Passkey verification failed.',
   'mfa_passkey_unknown' => 'No recognized passkey for this sign-in.',

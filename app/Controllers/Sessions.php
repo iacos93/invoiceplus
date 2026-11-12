@@ -207,16 +207,24 @@ class Sessions extends BaseController
                 return $this->resetPendingToLogin();
             }
 
-            $code = trim((string) $request->getPost('mfa_code'));
+            $code   = trim((string) $request->getPost('mfa_code'));
+            $result = $this->verifyMfaCode($user, $code);
 
-            if ($this->verifyMfaCode($user, $code)) {
+            if ($result['ok']) {
                 $this->completeLogin($user);
                 session()->remove($this->pendingKeys());
                 return $this->loginRedirect($user);
             }
 
-            session()->set('mfa_attempts', (int) session('mfa_attempts') + 1);
-            session()->setFlashdata('alert_error', trans('mfa_invalid_code'));
+            // Un codice già usato o un orologio disallineato non sono
+            // tentativi sbagliati: contarli porterebbe al blocco proprio chi
+            // ha il codice giusto. Sale solo il contatore dei codici davvero
+            // errati.
+            if ($result['reason'] === 'invalid') {
+                session()->set('mfa_attempts', (int) session('mfa_attempts') + 1);
+            }
+
+            session()->setFlashdata('alert_error', $this->mfaErrorMessage($result));
             return redirect()->to('/sessions/mfa?method=totp');
         }
 
@@ -227,16 +235,20 @@ class Sessions extends BaseController
                 return $this->resetPendingToLogin();
             }
 
-            $code = trim((string) $request->getPost('recovery_code'));
+            $code   = trim((string) $request->getPost('recovery_code'));
+            $result = $this->verifyMfaCode($user, $code);
 
-            if ($this->verifyMfaCode($user, $code)) {
+            if ($result['ok']) {
                 $this->completeLogin($user);
                 session()->remove($this->pendingKeys());
                 return $this->loginRedirect($user);
             }
 
-            session()->set('mfa_attempts', (int) session('mfa_attempts') + 1);
-            session()->setFlashdata('alert_error', trans('mfa_invalid_code'));
+            if ($result['reason'] === 'invalid') {
+                session()->set('mfa_attempts', (int) session('mfa_attempts') + 1);
+            }
+
+            session()->setFlashdata('alert_error', $this->mfaErrorMessage($result));
             return redirect()->to('/sessions/mfa?method=recovery');
         }
 
@@ -457,12 +469,18 @@ class Sessions extends BaseController
     }
 
     /**
-     * Verifica TOTP o codice di recupero, con blocco dopo 5 tentativi.
+     * Verifica TOTP o codice di recupero.
+     *
+     * Restituisce anche il motivo del rifiuto, così il login può distinguere
+     * un codice sbagliato da uno corretto ma già usato o fuori dalla finestra
+     * di tolleranza: solo il primo deve consumare un tentativo.
+     *
+     * @return array{ok: bool, reason: string, offset: int}
      */
-    private function verifyMfaCode(array $user, string $code): bool
+    private function verifyMfaCode(array $user, string $code): array
     {
         if ($code === '') {
-            return false;
+            return ['ok' => false, 'reason' => 'invalid', 'offset' => 0];
         }
 
         $userModel = new UserModel();
@@ -470,15 +488,36 @@ class Sessions extends BaseController
         $secret = $userModel->mfaSecret($user);
 
         if ($secret !== '') {
-            // Finestra ±2 passi (±60s): con deriva dell'orologio dell'autenticator
-            // vicina ai 30s il codice attuale esce dalla finestra ±1 in modo
-            // intermittente; l'anti-replay su user_mfa_last_counter resta invariato.
-            $counter = Totp::counterFor($secret, $code, 2, $user['user_mfa_last_counter']);
+            $counter = Totp::counterFor($secret, $code, Totp::VERIFY_WINDOW, null);
 
             if ($counter !== null) {
-                $userModel->updateMfaFields($user['user_id'], ['user_mfa_last_counter' => $counter]);
+                $last = $user['user_mfa_last_counter'];
 
-                return true;
+                // Anti-replay: lo stesso codice non vale due volte. Capita
+                // anche a chi ha appena confermato il secondo fattore e prova
+                // subito ad accedere; il messaggio lo dice, invece di
+                // sembrare un codice sbagliato.
+                if ($last !== null && $counter <= (int) $last) {
+                    return ['ok' => false, 'reason' => 'replay', 'offset' => 0];
+                }
+
+                $userModel->updateMfaFields((int) $user['user_id'], ['user_mfa_last_counter' => $counter]);
+
+                return ['ok' => true, 'reason' => 'ok', 'offset' => 0];
+            }
+
+            // Il codice non entra nella finestra: se però corrisponde a un
+            // passo vicino, non è un codice sbagliato ma un orologio
+            // disallineato. Si registra lo scarto, mai il codice.
+            $offset = Totp::nearestOffset($secret, $code, 10);
+
+            if ($offset !== null) {
+                log_message('warning', 'MFA utente {userId}: codice corretto ma fuori finestra di {secondi} secondi', [
+                    'userId'   => (int) $user['user_id'],
+                    'secondi'  => $offset * Totp::PERIOD,
+                ]);
+
+                return ['ok' => false, 'reason' => 'skew', 'offset' => $offset];
             }
         }
 
@@ -486,12 +525,23 @@ class Sessions extends BaseController
         $newJson = Totp::consumeBackupCode($code, $user['user_mfa_backup_codes']);
 
         if ($newJson !== null) {
-            $userModel->updateMfaFields($user['user_id'], ['user_mfa_backup_codes' => $newJson]);
+            $userModel->updateMfaFields((int) $user['user_id'], ['user_mfa_backup_codes' => $newJson]);
 
-            return true;
+            return ['ok' => true, 'reason' => 'ok', 'offset' => 0];
         }
 
-        return false;
+        return ['ok' => false, 'reason' => 'invalid', 'offset' => 0];
+    }
+
+    /** Messaggio da mostrare per un rifiuto del secondo fattore. */
+    private function mfaErrorMessage(array $result): string
+    {
+        return match ($result['reason']) {
+            'replay' => trans('mfa_code_reused', '', 'Questo codice è già stato usato. Attendi che l\'app ne mostri uno nuovo e riprova.'),
+            'skew'   => trans('mfa_clock_skew', (string) abs($result['offset'] * Totp::PERIOD),
+                'Il codice è corretto ma l\'orologio del dispositivo sembra disallineato di circa %s secondi. Attiva data e ora automatiche e riprova.'),
+            default  => trans('mfa_invalid_code'),
+        };
     }
 
     /** Chiave del contatore tentativi: indirizzo IP + email tentata. */

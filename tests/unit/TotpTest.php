@@ -49,17 +49,38 @@ final class TotpTest extends CIUnitTestCase
 
     public function testVerifyAcceptsDriftAndRejectsGarbage(): void
     {
-        $secret    = Totp::generateSecret();
-        $now       = time();
-        $code      = Totp::code($secret, $now);
+        $secret  = Totp::generateSecret();
+        $now     = time();
+        $current = intdiv($now, Totp::PERIOD);
 
-        // ±1 passo di tolleranza: il codice di un minuto fa o fra un minuto
-        $this->assertTrue(Totp::verify($secret, Totp::code($secret, $now - 30)));
-        $this->assertTrue(Totp::verify($secret, Totp::code($secret, $now + 30)));
-        $this->assertFalse(Totp::verify($secret, Totp::code($secret, $now - 90)));
+        // La tolleranza copre ±VERIFY_WINDOW passi: un telefono con l'ora
+        // avanti o indietro di un paio di minuti non deve far fallire un
+        // codice giusto. Oltre la finestra si rifiuta. L'istante è fisso,
+        // così il test non cambia esito a cavallo del minuto.
+        $this->assertTrue(Totp::verify($secret, Totp::hotp($secret, $current + Totp::VERIFY_WINDOW), Totp::VERIFY_WINDOW, null, $now));
+        $this->assertTrue(Totp::verify($secret, Totp::hotp($secret, $current - Totp::VERIFY_WINDOW), Totp::VERIFY_WINDOW, null, $now));
+        $this->assertFalse(Totp::verify($secret, Totp::hotp($secret, $current + Totp::VERIFY_WINDOW + 1), Totp::VERIFY_WINDOW, null, $now));
+        $this->assertFalse(Totp::verify($secret, Totp::hotp($secret, $current - Totp::VERIFY_WINDOW - 1), Totp::VERIFY_WINDOW, null, $now));
         $this->assertFalse(Totp::verify($secret, '000000'));
         $this->assertFalse(Totp::verify($secret, ''));
         $this->assertFalse(Totp::verify($secret, 'abcdef'));
+    }
+
+    /**
+     * Lo scarto serve a spiegare all'utente un codice corretto ma fuori
+     * finestra (orologio disallineato) senza registrare il codice.
+     */
+    public function testNearestOffsetMisuraLoScartoDellOrologio(): void
+    {
+        $secret  = Totp::generateSecret();
+        $now     = time();
+        $current = intdiv($now, Totp::PERIOD);
+
+        $this->assertSame(0, Totp::nearestOffset($secret, Totp::hotp($secret, $current), 10, $now));
+        $this->assertSame(3, Totp::nearestOffset($secret, Totp::hotp($secret, $current + 3), 10, $now));
+        $this->assertSame(-2, Totp::nearestOffset($secret, Totp::hotp($secret, $current - 2), 10, $now));
+        $this->assertNull(Totp::nearestOffset($secret, 'abcdef'));
+        $this->assertNull(Totp::nearestOffset($secret, ''));
     }
 
     public function testReplayIsRejected(): void
@@ -67,12 +88,12 @@ final class TotpTest extends CIUnitTestCase
         $secret    = Totp::generateSecret();
         $now       = time();
         $code      = Totp::code($secret, $now);
-        $counter   = Totp::counterFor($secret, $code, 1);
+        $counter   = Totp::counterFor($secret, $code, Totp::VERIFY_WINDOW, null, $now);
 
         $this->assertNotNull($counter);
         // Lo stesso codice con lastCounter aggiornato al contatore usato:
         // è un replay e va rifiutato, anche se è ancora nel passo valido.
-        $this->assertNull(Totp::counterFor($secret, $code, 1, $counter));
+        $this->assertNull(Totp::counterFor($secret, $code, Totp::VERIFY_WINDOW, $counter, $now));
     }
 
     public function testBase32RoundTrip(): void

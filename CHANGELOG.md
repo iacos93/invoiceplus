@@ -9,6 +9,19 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- **Il secondo fattore non rifiuta più codici giusti per pochi secondi di
+  scarto**: la verifica accetta due minuti di differenza fra l'orologio del
+  server e quello del dispositivo, invece di un minuto. Con una deriva di 30-60
+  secondi alcuni tentativi fallivano senza motivo e bisognava aspettare il
+  codice successivo. Se lo scarto è più ampio, il messaggio dice di quanto e
+  invita ad attivare data e ora automatiche.
+- **Un codice già usato non conta più come tentativo sbagliato**: chi conferma
+  il secondo fattore e prova subito ad accedere non consuma i cinque tentativi
+  e riceve un messaggio che spiega di attendere il codice nuovo. La conferma
+  del setup non segna più il codice come "già consumato".
+
 ## [v0.9.0] — 2026-11-12
 
 ### Aggiunto

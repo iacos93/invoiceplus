@@ -7,11 +7,11 @@ namespace App\Libraries;
  *
  * Scritta a mano invece di tirare dentro otphp: l'algoritmo è una funzione
  * HMAC-SHA1 sul contatore, e una libreria intera per questo sarebbe stato un
- * pacchetto in più da mantenere. La verifica accetta uno scarto di ±1 passo
- * (i ritardi di orologio degli authenticator sono normali) e, se si passa
- * l'ultimo contatore accettato, rifiuta la ri-uso dello stesso codice
- * (anti-replay: un codice intercettato scade con il passo, ma finché è valido
- * non deve poter essere usato due volte).
+ * pacchetto in più da mantenere. La verifica accetta uno scarto di alcuni
+ * passi (i ritardi di orologio degli authenticator sono normali: vedi
+ * VERIFY_WINDOW) e, se si passa l'ultimo contatore accettato, rifiuta il
+ * ri-uso dello stesso codice (anti-replay: un codice intercettato scade con
+ * il passo, ma finché è valido non deve poter essere usato due volte).
  *
  * I codici di recupero sono generati con un alfabeto senza caratteri
  * ambigui (niente I/O/0/1) e salvati solo come hash sha256: sono password
@@ -21,6 +21,19 @@ class Totp
 {
     public const PERIOD = 30;
     public const DIGITS = 6;
+
+    /**
+     * Tolleranza di verifica: ±4 passi, cioè due minuti in avanti o indietro.
+     *
+     * Con ±1 passo bastava che l'orologio del telefono o del server fosse
+     * avanti di 30-60 secondi perché una parte dei tentativi fallisse in modo
+     * intermittente: il codice sembrava giusto, l'app rispondeva "non valido"
+     * e bisognava aspettare quello successivo. La finestra più larga non
+     * indebolisce il secondo fattore: il codice resta a 6 cifre, dura 30
+     * secondi e l'anti-replay impedisce di riusarlo. Serve solo a tollerare
+     * la deriva degli orologi, che su dispositivi reali è normale.
+     */
+    public const VERIFY_WINDOW = 4;
 
     /** Alfabeto base32 senza caratteri ambigui. */
     private const BACKUP_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -48,14 +61,14 @@ class Totp
      *
      * @param int|null $lastCounter ultimo contatore accettato (anti-replay)
      */
-    public static function verify(string $secret, string $code, int $window = 1, ?int $lastCounter = null): bool
+    public static function verify(string $secret, string $code, int $window = self::VERIFY_WINDOW, ?int $lastCounter = null, ?int $timestamp = null): bool
     {
         $code = trim($code);
         if ($code === '' || !preg_match('/^\d{' . self::DIGITS . '}$/', $code)) {
             return false;
         }
 
-        $current = intdiv(time(), self::PERIOD);
+        $current = intdiv($timestamp ?? time(), self::PERIOD);
 
         for ($i = -$window; $i <= $window; $i++) {
             $counter = $current + $i;
@@ -72,14 +85,14 @@ class Totp
     }
 
     /** Restituisce il contatore corrispondente al codice, o null se non valido. */
-    public static function counterFor(string $secret, string $code, int $window = 1, ?int $lastCounter = null): ?int
+    public static function counterFor(string $secret, string $code, int $window = self::VERIFY_WINDOW, ?int $lastCounter = null, ?int $timestamp = null): ?int
     {
         $code = trim($code);
         if ($code === '' || !preg_match('/^\d{' . self::DIGITS . '}$/', $code)) {
             return null;
         }
 
-        $current = intdiv(time(), self::PERIOD);
+        $current = intdiv($timestamp ?? time(), self::PERIOD);
 
         for ($i = -$window; $i <= $window; $i++) {
             $counter = $current + $i;
@@ -89,6 +102,36 @@ class Totp
                 }
 
                 return $counter;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Scarto in passi fra il codice e l'ora del server, entro $maxSteps.
+     *
+     * Serve alla diagnostica: quando un codice è corretto ma cade fuori dalla
+     * finestra (di solito per l'orologio del dispositivo disallineato), il
+     * chiamante può dire di quanto senza mai registrare il codice nei log.
+     * Restituisce null se il codice non corrisponde a nessun passo vicino.
+     */
+    public static function nearestOffset(string $secret, string $code, int $maxSteps = 10, ?int $timestamp = null): ?int
+    {
+        $code = trim($code);
+        if ($code === '' || !preg_match('/^\d{' . self::DIGITS . '}$/', $code)) {
+            return null;
+        }
+
+        $current = intdiv($timestamp ?? time(), self::PERIOD);
+
+        // Dal passo più vicino verso l'esterno: il primo che combacia è
+        // quello che interessa.
+        for ($distance = 0; $distance <= $maxSteps; $distance++) {
+            foreach ($distance === 0 ? [0] : [-$distance, $distance] as $offset) {
+                if (hash_equals(self::hotp($secret, $current + $offset, self::DIGITS), $code)) {
+                    return $offset;
+                }
             }
         }
 

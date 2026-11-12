@@ -48,7 +48,9 @@ o rifiutare. Aprire il documento lo segna come "visto" (se era ancora
 
 - **MFA TOTP**: si attiva con un'app di autenticazione, si conferma con un
   codice e produce i **codici di backup** da conservare. I codici si vedono una
-  volta sola.
+  volta sola. Il codice è accettato con una tolleranza di due minuti: se viene
+  rifiutato nonostante sia corretto, controlla che data e ora del dispositivo
+  siano impostate automaticamente.
 - **Passkey (WebAuthn)**: registrazione di una o più chiavi (Touch ID, Windows
   Hello, chiave hardware), utilizzabili per l'accesso e come secondo fattore.
   Ogni passkey si può eliminare singolarmente.

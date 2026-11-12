@@ -281,6 +281,8 @@ return array (
   'mfa_enabled_help' => 'L\'accesso richiede un codice dall\'app authenticator o una passkey.',
   'mfa_enabled_ok' => 'Verifica in due passaggi attivata.',
   'mfa_invalid_code' => 'Codice non valido. Riprova.',
+  'mfa_code_reused' => 'Questo codice è già stato usato. Attendi che l\'app ne mostri uno nuovo e riprova.',
+  'mfa_clock_skew' => 'Il codice è corretto ma l\'orologio del dispositivo sembra disallineato di circa %s secondi. Attiva data e ora automatiche e riprova.',
   'mfa_passkey_deleted' => 'Passkey eliminata.',
   'mfa_passkey_failed' => 'Verifica passkey non riuscita.',
   'mfa_passkey_unknown' => 'Nessuna passkey riconosciuta per questo accesso.',
