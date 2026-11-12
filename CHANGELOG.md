@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.9.0] — 2026-11-12
+
 ### Aggiunto
 
 - **Prova in locale con dati demo**: guida e script per macOS, Linux e Windows
