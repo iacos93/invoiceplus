@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.7] — 2026-11-12
+
 ### Aggiunto
 
 - **Tracciamento delle aperture email** per fatture e preventivi: le email
