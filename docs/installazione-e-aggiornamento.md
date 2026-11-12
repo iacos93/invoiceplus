@@ -133,9 +133,14 @@ entrambi i casi scrive l'esito in `writable/cron/backup_verify.json`: la pagina
 un dump più recente non ancora provato.
 
 Serve un utente del database con permesso di creare database — `CREATEDB` su
-PostgreSQL, `CREATE` su MySQL/MariaDB. Il database temporaneo viene eliminato
-sempre, anche quando il ripristino fallisce. Su un database grande il comando
-può durare qualche minuto: è normale.
+PostgreSQL, `CREATE` su MySQL/MariaDB. Se non vuoi darlo all'utente
+dell'applicazione, crea un gruppo di connessione dedicato in
+`app/Config/Database.php` e usa `php spark backup:verify --group=<gruppo>`.
+Quando il permesso manca la pagina "Stato del sistema" mostra un avviso, non un
+guasto: il dump potrebbe essere sano, semplicemente non è stato provato. Il
+database temporaneo viene eliminato sempre, anche quando il ripristino
+fallisce. Su un database grande il comando può durare qualche minuto: è
+normale.
 
 `tools/cron-runner.sh` lo esegue una volta a settimana, subito dopo il backup
 del giorno. In crontab il PATH è ridotto: se `php` non è raggiungibile, imposta

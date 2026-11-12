@@ -260,6 +260,29 @@ final class SystemStatusTest extends CIUnitTestCase
     }
 
     /**
+     * Non poter creare il database di prova è un permesso mancante, non un
+     * dump rotto: va segnalato, ma non come guasto del backup.
+     */
+    public function testPermessoDiCreazioneMancanteEAvvisoNonGuasto(): void
+    {
+        $backup = $this->backups . '/backup_20261110_030000.dump';
+        file_put_contents($backup, 'x');
+
+        $this->marker([
+            'time'  => $this->now - 600,
+            'file'  => basename($backup),
+            'ok'    => false,
+            'error' => 'Creazione del database temporaneo fallita: createdb: error: permission denied to create database',
+        ]);
+
+        $check = $this->stato()->restoreCheck();
+
+        $this->assertSame(SystemStatus::WARNING, $check['state']);
+        $this->assertStringContainsString('non eseguibile', $check['detail']);
+        $this->assertStringContainsString('CREATEDB', $check['hint']);
+    }
+
+    /**
      * La verifica vale per il dump provato: un backup nuovo non è coperto.
      */
     public function testNuovoBackupNonAncoraVerificatoEAvviso(): void

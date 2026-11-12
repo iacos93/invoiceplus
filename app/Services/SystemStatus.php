@@ -245,13 +245,22 @@ final class SystemStatus
         $tabelle = (int) ($dati['tables'] ?? 0);
 
         if (($dati['ok'] ?? false) !== true) {
+            $errore = (string) ($dati['error'] ?? 'motivo non registrato');
+
+            // Non poter creare il database di prova non dice niente sul dump:
+            // è un permesso mancante, non un backup rotto. Va detto, ma senza
+            // far credere che i dati non siano recuperabili.
+            $permessi = str_contains($errore, 'Creazione del database temporaneo fallita');
+
             return [
                 'key'    => 'restore',
                 'label'  => 'Verifica del ripristino',
-                'state'  => self::ERROR,
-                'detail' => 'Ultima verifica fallita ' . self::age($eta) . ': '
-                    . mb_substr((string) ($dati['error'] ?? 'motivo non registrato'), 0, 160),
-                'hint'   => 'Il dump non si ripristina: non considerarlo un backup. Guarda l\'esito di `php spark backup:verify` e che pg_restore (o mysql) sia installato.',
+                'state'  => $permessi ? self::WARNING : self::ERROR,
+                'detail' => ($permessi ? 'Verifica non eseguibile ' : 'Ultima verifica fallita ')
+                    . self::age($eta) . ': ' . mb_substr($errore, 0, 160),
+                'hint'   => $permessi
+                    ? 'L\'utente del database non può creare il database temporaneo: concedi CREATEDB (PostgreSQL) o CREATE (MySQL), oppure esegui `php spark backup:verify --group=<gruppo con un utente abilitato>`. Non è detto che il dump sia rotto.'
+                    : 'Il dump non si ripristina: non considerarlo un backup. Guarda l\'esito di `php spark backup:verify` e che pg_restore (o mysql) sia installato.',
             ];
         }
 

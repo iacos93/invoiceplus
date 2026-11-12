@@ -18,7 +18,8 @@ Le regole per scrivere le voci e preparare una release sono in
   Serve un utente con permesso di creazione database (`CREATEDB` su
   PostgreSQL, `CREATE` su MySQL/MariaDB).
 - Quattro controlli nuovi in **Gestione > Stato del sistema**: verifica del
-  ripristino (con avviso se l'ultimo dump non è stato provato), ambiente
+  ripristino (con avviso se l'ultimo dump non è stato provato; un permesso di
+  creazione database mancante è un avviso, non un guasto), ambiente
   dell'applicazione (`CI_ENVIRONMENT`, per accorgersi di un'installazione con
   dati veri lasciata in sviluppo), spazio libero sul disco, errori nel log di
   oggi.
