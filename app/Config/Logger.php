@@ -108,9 +108,12 @@ class Logger extends BaseConfig
              * The file system permissions to be applied on newly created log files.
              *
              * IMPORTANT: This MUST be an integer (no quotes) and you MUST use octal
-             * integer notation (i.e. 0700, 0644, etc.)
+             * integer notation (i.e. 0700, 0640, etc.)
+             *
+             * 0640: nei log finiscono dati di documenti e clienti, quindi il
+             * file deve restare leggibile solo dal gruppo del processo web.
              */
-            'filePermissions' => 0644,
+            'filePermissions' => 0640,
 
             /*
              * Logging Directory Path

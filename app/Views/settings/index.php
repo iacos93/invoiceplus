@@ -377,11 +377,19 @@
                                     </label>
                                     <div class="input-group">
                                         <input type="text" name="settings[cron_key]" id="cron_key" class="form-control"
-                                               readonly value="<?= esc(get_setting('cron_key')) ?>">
+                                               autocomplete="off" spellcheck="false"
+                                               placeholder="<?= esc(trans('cron_key_placeholder', '', 'Lascia vuoto per non modificare la chiave attuale'), 'attr') ?>">
+                                        <button id="btn_copy_cron_key" type="button" class="btn btn-secondary"
+                                                title="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>">
+                                            <i class="fa fa-solid fa-copy" aria-hidden="true"></i>
+                                        </button>
                                         <button id="btn_generate_cron_key" type="button" class="btn btn-primary">
                                             <i class="fa fa-solid fa-recycle fa-margin" aria-hidden="true"></i> <?= trans('generate') ?>
                                         </button>
                                     </div>
+                                    <p class="ip-field-help">
+                                        <?= trans('cron_key_help', '', 'La chiave non viene mai mostrata dopo il salvataggio: copiala subito dopo averla generata. La generazione ha effetto immediato; lasciare il campo vuoto non modifica la chiave attuale.') ?>
+                                    </p>
                                 </div>
                             </div>
 
@@ -963,6 +971,7 @@
         var tokenInput = document.querySelector('input[name="' + tokenName + '"]');
         var cronInput  = document.getElementById('cron_key');
         var generateBtn = document.getElementById('btn_generate_cron_key');
+        var copyBtn    = document.getElementById('btn_copy_cron_key');
 
         if (!tokenInput || !cronInput || !generateBtn) {
             return;
@@ -983,10 +992,23 @@
                         tokenInput.value = data.token;
                     }
                     if (data && data.key) {
+                        // Il server salva già la chiave cifrata e non la
+                        // rimanda nel HTML: questa è l'unica occasione per
+                        // vederla in chiaro. La si seleziona e la si copia.
                         cronInput.value = data.key;
+                        cronInput.select();
+                        navigator.clipboard && navigator.clipboard.writeText(data.key);
                     }
                 });
         });
+
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function () {
+                if (!cronInput.value) { return; }
+                cronInput.select();
+                navigator.clipboard && navigator.clipboard.writeText(cronInput.value);
+            });
+        }
     })();
 
     (function () {

@@ -171,7 +171,12 @@ class Exports extends BaseController
                 return '<Cell><Data ss:Type="Number">' . str_replace(',', '.', $text) . '</Data></Cell>';
             }
 
-            return '<Cell><Data ss:Type="String">' . $escape($text) . '</Data></Cell>';
+            // Le celle sono già dichiarate String e in SpreadsheetML una
+            // formula esiste solo con l'attributo ss:Formula, quindi il tipo
+            // da solo basterebbe. Il prefisso è la stessa neutralizzazione
+            // usata nel CSV: protegge chi converte il foglio in CSV o lo
+            // riapre con un lettore che rivaluta il testo delle celle.
+            return '<Cell><Data ss:Type="String">' . $escape(CsvWriter::neutralizeFormula($text)) . '</Data></Cell>';
         };
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
@@ -182,7 +187,7 @@ class Exports extends BaseController
 
         $xml .= '<Row>';
         foreach ($headers as $header) {
-            $xml .= '<Cell><Data ss:Type="String">' . $escape($header) . '</Data></Cell>';
+            $xml .= '<Cell><Data ss:Type="String">' . $escape(CsvWriter::neutralizeFormula((string) $header)) . '</Data></Cell>';
         }
         $xml .= '</Row>';
 
@@ -311,14 +316,15 @@ class Exports extends BaseController
                 ], $rows];
 
             case 'quotes':
-                $rows = [];
+                $rows          = [];
+                $quoteStatuses = (new QuoteModel())->statuses();
                 foreach ($this->quotesInPeriod($from, $to, $year, $months) as $quote) {
                     $rows[] = [
                         $quote['quote_number'] ?: ('#' . $quote['quote_id']),
                         date_from_mysql($quote['quote_date_created']),
                         date_from_mysql($quote['quote_date_expires']),
                         format_client($quote),
-                        $this->statusLabel((new QuoteModel())->statuses(), $quote['quote_status_id']),
+                        $this->statusLabel($quoteStatuses, $quote['quote_status_id']),
                         $this->number($quote['quote_item_subtotal'] ?? 0),
                         $this->number(($quote['quote_item_tax_total'] ?? 0) + ($quote['quote_tax_total'] ?? 0)),
                         $this->number($quote['quote_total'] ?? 0),

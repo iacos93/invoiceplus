@@ -3,10 +3,10 @@
 namespace App\Controllers;
 
 use App\Libraries\BackupAlert;
+use App\Libraries\PublicEndpointThrottle;
 use App\Models\CompanyModel;
 use App\Models\InvoiceModel;
 use App\Models\InvoiceRecurringModel;
-use App\Models\UserModel;
 use App\Services\CalendarService;
 use App\Services\DocumentPdfBuilder;
 use CodeIgniter\Email\Email;
@@ -28,6 +28,81 @@ use CodeIgniter\Email\Email;
  */
 class Cron extends BaseController
 {
+    /**
+     * Chiave cron dai canali ammessi, in ordine di preferenza:
+     *
+     * 1. header `X-Cron-Key`;
+     * 2. header `Authorization: Bearer <chiave>`;
+     * 3. parametro nel path, per i cron gia' installati con l'URL segreto.
+     *
+     * Gli header non finiscono nei log di accesso del webserver ne' nella
+     * cronologia: il path si'. Il confronto resta cron_key_valid(), che e'
+     * fail-closed e a tempo costante.
+     *
+     * Metodo statico e puro per poterlo provare senza una Request vera.
+     *
+     * @param array<string, string> $headers header gia' letti; i nomi sono
+     *                                       normalizzati (case-insensitive)
+     * @param string                $pathKey chiave dal path, usata come ripiego
+     */
+    public static function keyFromHeaders(array $headers, string $pathKey = ''): string
+    {
+        $normalized = [];
+
+        foreach ($headers as $name => $value) {
+            $normalized[strtolower(trim((string) $name))] = trim((string) $value);
+        }
+
+        $headerKey = $normalized['x-cron-key'] ?? '';
+
+        if ($headerKey !== '') {
+            return $headerKey;
+        }
+
+        $authorization = $normalized['authorization'] ?? '';
+
+        if (preg_match('/^Bearer\s+(.+)$/i', $authorization, $matches)) {
+            $bearer = trim($matches[1]);
+
+            if ($bearer !== '') {
+                return $bearer;
+            }
+        }
+
+        return trim($pathKey);
+    }
+
+    /** Chiave cron della richiesta corrente (header prima del path). */
+    private function cronKey(string $pathKey): string
+    {
+        return self::keyFromHeaders([
+            'x-cron-key'    => $this->request->getHeaderLine('X-Cron-Key'),
+            'authorization' => $this->request->getHeaderLine('Authorization'),
+        ], $pathKey);
+    }
+
+    /**
+     * Tetto per IP comune a tutte le azioni cron, applicato PRIMA della
+     * chiave: anche un tentativo con chiave errata consuma il contatore.
+     *
+     * @return int|null secondi di Retry-After se la richiesta va rifiutata
+     */
+    private function throttleWait(): ?int
+    {
+        return PublicEndpointThrottle::guard(
+            PublicEndpointThrottle::SCOPE_CRON,
+            (string) $this->request->getIPAddress()
+        );
+    }
+
+    /** Risposta 429 coerente per tutte le azioni cron. */
+    private function tooManyRequests(int $wait): string
+    {
+        $this->response->setStatusCode(429)->setHeader('Retry-After', (string) $wait);
+
+        return 'Troppe richieste: riprova più tardi';
+    }
+
     /**
      * Lock advisory Postgres per evitare due esecuzioni sovrapposte dello
      * stesso cron (retry dopo timeout, doppia voce nel crontab, un giro
@@ -59,8 +134,12 @@ class Cron extends BaseController
 
     public function recur(string $cronKey)
     {
-        // Controllo della cron key (equivalente CI3)
-        if (!cron_key_valid($cronKey)) {
+        if (($wait = $this->throttleWait()) !== null) {
+            return $this->tooManyRequests($wait);
+        }
+
+        // Controllo della cron key (equivalente CI3), ora anche via header.
+        if (!cron_key_valid($this->cronKey($cronKey))) {
             http_response_code(403);
 
             return 'Cron key non valida';
@@ -232,7 +311,11 @@ class Cron extends BaseController
      */
     public function sdiPoll(string $cronKey)
     {
-        if (!cron_key_valid($cronKey)) {
+        if (($wait = $this->throttleWait()) !== null) {
+            return $this->tooManyRequests($wait);
+        }
+
+        if (!cron_key_valid($this->cronKey($cronKey))) {
             http_response_code(403);
 
             return 'Cron key non valida';
@@ -409,7 +492,11 @@ class Cron extends BaseController
      */
     public function deadlineDigest(string $cronKey)
     {
-        if (!cron_key_valid($cronKey)) {
+        if (($wait = $this->throttleWait()) !== null) {
+            return $this->tooManyRequests($wait);
+        }
+
+        if (!cron_key_valid($this->cronKey($cronKey))) {
             http_response_code(403);
 
             return 'Cron key non valida';
@@ -500,7 +587,11 @@ class Cron extends BaseController
      */
     public function backup(string $cronKey)
     {
-        if (!cron_key_valid($cronKey)) {
+        if (($wait = $this->throttleWait()) !== null) {
+            return $this->tooManyRequests($wait);
+        }
+
+        if (!cron_key_valid($this->cronKey($cronKey))) {
             http_response_code(403);
 
             return 'Cron key non valida';
@@ -531,15 +622,35 @@ class Cron extends BaseController
 
             $this->notifyBackupFailure($e->getMessage());
 
-            return $this->backupFailed('Backup fallito: ' . $e->getMessage());
+            return $this->backupFailed(self::backupFailureMessage());
         }
 
         // Un backup riuscito chiude l'allarme: il prossimo guasto avviserà
         // subito, senza aspettare che scada il freno di quello precedente.
         (new BackupAlert(WRITEPATH . 'cron'))->clear();
 
-        return 'Backup salvato: ' . basename($result['file'])
+        $messaggio = 'Backup salvato: ' . basename($result['file'])
             . ($result['removed'] ? ' (eliminati ' . $result['removed'] . ' vecchi)' : '');
+
+        // I file caricati (XML ricevuti, allegati, F24) non stanno nel dump.
+        // Un fallimento qui NON fa fallire la richiesta: il cron-runner
+        // riproverebbe tutto il backup a ogni giro, e con la rotazione a 14
+        // file i dump buoni verrebbero spinti fuori in poche ore. Si avvisa
+        // via email e la pagina Stato del sistema lo mostra.
+        try {
+            $files = (new \App\Libraries\FilesBackup())->run();
+
+            $messaggio .= '; file: ' . basename($files['file']) . ' (' . $files['files'] . ' file'
+                . ($files['removed'] ? ', eliminati ' . $files['removed'] . ' vecchi' : '') . ')';
+        } catch (\Throwable $e) {
+            log_message('error', 'Backup dei file fallito: ' . $e->getMessage());
+
+            $this->notifyBackupFailure($e->getMessage(), 'dei file caricati');
+
+            $messaggio .= '; ATTENZIONE: ' . self::backupFailureMessage('file caricati');
+        }
+
+        return $messaggio;
     }
 
     /**
@@ -553,7 +664,7 @@ class Cron extends BaseController
      * riprova a ogni giro); se l'invio non riesce non si scrive il
      * segnaposto, così il giro successivo ci riprova.
      */
-    private function notifyBackupFailure(string $errore): void
+    private function notifyBackupFailure(string $errore, string $cosa = 'del database'): void
     {
         $alert = new BackupAlert(WRITEPATH . 'cron');
 
@@ -561,13 +672,13 @@ class Cron extends BaseController
             return;
         }
 
-        $corpo = "Il backup automatico del database non è riuscito.\n\n"
+        $corpo = 'Il backup automatico ' . $cosa . " non è riuscito.\n\n"
             . 'Errore: ' . $errore . "\n\n"
             . "Il cron riproverà al prossimo giro. Finché non riesce, l'ultima copia valida è quella precedente.\n\n"
             . 'Stato del sistema: ' . site_url('system/status') . "\n";
 
         try {
-            $inviata = $this->sendNotificationEmail('Backup del database fallito — ' . $this->companyName(), $corpo);
+            $inviata = $this->sendNotificationEmail('Backup ' . $cosa . ' fallito — ' . $this->companyName(), $corpo);
         } catch (\Throwable $e) {
             log_message('error', 'Notifica di backup fallito non inviata: ' . $e->getMessage());
 
@@ -590,6 +701,20 @@ class Cron extends BaseController
      * successivo. Con il 200 il log diceva "ok: Backup fallito: ..." e non
      * riprovava fino al giorno dopo.
      */
+    /**
+     * Testo pubblico di un backup fallito: dice cosa è successo e dove
+     * guardare, senza il messaggio dell'eccezione (che può contenere
+     * SQLSTATE, percorsi o comandi). Il dettaglio resta nel log e nella
+     * email all'amministratore.
+     */
+    public static function backupFailureMessage(string $cosa = ''): string
+    {
+        $cosa = trim($cosa);
+
+        return 'Backup fallito' . ($cosa !== '' ? ' (' . $cosa . ')' : '')
+            . '. Dettagli nel log e in Stato del sistema.';
+    }
+
     private function backupFailed(string $message): string
     {
         $this->response->setStatusCode(500);
@@ -600,47 +725,13 @@ class Cron extends BaseController
     /* ------------------------------------------------------ email di sistema */
 
     /**
-     * Destinatario delle notifiche automatiche (digest, esiti SdI): la casella
-     * di sistema (ip_email_senders) se configurata, con ripiego sul primo
-     * amministratore. Il vecchio campo libero cron_notify_email è stato rimosso
-     * dalle Impostazioni di sistema: la casella di sistema è ora l'unica fonte.
+     * Invia una notifica interna (non al cliente) con il SMTP di sistema.
+     * Il destinatario e l'invio stanno in SystemNotifier, condiviso con gli
+     * endpoint che lo SdI chiama.
      */
-    private function notificationEmail(): string
-    {
-        $sender = system_email_sender();
-
-        if (!empty($sender['sender_email'])) {
-            return $sender['sender_email'];
-        }
-
-        $admin = (new UserModel())->where('user_type', 1)->first();
-
-        return trim((string) ($admin['user_email'] ?? ''));
-    }
-
-    /** Invia una notifica interna (non al cliente) con il SMTP di sistema. */
     private function sendNotificationEmail(string $subject, string $body): bool
     {
-        if (!$this->hasSender()) {
-            return false;
-        }
-
-        $to = $this->notificationEmail();
-
-        if ($to === '') {
-            log_message('error', 'Notifica non inviata: nessun destinatario configurato (casella di sistema o primo amministratore)');
-
-            return false;
-        }
-
-        $email = \Config\Services::email(null, false);
-        $this->configureEmail($email);
-        $email->setFrom(system_mail_from(), $this->companyName());
-        $email->setTo($to);
-        $email->setSubject($subject);
-        $email->setMessage($body);
-
-        return $email->send();
+        return (new \App\Libraries\SystemNotifier())->send($subject, $body);
     }
 
     /**

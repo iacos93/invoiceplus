@@ -138,12 +138,14 @@ class Mailer extends BaseController
 
         $data = $this->invoiceTemplateData($invoice);
 
-        $fromName  = $this->parseTemplate((string) $request->getPost('from_name'), $data);
-        $fromEmail = $this->parseTemplate((string) $request->getPost('from_email'), $data);
-        $subject   = $this->parseTemplate((string) $request->getPost('subject'), $data);
+        // Campi che non sono HTML: il valore entra grezzo, altrimenti
+        // l'escape lascerebbe "&amp;" scritto nell'oggetto e negli indirizzi.
+        $fromName  = $this->parseTemplate((string) $request->getPost('from_name'), $data, false);
+        $fromEmail = $this->parseTemplate((string) $request->getPost('from_email'), $data, false);
+        $subject   = $this->parseTemplate((string) $request->getPost('subject'), $data, false);
         $body      = $this->parseTemplate($this->prepareBody((string) $request->getPost('body')), $data);
-        $cc        = $this->parseTemplate((string) $request->getPost('cc'), $data);
-        $bcc       = $this->parseTemplate((string) $request->getPost('bcc'), $data);
+        $cc        = $this->parseTemplate((string) $request->getPost('cc'), $data, false);
+        $bcc       = $this->parseTemplate((string) $request->getPost('bcc'), $data, false);
 
         $invoiceModel->generateInvoiceNumberIfApplicable($invoiceId);
 
@@ -300,12 +302,14 @@ class Mailer extends BaseController
 
         $data = $this->quoteTemplateData($quote);
 
-        $fromName  = $this->parseTemplate((string) $request->getPost('from_name'), $data);
-        $fromEmail = $this->parseTemplate((string) $request->getPost('from_email'), $data);
-        $subject   = $this->parseTemplate((string) $request->getPost('subject'), $data);
+        // Campi che non sono HTML: il valore entra grezzo, altrimenti
+        // l'escape lascerebbe "&amp;" scritto nell'oggetto e negli indirizzi.
+        $fromName  = $this->parseTemplate((string) $request->getPost('from_name'), $data, false);
+        $fromEmail = $this->parseTemplate((string) $request->getPost('from_email'), $data, false);
+        $subject   = $this->parseTemplate((string) $request->getPost('subject'), $data, false);
         $body      = $this->parseTemplate($this->prepareBody((string) $request->getPost('body')), $data);
-        $cc        = $this->parseTemplate((string) $request->getPost('cc'), $data);
-        $bcc       = $this->parseTemplate((string) $request->getPost('bcc'), $data);
+        $cc        = $this->parseTemplate((string) $request->getPost('cc'), $data, false);
+        $bcc       = $this->parseTemplate((string) $request->getPost('bcc'), $data, false);
 
         $quoteModel->generateQuoteNumberIfApplicable($quoteId);
 
@@ -414,27 +418,16 @@ class Mailer extends BaseController
     /**
      * Sostituisce i tag {{tag}} (o {{{tag}}}) nel testo con i valori
      * passati (equivalente di parse_template() CI3).
+     *
+     * `{{tag}}` escapa il valore (va nel corpo HTML), `{{{tag}}}` lo lascia
+     * grezzo. I campi che non sono HTML -- oggetto, indirizzi, nome del
+     * mittente -- vanno resi con $escape = false: li' un `&amp;` resterebbe
+     * scritto cosi' nel messaggio. Il lavoro vero sta in MailTemplate, che si
+     * puo' provare senza database.
      */
-    public function parseTemplate(string $body, array $data): string
+    public function parseTemplate(string $body, array $data, bool $escape = true): string
     {
-        if (!preg_match_all('/\{\{\{?([a-z0-9_]+)\}?\}\}/i', $body, $templateVars)) {
-            return $body;
-        }
-
-        foreach ($templateVars[1] as $var) {
-            if (!array_key_exists($var, $data)) {
-                // Tag sconosciuto: resta com'è (visibile) invece di essere
-                // sostituito col suo nome, che distrugge silenziosamente il
-                // contenuto del template.
-                continue;
-            }
-
-            $replace = $data[$var];
-            $body    = str_replace('{{{' . $var . '}}}', (string) $replace, $body);
-            $body    = str_replace('{{' . $var . '}}', (string) $replace, $body);
-        }
-
-        return $body;
+        return \App\Libraries\MailTemplate::render($body, $data, $escape);
     }
 
     /**

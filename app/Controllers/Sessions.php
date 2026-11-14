@@ -202,7 +202,7 @@ class Sessions extends BaseController
 
         // --- VERIFICA TOTP ---
         if ($mfaMethod === 'totp' && $request->getMethod() === 'POST' && $request->getPost('btn_mfa')) {
-            if (session('mfa_attempts') >= 5) {
+            if (session('mfa_attempts') >= 5 || $this->mfaBlocked((int) $user['user_id'])) {
                 session()->setFlashdata('alert_error', trans('mfa_too_many_attempts'));
                 return $this->resetPendingToLogin();
             }
@@ -211,6 +211,7 @@ class Sessions extends BaseController
             $result = $this->verifyMfaCode($user, $code);
 
             if ($result['ok']) {
+                $this->clearMfaFailures((int) $user['user_id']);
                 $this->completeLogin($user);
                 session()->remove($this->pendingKeys());
                 return $this->loginRedirect($user);
@@ -222,6 +223,7 @@ class Sessions extends BaseController
             // errati.
             if ($result['reason'] === 'invalid') {
                 session()->set('mfa_attempts', (int) session('mfa_attempts') + 1);
+                $this->registerMfaFailure((int) $user['user_id']);
             }
 
             session()->setFlashdata('alert_error', $this->mfaErrorMessage($result));
@@ -230,7 +232,7 @@ class Sessions extends BaseController
 
         // --- VERIFICA RECOVERY CODE ---
         if ($mfaMethod === 'recovery' && $request->getMethod() === 'POST') {
-            if (session('mfa_attempts') >= 5) {
+            if (session('mfa_attempts') >= 5 || $this->mfaBlocked((int) $user['user_id'])) {
                 session()->setFlashdata('alert_error', trans('mfa_too_many_attempts'));
                 return $this->resetPendingToLogin();
             }
@@ -239,6 +241,7 @@ class Sessions extends BaseController
             $result = $this->verifyMfaCode($user, $code);
 
             if ($result['ok']) {
+                $this->clearMfaFailures((int) $user['user_id']);
                 $this->completeLogin($user);
                 session()->remove($this->pendingKeys());
                 return $this->loginRedirect($user);
@@ -246,6 +249,7 @@ class Sessions extends BaseController
 
             if ($result['reason'] === 'invalid') {
                 session()->set('mfa_attempts', (int) session('mfa_attempts') + 1);
+                $this->registerMfaFailure((int) $user['user_id']);
             }
 
             session()->setFlashdata('alert_error', $this->mfaErrorMessage($result));
@@ -579,11 +583,95 @@ class Sessions extends BaseController
         cache()->save($key, $count, 900);
     }
 
+    /**
+     * Tetto ai codici del secondo fattore sbagliati, per utente.
+     *
+     * Il tetto di 5 sta nella sessione, e la sessione si azzera a ogni accesso
+     * con password riuscito (setPendingSession()): chi conosce la password
+     * poteva ripartire dal login e provare altri 5 codici, all'infinito. Un
+     * codice TOTP ha un milione di valori e ne vale piu' d'uno alla volta, un
+     * campo che si esplora in qualche decina di migliaia di giri. Il
+     * contatore per utente, nella cache come quello del login, non si azzera
+     * ripartendo: solo il tempo (un quarto d'ora) o un codice giusto.
+     *
+     * Per utente e non per IP: qui l'attaccante ha gia' la password, quindi
+     * cambiare indirizzo non gli costa niente. Il prezzo e' che chi ha la
+     * password puo' bloccare per un quarto d'ora il secondo fattore del
+     * titolare; e' un male minore rispetto a lasciarlo indovinare.
+     */
+    private const MFA_MAX_FAILURES = 10;
+
+    /**
+     * Richieste di reset password ammesse per IP+email nella finestra.
+     *
+     * Cinque in un'ora: chi ha davvero dimenticato la password la chiede una
+     * volta, al massimo due se la prima email non arriva. Oltre, e' un
+     * bombardamento della casella o un tentativo di scoprire quali indirizzi
+     * sono registrati.
+     */
+    private const RESET_MAX_REQUESTS = 5;
+
+    /** Durata della finestra del freno sul reset, in secondi (un'ora). */
+    private const RESET_WINDOW = 3600;
+
+    private function mfaThrottleKey(int $userId): string
+    {
+        return 'mfa_fail_' . $userId;
+    }
+
+    private function mfaBlocked(int $userId): bool
+    {
+        return $userId > 0
+            && (int) (cache()->get($this->mfaThrottleKey($userId)) ?? 0) >= self::MFA_MAX_FAILURES;
+    }
+
+    private function registerMfaFailure(int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        $key = $this->mfaThrottleKey($userId);
+
+        cache()->save($key, (int) (cache()->get($key) ?? 0) + 1, 900);
+    }
+
+    private function clearMfaFailures(int $userId): void
+    {
+        if ($userId > 0) {
+            cache()->delete($this->mfaThrottleKey($userId));
+        }
+    }
+
     private function clearLoginFailures(string $email): void
     {
         if ($email !== '') {
             cache()->delete($this->loginThrottleKey($email));
         }
+    }
+
+    /**
+     * Chiave del freno sulle richieste di reset password.
+     *
+     * IP + email, come per il login: un attaccante non puo' consumare il tetto
+     * di un altro utente da un indirizzo diverso, e lo stesso indirizzo non
+     * puo' martellare infinite caselle.
+     */
+    private function resetThrottleKey(string $email): string
+    {
+        return 'reset_req_' . md5(strtolower(trim($email)) . '|' . service('request')->getIPAddress());
+    }
+
+    private function resetBlocked(string $email): bool
+    {
+        return (int) (cache()->get($this->resetThrottleKey($email)) ?? 0) >= self::RESET_MAX_REQUESTS;
+    }
+
+    private function registerResetRequest(string $email): void
+    {
+        $key = $this->resetThrottleKey($email);
+
+        cache()->save($key, (int) (cache()->get($key) ?? 0) + 1, self::RESET_WINDOW);
     }
 
     private function setPendingSession(array $user): void
@@ -752,6 +840,20 @@ class Sessions extends BaseController
                 session()->setFlashdata('alert_error', trans('loginalert_user_not_found'));
                 return redirect()->to('/sessions/passwordreset');
             }
+
+            // Freno sull'invio: senza, chiunque poteva far partire email a
+            // ripetizione verso un indirizzo (bombardamento della casella) e
+            // usare la pagina come conferma dell'esistenza dell'account. Il
+            // conteggio parte prima di sapere se l'utente esiste, cosi' la
+            // risposta e' la stessa nei due casi.
+            if ($this->resetBlocked($email)) {
+                session()->setFlashdata('alert_error', trans('password_reset_too_many', '',
+                    'Troppe richieste di reimpostazione. Riprova fra qualche minuto.'));
+
+                return redirect()->to('/sessions/passwordreset');
+            }
+
+            $this->registerResetRequest($email);
 
             $userModel = new UserModel();
             $user      = $userModel->findByEmail($email);

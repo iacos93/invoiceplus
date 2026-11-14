@@ -36,6 +36,14 @@ cassa previdenziale. L'interfaccia è in italiano e in inglese.
 > **Stato: in sviluppo.** Le funzioni principali sono utilizzabili e coperte da
 > test, ma il progetto non è ancora dichiarato stabile per l'uso in produzione
 > su dati reali senza backup.
+>
+> Per la 1.0 mancano prove che i test automatici non possono dare: un invio
+> reale allo SdI con ricevuta, la ricezione reale di una fattura di acquisto
+> (il codice c'è, è coperto da test e fu provato con uno SdI simulato, ma serve
+> l'accreditamento SOGEI per provarlo con quello vero), un ripristino del
+> backup su un server vero e un periodo di uso con le automazioni installate.
+> Fino ad allora ogni invio allo SdI, ogni fattura ricevuta e ogni flusso
+> bancario va controllato a mano la prima volta.
 
 <!-- TOC depthFrom:2 depthTo:6 orderedList:false updateOnSave:true withLinks:true -->
 

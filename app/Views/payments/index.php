@@ -42,7 +42,7 @@ $actions = '<a class="btn btn-sm btn-primary" href="' . site_url('payments/form'
             <div class="ip-table-card-title">
                 <span class="card-header-icon"><i class="fa fa-solid fa-money-bill-1" aria-hidden="true"></i></span>
                 <span class="ip-table-card-label"><?= esc(trans('payments')) ?></span>
-                <span class="badge text-bg-secondary"><?= count($payments) ?></span>
+                <span class="badge text-bg-secondary"><?= isset($pager) ? $pager->getTotal('ip_payments') : count($payments) ?></span>
             </div>
             <div class="ip-live-search ip-table-card-search"
                  data-target="#payments-table-wrap"
@@ -142,6 +142,7 @@ $actions = '<a class="btn btn-sm btn-primary" href="' . site_url('payments/form'
         </table>
     </div>
     </div>
+    <?= $this->include('layout/pager_footer', ['group' => 'ip_payments']) ?>
     </div>
 </div>
 

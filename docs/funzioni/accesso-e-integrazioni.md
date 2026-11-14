@@ -91,6 +91,17 @@ tracciamento email più vecchie di un anno o di documenti eliminati.
 crontab, con timeout per job, lock contro le sovrapposizioni e log ruotato. In
 alternativa `crontab.example` elenca una voce per endpoint.
 
+La chiave si può passare anche dagli header `X-Cron-Key` o `Authorization:
+Bearer <key>` (in quest'ordine, prima del parametro nel percorso): è la forma
+da preferire, perché gli indirizzi finiscono nei log di accesso del webserver
+mentre gli header no. Tutti gli endpoint pubblici (`/mcp`, `cron/*`,
+`sdi-coop/*`, `sdi-ricezione/*`) hanno inoltre un **tetto di richieste per
+IP**: 120 al minuto per MCP, 30 per i cron, 300 per lo SdI. Oltre il limite
+rispondono `429` con `Retry-After`, e i tentativi con token sbagliato contano
+come gli altri. Il tetto si disattiva con `app.endpointThrottle = false` in
+`.env`; dietro un reverse proxy va impostato `Config\App::$proxyIPs`, altrimenti
+tutti i client condividono lo stesso contatore.
+
 I cron girano **senza sessione**, quindi senza "azienda attiva": lavorano su
 tutte le aziende. Il backup richiede `pg_dump` o `mysqldump` e `exec()`; i
 dump sono dati fiscali in chiaro e non vanno lasciati sotto la document root.

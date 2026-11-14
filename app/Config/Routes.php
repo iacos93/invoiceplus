@@ -9,7 +9,9 @@ $routes->get('/', 'Home::index');
 $routes->get('sessions', 'Sessions::index');
 $routes->get('sessions/login', 'Sessions::login');
 $routes->post('sessions/login', 'Sessions::login');
-$routes->get('sessions/logout', 'Sessions::logout');
+// Uscita in POST: una GET la faceva partire anche un link di terzi o un
+// prefetch, senza che l'utente avesse cliccato "esci".
+$routes->post('sessions/logout', 'Sessions::logout');
 $routes->get('sessions/passwordreset', 'Sessions::passwordreset');
 $routes->get('sessions/passwordreset/(:any)', 'Sessions::passwordreset/$1');
 $routes->post('sessions/passwordreset', 'Sessions::passwordreset');
@@ -350,6 +352,10 @@ $routes->group('', ['filter' => 'auth'], static function ($routes) {
     $routes->post('quotes/bulk', 'Quotes::bulk');
     $routes->get('quotes/generate_pdf/(:num)', 'Quotes::generatePdf/$1');
     $routes->get('quotes/preview_pdf/(:num)', 'Quotes::previewPdf/$1');
+    // "Segna come inviato" dopo il PDF: prima lo faceva la GET di
+    // generate_pdf, che cosi' scriveva lo stato di un documento solo perche'
+    // qualcuno aveva aperto un link (o un export lo aveva generato in blocco).
+    $routes->post('quotes/mark_sent/(:num)', 'Quotes::markSent/$1');
     // POST e non GET: la vista invia gia' un form con csrf_field(), quindi
     // finora il bottone rispondeva 404 e l'imposta preventivo non si cancellava.
     $routes->post('quotes/delete_quote_tax/(:num)/(:num)', 'Quotes::deleteQuoteTax/$1/$2');
@@ -384,10 +390,14 @@ $routes->group('', ['filter' => 'auth'], static function ($routes) {
     $routes->get('invoices/form_create', 'Invoices::formCreate');
     $routes->post('invoices/form_create', 'Invoices::formCreate');
     $routes->post('invoices/delete/(:num)', 'Invoices::delete/$1');
+    $routes->post('invoices/unlock/(:num)', 'Invoices::unlock/$1');
     $routes->post('invoices/send_sdi/(:num)', 'Invoices::sendSdi/$1');
     $routes->post('invoices/set_sdi_esito/(:num)', 'Invoices::setSdiEsito/$1');
     $routes->get('invoices/generate_pdf/(:num)', 'Invoices::generatePdf/$1');
     $routes->get('invoices/preview_pdf/(:num)', 'Invoices::previewPdf/$1');
+    // Vedi quotes/mark_sent: la GET del PDF non deve piu' numerare e marcare
+    // la fattura, altrimenti anche un export la spediva senza volerlo.
+    $routes->post('invoices/mark_sent/(:num)', 'Invoices::markSent/$1');
     $routes->get('invoices/generate_xml/(:num)', 'Invoices::generateXml/$1');
     $routes->get('invoices/validate_xml/(:num)', 'Invoices::validateXml/$1');
     $routes->get('invoices/preview_xml/(:num)', 'Invoices::previewXml/$1');
@@ -536,5 +546,5 @@ $routes->get('calendar/feed/(:any)', 'Calendar::feed/$1');
 $routes->post('sdi-coop/(:any)', 'SdiCoopEndpoint::endpoint/$1');
 
 // --- Webservice SDICoop-Ricezione (fatture di acquisto in arrivo dal SdI;
-//     scheletro, richiede accreditamento separato — vedi SdiRicezioneEndpoint) ---
+//     richiede un accreditamento separato — vedi SdiRicezioneEndpoint) ---
 $routes->post('sdi-ricezione/(:any)', 'SdiRicezioneEndpoint::endpoint/$1');

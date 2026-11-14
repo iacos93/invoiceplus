@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Libraries\GuestPassword;
+
 class QuoteModel extends IpBaseModel
 {
     protected $table            = 'ip_quotes';
@@ -10,12 +12,11 @@ class QuoteModel extends IpBaseModel
     protected $returnType       = 'array';
     protected $useTimestamps    = false;
 
-    // Stessa ragione di InvoiceModel: la password del preventivo si cifra a
-    // riposo e non si hasha, perche' la vista di modifica deve poterla
-    // mostrare allo staff che la comunica al cliente. Il prefisso "enc:"
-    // rende la cifratura idempotente.
-    protected $beforeInsert = ['encryptDocumentPassword'];
-    protected $beforeUpdate = ['encryptDocumentPassword'];
+    // Stessa regola di InvoiceModel: la password del portale guest si salva
+    // come hash bcrypt e non si rilegge (la scheda la tratta come write-only).
+    // Il vecchio encrypt_secret() era reversibile; l'hash no.
+    protected $beforeInsert = ['hashDocumentPassword'];
+    protected $beforeUpdate = ['hashDocumentPassword'];
 
     protected $allowedFields = [
         'user_id',
@@ -130,17 +131,42 @@ class QuoteModel extends IpBaseModel
      * Recupera un preventivo completo tramite ID.
      */
     /**
-     * Callback eventi CI4: cifra la password del documento prima di scriverla.
+     * Callback eventi CI4: trasforma in hash la password del preventivo prima
+     * di scriverla.
+     *
+     * Stesse regole di InvoiceModel::hashDocumentPassword(): campo vuoto =
+     * non cambiare, valore già in hash = lasciarlo stare.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
      */
-    protected function encryptDocumentPassword(array $data): array
+    protected function hashDocumentPassword(array $data): array
     {
-        $value = $data['data']['quote_password'] ?? null;
-
-        if (!empty($value) && strpos((string) $value, 'enc:') !== 0) {
-            $data['data']['quote_password'] = encrypt_secret((string) $value);
+        if (!array_key_exists('quote_password', $data['data'])) {
+            return $data;
         }
 
+        $value = $data['data']['quote_password'];
+
+        if ($value === null || $value === '') {
+            unset($data['data']['quote_password']);
+
+            return $data;
+        }
+
+        $data['data']['quote_password'] = GuestPassword::hash((string) $value);
+
         return $data;
+    }
+
+    /**
+     * Scrive un hash già calcolato (migrazione trasparente dal formato
+     * cifrato del portale guest).
+     */
+    public function replacePasswordHash(int $quoteId, string $hash): void
+    {
+        $this->update($quoteId, ['quote_password' => $hash]);
     }
 
     public function getByIdScoped(int $quoteId): ?array

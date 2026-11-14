@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Libraries\BankReconciler;
 use App\Libraries\StatementImporter;
+use App\Libraries\UploadGuard;
 use App\Models\BankAccountModel;
 use App\Models\BankTransactionModel;
 use App\Models\ExpenseModel;
@@ -74,6 +75,19 @@ class Reconciliation extends BaseController
 
         if (!$file || !$file->isValid()) {
             session()->setFlashdata('alert_error', 'Nessun file valido selezionato.');
+
+            return redirect()->to('/reconciliation');
+        }
+
+        // CSV e CAMT.053 hanno limiti e tipi diversi: il tipo si sceglie
+        // dall'estensione, ma il MIME si legge dal contenuto. Il file viene
+        // letto per intero subito dopo, quindi va fermato prima.
+        $extension = strtolower(pathinfo($file->getClientName(), PATHINFO_EXTENSION));
+        $kind      = $extension === 'xml' ? UploadGuard::KIND_XML : UploadGuard::KIND_CSV;
+        $reason    = UploadGuard::checkUploadedFile($file, $kind);
+
+        if ($reason !== null) {
+            session()->setFlashdata('alert_error', 'Estratto conto non valido: ' . $reason);
 
             return redirect()->to('/reconciliation');
         }

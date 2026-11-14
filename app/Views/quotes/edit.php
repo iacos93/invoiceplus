@@ -26,7 +26,7 @@ $actions = '<div class="ip-doc-actions">'
     . '<span class="headerbar-total__amount">' . format_currency($quote['quote_total'] ?? 0) . '</span>'
     . '</div>'
     // Azione primaria sempre visibile: l'anteprima del preventivo.
-    . '<a class="btn btn-sm btn-primary" href="' . site_url('quotes/view/' . $quote['quote_id']) . '"><i class="fa fa-solid fa-eye" aria-hidden="true"></i> ' . trans('view', '', 'Anteprima') . '</a>';
+    . '<a class="btn btn-sm btn-secondary" href="' . site_url('quotes/view/' . $quote['quote_id']) . '"><i class="fa fa-solid fa-eye" aria-hidden="true"></i> ' . trans('view', '', 'Anteprima') . '</a>';
 
 // Azioni secondarie nel menu "Altro": converte/copia/elimina affollavano
 // l'headerbar di bottoni ridondanti con la fattura.
@@ -147,8 +147,12 @@ $actions .= '</div>';
 
                     <div class="ip-doc-field">
                         <label class="ip-doc-label" for="quote_password"><?= trans('quote_password', '', 'Password PDF') ?></label>
-                        <input type="text" name="quote_password" id="quote_password" class="form-control"
-                               value="<?= esc(decrypt_secret((string) ($quote['quote_password'] ?? ''))) ?>" autocomplete="off">
+                        <input type="password" name="quote_password" id="quote_password" class="form-control"
+                               value="" placeholder="<?= esc(trans('password_leave_blank', '', 'Lascia vuoto per non cambiarla')) ?>"
+                               autocomplete="new-password">
+                        <p class="ip-number-help">
+                            <?= trans('password_write_only_hint', '', 'Per sicurezza la password salvata non è più visibile: scrivine una nuova solo per sostituirla.') ?>
+                        </p>
                     </div>
                 </div>
             </div>

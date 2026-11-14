@@ -24,7 +24,6 @@ final class MutatingRoutesTest extends CIUnitTestCase
      */
     private const ECCEZIONI = [
         'Sessions::passwordreset' => 'mostra il form di reimpostazione password; la scrittura avviene in POST',
-        'Sessions::logout'        => 'il link di uscita nella topbar e\' una GET; distrugge solo la sessione corrente',
         'UserClients::create'     => 'la GET mostra il form di assegnazione clienti; la scrittura avviene in POST sulla stessa rotta',
         'CustomValues::create'    => 'la GET mostra il form del valore personalizzato; la scrittura avviene in POST sulla stessa rotta',
     ];

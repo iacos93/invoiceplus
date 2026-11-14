@@ -50,10 +50,17 @@ class Quotes extends BaseController
         $favourite = (string) ($request->getGet('fav') ?? '');
         $favourite = in_array($favourite, ['0', '1'], true) ? $favourite : '';
 
-        $quotes = $this->quoteModel->getAllWithStatus($status, $year, $months, $favourite);
+        // Paginata come le fatture: con "Tutti gli anni" la lista leggeva
+        // ogni preventivo dell'archivio con tutti i join, ignorando "Numero di
+        // elementi nelle liste". I totali della barra periodo non ne
+        // risentono: arrivano da getPeriodTotals(), aggregato a parte.
+        $quotes = $this->quoteModel->getAllWithStatus(
+            $status, $year, $months, $favourite, list_per_page(), list_page('ip_quotes')
+        );
 
         $data = [
             'quotes'         => $quotes,
+            'pager'          => $this->quoteModel->pager,
             'status'         => $status,
             'quote_statuses' => $this->quoteModel->statuses(),
             'years'          => $this->quoteModel->getAvailableYears(),
@@ -288,23 +295,44 @@ class Quotes extends BaseController
 
     /**
      * Genera il PDF del preventivo (equivalente di generate_pdf() CI3).
-     * Se mark_quotes_sent_pdf e' attivo genera il numero e marca come inviato.
+     *
+     * Solo lettura: la marcatura "inviato" (impostazione
+     * mark_quotes_sent_pdf) e' passata a Quotes::markSent(), perche' una GET
+     * non deve cambiare lo stato del documento.
      */
     public function generatePdf(int $quoteId, bool $stream = true, ?string $template = null)
     {
-        // Stesso motivo di Invoices::generatePdf(): mark_quotes_sent_pdf
-        // numera e marca come inviato prima del rendering, quindi il perimetro
-        // va verificato qui e non solo dentro renderQuotePdf().
+        return $this->renderQuotePdf($quoteId, $stream, $template);
+    }
+
+    /**
+     * "Segna come inviato" dopo aver scaricato il PDF.
+     *
+     * Vedi Invoices::markSent(): generare il PDF non e' inviare, e il
+     * passaggio di stato deve essere una scelta esplicita (POST con CSRF).
+     */
+    public function markSent(int $quoteId)
+    {
+        if (service('request')->getMethod() !== 'POST') {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
         if (!$this->quoteModel->getByIdScoped($quoteId)) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        if ((int) get_setting('mark_quotes_sent_pdf') === 1) {
-            $this->quoteModel->generateQuoteNumberIfApplicable($quoteId);
-            $this->quoteModel->markSent($quoteId);
-        }
+        $this->quoteModel->generateQuoteNumberIfApplicable($quoteId);
+        $this->quoteModel->markSent($quoteId);
 
-        return $this->renderQuotePdf($quoteId, $stream, $template);
+        log_message('info', 'Preventivo {quote} segnato come inviato da utente {user}', [
+            'quote' => $quoteId,
+            'user'  => (int) session('user_id'),
+        ]);
+
+        session()->setFlashdata('alert_success', trans('quote_marked_sent', '',
+            'Preventivo segnato come inviato.'));
+
+        return redirect()->to('/quotes/view/' . $quoteId);
     }
 
     /**

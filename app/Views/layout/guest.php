@@ -115,10 +115,15 @@ $is_public_view = !empty($public_view);
             <?php if (!$is_public_view): ?>
             <ul class="navbar-nav ms-auto align-items-lg-center flex-row gap-1">
                 <li class="nav-item">
-                    <a href="<?= site_url('sessions/logout') ?>" class="ip-topbar-link" title="<?= trans('logout') ?>">
-                        <i class="fa fa-solid fa-power-off" aria-hidden="true"></i>
-                        <span class="d-none d-lg-inline"><?= trans('logout') ?></span>
-                    </a>
+                    <?php /* POST: l'uscita distrugge la sessione, non deve partire
+                             da un link caricato senza un clic. */ ?>
+                    <form method="post" action="<?= site_url('sessions/logout') ?>" class="m-0">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="ip-topbar-link" title="<?= trans('logout') ?>">
+                            <i class="fa fa-solid fa-power-off" aria-hidden="true"></i>
+                            <span class="d-none d-lg-inline"><?= trans('logout') ?></span>
+                        </button>
+                    </form>
                 </li>
             </ul>
             <?php endif; ?>

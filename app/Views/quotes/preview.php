@@ -29,7 +29,7 @@ $title = trans('quote', '', 'Preventivo') . ' ' . esc($quote['quote_number'] ?: 
     . '</span>';
 
 if ($is_draft_number) {
-    $title .= ' <span class="badge text-bg-warning">'
+    $title .= ' <span class="badge ip-status text-bg-warning">'
         . esc(trans('provisional_number', '', 'Numero provvisorio'))
         . '</span>';
 }
@@ -38,10 +38,19 @@ $actions = '<div class="ip-doc-actions">'
     . '<a class="btn btn-sm btn-primary" href="' . site_url('quotes/edit/' . $quote_id) . '">'
     . '<i class="fa fa-solid fa-pencil" aria-hidden="true"></i> ' . trans('edit', '', 'Modifica') . '</a>'
     . '<a class="btn btn-sm btn-secondary" href="' . site_url('quotes/generate_pdf/' . $quote_id) . '">'
-    . '<i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> ' . trans('download_pdf', '', 'PDF') . '</a>'
-    // Invio per email: stessa schermata della fattura, con template, mittente
-    // e allegato PDF del preventivo.
-    . '<a class="btn btn-sm btn-secondary" href="' . site_url('mailer/quote/' . $quote_id) . '">'
+    . '<i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> ' . trans('download_pdf', '', 'PDF') . '</a>';
+// Vedi invoices/preview.php: il PDF non segna piu' il preventivo come inviato,
+// la scelta e' questo POST esplicito.
+if ((int) get_setting('mark_quotes_sent_pdf') === 1 && $is_draft) {
+    $actions .= '<form method="post" action="' . site_url('quotes/mark_sent/' . $quote_id) . '" class="d-inline">'
+        . csrf_field()
+        . '<button type="submit" class="btn btn-sm btn-secondary">'
+        . '<i class="fa fa-solid fa-paper-plane" aria-hidden="true"></i> '
+        . esc(trans('mark_as_sent', '', 'Segna come inviato')) . '</button></form>';
+}
+// Invio per email: stessa schermata della fattura, con template, mittente e
+// allegato PDF del preventivo.
+$actions .= '<a class="btn btn-sm btn-secondary" href="' . site_url('mailer/quote/' . $quote_id) . '">'
     . '<i class="fa fa-solid fa-envelope" aria-hidden="true"></i> ' . trans('email_quote', '', 'Invia preventivo') . '</a>'
     . '<form action="' . site_url('quotes/ajax/quote_to_invoice') . '" method="POST">' . csrf_field()
     . '<input type="hidden" name="quote_id" value="' . $quote_id . '">'
@@ -143,7 +152,7 @@ $actions .= '</ul></div></div>';
                                     <span class="ip-preview__payment-method ip-preview__track-recipient"><?= esc($track['track_recipient'] ?? '') ?></span>
                                     <span class="ip-preview__payment-amount">
                                         <?php if ($opened): ?>
-                                            <span class="badge text-bg-success"><?= esc($label) ?></span>
+                                            <span class="badge ip-status text-bg-success"><?= esc($label) ?></span>
                                         <?php else: ?>
                                             <span class="text-muted"><?= esc($label) ?></span>
                                         <?php endif; ?>

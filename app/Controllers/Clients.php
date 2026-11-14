@@ -8,6 +8,7 @@ use App\Models\ClientCustomModel;
 use App\Models\TaxRateModel;
 use App\Models\PaymentMethodModel;
 use App\Libraries\CsvWriter;
+use App\Libraries\UploadGuard;
 use App\Services\ContactExport;
 use App\Services\ContactImporter;
 
@@ -354,9 +355,14 @@ class Clients extends BaseController
             return redirect()->to('/clients');
         }
 
-        $ext = strtolower((string) $file->getClientExtension());
-        if (!in_array($ext, ['csv', 'txt'], true)) {
-            session()->setFlashdata('alert_error', 'Formato file non supportato. Carica un file .csv');
+        $ext = strtolower(pathinfo($file->getClientName(), PATHINFO_EXTENSION));
+
+        // Estensione, dimensione e MIME reale: il CSV viene poi letto tutto
+        // in memoria, e un'immagine rinominata .csv non deve arrivarci.
+        $reason = UploadGuard::checkUploadedFile($file, UploadGuard::KIND_CSV);
+
+        if ($reason !== null) {
+            session()->setFlashdata('alert_error', 'File non valido: ' . $reason);
             return redirect()->to('/clients');
         }
 

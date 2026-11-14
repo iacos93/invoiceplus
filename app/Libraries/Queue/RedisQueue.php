@@ -16,6 +16,19 @@ use Predis\Client as PredisClient;
  */
 class RedisQueue
 {
+    /**
+     * Classi ammesse nella deserializzazione dei job.
+     *
+     * La coda e' interna, ma un Redis compromesso non deve poter far
+     * istanziare al worker classi arbitrarie tramite il payload.
+     *
+     * @var list<class-string>
+     */
+    private const ALLOWED_JOB_CLASSES = [
+        \App\Libraries\Queue\Jobs\SendEmailJob::class,
+        \App\Libraries\Queue\Jobs\GenerateFatturaJob::class,
+    ];
+
     private PredisClient $redis;
     private string $prefix;
 
@@ -73,7 +86,7 @@ class RedisQueue
         }
 
         $payload = json_decode($result[1], true);
-        $job     = unserialize($payload['data']);
+        $job     = unserialize($payload['data'], ['allowed_classes' => self::ALLOWED_JOB_CLASSES]);
 
         if (!$job instanceof JobInterface) {
             log_message('error', 'RedisQueue: job non valido dalla coda {queue}', ['queue' => $queue]);

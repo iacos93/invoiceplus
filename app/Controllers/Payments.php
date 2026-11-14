@@ -34,7 +34,8 @@ class Payments extends BaseController
     public function index()
     {
         $data = [
-            'payments' => $this->paymentModel->getAllWithJoins(),
+            'payments' => $this->paymentModel->getPage(list_per_page(), list_page('ip_payments')),
+            'pager'    => $this->paymentModel->pager,
         ];
 
         return view('payments/index', $data);

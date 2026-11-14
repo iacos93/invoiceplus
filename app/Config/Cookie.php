@@ -104,4 +104,19 @@ class Cookie extends BaseConfig
      * @see https://tools.ietf.org/html/rfc2616#section-2.2
      */
     public bool $raw = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Cookie "Secure" quando l'installazione forza l'HTTPS
+        // (app.forceGlobalSecureRequests, vedi App.php). Forzare l'HTTPS non
+        // basta da solo: il cookie di sessione restava senza l'attributo e un
+        // browser lo avrebbe spedito anche su una richiesta in chiaro. Si legge
+        // la stessa chiave di App invece di istanziare Config\App qui dentro,
+        // che a sua volta puo' chiedere i cookie. Un cookie.secure scritto a
+        // mano in .env resta valido: l'OR non lo spegne.
+        $this->secure = $this->secure
+            || filter_var(env('app.forceGlobalSecureRequests', false), FILTER_VALIDATE_BOOLEAN);
+    }
 }

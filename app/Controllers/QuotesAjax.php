@@ -89,11 +89,17 @@ class QuotesAjax extends BaseController
             $dbArray = [
                 'quote_number'          => $quoteNumber,
                 'quote_status_id'       => $statusId,
-                'quote_password'        => $post['quote_password'] ?? $quote['quote_password'],
                 'notes'                 => $post['notes'] ?? $quote['notes'],
                 'quote_discount_amount' => standardize_amount($discountAmount === '' ? 0 : $discountAmount),
                 'quote_discount_percent' => standardize_amount($discountPercent === '' ? 0 : $discountPercent),
             ];
+
+            // La password è write-only: la scheda non mostra quella salvata,
+            // quindi il campo vuoto vuol dire "non cambiarla", non "cancella".
+            // Solo un valore nuovo arriva al model, che lo converte in hash.
+            if (isset($post['quote_password']) && $post['quote_password'] !== '') {
+                $dbArray['quote_password'] = $post['quote_password'];
+            }
 
             if (!empty($post['quote_date_created'])) {
                 $dbArray['quote_date_created'] = date_to_mysql($post['quote_date_created']);
@@ -521,6 +527,9 @@ class QuotesAjax extends BaseController
             'invoice_date_created'   => $invoiceDate,
             'invoice_date_modified'  => date('Y-m-d H:i:s'),
             'invoice_date_due'       => $invoiceDue,
+            // La password viaggia già in hash (o nel vecchio formato cifrato,
+            // che il portale migra al primo sblocco): l'insert è grezzo e non
+            // passa dal model, quindi non c'è niente da ri-hashare.
             'invoice_password'       => $quote['quote_password'],
             'invoice_terms'          => $quote['notes'] ?? '',
             'invoice_url_key'        => generate_key(32),

@@ -240,11 +240,11 @@ if (!$ip_old_items && !empty($doc_prefill_items ?? [])) {
 
                     <div class="ip-doc-field">
                         <label class="ip-doc-label" for="<?= esc($doc_password_field) ?>"><?= esc($doc_password_label) ?></label>
-                        <input type="text" name="<?= esc($doc_password_field) ?>" id="<?= esc($doc_password_field) ?>"
+                        <input type="password" name="<?= esc($doc_password_field) ?>" id="<?= esc($doc_password_field) ?>"
                                class="form-control" value="<?= esc(old($doc_password_field) ?? ($doc_password_default ?? '')) ?>"
-                               autocomplete="off">
+                               autocomplete="new-password">
                         <p class="ip-number-help">
-                            <?= trans('optional', '', 'Facoltativa') ?> — <?= trans('optional_later_hint', '', 'modificabile anche dopo il salvataggio') ?>
+                            <?= trans('optional', '', 'Facoltativa') ?> — <?= trans('password_not_readable_hint', '', 'dopo il salvataggio non sarà più leggibile') ?>
                         </p>
                     </div>
 

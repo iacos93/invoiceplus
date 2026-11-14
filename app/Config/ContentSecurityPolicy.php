@@ -15,202 +15,130 @@ use CodeIgniter\Config\BaseConfig;
  */
 class ContentSecurityPolicy extends BaseConfig
 {
+    /**
+     * Modalita' scelta in .env con app.cspMode: off | report | enforce.
+     *
+     * - "enforce" applica la policy: il browser blocca cio' che non ammette.
+     * - "report" manda Content-Security-Policy-Report-Only: segnala senza
+     *   bloccare, nella console del browser e, se c'e', a app.cspReportUri.
+     * - "off" non manda niente.
+     *
+     * Senza scelta esplicita: "enforce" in produzione, "report" altrove. In
+     * sviluppo il server integrato parte su un'altra porta quando la 8080 e'
+     * occupata, ma app.baseURL resta quello del .env: gli asset diventerebbero
+     * di un altro sito e la policy li bloccherebbe, lasciando l'app senza CSS
+     * ne' JavaScript. In produzione indirizzo e baseURL coincidono.
+     *
+     * Un valore sconosciuto vale "report", mai "enforce" e mai "off": un errore
+     * di battitura non deve spegnere la protezione ne' bloccare l'app.
+     *
+     * Percorrendo ~48 schermate (liste, schede, modifiche, anteprime in iframe,
+     * impostazioni, portale cliente, login) con la policy applicata non e'
+     * emersa nessuna violazione; vedi docs/installazione-e-aggiornamento.md.
+     */
+    public static function mode(): string
+    {
+        // CI_ENVIRONMENT e' la stessa fonte da cui il framework ricava la
+        // costante ENVIRONMENT; letta qui perche' la costante, a un'analisi
+        // statica, ha un valore solo e il confronto risulterebbe fisso.
+        $default = (string) env('CI_ENVIRONMENT', 'production') === 'production' ? 'enforce' : 'report';
+        $mode    = strtolower(trim((string) env('app.cspMode', $default)));
+
+        return in_array($mode, ['off', 'report', 'enforce'], true) ? $mode : 'report';
+    }
+
     // -------------------------------------------------------------------------
     // Broadbrush CSP management
     // -------------------------------------------------------------------------
 
-    /**
-     * Default CSP report context
-     */
-    public bool $reportOnly = false;
+    public bool $reportOnly = true;
 
-    /**
-     * Specifies a URL where a browser will send reports
-     * when a content security policy is violated.
-     */
     public ?string $reportURI = null;
 
-    /**
-     * Specifies a reporting endpoint to which violation reports ought to be sent.
-     */
     public ?string $reportTo = null;
 
-    /**
-     * Instructs user agents to rewrite URL schemes, changing
-     * HTTP to HTTPS. This directive is for websites with
-     * large numbers of old URLs that need to be rewritten.
-     */
     public bool $upgradeInsecureRequests = false;
 
     // -------------------------------------------------------------------------
-    // CSP DIRECTIVES SETTINGS
-    // NOTE: once you set a policy to 'none', it cannot be further restricted
+    // Direttive
+    //
+    // La policy chiude cio' che nessuna pagina usa: plugin, base URI diversi,
+    // form verso altri siti, incorporazione in siti esterni, script, font e
+    // immagini da origini non elencate. Le sole origini esterne sono i due
+    // host di Google Fonts (layout/fonts.php).
+    //
+    // 'unsafe-inline' resta su script e stili, e va detto: 53 viste hanno
+    // <script> inline e la navigazione parziale (ip-pjax.js) riesegue gli
+    // script presi da un'altra risposta, il cui nonce non sarebbe quello della
+    // pagina aperta. Una policy a nonce richiede di spostare quegli script in
+    // file e di rifare il pjax: finche' non e' fatto, questa policy non ferma
+    // un XSS riflesso che inietta uno <script> in linea, ma impedisce che
+    // porti codice da fuori o spedisca dati altrove (connect-src, form-action).
     // -------------------------------------------------------------------------
 
-    /**
-     * Will default to `'self'` if not overridden
-     *
-     * @var list<string>|string|null
-     */
-    public $defaultSrc;
+    public $defaultSrc = 'self';
 
-    /**
-     * Lists allowed scripts' URLs.
-     *
-     * @var list<string>|string
-     */
-    public $scriptSrc = 'self';
+    public $scriptSrc = ['self', 'unsafe-inline'];
 
-    /**
-     * Specifies valid sources for JavaScript <script> elements.
-     *
-     * @var list<string>|string
-     */
-    public array|string $scriptSrcElem = 'self';
+    public array|string $scriptSrcElem = ['self', 'unsafe-inline'];
 
-    /**
-     * Specifies valid sources for JavaScript inline event
-     * handlers and JavaScript URLs.
-     *
-     * @var list<string>|string
-     */
-    public array|string $scriptSrcAttr = 'self';
+    public array|string $scriptSrcAttr = ['unsafe-inline'];
 
-    /**
-     * Lists allowed stylesheets' URLs.
-     *
-     * @var list<string>|string
-     */
-    public $styleSrc = 'self';
+    public $styleSrc = ['self', 'unsafe-inline', 'https://fonts.googleapis.com'];
 
-    /**
-     * Specifies valid sources for stylesheets <link> elements.
-     *
-     * @var list<string>|string
-     */
-    public array|string $styleSrcElem = 'self';
+    public array|string $styleSrcElem = ['self', 'unsafe-inline', 'https://fonts.googleapis.com'];
 
-    /**
-     * Specifies valid sources for stylesheets inline
-     * style attributes and `<style>` elements.
-     *
-     * @var list<string>|string
-     */
-    public array|string $styleSrcAttr = 'self';
+    public array|string $styleSrcAttr = ['unsafe-inline'];
 
-    /**
-     * Defines the origins from which images can be loaded.
-     *
-     * @var list<string>|string
-     */
-    public $imageSrc = 'self';
+    // data: per i QR code (F24, avvisi di pagamento) e le icone in linea.
+    public $imageSrc = ['self', 'data:'];
 
-    /**
-     * Restricts the URLs that can appear in a page's `<base>` element.
-     *
-     * Will default to self if not overridden
-     *
-     * @var list<string>|string|null
-     */
-    public $baseURI;
+    public $baseURI = 'self';
 
-    /**
-     * Lists the URLs for workers and embedded frame contents
-     *
-     * @var list<string>|string
-     */
     public $childSrc = 'self';
 
-    /**
-     * Limits the origins that you can connect to (via XHR,
-     * WebSockets, and EventSource).
-     *
-     * @var list<string>|string
-     */
     public $connectSrc = 'self';
 
-    /**
-     * Specifies the origins that can serve web fonts.
-     *
-     * @var list<string>|string
-     */
-    public $fontSrc;
+    public $fontSrc = ['self', 'https://fonts.gstatic.com'];
 
-    /**
-     * Lists valid endpoints for submission from `<form>` tags.
-     *
-     * @var list<string>|string
-     */
     public $formAction = 'self';
 
-    /**
-     * Specifies the sources that can embed the current page.
-     * This directive applies to `<frame>`, `<iframe>`, `<embed>`,
-     * and `<applet>` tags. This directive can't be used in
-     * `<meta>` tags and applies only to non-HTML resources.
-     *
-     * @var list<string>|string|null
-     */
-    public $frameAncestors;
+    public $frameAncestors = 'self';
 
-    /**
-     * The frame-src directive restricts the URLs which may
-     * be loaded into nested browsing contexts.
-     *
-     * @var list<string>|string|null
-     */
-    public $frameSrc;
+    public $frameSrc = 'self';
 
-    /**
-     * Restricts the origins allowed to deliver video and audio.
-     *
-     * @var list<string>|string|null
-     */
     public $mediaSrc;
 
-    /**
-     * Allows control over Flash and other plugins.
-     *
-     * @var list<string>|string
-     */
-    public $objectSrc = 'self';
+    public $objectSrc = 'none';
 
-    /**
-     * @var list<string>|string|null
-     */
     public $manifestSrc;
 
-    /**
-     * @var list<string>|string
-     */
     public array|string $workerSrc = [];
 
-    /**
-     * Limits the kinds of plugins a page may invoke.
-     *
-     * @var list<string>|string|null
-     */
     public $pluginTypes;
 
-    /**
-     * List of actions allowed.
-     *
-     * @var list<string>|string|null
-     */
     public $sandbox;
 
-    /**
-     * Nonce placeholder for style tags.
-     */
     public string $styleNonceTag = '{csp-style-nonce}';
 
-    /**
-     * Nonce placeholder for script tags.
-     */
     public string $scriptNonceTag = '{csp-script-nonce}';
 
-    /**
-     * Replace nonce tag automatically?
-     */
-    public bool $autoNonce = true;
+    // Spento di proposito: con un nonce nell'header 'unsafe-inline' verrebbe
+    // ignorato dai browser, e gli script in linea smetterebbero di girare.
+    public bool $autoNonce = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->reportOnly = self::mode() !== 'enforce';
+
+        // Indirizzo a cui il browser spedisce una segnalazione per ogni
+        // violazione (app.cspReportUri in .env). Facoltativo: serve a passare
+        // da "report" a "enforce" senza dover aprire a mano ogni pagina con la
+        // console del browser, e in "enforce" dice cosa sta venendo bloccato
+        // davvero. Vuoto = nessuna segnalazione.
+        $uri             = trim((string) env('app.cspReportUri', ''));
+        $this->reportURI = $uri !== '' ? $uri : null;
+    }
 }

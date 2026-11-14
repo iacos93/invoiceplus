@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Libraries\Mcp\McpTools;
+use App\Libraries\PublicEndpointThrottle;
 
 /**
  * Mcp controller
@@ -36,6 +37,29 @@ class Mcp extends BaseController
 
     public function handle()
     {
+        // Tetto per IP PRIMA dell'autenticazione: anche i tentativi con token
+        // sbagliato consumano il contatore, se no si potrebbero provare chiavi
+        // all'infinito senza essere mai fermati. La risposta resta JSON-RPC
+        // come il resto del controller, con Retry-After in secondi.
+        $wait = PublicEndpointThrottle::guard(
+            PublicEndpointThrottle::SCOPE_MCP,
+            (string) $this->request->getIPAddress()
+        );
+
+        if ($wait !== null) {
+            $response = $this->respondJson([
+                'jsonrpc' => '2.0',
+                'id'      => null,
+                'error'   => [
+                    'code'    => -32000,
+                    'message' => 'Troppe richieste: riprova più tardi',
+                ],
+            ], 429);
+            $response->setHeader('Retry-After', (string) $wait);
+
+            return $response;
+        }
+
         // CSRF è disabilitato sulla route (Filters.php) ma l'autenticazione
         // resta obbligatoria: senza chiave configurata o corretta, niente.
         if (!$this->authenticated()) {

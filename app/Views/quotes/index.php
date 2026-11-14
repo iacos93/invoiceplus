@@ -177,7 +177,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
             <div class="ip-table-card-title">
                 <span class="card-header-icon"><i class="fa fa-regular fa-file" aria-hidden="true"></i></span>
                 <h2 class="ip-table-card-label"><?= esc(trans('quotes')) ?></h2>
-                <span class="badge text-bg-secondary"><?= count($quotes) ?></span>
+                <span class="badge text-bg-secondary"><?= isset($pager) ? $pager->getTotal('ip_quotes') : count($quotes) ?></span>
             </div>
             <div class="ip-live-search ip-table-card-search"
                  data-target="#quotes-table-wrap"
@@ -341,6 +341,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
         </table>
         </div>
         </div>
+        <?= $this->include('layout/pager_footer', ['group' => 'ip_quotes']) ?>
     </div>
 </div>
 

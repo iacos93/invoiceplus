@@ -4,12 +4,15 @@
 
 Il progetto è in sviluppo (serie 0.x): le correzioni di sicurezza escono sulla
 versione più recente pubblicata e sul ramo `main`. Le versioni precedenti non
-ricevono aggiornamenti mirati.
+ricevono aggiornamenti mirati: chi usa una 0.x deve aggiornare alla più recente.
 
 | Versione | Supportata |
 |----------|------------|
-| 0.1.x    | Sì         |
-| < 0.1    | No         |
+| 0.9.x    | Sì         |
+| < 0.9    | No         |
+
+Con la prima versione stabile (1.0) questa tabella passerà a una politica per
+serie: l'ultima 1.x e la precedente.
 
 ## Segnalare una vulnerabilità
 

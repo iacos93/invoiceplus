@@ -131,6 +131,41 @@ non è nel PATH o è di una versione sbagliata:
 backup.mysqldumpPath = /usr/bin/mysqldump
 ```
 
+### I file caricati
+
+Il dump contiene il database e **basta**. Gli XML delle fatture di acquisto
+ricevute (`writable/uploads/expenses`, compresa la cartella `incoming/`), gli
+allegati dei clienti, i file F24 e i loghi stanno su disco. Per una fattura
+l'originale è l'XML, non la riga nel database: perdere il server senza questi
+file vuol dire perderli.
+
+Lo stesso giro di `cron/backup` salva quindi anche `writable/uploads` in
+`files_AAAAMMGG_HHMMSS.zip` dentro `writable/backups`, con permessi **0600** e
+gli ultimi 14. Il prefisso è diverso da quello dei dump (`backup_`) perché
+Stato del sistema, il download e la verifica del ripristino cercano `backup_*`.
+Come per il dump, **va portato fuori dal server**.
+
+Se il database è salvato e i file no, la richiesta **non** risponde 500: il
+cron-runner riproverebbe tutto il backup a ogni giro e, con la rotazione a 14,
+spingerebbe fuori i dump buoni in poche ore. Il fallimento arriva invece per
+email (al massimo una al giorno, finché dura) e la pagina Stato del sistema ha
+il controllo "Backup dei file", che diventa un avviso se l'ultima copia manca o
+ha più di due giorni. La causa più comune è l'estensione PHP `zip` mancante.
+
+Per ripristinare i file, in una cartella vuota:
+
+```bash
+unzip files_AAAAMMGG_HHMMSS.zip -d writable/uploads
+```
+
+I percorsi nell'archivio sono relativi a `writable/uploads`.
+
+**Non c'è il `.env` e non c'è la chiave di cifratura**, di proposito: sono
+segreti e non vanno in un file che resta accanto ai dump. Conserva a parte
+(gestore di password, cassaforte) una copia del `.env`, e in particolare di
+`encryption.key`: senza, i segreti cifrati nel database (token dei canali SdI,
+password delle caselle) diventano illeggibili anche con un dump perfetto.
+
 ### Verifica del ripristino
 
 Sapere che il dump esiste non basta: un file può essere prodotto ogni giorno e
@@ -237,6 +272,78 @@ di partenza e la copia. Annotali prima del ripristino (per esempio con
 `ip_expenses` e sul totale di `ip_invoice_amounts`) e confrontali dopo: se
 coincidono, `migrate:status` è pulito e le pagine si aprono, il dump è integro.
 La stessa verifica vale su MySQL/MariaDB.
+
+## Header di sicurezza e Content-Security-Policy
+
+Gli header `X-Frame-Options`, `X-Content-Type-Options` e `Referrer-Policy`
+sono sempre attivi. Le anteprime di fatture, preventivi e DDT sono iframe dello
+stesso sito, quindi non ne risentono.
+
+La **Content-Security-Policy** si sceglie in `.env` con `app.cspMode`:
+
+| Valore | Cosa fa |
+|--------|---------|
+| `enforce` | Applica la policy: il browser blocca le risorse non ammesse. È il predefinito in produzione. |
+| `report` | La manda come *Report-Only*: il browser segnala ciò che bloccherebbe, ma lascia passare tutto. È il predefinito altrove (sviluppo, test). |
+| `off` | Nessuna CSP. |
+
+Un valore sbagliato (per esempio `enforced`) vale `report`: non spegne la
+protezione e non blocca niente.
+
+**Condizione da rispettare:** `app.baseURL` deve coincidere con l'indirizzo con
+cui apri il sito (stesso protocollo, host e porta). I riferimenti agli asset
+partono da lì: se differiscono, il browser li considera di un altro sito e la
+policy li blocca, lasciando le pagine senza stile né JavaScript. È anche il
+motivo per cui in sviluppo il predefinito è `report`: il server integrato parte
+su un'altra porta quando la 8080 è occupata. Il predefinito segue
+`CI_ENVIRONMENT`: un'istanza locale con `CI_ENVIRONMENT = production` nel
+`.env` ottiene quindi `enforce` anche in locale, e se la apri su una porta
+diversa da quella di `app.baseURL` le pagine perdono stile e JavaScript. In quel
+caso libera la porta oppure imposta `app.cspMode = report`.
+
+La policy ammette soltanto lo stesso sito più i due host di Google Fonts
+(`fonts.googleapis.com`, `fonts.gstatic.com`) e le immagini `data:` (i QR
+code). Chiude plugin, form verso altri siti, richieste verso altri host e
+incorporamento in pagine esterne. Gli script e gli stili in linea sono ancora
+ammessi: le pagine ne usano molti e la navigazione parziale riesegue gli script
+di un'altra risposta, quindi una policy a nonce richiede un lavoro a parte. La
+policy impedisce di caricare codice da altri siti e di spedire dati altrove; non
+sostituisce l'escape dell'output, e non ferma uno `<script>` in linea iniettato.
+Per questo il servizio CSP dell'app non emette mai un nonce
+(`App\Libraries\CspWithoutNonce`): con un solo nonce nell'header i browser
+ignorano `'unsafe-inline'` e gli script in linea smettono di girare.
+
+### Se dopo un aggiornamento una pagina non funziona
+
+1. Imposta `app.cspMode = report` e ricarica la pagina: se ora funziona, la
+   policy bloccava qualcosa.
+2. Apri la console del browser: le righe "violates the following Content
+   Security Policy directive" dicono quale risorsa e quale direttiva.
+3. Per raccogliere le segnalazioni senza aprire la console pagina per pagina,
+   imposta `app.cspReportUri` a un indirizzo che accetti richieste POST: il
+   browser vi spedisce una segnalazione JSON per ogni violazione, anche con
+   `enforce` (e in quel caso dice cosa è stato bloccato davvero).
+4. Se la risorsa è legittima (un nuovo font, un servizio esterno), va aggiunta
+   alla policy in `app/Config/ContentSecurityPolicy.php`.
+
+### Cosa è stato provato
+
+Il passaggio a `enforce` è stato verificato il 2026-11-13 su un'installazione
+di prova con i dati demo: circa 48 schermate (bacheca, liste e schede di
+fatture, preventivi, clienti, pagamenti, spese, fornitori, prodotti, F24, RiBa,
+riconciliazione, calendario, scadenzario, utile e imposte, controllo di
+gestione, report, impostazioni, sicurezza account, stato del sistema, utenti,
+modelli email, esportazione e importazione, DDT, progetti, attività, anteprima
+in iframe, validazione XML, portale cliente, login e recupero password), più
+tema chiaro/scuro, navigazione parziale, ricerca in elenco e selettori.
+Nessuna violazione, misurata con `app.cspReportUri` e con una violazione
+provocata di proposito per verificare che la misura funzionasse.
+
+Non sono state percorse le funzioni che richiedono dati o servizi esterni:
+invio reale di email, canali SdI, scarico dell'estratto conto da una banca.
+Sono richieste lato server e non toccano la policy, ma se ne avessi
+dubbi, un giro con `report` e `app.cspReportUri` sulle tue schermate vere è
+il controllo da fare.
 
 ## Checklist dopo un aggiornamento
 

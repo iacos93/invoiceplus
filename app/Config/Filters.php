@@ -85,7 +85,10 @@ class Filters extends BaseFilters
         ],
         'after' => [
             // 'honeypot',
-            // 'secureheaders',
+            // X-Frame-Options SAMEORIGIN, nosniff, Referrer-Policy same-origin.
+            // Le anteprime nelle pagine (fattura, preventivo, DDT, XML) sono
+            // iframe dello stesso sito, quindi SAMEORIGIN non le tocca.
+            'secureheaders',
         ],
     ];
 

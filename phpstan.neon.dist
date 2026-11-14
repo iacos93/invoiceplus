@@ -1,9 +1,16 @@
+includes:
+    - phpstan-baseline.neon
+
 parameters:
-    # Livello 1: funzioni e classi inesistenti, costanti non definite,
-    # variabili usate prima di essere assegnate. I livelli successivi
-    # chiedono i generics dei model di CodeIgniter, che qui non ci sono:
-    # alzarli senza un lavoro di tipizzazione darebbe solo rumore.
-    level: 3
+    # Livello 5 (era 3). Misurato il 2026-11-12: a livello 4 erano 30 rilievi,
+    # a 5 erano 36, e riguardavano per lo piu' confronti che l'analizzatore
+    # giudica sempre veri o falsi (costanti di ambiente nei file Config,
+    # array_values() su liste, ??). Li ho letti uno per uno: nessun difetto
+    # reale, sono registrati in phpstan-baseline.neon. Il codice nuovo viene
+    # quindi controllato a livello 5 senza dover riscrivere quello vecchio.
+    # I livelli oltre il 5 chiedono i generics dei model di CodeIgniter, che
+    # qui non ci sono: salirci darebbe solo rumore.
+    level: 5
     paths:
         - app
     excludePaths:

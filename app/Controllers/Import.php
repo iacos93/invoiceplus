@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\UploadGuard;
 use App\Models\ImportModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
@@ -136,8 +137,13 @@ class Import extends BaseController
                 return redirect()->to('/import/form');
             }
 
-            if (!in_array(strtolower((string) $upload->getClientExtension()), ['csv', 'txt'], true)) {
-                session()->setFlashdata('alert_error', 'Il file ' . $file . ' deve essere un CSV');
+            // Dimensione e tipo reale prima di spostare il file: l'estensione
+            // dichiarata dal browser non dice cosa contiene il file, e il CSV
+            // viene letto per intero subito dopo.
+            $reason = UploadGuard::checkUploadedFile($upload, UploadGuard::KIND_CSV);
+
+            if ($reason !== null) {
+                session()->setFlashdata('alert_error', 'Il file ' . $file . ' non è valido: ' . $reason);
 
                 return redirect()->to('/import/form');
             }

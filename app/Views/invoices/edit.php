@@ -28,8 +28,10 @@ $actions = '<div class="ip-doc-actions">'
     . '<span class="headerbar-total__label">' . trans('total', '', 'Totale') . '</span>'
     . '<span class="headerbar-total__amount">' . format_currency($invoice['invoice_total'] ?? 0) . '</span>'
     . '</div>'
-    // Azione primaria sempre visibile: l'anteprima del documento.
-    . '<a class="btn btn-sm btn-primary" href="' . site_url('invoices/view/' . (int) $invoice['invoice_id']) . '"><i class="fa fa-solid fa-eye" aria-hidden="true"></i> ' . trans('view', '', 'Anteprima') . '</a>';
+    // Anteprima: azione secondaria. In questa testata l'azione enfatizzata e'
+    // Salva; con due pulsanti pieni (blu e verde) nessuno dei due diceva cosa
+    // fare per prima.
+    . '<a class="btn btn-sm btn-secondary" href="' . site_url('invoices/view/' . (int) $invoice['invoice_id']) . '"><i class="fa fa-solid fa-eye" aria-hidden="true"></i> ' . trans('view', '', 'Anteprima') . '</a>';
 
 // Azioni secondarie raggruppate nel menu "Altro": cosi' la barra resta
 // leggibile anche quando la fattura abilita tutti gli allegati
@@ -245,8 +247,12 @@ $actions .= '</div>';
 
                     <div class="ip-doc-field">
                         <label class="ip-doc-label" for="invoice_password"><?= trans('invoice_password', '', 'Password PDF') ?></label>
-                        <input type="text" name="invoice_password" id="invoice_password" class="form-control"
-                               value="<?= esc(decrypt_secret((string) ($invoice['invoice_password'] ?? ''))) ?>" autocomplete="off">
+                        <input type="password" name="invoice_password" id="invoice_password" class="form-control"
+                               value="" placeholder="<?= esc(trans('password_leave_blank', '', 'Lascia vuoto per non cambiarla')) ?>"
+                               autocomplete="new-password">
+                        <p class="ip-number-help">
+                            <?= trans('password_write_only_hint', '', 'Per sicurezza la password salvata non è più visibile: scrivine una nuova solo per sostituirla.') ?>
+                        </p>
                     </div>
                     <?php if (!$is_draft): ?>
                         <div class="ip-doc-field">

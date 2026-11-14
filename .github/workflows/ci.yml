@@ -192,9 +192,10 @@ jobs:
       - name: Genera la chiave di cifratura
         run: php spark key:generate
 
-      # Livello 3: funzioni, classi e metodi inesistenti, costanti non
-      # definite, tipi di ritorno sbagliati. I livelli successivi chiedono i
-      # generics dei model di CodeIgniter, che qui non ci sono.
+      # Livello 5, con phpstan-baseline.neon per i 35 rilievi gia' esaminati
+      # nel codice precedente: un rilievo nuovo fa fallire il passo. Oltre il
+      # 5 servirebbero i generics dei model di CodeIgniter, che qui non ci
+      # sono.
       - name: Analisi statica
         run: composer analyse
 

@@ -104,7 +104,6 @@ class Settings extends BaseController
         'sdi_coop_key_passphrase', 'sdi_coop_ca_path', 'sdi_coop_inbound_token',
         'sdi_imap_host', 'sdi_imap_username', 'sdi_imap_password',
         'sdi_ricezione_default_expense_category_id', 'sdi_ricezione_inbound_token',
-        'sdi_ricezione_notifica_endpoint', 'sdi_ricezione_notifica_wsdl',
         // Scelta della casella di sistema della company attiva: pur essendo una
         // colonna di ip_companies (vedi il ramo dedicato in saveSettings) arriva
         // nella stessa POST, quindi va riconosciuta come chiave legittima.
@@ -142,8 +141,13 @@ class Settings extends BaseController
         'pdf_quote_footer'     => 5000,
     ];
 
-    /** Token dei webservice SdI in ingresso: cifrati con Cryptor, come cron_key. */
-    private const ENCRYPTED_SETTING_KEYS = ['sdi_coop_inbound_token', 'sdi_ricezione_inbound_token'];
+    /**
+     * Segreti salvati cifrati con encrypt_secret(): token dei webservice SdI
+     * in ingresso e chiave cron. La chiave cron è write-only nella pagina
+     * Impostazioni: il ciphertext non viene più mostrato e un campo vuoto non
+     * tocca il valore già salvato.
+     */
+    private const ENCRYPTED_SETTING_KEYS = ['sdi_coop_inbound_token', 'sdi_ricezione_inbound_token', 'cron_key'];
 
     /** Loghi caricabili dal form (campo file => impostazione omonima). */
     private const LOGO_FIELDS = ['invoice_logo', 'invoice_logo_footer', 'login_logo', 'login_logo_dark'];
@@ -324,11 +328,19 @@ class Settings extends BaseController
             }
 
             if (in_array($key, self::ENCRYPTED_SETTING_KEYS, true)) {
-                // Token dei webservice SdI in ingresso (SDICoop, Ricezione):
-                // stesso segreto di cron_key/mcp_key, cifrato con Cryptor
+                // Token dei webservice SdI in ingresso (SDICoop, Ricezione) e
+                // chiave cron: stesso segreto, cifrato con Cryptor
                 // (encrypt_secret) invece che con l'encrypter nativo usato per
                 // i campi "password" del form — qui sono testo semplice.
-                $values[$key] = encrypt_secret($value);
+                $encrypted = self::encryptedSettingValue($key, $value);
+
+                // null = campo write-only lasciato vuoto: non si cancella il
+                // segreto già salvato.
+                if ($encrypted === null) {
+                    continue;
+                }
+
+                $values[$key] = $encrypted;
 
                 continue;
             }
@@ -357,7 +369,7 @@ class Settings extends BaseController
             $name = $this->storeLogo($file, $field);
 
             if ($name === '') {
-                session()->setFlashdata('alert_error', \esc(trans($field, '', $field)) . ': caricamento non riuscito.');
+                session()->setFlashdata('alert_error', trans($field, '', $field) . ': caricamento non riuscito.');
 
                 return redirect()->to($returnPath)->withInput();
             }
@@ -381,6 +393,28 @@ class Settings extends BaseController
     private function isMetaKey(string $key): bool
     {
         return str_ends_with($key, '_field_is_password') || str_ends_with($key, '_field_is_amount');
+    }
+
+    /**
+     * Valore cifrato da scrivere per un segreto del form, oppure null quando
+     * non va scritto nulla.
+     *
+     * cron_key è write-only nella pagina Impostazioni: il campo arriva vuoto a
+     * ogni salvataggio normale (il valore non viene più stampato), quindi
+     * vuoto significa "lascia la chiave attuale" e non "cancella il segreto".
+     * Per i token SdI il comportamento resta quello di prima (un campo vuoto
+     * scrive la stringa vuota), perché lì il valore è mostrato e modificabile.
+     *
+     * È privato e statico perché è una regola pura: il test la verifica senza
+     * database.
+     */
+    private static function encryptedSettingValue(string $key, string $value): ?string
+    {
+        if ($key === 'cron_key' && $value === '') {
+            return null;
+        }
+
+        return encrypt_secret($value);
     }
 
     /**
@@ -614,13 +648,13 @@ class Settings extends BaseController
     /**
      * Unisce i messaggi di validazione nel toast.
      *
-     * alerts.php stampa il flashdata così com'è (per permettere il markup), non
-     * lo scappa: i messaggi passano da esc() qui, perché contengono nomi di
-     * campo tradotti.
+     * I messaggi restano testo semplice, separati da un fine riga: è il toast
+     * (flash_html()) a scapparli una volta sola e a trasformare i fine riga in
+     * <br>. Scapparli anche qui li farebbe apparire con le entità visibili.
      */
     private function errorsToHtml(array $errors): string
     {
-        return implode('<br>', array_map(static fn (string $message): string => \esc($message), array_values($errors)));
+        return implode("\n", array_map(static fn ($message): string => (string) $message, array_values($errors)));
     }
 
     /**

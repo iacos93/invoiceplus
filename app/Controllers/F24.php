@@ -4,7 +4,9 @@ namespace App\Controllers;
 
 use App\Models\BankAccountModel;
 use App\Libraries\F24ReceiptParser;
+use App\Libraries\UploadGuard;
 use App\Models\F24Model;
+use CodeIgniter\HTTP\Files\UploadedFile;
 
 /**
  * F24 controller — deleghe di pagamento delle imposte.
@@ -69,17 +71,43 @@ class F24 extends BaseController
 
                 // Il modello F24 è un documento da conservare: si allega il
                 // file ricevuto, non si ridigitano i tributi riga per riga.
+                // Il form accetta PDF e scansioni JPG/PNG, quindi il controllo
+                // è quello degli allegati; un PDF resta comunque vincolato al
+                // MIME application/pdf.
                 $file = $request->getFile('f24_file');
-
-                if ($file && $file->isValid() && !$file->hasMoved()) {
-                    $dbArray['f24_file'] = $this->storeUpload($file);
-                }
 
                 // Quietanza caricata a mano: è la strada per quelle che
                 // l'importazione non ha saputo abbinare.
                 $receipt = $request->getFile('f24_receipt_file');
 
-                if ($receipt && $receipt->isValid() && !$receipt->hasMoved()) {
+                $uploadErrors = [];
+
+                $fileReason = $this->uploadReason($file, UploadGuard::KIND_ATTACHMENT);
+
+                if ($fileReason !== null) {
+                    $uploadErrors['f24_file'] = 'Modello non valido: ' . $fileReason;
+                }
+
+                $receiptReason = $this->uploadReason($receipt, UploadGuard::KIND_ATTACHMENT);
+
+                if ($receiptReason !== null) {
+                    $uploadErrors['f24_receipt_file'] = 'Quietanza non valida: ' . $receiptReason;
+                }
+
+                if ($uploadErrors !== []) {
+                    // La vista non mostra errori sui campi file: il messaggio
+                    // passa dal banner di layout, che è l'unico punto visibile
+                    // senza toccare il form.
+                    session()->setFlashdata('alert_error', implode(' ', $uploadErrors));
+
+                    return redirect()->to($id ? '/f24/form/' . $id : '/f24/form');
+                }
+
+                if ($file instanceof UploadedFile && $file->isValid() && !$file->hasMoved()) {
+                    $dbArray['f24_file'] = $this->storeUpload($file);
+                }
+
+                if ($receipt instanceof UploadedFile && $receipt->isValid() && !$receipt->hasMoved()) {
                     $dbArray['f24_receipt_file'] = $this->storeUpload($receipt);
                 }
 
@@ -191,14 +219,18 @@ class F24 extends BaseController
         $files   = $request->getFileMultiple('receipts') ?? [];
 
         foreach ($files as $file) {
-            if (!$file || !$file->isValid() || $file->hasMoved()) {
+            if (!$file instanceof UploadedFile || $file->getError() === UPLOAD_ERR_NO_FILE) {
                 continue;
             }
 
             $row = ['name' => $file->getClientName(), 'status' => 'unmatched', 'f24_id' => null];
 
-            if (strtolower($file->getClientExtension()) !== 'pdf') {
-                $results[] = $row + ['data' => null, 'reason' => 'Non è un PDF'];
+            // Una quietanza è un PDF: dimensione e MIME vengono verificati
+            // prima di passarne il contenuto al parser.
+            $reason = UploadGuard::checkUploadedFile($file, UploadGuard::KIND_PDF);
+
+            if ($reason !== null) {
+                $results[] = $row + ['data' => null, 'reason' => $reason];
                 continue;
             }
 
@@ -263,6 +295,22 @@ class F24 extends BaseController
         }
 
         return view('f24/import', ['results' => $results, 'matched' => $matched]);
+    }
+
+    /**
+     * Motivo per cui un allegato non è accettabile, null se va bene o se il
+     * campo è vuoto.
+     *
+     * getError() === UPLOAD_ERR_NO_FILE distingue "nessun file" da "file
+     * rifiutato dal server": solo il secondo va segnalato.
+     */
+    private function uploadReason(mixed $file, string $kind): ?string
+    {
+        if (!$file instanceof UploadedFile || $file->getError() === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+
+        return UploadGuard::checkUploadedFile($file, $kind);
     }
 
     private function storeUpload($file): string

@@ -87,8 +87,12 @@ class Session extends BaseConfig
      * Whether to destroy session data associated with the old session ID
      * when auto-regenerating the session ID. When set to FALSE, the data
      * will be later deleted by the garbage collector.
+     *
+     * Deve restare TRUE: al ricambio dell'ID (login, MFA, cambio permessi)
+     * il vecchio identificativo deve morire subito, altrimenti chi lo
+     * possiede continua a usare la stessa sessione fino alla scadenza.
      */
-    public bool $regenerateDestroy = false;
+    public bool $regenerateDestroy = true;
 
     /**
      * --------------------------------------------------------------------------

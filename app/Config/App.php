@@ -29,6 +29,12 @@ class App extends BaseConfig
 
         $this->baseURL = env('app.baseURL', $this->baseURL);
         $this->forceGlobalSecureRequests = (bool) env('app.forceGlobalSecureRequests', $this->forceGlobalSecureRequests);
+
+        // Content-Security-Policy: app.cspMode = off | report | enforce.
+        // Il default e' "report": il browser segnala nella console cosa
+        // bloccherebbe senza bloccarlo. La policy sta in
+        // Config\ContentSecurityPolicy, che legge la stessa chiave.
+        $this->CSPEnabled = ContentSecurityPolicy::mode() !== 'off';
     }
 
     /**

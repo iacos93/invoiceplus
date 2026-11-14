@@ -258,9 +258,14 @@
                     <li><?= anchor('security', '<i class="fa fa-solid fa-shield fa-margin" aria-hidden="true"></i>' . trans('security_title', '', 'Sicurezza account'), 'class="dropdown-item"') ?></li>
                     <li class="dropdown-divider"></li>
                     <li>
-                        <a href="<?= site_url('sessions/logout') ?>" class="dropdown-item text-danger">
-                            <i class="fa fa-solid fa-power-off fa-margin" aria-hidden="true"></i><?= trans('logout') ?>
-                        </a>
+                        <?php /* Uscita in POST: una GET la poteva far partire un
+                                 link di terzi (o un prefetch) senza un clic vero. */ ?>
+                        <form method="post" action="<?= site_url('sessions/logout') ?>" class="m-0">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="dropdown-item text-danger">
+                                <i class="fa fa-solid fa-power-off fa-margin" aria-hidden="true"></i><?= trans('logout') ?>
+                            </button>
+                        </form>
                     </li>
                 </ul>
             </div>

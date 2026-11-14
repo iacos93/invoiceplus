@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\UploadGuard;
 use App\Models\BankAccountModel;
 use App\Models\ExpenseCategoryModel;
 use App\Models\ExpenseModel;
@@ -425,6 +426,7 @@ class Expenses extends BaseController
         $skipped  = 0;
         $failed   = [];
         $rejected = [];
+        $warnings = [];
         $createdSuppliers = 0;
 
         // La lettura (.xml/.p7m/.zip) resta qui perché lavora su un file
@@ -432,7 +434,17 @@ class Expenses extends BaseController
         // fornitore, salvataggio spesa+XML — è nell'importer condiviso
         // anche con l'endpoint automatico SDICoop-Ricezione.
         foreach ($files as $file) {
-            if (!$file->isValid()) {
+            if (!$file instanceof \CodeIgniter\HTTP\Files\UploadedFile) {
+                continue;
+            }
+
+            // XML, .p7m o ZIP: prima di aprire il file si controllano
+            // estensione, dimensione e MIME reale. Un archivio enorme o un
+            // PDF rinominato .xml non devono arrivare al parser.
+            $reason = UploadGuard::checkUploadedFile($file, UploadGuard::KIND_XML);
+
+            if ($reason !== null) {
+                $failed[] = $file->getClientName() . ': ' . $reason;
                 continue;
             }
 
@@ -443,6 +455,7 @@ class Expenses extends BaseController
             $createdSuppliers += $outcome['created_suppliers'];
             $failed            = array_merge($failed, $outcome['failed']);
             $rejected          = array_merge($rejected, $outcome['rejected']);
+            $warnings          = array_merge($warnings, $outcome['warnings']);
         }
 
         $message = $imported . ' spese importate';
@@ -474,6 +487,18 @@ class Expenses extends BaseController
 
         if ($problems) {
             session()->setFlashdata('alert_error', $message . '. ' . implode('. ', $problems));
+        }
+
+        // Avvisi non bloccanti (per esempio una busta .p7m che OpenSSL non
+        // riesce a interpretare, o un firmatario scaduto): la spesa è stata
+        // importata, ma chi l'ha caricata deve saperlo. Toast separato dagli
+        // errori, così non si confonde con un import fallito.
+        if ($warnings) {
+            session()->setFlashdata(
+                'alert_warning',
+                'Avvisi: ' . implode('; ', array_slice($warnings, 0, 5))
+                . (count($warnings) > 5 ? '; …' : '')
+            );
         }
 
         return redirect()->to('/expenses');

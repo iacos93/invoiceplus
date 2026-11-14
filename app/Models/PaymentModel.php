@@ -139,11 +139,19 @@ class PaymentModel extends IpBaseModel
     }
 
     /**
-     * Alias per compatibilità con il modulo payments (admin).
+     * Una pagina della lista pagamenti, dal più recente.
+     *
+     * La lista usava getAllOrdered(): tutto lo storico degli incassi con
+     * quattro join a ogni apertura, senza tenere conto di "Numero di elementi
+     * nelle liste". Le esportazioni continuano a leggere tutto il periodo da
+     * getInPeriod(); qui serve solo ciò che si vede.
      */
-    public function getAllWithJoins(): array
+    public function getPage(int $perPage, int $page = 1): array
     {
-        return $this->getAllOrdered();
+        return $this->withJoins()
+            ->orderBy('ip_payments.payment_date', 'DESC')
+            ->orderBy('ip_payments.payment_id', 'DESC')
+            ->paginate($perPage, 'ip_payments', $page);
     }
 
     /**

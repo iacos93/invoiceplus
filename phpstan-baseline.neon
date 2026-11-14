@@ -1,0 +1,199 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Strict comparison using \=\=\= between ''development'' and ''testing'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Config/Database.php
+
+		-
+			message: '#^Left side of && is always true\.$#'
+			identifier: booleanAnd.leftAlwaysTrue
+			count: 1
+			path: app/Config/Events.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between ''development'' and ''testing'' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Config/Events.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''development'' and ''development'' will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 1
+			path: app/Config/Events.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''development'' and ''production'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Config/Logger.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<''Dom''\|''Gio''\|''Lun''\|''Mar''\|''Mer''\|''Sab''\|''Ven''\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Controllers/Calendar.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: app/Controllers/Clients.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between mixed and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Controllers/FiscalYears.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Controllers/InvoicesAjax.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed~''ricavo'' and ''ricavo'' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Controllers/Management.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''development'' and ''production'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Controllers/Mcp.php
+
+		-
+			message: '#^Offset ''gif''\|''jpeg''\|''jpg''\|''pdf''\|''png''\|''txt''\|''xml'' on array\{gif\: ''image/gif'', jpg\: ''image/jpeg'', jpeg\: ''image/jpeg'', pdf\: ''application/pdf'', png\: ''image/png'', txt\: ''text/plain'', xml\: ''application/xml''\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Controllers/Upload.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\{string, string\} will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Helpers/ip_helpers.php
+
+		-
+			message: '#^Offset 0 on array\{string, string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Helpers/ip_helpers.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Helpers/ip_helpers.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Helpers/url_helper.php
+
+		-
+			message: '#^Method App\\Libraries\\BankReconciler\:\:score\(\) never assigns null to &\$reasons so it can be removed from the by\-ref type\.$#'
+			identifier: parameterByRef.unusedType
+			count: 1
+			path: app/Libraries/BankReconciler.php
+
+		-
+			message: '#^Property Config\\Session\:\:\$lockMaxRetries \(int\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Libraries/PredisSessionHandler.php
+
+		-
+			message: '#^Property Config\\Session\:\:\$lockRetryInterval \(int\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Libraries/PredisSessionHandler.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Libraries/StatementImporter.php
+
+		-
+			message: '#^Parameter \#2 \$value of method DOMElement\:\:setAttribute\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Libraries/ZugferdXml.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Libraries/ZugferdXml.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int\|string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Models/CostingBudgetModel.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{limit\: float\|null, rate\: float\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Models/FiscalBracketModel.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Models/FiscalYearModel.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<int\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Models/UserClientModel.php
+
+		-
+			message: '#^Constant App\\Services\\ContactImporter\:\:CSV_DELIMITER is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ContactImporter.php
+
+		-
+			message: '#^Offset ''projection'' on array\{params\: array\<string, mixed\>, year\: int, exact\: bool, projection\: bool\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/FinanceReport.php
+
+		-
+			message: '#^Offset 1 on array\{int\|null, float\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/FinanceService.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\<string, mixed\>\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Services/InvoiceMath.php
+
+		-
+			message: '#^Parameter \#1 \$lines of static method App\\Services\\InvoiceMath\:\:documentSummary\(\) expects list\<array\{taxable\: float, exact\?\: float, rate\: float, natura\?\: string\|null\}\>, list\<array\{taxable\: float\}\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/InvoiceMath.php
+
+		-
+			message: '#^Comparison operation "\>\=" between int\<80400, 80699\> and 80400 is always true\.$#'
+			identifier: greaterOrEqual.alwaysTrue
+			count: 1
+			path: app/Services/SystemStatus.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 2
+			path: app/Services/SystemStatus.php

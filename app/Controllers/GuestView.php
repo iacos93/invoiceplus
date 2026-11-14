@@ -2,6 +2,8 @@
 
 namespace App\Controllers;
 
+use App\Libraries\GuestAccessThrottle;
+use App\Libraries\GuestPassword;
 use App\Models\InvoiceModel;
 use App\Models\InvoiceTaxRateModel;
 use App\Models\ItemModel;
@@ -55,9 +57,39 @@ class GuestView extends BaseController
             $submitted = $request->getPost('invoice_password');
 
             if ($submitted !== null) {
-                if (hash_equals(decrypt_secret((string) $invoice['invoice_password']), (string) $submitted)) {
+                $throttleKey = GuestAccessThrottle::key(
+                    'invoice',
+                    $invoiceUrlKey,
+                    (string) $request->getIPAddress()
+                );
+                $throttle = new GuestAccessThrottle();
+
+                // Tetto ai tentativi: la password si prova da un form anonimo,
+                // senza limite un elenco di password comuni la indovinava.
+                if ($throttle->blocked($throttleKey)) {
+                    session()->setFlashdata(
+                        'alert_error',
+                        trans('guest_unlock_too_many_attempts', '', 'Troppi tentativi, riprova tra qualche minuto.')
+                    );
+
+                    return redirect()->to('/guest/view/invoice/' . $invoiceUrlKey);
+                }
+
+                $check = GuestPassword::verify((string) $invoice['invoice_password'], (string) $submitted);
+
+                if ($check['ok']) {
+                    $throttle->clear($throttleKey);
+
+                    // Migrazione trasparente dal formato vecchio (cifrato con
+                    // encrypt_secret) al nuovo hash: il cliente non deve
+                    // reinserire la password, la colonna si aggiorna qui.
+                    if ($check['upgrade'] !== null) {
+                        $invoiceModel->replacePasswordHash((int) $invoice['invoice_id'], $check['upgrade']);
+                    }
+
                     session()->set($unlockKey, true);
                 } else {
+                    $throttle->hit($throttleKey);
                     session()->setFlashdata('alert_error', trans('wrong_invoice_password', '', 'Password errata'));
                 }
 
@@ -165,9 +197,37 @@ class GuestView extends BaseController
             $submitted = $request->getPost('quote_password');
 
             if ($submitted !== null) {
-                if (hash_equals(decrypt_secret((string) $quote['quote_password']), (string) $submitted)) {
+                $throttleKey = GuestAccessThrottle::key(
+                    'quote',
+                    $quoteUrlKey,
+                    (string) $request->getIPAddress()
+                );
+                $throttle = new GuestAccessThrottle();
+
+                // Stesso tetto delle fatture, con contatore separato: provare
+                // dieci volte su un preventivo non deve consumare i tentativi
+                // di una fattura diversa, né viceversa.
+                if ($throttle->blocked($throttleKey)) {
+                    session()->setFlashdata(
+                        'alert_error',
+                        trans('guest_unlock_too_many_attempts', '', 'Troppi tentativi, riprova tra qualche minuto.')
+                    );
+
+                    return redirect()->to('/guest/view/quote/' . $quoteUrlKey);
+                }
+
+                $check = GuestPassword::verify((string) $quote['quote_password'], (string) $submitted);
+
+                if ($check['ok']) {
+                    $throttle->clear($throttleKey);
+
+                    if ($check['upgrade'] !== null) {
+                        $quoteModel->replacePasswordHash((int) $quote['quote_id'], $check['upgrade']);
+                    }
+
                     session()->set($unlockKey, true);
                 } else {
+                    $throttle->hit($throttleKey);
                     session()->setFlashdata('alert_error', trans('wrong_quote_password', '', 'Password errata'));
                 }
 

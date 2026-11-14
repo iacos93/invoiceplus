@@ -2,7 +2,10 @@
 
 namespace App\Controllers;
 
+use App\Libraries\UploadGuard;
 use App\Models\ClientModel;
+use App\Models\InvoiceModel;
+use App\Models\QuoteModel;
 use App\Models\UploadModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -64,6 +67,81 @@ class Upload extends BaseController
     }
 
     /**
+     * L'url_key corrisponde a una fattura o a un preventivo dell'azienda?
+     *
+     * Il valore non è solo un pezzo del nome file: è il legame fra allegato e
+     * documento. Prima veniva accettato qualunque url_key, quindi si potevano
+     * creare allegati che non appartenevano a nessun documento (o a un
+     * documento di un'altra azienda) con un nome scelto da chi chiama.
+     *
+     * Se il documento ha un cliente, deve essere quello indicato nell'URL:
+     * l'allegato è del cliente, e un documento di un altro cliente nella
+     * stessa azienda non è una destinazione valida.
+     */
+    private function documentForUrlKey(string $urlKey, int $customerId): ?array
+    {
+        $invoice = (new InvoiceModel())
+            ->where('ip_invoices.invoice_url_key', $urlKey)
+            ->scopeToCompany()
+            ->first();
+
+        if ($invoice !== null) {
+            return $this->documentBelongsToClient($invoice, $customerId) ? $invoice : null;
+        }
+
+        $quote = (new QuoteModel())
+            ->where('ip_quotes.quote_url_key', $urlKey)
+            ->scopeToCompany()
+            ->first();
+
+        if ($quote !== null) {
+            return $this->documentBelongsToClient($quote, $customerId) ? $quote : null;
+        }
+
+        return null;
+    }
+
+    /** Un documento senza cliente resta valido (dati legacy); con cliente deve combaciare. */
+    private function documentBelongsToClient(array $document, int $customerId): bool
+    {
+        $documentClientId = (int) ($document['client_id'] ?? 0);
+
+        return $documentClientId === 0 || $documentClientId === $customerId;
+    }
+
+    /**
+     * Nome file ripulito e di lunghezza contenuta.
+     *
+     * sanitize_filename() toglie separatori di percorso e metacaratteri; il
+     * taglio preserva l'estensione, che serve al download per scegliere il
+     * content-type. Il prefisso url_key resta fuori da questo calcolo: il
+     * formato "{urlKey}_{nome}" degli allegati esistenti non cambia.
+     */
+    private function safeOriginalName(string $name): ?string
+    {
+        helper('security');
+
+        $name = basename(preg_replace('/\s+/', '_', $name) ?? $name);
+        $name = sanitize_filename($name);
+
+        if ($name === '' || $name === '.' || $name === '..') {
+            return null;
+        }
+
+        $max = 120;
+
+        if (mb_strlen($name) <= $max) {
+            return $name;
+        }
+
+        $extension = pathinfo($name, PATHINFO_EXTENSION);
+        $base      = pathinfo($name, PATHINFO_FILENAME);
+        $keep      = $max - ($extension !== '' ? mb_strlen($extension) + 1 : 0);
+
+        return mb_substr($base, 0, max(1, $keep)) . ($extension !== '' ? '.' . $extension : '');
+    }
+
+    /**
      * Riceve un file (campo 'file') e lo salva come
      * "{urlKey}_{nomefile}" in writable/uploads/customer_files/
      * (equivalente di upload_file() CI3, in JSON).
@@ -77,6 +155,22 @@ class Upload extends BaseController
             ]);
         }
 
+        // L'url_key arriva dall'URL e diventa il prefisso del nome su disco.
+        // Formato e documento vengono verificati prima di toccare il file.
+        if (!UploadGuard::isValidUrlKey($urlKey)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Documento non valido',
+            ]);
+        }
+
+        if ($this->documentForUrlKey($urlKey, $customerId) === null) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Documento non trovato',
+            ]);
+        }
+
         $file = $this->request->getFile('file');
 
         if ($file === null || !$file->isValid() || $file->hasMoved()) {
@@ -86,7 +180,14 @@ class Upload extends BaseController
             ]);
         }
 
-        $originalName = basename(preg_replace('/\s+/', '_', $file->getName()));
+        $originalName = $this->safeOriginalName($file->getName());
+
+        if ($originalName === null) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nome del file non valido',
+            ]);
+        }
 
         if (!in_array(strtolower(pathinfo($originalName, PATHINFO_EXTENSION)), self::ALLOWED_UPLOAD_EXTENSIONS, true)) {
             return $this->response->setJSON([
@@ -95,11 +196,23 @@ class Upload extends BaseController
             ]);
         }
 
+        // Dimensione e MIME reali: l'estensione da sola non dice niente.
+        $reason = UploadGuard::checkUploadedFile($file, UploadGuard::KIND_ATTACHMENT);
+
+        if ($reason !== null) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $reason,
+            ]);
+        }
+
         $targetName   = $urlKey . '_' . $originalName;
         $targetPath   = WRITEPATH . self::TARGET_DIR;
 
         if (!is_dir($targetPath)) {
-            mkdir($targetPath, 0777, true);
+            // 0755 e non 0777: la cartella non e' servita dal web, non deve
+            // essere scrivibile da qualunque utente della macchina.
+            mkdir($targetPath, 0755, true);
         }
 
         if (is_file($targetPath . $targetName)) {

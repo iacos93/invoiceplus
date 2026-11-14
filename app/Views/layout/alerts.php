@@ -9,6 +9,7 @@
 $toasts = [
     'success' => ['msg' => session()->getFlashdata('alert_success'), 'icon' => 'fa-solid fa-circle-check',        'variant' => 'success'],
     'info'    => ['msg' => session()->getFlashdata('alert_info'),    'icon' => 'fa-solid fa-circle-info',          'variant' => 'info'],
+    'warning' => ['msg' => session()->getFlashdata('alert_warning'), 'icon' => 'fa-solid fa-circle-exclamation',   'variant' => 'warning'],
     'error'   => ['msg' => session()->getFlashdata('alert_error'),   'icon' => 'fa-solid fa-triangle-exclamation', 'variant' => 'danger'],
 ];
 $toasts = array_filter($toasts, static fn($t) => !empty($t['msg']));
@@ -20,7 +21,7 @@ $toasts = array_filter($toasts, static fn($t) => !empty($t['msg']));
              data-bs-autohide="<?= $key === 'error' ? 'false' : 'true' ?>" data-bs-delay="5000">
             <div class="toast-body">
                 <i class="fa <?= esc($t['icon']) ?> ip-toast-icon" aria-hidden="true"></i>
-                <div class="ip-toast-message"><?= $t['msg'] ?></div>
+                <div class="ip-toast-message"><?= flash_html($t['msg']) ?></div>
                 <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="<?= esc(trans('close', '', 'Chiudi')) ?>"></button>
             </div>
         </div>

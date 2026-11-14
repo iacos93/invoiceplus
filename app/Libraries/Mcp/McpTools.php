@@ -429,9 +429,7 @@ class McpTools
                 'isError' => false,
             ];
         } catch (\Throwable $e) {
-            log_message('error', 'MCP tool ' . $name . ' fallito: ' . $e->getMessage() . ' (' . $e->getFile() . ':' . $e->getLine() . ')');
-
-            return self::error('Errore interno durante ' . $name . ': ' . $e->getMessage());
+            return self::internalError($name, $e);
         }
     }
 
@@ -529,6 +527,10 @@ class McpTools
         $invoice['tax_rates'] = (new InvoiceTaxRateModel())->getByInvoice($invoiceId);
         $invoice['payments'] = (new PaymentModel())->getByInvoice($invoiceId);
 
+        // La password del portale guest è un hash e non deve uscire dall'app:
+        // un agente non deve poterla portare via né nei log né nella risposta.
+        unset($invoice['invoice_password']);
+
         return $invoice;
     }
 
@@ -574,6 +576,9 @@ class McpTools
         }
 
         $quote['items'] = (new QuoteItemModel())->getByQuote($quoteId);
+
+        // Come get_invoice: l'hash della password non esce dall'app.
+        unset($quote['quote_password']);
 
         return $quote;
     }
@@ -961,6 +966,12 @@ class McpTools
 
         $invoice = self::scopedFind($model, $id, 'Fattura');
 
+        // Stesso blocco delle pagine: un agente non deve poter cambiare una
+        // fattura che l'interfaccia rifiuta di modificare.
+        if ($model->isLocked($invoice)) {
+            throw new \RuntimeException('Fattura bloccata (sola lettura): se è stata trasmessa allo SdI si corregge con una nota di credito');
+        }
+
         $update = [];
 
         foreach ([
@@ -1058,6 +1069,10 @@ class McpTools
         // Era l'unica mutazione che non passava da scopedFind(): con un id
         // qualsiasi l'agente cancellava la fattura di un'altra azienda.
         $invoice = self::scopedFind($model, $id, 'Fattura');
+
+        if ($model->isLocked($invoice)) {
+            throw new \RuntimeException('Fattura bloccata (sola lettura): non si elimina');
+        }
 
         $enableDeletion = get_setting('enable_invoice_deletion', 0);
 
@@ -1354,6 +1369,31 @@ class McpTools
             ?? (new UserModel())->orderBy('user_id', 'ASC')->first();
 
         return self::$defaultUserId = (int) ($user['user_id'] ?? 0);
+    }
+
+    /**
+     * Esito MCP per un'eccezione non gestita di un tool.
+     *
+     * Il messaggio al client resta generico: i dettagli di un errore interno
+     * (SQLSTATE, nomi di tabelle, percorsi) non devono uscire dall'app. Il
+     * dettaglio completo finisce nel log insieme a un identificativo breve,
+     * che il client riceve per correlare la segnalazione alla riga di log.
+     *
+     * @return array{content: array<int, array{type: string, text: string}>, isError: bool}
+     */
+    public static function internalError(string $tool, \Throwable $e): array
+    {
+        $correlationId = bin2hex(random_bytes(4));
+
+        log_message(
+            'error',
+            'MCP tool ' . $tool . ' fallito [' . $correlationId . ']: ' . $e->getMessage()
+                . ' (' . $e->getFile() . ':' . $e->getLine() . ')'
+        );
+
+        return self::error(
+            'Errore interno durante ' . $tool . '. Identificativo: ' . $correlationId
+        );
     }
 
     /** @return array{content: array<int, array{type: string, text: string}>, isError: bool} */

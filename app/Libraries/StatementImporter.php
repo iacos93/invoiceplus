@@ -13,10 +13,25 @@ namespace App\Libraries;
  * Ritorna sempre movimenti normalizzati: importo positivo in entrata, negativo
  * in uscita, così a valle non serve sapere da dove arrivano.
  *
+ * Il parser applica un proprio tetto di lettura (10 MB): i controller
+ * controllano già dimensione e MIME prima di chiamarlo, ma la difesa non deve
+ * dipendere dal chiamante. Oltre il limite si restituisce una lista vuota e si
+ * registra un errore nel log, senza eccezioni: per Reconciliation un estratto
+ * illeggibile e uno troppo grande sono lo stesso caso, "nessun movimento
+ * riconosciuto".
+ *
  * @phpstan-type Movement array{date: string, amount: float, description: string}
  */
 class StatementImporter
 {
+    /**
+     * Tetto di sicurezza sulla lettura, in byte.
+     *
+     * 10 MB coprono un estratto conto annuale anche ricco; un file più grande
+     * è quasi sempre un esportazione sbagliata o un invio non previsto.
+     */
+    private const MAX_BYTES = 10 * 1024 * 1024;
+
     /** Intestazioni riconosciute, in minuscolo e senza accenti. */
     private const DATE_HEADERS = ['data', 'data operazione', 'data contabile', 'date', 'booking date', 'data valuta'];
     private const DESC_HEADERS = ['descrizione', 'causale', 'descrizione operazione', 'description', 'dettagli', 'note'];
@@ -29,6 +44,22 @@ class StatementImporter
      */
     public function parse(string $path, string $originalName): array
     {
+        $size = @filesize($path);
+
+        if ($size === false) {
+            return [];
+        }
+
+        if ($size > self::MAX_BYTES) {
+            log_message(
+                'error',
+                'Estratto conto ignorato: ' . $originalName . ' supera il limite di lettura di '
+                . (self::MAX_BYTES / (1024 * 1024)) . ' MB (' . $size . ' byte).'
+            );
+
+            return [];
+        }
+
         $raw = (string) @file_get_contents($path);
 
         if (trim($raw) === '') {
@@ -51,11 +82,19 @@ class StatementImporter
     {
         $previous = libxml_use_internal_errors(true);
         // I namespace cambiano con la versione dello standard: rimuoverli
-        // evita di doverli registrare uno per uno.
+        // evita di doverli registrare uno per uno. Vanno tolti due segni
+        // distintivi, non uno: il prefisso degli elementi (ns2:Ntry) e la
+        // dichiarazione del namespace predefinito (xmlns="urn:iso:...").
+        // Con solo il primo, un CAMT.053 nella forma piu' diffusa — quella con
+        // <Document xmlns="..."> senza prefissi — restava nel suo namespace e
+        // //Ntry non trovava niente: l'import dichiarava zero movimenti senza
+        // alcun errore.
         // LIBXML_NONET: stesso hardening di FatturaPreview per XML di
         // provenienza esterna (qui l'estratto conto importato) -- niente
         // richieste di rete innescate dal parser.
-        $flat = simplexml_load_string(preg_replace('/(<\/?)[a-zA-Z0-9]+:/', '$1', $xml), \SimpleXMLElement::class, LIBXML_NONET);
+        $senzaNamespace = preg_replace('/(<\/?)[a-zA-Z0-9]+:/', '$1', $xml);
+        $senzaNamespace = preg_replace('/\sxmlns="[^"]*"/', '', (string) $senzaNamespace);
+        $flat = simplexml_load_string((string) $senzaNamespace, \SimpleXMLElement::class, LIBXML_NONET);
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
 
