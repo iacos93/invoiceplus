@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.10.0] — 2026-11-14
+
 **Da fare prima di aggiornare:** `php spark migrate` (aggiunge indici e, se
 esistono righe anteriori al multi-azienda, assegna quelle senza azienda
 all'azienda predefinita: vedi "Dati senza azienda" qui sotto) e un controllo di

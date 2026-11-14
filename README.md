@@ -277,8 +277,12 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.9.1`, che rende il
-secondo fattore tollerante agli scarti di orologio del dispositivo: i codici
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.10.0`, che
+rafforza la sicurezza (Content-Security-Policy applicata in produzione, tetto
+ai tentativi su accessi ed endpoint pubblici, controllo reale degli upload),
+blocca davvero le fatture in sola lettura e quelle trasmesse allo SdI, chiude
+il perimetro fra aziende e salva nel backup notturno anche i file caricati. La
+`v0.9.1` rende il secondo fattore tollerante agli scarti di orologio del dispositivo: i codici
 giusti non vengono più rifiutati per pochi secondi di differenza. La `v0.9.0`
 aggiunge script e guida per provare l'applicazione sul proprio computer con
 dati demo, e invia le email anche in testo semplice per i client che non
