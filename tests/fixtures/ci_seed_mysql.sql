@@ -59,6 +59,14 @@ VALUES
      'Via di Prova 1', 'Roma', 'RM', '00100', 'IT',
      '0600000000', 'azienda@example.com', 'SRL', true, true,
      CURRENT_TIMESTAMP, 1, 1, 2, 2, 'separata',
+     false, '0000000'),
+    -- Una seconda azienda, senza documenti: i test sul perimetro provano che
+    -- da qui non si tocca nulla della prima. Con una sola azienda si saltano,
+    -- e la CI fallisce su ogni salto.
+    (2, 'Seconda azienda di prova S.r.l.', 'IT09876543210', '09876543210',
+     'Via di Prova 2', 'Milano', 'MI', '20100', 'IT',
+     '0200000000', 'seconda@example.com', 'SRL', false, true,
+     CURRENT_TIMESTAMP, 1, 1, 2, 2, 'separata',
      false, '0000000');
 
 -- Un amministratore attivo: il flusso di lavoro fa l'accesso con questa email e
@@ -142,8 +150,8 @@ INSERT INTO ip_fiscal_years (fiscal_id, fiscal_year, fiscal_is_projection, compa
 VALUES (1, YEAR(CURRENT_DATE), false, 1);
 
 INSERT INTO ip_bank_accounts
-    (bank_account_id, bank_account_name, bank_account_is_default)
-VALUES (1, 'Conto di prova', true);
+    (bank_account_id, bank_account_name, bank_account_is_default, company_id)
+VALUES (1, 'Conto di prova', true, 1);
 
 INSERT INTO ip_email_templates
     (email_template_id, email_template_title, email_template_type,
