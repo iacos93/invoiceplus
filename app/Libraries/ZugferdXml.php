@@ -107,7 +107,7 @@ class ZugferdXml
     protected function dateElement($date)
     {
         $el = $this->el('udt:DateTimeString', $this->zugferdFormattedDate($date));
-        $el->setAttribute('format', 102);
+        $el->setAttribute('format', '102');
 
         return $el;
     }

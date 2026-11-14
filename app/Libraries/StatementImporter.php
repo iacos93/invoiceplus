@@ -152,7 +152,7 @@ class StatementImporter
         $movements = [];
 
         while (($row = fgetcsv($handle, 0, $delimiter, '"', '\\')) !== false) {
-            if ($row === [null] || $row === false) {
+            if ($row === [null]) {
                 continue;
             }
 

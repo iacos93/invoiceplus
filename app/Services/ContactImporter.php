@@ -19,8 +19,6 @@ use App\Models\SupplierModel;
  */
 class ContactImporter
 {
-    private const CSV_DELIMITER = CsvReader::DELIMITER;
-
     /**
      * Importa clienti da file CSV.
      *
