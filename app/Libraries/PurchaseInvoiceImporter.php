@@ -2,6 +2,7 @@
 
 namespace App\Libraries;
 
+use App\Libraries\Sdi\P7mSignature;
 use App\Models\ExpenseModel;
 use App\Models\SupplierModel;
 
@@ -41,16 +42,24 @@ class PurchaseInvoiceImporter
      * semplicemente non è una spesa di questa azienda (una fattura emessa,
      * un documento intestato a un'altra società, un'integrazione TD16).
      *
-     * @return array{imported: int, skipped: int, created_suppliers: int, failed: list<string>, rejected: list<string>}
+     * "warnings" raccoglie i problemi non bloccanti di un .p7m: firma non
+     * verificabile o certificato del firmatario scaduto. Il documento viene
+     * importato lo stesso (vedi P7mSignature).
+     *
+     * @return array{imported: int, skipped: int, created_suppliers: int, failed: list<string>, rejected: list<string>, warnings: list<string>}
      */
     public function importFromPath(string $path, string $originalName, ?int $categoryId = null): array
     {
-        $result = ['imported' => 0, 'skipped' => 0, 'created_suppliers' => 0, 'failed' => [], 'rejected' => []];
+        $result = ['imported' => 0, 'skipped' => 0, 'created_suppliers' => 0, 'failed' => [], 'rejected' => [], 'warnings' => []];
 
         $documents = $this->reader->extract($path, $originalName);
 
         if ($documents === []) {
-            $result['failed'][] = $originalName . ': formato non riconosciuto (atteso XML, .p7m o ZIP)';
+            // Un limite di sicurezza o una firma non valida hanno un motivo
+            // preciso: dirlo è più utile di "formato non riconosciuto".
+            $reason = $this->reader->lastError();
+
+            $result['failed'][] = $originalName . ': ' . ($reason ?? 'formato non riconosciuto (atteso XML, .p7m o ZIP)');
 
             return $result;
         }
@@ -62,6 +71,15 @@ class PurchaseInvoiceImporter
         // così un rifiuto o un errore dice quale fattura riguarda.
         $pieces = [];
         foreach ($documents as $document) {
+            $warning = ($document['signature'] ?? null) !== null
+                ? P7mSignature::warning($document['signature'])
+                : null;
+
+            if ($warning !== null) {
+                $result['warnings'][] = $document['name'] . ': ' . $warning;
+                log_message('warning', 'Import fattura passiva ' . $document['name'] . ': ' . $warning);
+            }
+
             $bodies = $this->reader->splitBodies($document['xml']);
 
             foreach ($bodies as $i => $bodyXml) {

@@ -88,6 +88,23 @@ non compaiono i prezzi, ma quantità, descrizioni e riferimenti.
 
 ## Da sapere
 
+- **Fatture bloccate.** Una fattura trasmessa allo SdI diventa di sola
+  lettura: la pagina di modifica non si apre, le righe, le imposte e il
+  cliente non si cambiano, e non si elimina. Il motivo è che lo SdI ha la
+  copia a cui l'app deve restare uguale; per correggerla si emette una nota di
+  credito. Restano possibili i pagamenti e le note di credito. Lo scarto
+  (`NS`) la sblocca da sola, perché va corretta e rinviata. Dalla scheda,
+  accanto a "Bloccata", compare **Sblocca** per le fatture che lo SdI non ha
+  per buone: importate da un altro gestionale, mai trasmesse, scartate o solo
+  scaricate dal canale manuale. Con il canale manuale la fattura si blocca
+  quando registri l'esito dalla pagina (per esempio la ricevuta di consegna),
+  non quando scarichi l'XML. Le fatture importate dal vecchio gestionale sono
+  segnate in sola lettura e prima di questo aggiornamento nessuna pagina lo
+  rispettava: ora sì, e per correggerle serve **Sblocca**.
+- **Avvisi dello SdI.** Con SDICoop, uno scarto, una mancata consegna o
+  un'impossibilità di recapito alla PA arrivano anche per email alla casella
+  di sistema (o al primo amministratore), con il motivo e cosa fare. Serve una
+  casella di invio configurata in Impostazioni > Email e mittenti.
 - Il link pubblico della fattura (`guest/view/invoice/...`) mostra il
   documento a chi lo possiede; il PDF si scarica da lì senza account.
 - Una fattura vista dal cliente passa a "vista" solo se lo stato era ancora

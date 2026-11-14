@@ -41,6 +41,9 @@ final class SystemStatus
     /** PHP minimo richiesto da composer.json. */
     public const PHP_MIN_VERSION_ID = 80400;
 
+    /** Giorni alla scadenza del certificato SDICoop sotto i quali si avvisa. */
+    public const CERT_WARNING_DAYS = 45;
+
     public function __construct(
         private string $writablePath,
         private string $backupDir,
@@ -65,11 +68,13 @@ final class SystemStatus
             $this->phpCheck(),
             $this->writableCheck(),
             $this->backupCheck(),
+            $this->filesBackupCheck(),
             $this->restoreCheck(),
             $this->cronCheck(),
             $this->environmentCheck(),
             $this->diskCheck(),
             $this->logCheck(),
+            $this->orphanCheck(),
         ];
     }
 
@@ -475,6 +480,73 @@ final class SystemStatus
     }
 
     /**
+     * Righe per-azienda rimaste senza company_id.
+     *
+     * Da quando l'eccezione `company_id IS NULL` è stata tolta dalle query,
+     * una riga senza azienda non compare in nessuna lista: il conteggio deve
+     * restare a zero, e un valore diverso da zero dice che qualcosa scrive
+     * senza `company_id`. Qui si legge solo il conteggio: il backfill non
+     * parte da una pagina di stato. Senza database raggiungibile il controllo
+     * avvisa invece di rompere la pagina.
+     *
+     * @param array{total?: int, tables?: array<string, array{nulls?: int, total?: int}>}|null $conteggi
+     *        conteggi già calcolati (test), null per interrogarli ora
+     *
+     * @return array{key: string, label: string, state: string, detail: string, hint: string}
+     */
+    public function orphanCheck(?array $conteggi = null): array
+    {
+        $label = 'Dati senza azienda';
+
+        if ($conteggi === null) {
+            try {
+                $conteggi = (new CompanyOrphanReport())->counts();
+            } catch (\Throwable $e) {
+                log_message('error', 'Stato del sistema: conteggio delle righe senza azienda fallito: ' . $e->getMessage());
+
+                return [
+                    'key'    => 'company_orphans',
+                    'label'  => $label,
+                    'state'  => self::WARNING,
+                    'detail' => 'Conteggio non eseguibile',
+                    'hint'   => 'Il database non risponde o lo schema non è leggibile. Quando torna raggiungibile, `php spark companies:orphans` elenca le righe per-azienda senza company_id.',
+                ];
+            }
+        }
+
+        $totale = (int) ($conteggi['total'] ?? 0);
+
+        if ($totale === 0) {
+            return [
+                'key'    => 'company_orphans',
+                'label'  => $label,
+                'state'  => self::OK,
+                'detail' => 'Nessuna riga per-azienda con company_id NULL',
+                'hint'   => '',
+            ];
+        }
+
+        $tabelle = array_filter(
+            $conteggi['tables'] ?? [],
+            static fn (array $c): bool => (int) ($c['nulls'] ?? 0) > 0
+        );
+
+        return [
+            'key'    => 'company_orphans',
+            'label'  => $label,
+            'state'  => self::WARNING,
+            'detail' => sprintf(
+                '%d %s in %d %s senza company_id',
+                $totale,
+                $totale === 1 ? 'riga' : 'righe',
+                count($tabelle),
+                count($tabelle) === 1 ? 'tabella' : 'tabelle'
+            ),
+            'hint'   => 'Finché restano, quelle righe sono visibili a tutte le aziende e finiscono nei loro totali. Esegui `php spark companies:orphans` per l\'elenco e, dopo un backup, `php spark companies:orphans --fix` per assegnarle all\'azienda predefinita.',
+        ];
+    }
+
+    /**
      * Versioni delle migrazioni non ancora applicate.
      *
      * findMigrations() indicizza i risultati per UID
@@ -527,6 +599,174 @@ final class SystemStatus
         usort($checks, static fn (array $a, array $b): int => ($gravita[$a['state']] ?? 3) <=> ($gravita[$b['state']] ?? 3));
 
         return $checks;
+    }
+
+    /**
+     * Copia dei file caricati (FilesBackup).
+     *
+     * Il dump del database non contiene gli XML delle fatture ricevute ne' gli
+     * allegati: senza questa copia, perdere il server vuol dire perderli. Un
+     * avviso e non un guasto, perche' manca anche su un'installazione appena
+     * fatta, prima del primo giro notturno.
+     *
+     * @return array{key: string, label: string, state: string, detail: string, hint: string}
+     */
+    public function filesBackupCheck(): array
+    {
+        $label = 'Backup dei file';
+        $files = $this->newestFiles($this->backupDir, 'files_*.zip');
+
+        if ($files === []) {
+            return [
+                'key'    => 'files_backup',
+                'label'  => $label,
+                'state'  => self::WARNING,
+                'detail' => 'Nessuna copia dei file caricati in writable/backups',
+                'hint'   => 'Il backup notturno salva anche writable/uploads (XML delle fatture ricevute, allegati, F24). Se il database e\' gia\' salvato e i file no, guarda il log di cron/backup: probabilmente manca l\'estensione PHP zip o lo spazio su disco.',
+            ];
+        }
+
+        [$file, $mtime] = $files[0];
+        $size           = (int) filesize($file);
+        $age            = max(0, $this->now - $mtime);
+        $vecchio        = $age > self::BACKUP_MAX_AGE;
+
+        return [
+            'key'    => 'files_backup',
+            'label'  => $label,
+            'state'  => $vecchio || $size === 0 ? self::WARNING : self::OK,
+            'detail' => basename($file) . ', ' . self::formatBytes($size) . ', ' . self::age($age),
+            'hint'   => $vecchio || $size === 0
+                ? 'L\'ultima copia dei file e\' vecchia o vuota, mentre il dump del database puo\' essere recente: il backup dei file ha smesso di riuscire. Guarda il log di cron/backup.'
+                : '',
+        ];
+    }
+
+    /**
+     * Scadenza del certificato client SDICoop.
+     *
+     * Con SDICoop si e' autenticati con un certificato che scade. Quando scade
+     * l'invio e la ricezione si fermano senza un errore evidente: lo SdI
+     * chiude l'handshake TLS e nessuna pagina dell'app se ne accorge; nel
+     * forum degli sviluppatori italiani (thread sul rinnovo dei certificati
+     * SDICoop) i rinnovi mancati compaiono come causa tipica di una ricezione
+     * muta. Il controllo parla solo del certificato che l'app puo'
+     * leggere (quello client); quello del server web, che l'app non vede, va
+     * tenuto d'occhio a parte.
+     *
+     * @return array{key: string, label: string, state: string, detail: string, hint: string}
+     */
+    public function sdiCertificateCheck(string $channel, string $certPath): array
+    {
+        $label = 'Certificato SDICoop';
+
+        if ($channel !== 'sdicoop') {
+            return ['key' => 'sdi_cert', 'label' => $label, 'state' => self::OK, 'detail' => 'Canale SDICoop non in uso', 'hint' => ''];
+        }
+
+        $hint = 'Con il certificato scaduto invio e ricezione si fermano senza errori visibili. Rinnovalo con largo anticipo e tieni d\'occhio anche quello del server web, che l\'app non puo\' leggere.';
+
+        if ($certPath === '') {
+            return ['key' => 'sdi_cert', 'label' => $label, 'state' => self::WARNING, 'detail' => 'Percorso del certificato client non impostato', 'hint' => 'Impostalo in Impostazioni > Fattura elettronica > SDICoop.'];
+        }
+
+        if (! is_file($certPath) || ! is_readable($certPath)) {
+            return ['key' => 'sdi_cert', 'label' => $label, 'state' => self::ERROR, 'detail' => 'Certificato non leggibile: ' . $certPath, 'hint' => 'Controlla il percorso e i permessi del file: senza, l\'app non puo\' autenticarsi presso lo SdI.'];
+        }
+
+        $info = function_exists('openssl_x509_parse') ? @openssl_x509_parse((string) file_get_contents($certPath)) : false;
+
+        if (! is_array($info) || empty($info['validTo_time_t'])) {
+            return ['key' => 'sdi_cert', 'label' => $label, 'state' => self::WARNING, 'detail' => 'Non riesco a leggere la scadenza di ' . basename($certPath), 'hint' => 'Il file deve essere un certificato in formato PEM (puo\' contenere anche la chiave).'];
+        }
+
+        $scadenza = (int) $info['validTo_time_t'];
+        $giorni   = (int) floor(($scadenza - $this->now) / 86400);
+        $data     = date('d/m/Y', $scadenza);
+
+        if ($scadenza <= $this->now) {
+            return ['key' => 'sdi_cert', 'label' => $label, 'state' => self::ERROR, 'detail' => 'Scaduto il ' . $data, 'hint' => $hint];
+        }
+
+        if ($giorni < self::CERT_WARNING_DAYS) {
+            return ['key' => 'sdi_cert', 'label' => $label, 'state' => self::WARNING, 'detail' => 'Scade tra ' . $giorni . ($giorni === 1 ? ' giorno' : ' giorni') . ' (' . $data . ')', 'hint' => $hint];
+        }
+
+        return ['key' => 'sdi_cert', 'label' => $label, 'state' => self::OK, 'detail' => 'Valido fino al ' . $data . ' (' . $giorni . ' giorni)', 'hint' => ''];
+    }
+
+    /**
+     * Fatture di acquisto consegnate dallo SdI e non ancora diventate spese.
+     *
+     * L'endpoint di ricezione scrive il file in incoming/ e solo dopo prova a
+     * importarlo, e risponde ER01 comunque: per lo SdI la fattura e' consegnata
+     * e non la rimanda piu'. Se l'importazione non riesce (nessuna azienda con
+     * quella partita IVA, XML illeggibile, errore del database) l'unica traccia
+     * e' una riga nel log e il file su disco, e il file non lo aspetta nessuno.
+     * Qui lo si rende visibile.
+     *
+     * Una spesa importata porta il nome del file in expense_file; per un
+     * .p7m il nome e' quello interno e per un lotto ha un suffisso "(fattura
+     * 1 di 2)", quindi il confronto e' sul nome senza estensione di busta. Le
+     * notifiche (decorrenza termini, metadati) stanno nella stessa cartella ma
+     * non sono fatture e si escludono dal nome.
+     *
+     * @param list<string> $nomiImportati valori di ip_expenses.expense_file
+     *
+     * @return array{key: string, label: string, state: string, detail: string, hint: string}
+     */
+    public function incomingCheck(array $nomiImportati): array
+    {
+        $dir   = $this->writablePath . '/uploads/expenses/incoming';
+        $label = 'Fatture ricevute dallo SdI';
+
+        if (! is_dir($dir)) {
+            return ['key' => 'incoming', 'label' => $label, 'state' => self::OK, 'detail' => 'Nessuna fattura ricevuta dallo SdI', 'hint' => ''];
+        }
+
+        $inAttesa = [];
+
+        foreach (scandir($dir) ?: [] as $nome) {
+            if ($nome === '.' || $nome === '..' || ! is_file($dir . '/' . $nome)) {
+                continue;
+            }
+
+            // Metadati (_MT_) e notifiche (_DT_, _NS_, ...): non sono fatture.
+            if (preg_match('/_(MT|DT|NS|RC|NE|MC|AT|EC)_\d+\.xml$/i', $nome) === 1) {
+                continue;
+            }
+
+            $radice = (string) preg_replace('/\.p7m$/i', '', $nome);
+            $trovata = false;
+
+            foreach ($nomiImportati as $importato) {
+                if ($importato !== '' && str_starts_with($importato, $radice)) {
+                    $trovata = true;
+
+                    break;
+                }
+            }
+
+            if (! $trovata) {
+                $inAttesa[] = $nome;
+            }
+        }
+
+        if ($inAttesa === []) {
+            return ['key' => 'incoming', 'label' => $label, 'state' => self::OK, 'detail' => 'Tutte le fatture ricevute sono state importate', 'hint' => ''];
+        }
+
+        $elenco = implode(', ', array_slice($inAttesa, 0, 3)) . (count($inAttesa) > 3 ? '…' : '');
+
+        return [
+            'key'    => 'incoming',
+            'label'  => $label,
+            'state'  => self::WARNING,
+            'detail' => count($inAttesa) === 1
+                ? '1 fattura ricevuta e non importata: ' . $elenco
+                : count($inAttesa) . ' fatture ricevute e non importate: ' . $elenco,
+            'hint'   => 'Lo SdI le considera consegnate e non le rimanda. Importale da Spese > Importa XML, scegliendo il file in writable/uploads/expenses/incoming; la causa piu\' frequente e\' un committente la cui partita IVA non coincide con nessuna azienda (il log ha la riga "SDIRicezione").',
+        ];
     }
 
     /**

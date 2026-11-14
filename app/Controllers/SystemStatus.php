@@ -26,6 +26,8 @@ class SystemStatus extends BaseController
 
         $checks[] = $this->databaseCheck();
         $checks[] = $this->migrationCheck();
+        $checks[] = $this->incomingCheck($service);
+        $checks[] = $service->sdiCertificateCheck((string) get_setting('sdi_channel', 'manual'), (string) get_setting('sdi_coop_cert_path', ''));
 
         return view('system/status', [
             'title'  => trans('system_status', '', 'Stato del sistema'),
@@ -104,6 +106,29 @@ class SystemStatus extends BaseController
                 'hint'   => 'Controlla i parametri del gruppo "' . $group . '" nel .env e che il server sia raggiungibile.',
             ];
         }
+    }
+
+    /**
+     * Nomi dei file gia' diventati spesa, per confrontarli con quelli arrivati
+     * dallo SdI. Un elenco di nomi di file, senza importi ne' fornitori: la
+     * cartella incoming/ e' unica per tutte le aziende, e il confronto con le
+     * spese di una sola non direbbe quali fatture mancano davvero.
+     *
+     * @return array{key: string, label: string, state: string, detail: string, hint: string}
+     */
+    private function incomingCheck(SystemStatusService $service): array
+    {
+        try {
+            $nomi = array_column(
+                \Config\Database::connect()->table('ip_expenses')->select('expense_file')->where('expense_file <>', '')->get()->getResultArray(),
+                'expense_file'
+            );
+        } catch (\Throwable $e) {
+            // Senza database il controllo "Database" lo dice gia'.
+            $nomi = [];
+        }
+
+        return $service->incomingCheck(array_map('strval', $nomi));
     }
 
     /**

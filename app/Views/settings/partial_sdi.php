@@ -202,39 +202,20 @@
                              ma agganciato allo stesso canale "sdicoop" nel selettore per
                              semplicita' (in pratica chi richiede l'uno spesso richiede anche
                              l'altro, e certificato/chiave sono condivisi). Vedi
-                             SdiRicezioneEndpoint — è uno scheletro, non testato end-to-end
-                             senza un accreditamento reale. -->
+                             SdiRicezioneEndpoint — provato in locale con uno SdI simulato e
+                             TLS mutuo (docs/sdicoop.md) e coperto da test automatici; non
+                             ancora provato con lo SdI vero, che richiede l'accreditamento.
+                             L'esito del committente (SdIRiceviNotifica) non e' implementato:
+                             serve solo verso la PA, e i due campi che lo prevedevano non
+                             erano letti da nessuna parte. -->
                         <div class="sdi-group" data-channels="sdicoop">
                             <h6 class="ip-settings-subtitle"><?= trans('sdi_ricezione_section', '', 'Ricezione fatture di acquisto via SDICoop (accreditamento separato)') ?></h6>
                             <div class="alert alert-warning small">
                                 <i class="fa fa-solid fa-exclamation-triangle" aria-hidden="true"></i>
-                                <?= trans('sdi_ricezione_warning', '', 'Richiede un accreditamento SOGEI specifico come canale di ricezione (distinto da quello di trasmissione) e l\'endpoint pubblico /sdi-ricezione/{token} raggiungibile 24/7 per il webservice RicezioneFatture. Implementazione non ancora validata nei test di interoperabilita\' SOGEI.') ?>
+                                <?= trans('sdi_ricezione_warning', '', 'Richiede un accreditamento SOGEI specifico come canale di ricezione (distinto da quello di trasmissione) e l\'endpoint pubblico /sdi-ricezione/{token} raggiungibile 24/7 per il webservice RicezioneFatture, con TLS mutuo sul webserver (vedi la guida SDICoop). Provato in locale con uno SdI simulato, non ancora con quello vero: controlla in Spese la prima fattura che arriva. Le fatture che non corrispondono a nessuna azienda, o che non si riescono a leggere, restano in writable/uploads/expenses/incoming e si importano a mano da Spese > Importa XML.') ?>
                             </div>
                             <div class="row">
                                 <div class="col-12 col-md-6">
-                                    <div class="ip-doc-field">
-                                        <label class="ip-doc-label" for="settings[sdi_ricezione_notifica_endpoint]">
-                                            <?= trans('sdi_ricezione_notifica_endpoint', '', 'Endpoint SdIRiceviNotifica (comunicato da SOGEI)') ?>
-                                        </label>
-                                        <input type="text" name="settings[sdi_ricezione_notifica_endpoint]" id="settings[sdi_ricezione_notifica_endpoint]"
-                                                class="form-control"
-                                                value="<?= esc(old('settings[sdi_ricezione_notifica_endpoint]', get_setting('sdi_ricezione_notifica_endpoint'))) ?>"
-                                                placeholder="https://...sogei.it/SdIRiceviNotifica">
-                                    </div>
-
-                                    <div class="ip-doc-field">
-                                        <label class="ip-doc-label" for="settings[sdi_ricezione_notifica_wsdl]">
-                                            <?= trans('sdi_ricezione_notifica_wsdl', '', 'Percorso locale del WSDL SdIRiceviNotifica') ?>
-                                        </label>
-                                        <input type="text" name="settings[sdi_ricezione_notifica_wsdl]" id="settings[sdi_ricezione_notifica_wsdl]"
-                                                class="form-control"
-                                                value="<?= esc(old('settings[sdi_ricezione_notifica_wsdl]', get_setting('sdi_ricezione_notifica_wsdl'))) ?>"
-                                                placeholder="/percorso/sicuro/fuori/dalla/webroot/SdIRiceviNotifica_v1.0.wsdl">
-                                        <p class="ip-field-help">
-                                            <?= trans('sdi_ricezione_cert_hint', '', 'Certificato e chiave client sono quelli già configurati sopra per SDICoop (invio): il canale di ricezione, quando accreditato insieme, li riusa.') ?>
-                                        </p>
-                                    </div>
-
                                     <div class="ip-doc-field">
                                         <label class="ip-doc-label" for="settings[sdi_ricezione_default_expense_category_id]">
                                             <?= trans('sdi_ricezione_default_expense_category_id', '', 'Categoria spesa predefinita per l\'import automatico') ?>

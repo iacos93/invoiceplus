@@ -204,7 +204,12 @@ class InvoiceAmountModel extends IpBaseModel
 
         $readOnlyToggle = (int) get_setting('read_only_toggle', 0);
 
-        if ($readOnlyToggle > 0 && $status >= $readOnlyToggle && (int) $row['is_read_only'] !== 1) {
+        // Mai una bozza: l'opzione "Bozza" dell'impostazione vorrebbe dire
+        // bloccare ogni fattura appena la si ricalcola, cioe' appena salvata la
+        // prima riga. Finche' il flag non lo leggeva nessuno era innocuo; ora
+        // che le pagine lo rispettano renderebbe le bozze impossibili da
+        // completare. Il blocco parte dalla prima emissione (stato 2).
+        if ($readOnlyToggle > 0 && $status >= max(2, $readOnlyToggle) && (int) $row['is_read_only'] !== 1) {
             $update['is_read_only'] = 1;
         }
 

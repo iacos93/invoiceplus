@@ -2,6 +2,7 @@
 
 namespace App\Libraries;
 
+use App\Libraries\Sdi\P7mSignature;
 use App\Models\ClientModel;
 use App\Models\InvoiceAmountModel;
 use App\Models\InvoiceGroupModel;
@@ -51,6 +52,10 @@ class SalesInvoiceImporter
     /**
      * Importa i documenti di un file (.xml, .p7m, ZIP, lotti compresi).
      *
+     * "warnings" raccoglie i problemi non bloccanti di un .p7m (firma non
+     * verificabile, certificato del firmatario scaduto) insieme ai totali
+     * ricalcolati che non tornano: il documento viene importato lo stesso.
+     *
      * @return array{imported: int, skipped: int, created_clients: int, failed: list<string>, rejected: list<string>, warnings: list<string>}
      */
     public function importFromPath(string $path, string $originalName): array
@@ -60,7 +65,11 @@ class SalesInvoiceImporter
         $documents = $this->reader->extract($path, $originalName);
 
         if ($documents === []) {
-            $result['failed'][] = $originalName . ': formato non riconosciuto (atteso XML, .p7m o ZIP)';
+            // Un limite di sicurezza o una firma non valida hanno un motivo
+            // preciso: dirlo è più utile di "formato non riconosciuto".
+            $reason = $this->reader->lastError();
+
+            $result['failed'][] = $originalName . ': ' . ($reason ?? 'formato non riconosciuto (atteso XML, .p7m o ZIP)');
 
             return $result;
         }
@@ -68,6 +77,15 @@ class SalesInvoiceImporter
         $maxNumber = 0;
 
         foreach ($documents as $document) {
+            $warning = ($document['signature'] ?? null) !== null
+                ? P7mSignature::warning($document['signature'])
+                : null;
+
+            if ($warning !== null) {
+                $result['warnings'][] = $document['name'] . ': ' . $warning;
+                log_message('warning', 'Import fattura emessa ' . $document['name'] . ': ' . $warning);
+            }
+
             $bodies = $this->reader->splitBodies($document['xml']);
 
             foreach ($bodies as $i => $bodyXml) {

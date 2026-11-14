@@ -28,15 +28,29 @@ class SdiApiChannel implements SdiChannelInterface
 {
     public function send(string $xml, string $filename, array $invoice): array
     {
-        $endpoint = (string) get_setting('sdi_api_endpoint', '');
+        $endpoint = $this->endpoint();
 
         if ($endpoint === '') {
             return ['ok' => false, 'message' => 'Endpoint API del trasmittente non configurato (Impostazioni > SdI)'];
         }
 
+        // Solo HTTPS: l'endpoint porta credenziali Basic nel header e non
+        // deve mai essere raggiunto in chiaro. Qualunque altro schema
+        // (http, ftp, file) viene rifiutato prima di aprire la connessione.
+        if (($problem = self::endpointProblem($endpoint)) !== null) {
+            log_message('error', 'SdiApiChannel: ' . $problem);
+
+            return ['ok' => false, 'message' => $problem];
+        }
+
         try {
             $client = \Config\Services::curlrequest([
-                'timeout' => 60,
+                'timeout'         => 60,
+                // Nessun redirect: un 301/302 verso un altro host (o verso
+                // http) porterebbe le credenziali Basic fuori dal dominio
+                // configurato. Una risposta 3xx viene trattata come rifiuto.
+                'allow_redirects' => false,
+                'verify'          => true,
             ]);
 
             $headers = [
@@ -60,10 +74,48 @@ class SdiApiChannel implements SdiChannelInterface
 
             return $this->parseResponse($response);
         } catch (\Throwable $e) {
-            log_message('error', 'Invio SdI via API fallito: ' . $e->getMessage());
+            // Il messaggio cURL puo' citare host o URL: prima di scriverlo
+            // nel log si tolgono endpoint e credenziali.
+            $dettaglio = SdiPayloadGuard::redact($e->getMessage());
+            log_message('error', 'Invio SdI via API fallito: ' . $dettaglio);
 
-            return ['ok' => false, 'message' => 'Errore di trasmissione: ' . $e->getMessage()];
+            return [
+                'ok'      => false,
+                'message' => 'Errore di trasmissione verso il trasmittente: verificare endpoint e connettivita\' (dettaglio nel log)',
+            ];
         }
+    }
+
+    /**
+     * Endpoint configurato (Impostazioni > SdI). Protetto per i test: la
+     * validazione dell'URL si prova senza database ne' rete.
+     */
+    protected function endpoint(): string
+    {
+        return (string) get_setting('sdi_api_endpoint', '');
+    }
+
+    /**
+     * Problema dell'endpoint, o null se e' un URL https utilizzabile.
+     *
+     * Il messaggio non ripete l'URL: finisce nel log e nella risposta
+     * all'utente, che non devono contenere la configurazione.
+     */
+    public static function endpointProblem(string $endpoint): ?string
+    {
+        $parts = parse_url($endpoint);
+
+        if ($parts === false || !isset($parts['scheme'], $parts['host']) || $parts['host'] === '') {
+            return 'Endpoint API del trasmittente non valido: serve un URL https (Impostazioni > SdI)';
+        }
+
+        $scheme = strtolower((string) $parts['scheme']);
+
+        if ($scheme !== 'https') {
+            return 'Endpoint API del trasmittente non sicuro: serve https, non ' . $scheme;
+        }
+
+        return null;
     }
 
     private function parseResponse(ResponseInterface $response): array
@@ -71,7 +123,7 @@ class SdiApiChannel implements SdiChannelInterface
         $status = $response->getStatusCode();
 
         if ($status >= 200 && $status < 300) {
-            $body = trim((string) $response->getBody());
+            $body = SdiPayloadGuard::redact(trim((string) $response->getBody()));
 
             return [
                 'ok'      => true,
@@ -80,7 +132,7 @@ class SdiApiChannel implements SdiChannelInterface
             ];
         }
 
-        $body = trim((string) $response->getBody());
+        $body = SdiPayloadGuard::redact(trim((string) $response->getBody()));
 
         return [
             'ok'      => false,

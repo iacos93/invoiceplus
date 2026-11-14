@@ -2,6 +2,9 @@
 
 namespace App\Libraries;
 
+use App\Libraries\Sdi\P7mSignature;
+use App\Libraries\Sdi\SdiPayloadGuard;
+
 /**
  * Lettura e verifica dei file FatturaPA.
  *
@@ -19,6 +22,40 @@ class FatturaXml
     private const XSD = APPPATH . 'Libraries/fatturapa/schema/FatturaPA_1.2.1.xsd';
 
     /**
+     * Motivo dell'ultimo extract() andato a vuoto per un limite di sicurezza
+     * (file o ZIP troppo grande, zip bomb) o per una firma digitale non
+     * valida. extract() continua a restituire una lista vuota come per un
+     * file illeggibile, ma chi chiama puo' distinguere i due casi e dirlo
+     * all'utente invece di rispondere "formato non riconosciuto" a un file
+     * che era leggibilissimo.
+     */
+    private ?string $lastError = null;
+
+    /**
+     * Esito dell'ultima busta CMS incontrata da extract(): null se il
+     * documento non era firmato (o se non c'era una busta), altrimenti la
+     * struttura restituita da P7mSignature::inspect().
+     *
+     * Serve a chi vuole sapere se il file era un .p7m e come è andata la
+     * verifica senza rileggere il contenuto. Per uno ZIP con più documenti
+     * vale l'ultima voce ispezionata: l'esito del singolo documento viaggia
+     * anche nell'array restituito da extract() (chiave "signature").
+     */
+    private ?array $lastSignature = null;
+
+    /**
+     * Motivi dei documenti scartati perché la firma è risultata non valida.
+     * Un documento manomesso viene rifiutato; gli altri dello stesso ZIP
+     * restano importabili.
+     *
+     * @var list<string>
+     */
+    private array $rejectedSignatures = [];
+
+    /** Motivo del rifiuto per firma non valida della busta appena letta. */
+    private ?string $signatureRejection = null;
+
+    /**
      * Verifica il tracciato contro lo schema ufficiale.
      *
      * @return array{valid: bool, errors: list<string>}
@@ -34,7 +71,7 @@ class FatturaXml
 
         $doc = new \DOMDocument();
 
-        if (!$doc->loadXML($xml)) {
+        if (!$doc->loadXML($xml, LIBXML_NONET)) {
             $errors = $this->collectErrors();
             libxml_use_internal_errors($previous);
 
@@ -89,35 +126,89 @@ class FatturaXml
      * Estrae il contenuto XML da un file che può essere .xml, .xml.p7m (firmato)
      * o uno ZIP. Ritorna una lista di documenti XML.
      *
-     * @return list<array{name: string, xml: string}>
+     * Ogni documento porta anche "signature": l'esito di P7mSignature::inspect()
+     * se il file era una busta CMS, null per un XML in chiaro. Non è un
+     * requisito per l'import: un .p7m non verificabile viene comunque letto.
+     *
+     * @return list<array{name: string, xml: string, signature: ?array}>
      */
     public function extract(string $path, string $originalName): array
     {
+        $this->lastError          = null;
+        $this->lastSignature      = null;
+        $this->rejectedSignatures = [];
+
+        $handle = @fopen($path, 'rb');
+
+        if ($handle === false) {
+            return [];
+        }
+
+        // La firma ZIP si guarda sui primi byte: un archivio non va letto
+        // tutto in memoria per decidere come trattarlo.
+        $head = (string) fread($handle, 4);
+        $stat = fstat($handle);
+        fclose($handle);
+
+        $size = (int) ($stat['size'] ?? 0);
+
+        // ZIP: firma "PK\x03\x04" all'inizio del file. I limiti dello ZIP
+        // sono su numero di voci e contenuto decompresso (SdiPayloadGuard),
+        // non sulla dimensione del file compresso.
+        if ($head === "PK\x03\x04") {
+            return $this->extractFromZip($path, $size);
+        }
+
+        // XML singolo: il tetto si controlla sul filesize, prima di
+        // caricare il contenuto in memoria.
+        if (($problem = SdiPayloadGuard::xmlProblem($size)) !== null) {
+            return $this->reject($problem);
+        }
+
         $raw = (string) @file_get_contents($path);
 
         if ($raw === '') {
             return [];
         }
 
-        // ZIP: firma "PK\x03\x04" all'inizio del file.
-        if (str_starts_with($raw, "PK\x03\x04")) {
-            return $this->extractFromZip($path);
-        }
-
         $xml = $this->unwrapP7m($raw);
 
-        return $xml === null ? [] : [['name' => $originalName, 'xml' => $xml]];
+        if ($xml === null) {
+            // Una firma non valida è un rifiuto esplicito, non un file
+            // illeggibile: il motivo va in lastError(), come per i limiti.
+            if ($this->signatureRejection !== null) {
+                return $this->reject($this->signatureRejection);
+            }
+
+            return [];
+        }
+
+        return [['name' => $originalName, 'xml' => $xml, 'signature' => $this->lastSignature]];
     }
 
     /**
-     * @return list<array{name: string, xml: string}>
+     * @return list<array{name: string, xml: string, signature: ?array}>
      */
-    private function extractFromZip(string $path): array
+    private function extractFromZip(string $path, int $size): array
     {
+        // Un archivio compresso piu' grande di tutto cio' che siamo disposti
+        // a decomprimere non ha motivo di essere aperto.
+        if (($problem = SdiPayloadGuard::zipFileProblem($size)) !== null) {
+            return $this->reject($problem);
+        }
+
         $zip = new \ZipArchive();
 
         if ($zip->open($path) !== true) {
             return [];
+        }
+
+        // Numero di voci, dimensione per voce, totale e rapporto di
+        // compressione si leggono da statIndex(), senza decomprimere nulla.
+        if (($problem = SdiPayloadGuard::zipProblem($zip)) !== null) {
+            $zip->close();
+
+            return $this->reject($problem);
         }
 
         $documents = [];
@@ -130,24 +221,95 @@ class FatturaXml
                 continue;
             }
 
+            // Il tetto del singolo XML vale anche dentro lo ZIP. Una voce
+            // fuori misura si salta (le altre fatture dell'archivio restano
+            // importabili) invece di far fallire tutto il pacchetto.
+            $entry = $zip->statIndex($i);
+            $bytes = (int) ($entry['size'] ?? 0);
+
+            if (($problem = SdiPayloadGuard::xmlProblem($bytes)) !== null) {
+                log_message('warning', 'FatturaXml: voce ' . basename($name) . ' dello ZIP ignorata: ' . $problem);
+
+                continue;
+            }
+
             $content = (string) $zip->getFromIndex($i);
             $xml     = $this->unwrapP7m($content);
 
             if ($xml !== null) {
-                $documents[] = ['name' => basename($name), 'xml' => $xml];
+                $documents[] = ['name' => basename($name), 'xml' => $xml, 'signature' => $this->lastSignature];
+
+                continue;
+            }
+
+            // Firma non valida dentro un archivio: si salta la voce, non
+            // tutto il pacchetto. Le altre fatture del lotto restano
+            // importabili; il motivo finisce nel log e in lastError().
+            if ($this->signatureRejection !== null) {
+                log_message('error', 'FatturaXml: voce ' . basename($name) . ' rifiutata: ' . $this->signatureRejection);
             }
         }
 
         $zip->close();
 
+        if ($this->rejectedSignatures !== []) {
+            $this->lastError = implode('; ', $this->rejectedSignatures);
+        }
+
         return $documents;
+    }
+
+    /**
+     * Esito dell'ultima busta CMS ispezionata (null se l'ultimo documento
+     * non era firmato). Vedi P7mSignature::inspect() per la struttura.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function lastSignature(): ?array
+    {
+        return $this->lastSignature;
+    }
+
+    /** Motivo dell'ultimo rifiuto per limiti di sicurezza o firma non valida (null se non c'e' stato). */
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
+
+    /**
+     * Rifiuta il payload: resta il motivo per chi chiama e una riga nel log,
+     * ma il contratto di extract() non cambia (lista vuota, nessuna
+     * eccezione: gli import da form la gestiscono gia' cosi').
+     *
+     * @return list<array{name: string, xml: string, signature: ?array}>
+     */
+    private function reject(string $problem): array
+    {
+        $this->lastError = $problem;
+        log_message('error', 'FatturaXml: payload rifiutato: ' . $problem);
+
+        return [];
     }
 
     /**
      * Estrae l'XML da un contenuto eventualmente firmato CAdES (.p7m).
      *
-     * La firma non viene verificata: qui serve leggere i dati della fattura,
-     * non attestarne l'autenticità. Ritorna null se dentro non c'è una fattura.
+     * La firma viene verificata in modo best-effort con P7mSignature::inspect(),
+     * una volta sola, dove la busta viene già aperta. La politica è:
+     *   - valid === false: OpenSSL ha letto la busta e il digest/la firma non
+     *     tornano. Il contenuto è stato modificato: il documento viene
+     *     rifiutato (null + motivo in lastError()). Un .p7m manomesso non
+     *     deve diventare una spesa o una fattura.
+     *   - valid === null: la busta non è verificabile (BER non digerito,
+     *     nessuna firma, openssl assente). Il documento viene accettato e
+     *     l'avviso arriva dagli importer: le buste reali dello SdI sono BER a
+     *     lunghezza indefinita e non si può perdere una fattura valida solo
+     *     perché OpenSSL non la capisce.
+     *   - valid === true: firma coerente col contenuto, si accetta.
+     * La scadenza del certificato non rende invalida la busta: viene
+     * segnalata come avviso (P7mSignature::warning()).
+     *
+     * Ritorna null se dentro non c'è una fattura.
      *
      * L'ordine dei tentativi conta. I .p7m consegnati dallo SdI sono CMS in
      * codifica BER a lunghezza indefinita, con il contenuto spezzato in
@@ -161,6 +323,9 @@ class FatturaXml
      */
     private function unwrapP7m(string $content): ?string
     {
+        $this->lastSignature      = null;
+        $this->signatureRejection = null;
+
         if ($this->looksLikeInvoice($content) && !$this->looksLikeDer($content)) {
             return $this->stripBom($content);
         }
@@ -180,6 +345,19 @@ class FatturaXml
         }
 
         if ($this->looksLikeDer($content)) {
+            // Verifica una volta sola, prima di estrarre: se il contenuto è
+            // stato modificato non ha senso consegnarlo al parser.
+            $this->lastSignature = P7mSignature::inspect($content);
+
+            if (($this->lastSignature['valid'] ?? null) === false) {
+                $this->signatureRejection = 'firma digitale non valida: il contenuto è stato modificato';
+                $this->rejectedSignatures[] = $this->signatureRejection;
+
+                log_message('error', 'FatturaXml: .p7m rifiutato: ' . $this->signatureRejection);
+
+                return null;
+            }
+
             foreach ([$this->berEnvelopeContent($content), $this->opensslEnvelopeContent($content)] as $inner) {
                 if ($inner !== null && $this->looksLikeInvoice($inner)) {
                     return $this->stripBom($inner);

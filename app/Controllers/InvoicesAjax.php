@@ -106,8 +106,16 @@ class InvoicesAjax extends BaseController
             // elettronica, e all'uscita dalla bozza consuma il progressivo
             // definitivo. Con l'invoice_id preso dal POST tutto questo poteva
             // finire su un documento di un'altra azienda.
-            if (!$this->invoiceModel->findScoped($invoiceId)) {
+            $esistente = $this->invoiceModel->findScoped($invoiceId);
+
+            if (!$esistente) {
                 throw PageNotFoundException::forPageNotFound();
+            }
+
+            if ($this->invoiceModel->isLocked($esistente)) {
+                session()->setFlashdata('alert_error', trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.'));
+
+                return redirect()->to('/invoices/view/' . $invoiceId);
             }
 
             $this->updateInvoiceFromPost($invoiceId, $post);
@@ -384,8 +392,16 @@ class InvoicesAjax extends BaseController
 
         // Aggiungere un'imposta cambia il totale della fattura: e' una mutazione
         // a tutti gli effetti, ed e' speculare al guard di deleteInvoiceTax().
-        if (!$this->invoiceModel->findScoped($invoiceId)) {
+        $fattura = $this->invoiceModel->findScoped($invoiceId);
+
+        if (!$fattura) {
             throw PageNotFoundException::forPageNotFound();
+        }
+
+        if ($this->invoiceModel->isLocked($fattura)) {
+            session()->setFlashdata('alert_error', trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.'));
+
+            return redirect()->to('/invoices/view/' . $invoiceId);
         }
 
         $this->model(InvoiceTaxRateModel::class)->saveTaxRate(null, [
@@ -418,8 +434,16 @@ class InvoicesAjax extends BaseController
         $itemModel = $this->model(ItemModel::class);
         $item      = $itemModel->find((int) $request->getPost('item_id'));
 
-        if (!$item || !$this->invoiceModel->findScoped((int) $item['invoice_id'])) {
+        $fattura = $item ? $this->invoiceModel->findScoped((int) $item['invoice_id']) : null;
+
+        if (!$item || !$fattura) {
             throw PageNotFoundException::forPageNotFound();
+        }
+
+        if ($this->invoiceModel->isLocked($fattura)) {
+            session()->setFlashdata('alert_error', trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.'));
+
+            return redirect()->to('/invoices/view/' . (int) $item['invoice_id']);
         }
 
         $itemModel->deleteItem((int) $item['item_id']);
@@ -453,8 +477,14 @@ class InvoicesAjax extends BaseController
             throw PageNotFoundException::forPageNotFound();
         }
 
-        if (!$this->invoiceModel->findScoped($invoiceId)) {
+        $fattura = $this->invoiceModel->findScoped($invoiceId);
+
+        if (!$fattura) {
             return $this->response->setJSON(['success' => 0, 'msg' => 'Fattura non trovata']);
+        }
+
+        if ($this->invoiceModel->isLocked($fattura)) {
+            return $this->response->setJSON(['success' => 0, 'msg' => trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.')]);
         }
 
         $rawIds  = $request->getPost('item_ids');
@@ -590,9 +620,15 @@ class InvoicesAjax extends BaseController
         // intestarla a un cliente che l'azienda del documento non possiede --
         // il che rompe anche la fattura elettronica, che i dati del cessionario
         // li prende proprio da li'.
-        if (!$this->invoiceModel->findScoped($invoiceId)
+        $fattura = $this->invoiceModel->findScoped($invoiceId);
+
+        if (!$fattura
             || !$this->model(ClientModel::class)->findScoped($clientId)) {
             return $this->response->setJSON(['success' => false]);
+        }
+
+        if ($this->invoiceModel->isLocked($fattura)) {
+            return $this->response->setJSON(['success' => false, 'msg' => trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.')]);
         }
 
         $this->invoiceModel->update($invoiceId, ['client_id' => $clientId]);

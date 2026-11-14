@@ -710,7 +710,6 @@ class FatturaPA {
 			$node[$name] = $value;
 			return $node[$name];
 		}
-		return $null;
 	}
 	
 	/**

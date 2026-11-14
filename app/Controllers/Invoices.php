@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\UploadGuard;
 use App\Models\ClientModel;
 use App\Models\InvoiceAmountModel;
 use App\Models\InvoiceCustomModel;
@@ -317,7 +318,8 @@ class Invoices extends BaseController
                 case 'delete':
                     $enableDeletion = (int) get_setting('enable_invoice_deletion', 0);
 
-                    if ((int) $invoice['invoice_status_id'] !== 1 && $enableDeletion !== 1) {
+                    if (((int) $invoice['invoice_status_id'] !== 1 && $enableDeletion !== 1)
+                        || $this->invoiceModel->isLocked($invoice)) {
                         $skipped++;
                         break;
                     }
@@ -385,7 +387,17 @@ class Invoices extends BaseController
         $totals   = ['imported' => 0, 'skipped' => 0, 'created_clients' => 0, 'failed' => [], 'rejected' => [], 'warnings' => []];
 
         foreach ($files as $file) {
-            if (!$file->isValid()) {
+            if (!$file instanceof \CodeIgniter\HTTP\Files\UploadedFile) {
+                continue;
+            }
+
+            // FatturaPA emessa: dimensione e MIME reale prima di passare il
+            // file all'importer. Un PDF rinominato .xml o un archivio enorme
+            // non devono arrivare al parser; il rifiuto non ferma gli altri.
+            $reason = UploadGuard::checkUploadedFile($file, UploadGuard::KIND_XML);
+
+            if ($reason !== null) {
+                $totals['rejected'][] = $file->getClientName() . ': ' . $reason;
                 continue;
             }
 
@@ -429,21 +441,38 @@ class Invoices extends BaseController
         return redirect()->to('/invoices');
     }
 
+    /**
+     * Archivio PDF delle fatture (cartella writable/uploads/archive).
+     *
+     * La cartella e' comune a tutte le aziende e i nomi non contengono
+     * l'azienda: prima l'elenco e il download mostravano qualunque PDF
+     * presente, compreso quello di un altro soggetto giuridico. Qui si
+     * accettano solo i file il cui suffisso corrisponde al numero di una
+     * fattura dell'azienda attiva.
+     */
     public function archive()
     {
         $request = service('request');
 
+        $suffissi = $this->archiveNumberSuffixes();
+
         // Download di un file dall'archivio (parametro ?download=)
         $download = $request->getGet('download');
         if ($download) {
-            $filePath = WRITEPATH . 'uploads/archive/' . basename($download);
+            $name = basename((string) $download);
+
+            if (!$this->archiveBelongsToCompany($name, $suffissi)) {
+                throw PageNotFoundException::forPageNotFound();
+            }
+
+            $filePath = WRITEPATH . 'uploads/archive/' . $name;
 
             if (!is_file($filePath)) {
                 throw PageNotFoundException::forPageNotFound();
             }
 
             $this->response->setContentType('application/pdf');
-            $this->response->setHeader('Content-Disposition', 'attachment; filename="' . basename($download) . '"');
+            $this->response->setHeader('Content-Disposition', 'attachment; filename="' . $name . '"');
 
             return $this->response->setBody((string) file_get_contents($filePath));
         }
@@ -461,10 +490,16 @@ class Invoices extends BaseController
 
         if ($archiveDir !== null) {
             if (!empty($invoiceNumber)) {
-                $invoiceArray = glob($archiveDir . '*' . '_' . basename((string) $invoiceNumber) . '.pdf');
+                $cercato = '_' . basename((string) $invoiceNumber) . '.pdf';
+
+                if (isset($suffissi[$cercato])) {
+                    $invoiceArray = glob($archiveDir . '*' . $cercato) ?: [];
+                }
             } else {
-                foreach (glob($archiveDir . '*.pdf') as $file) {
-                    $invoiceArray[] = $file;
+                foreach (glob($archiveDir . '*.pdf') ?: [] as $file) {
+                    if ($this->archiveBelongsToCompany(basename($file), $suffissi)) {
+                        $invoiceArray[] = $file;
+                    }
                 }
             }
 
@@ -477,6 +512,58 @@ class Invoices extends BaseController
         ];
 
         return view('invoices/archive', $data);
+    }
+
+    /**
+     * Suffissi `_<numero>.pdf` delle fatture dell'azienda attiva, come chiavi.
+     *
+     * Senza azienda attiva l'elenco e' vuoto: meglio un archivio vuoto che uno
+     * con i documenti di tutti.
+     *
+     * @return array<string, true>
+     */
+    private function archiveNumberSuffixes(): array
+    {
+        $companyId = active_company_id();
+
+        if ($companyId <= 0) {
+            return [];
+        }
+
+        $numbers = $this->invoiceModel->builder()
+            ->select('invoice_number')
+            ->where('company_id', $companyId)
+            ->get()
+            ->getResultArray();
+
+        $suffissi = [];
+
+        foreach ($numbers as $row) {
+            $number = (string) ($row['invoice_number'] ?? '');
+
+            if ($number !== '') {
+                $suffissi['_' . $number . '.pdf'] = true;
+            }
+        }
+
+        return $suffissi;
+    }
+
+    /**
+     * Il nome file dell'archivio termina con il numero di una fattura
+     * dell'azienda attiva?
+     *
+     * @param array<string, true> $suffissi
+     */
+    private function archiveBelongsToCompany(string $name, array $suffissi): bool
+    {
+        foreach (array_keys($suffissi) as $suffisso) {
+            if (str_ends_with($name, $suffisso)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -535,6 +622,15 @@ class Invoices extends BaseController
             throw PageNotFoundException::forPageNotFound();
         }
 
+        // La pagina di modifica non si apre su una fattura bloccata: gli
+        // endpoint che salvano la rifiutano comunque, ma lasciar compilare un
+        // modulo che poi non si puo' salvare e' peggio che dirlo subito.
+        if ($this->invoiceModel->isLocked($invoice)) {
+            session()->setFlashdata('alert_error', trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.'));
+
+            return redirect()->to('/invoices/view/' . $invoiceId);
+        }
+
         $data = [
             'invoice'            => $invoice,
             'items'              => (new ItemModel())->getByInvoice($invoiceId),
@@ -571,6 +667,15 @@ class Invoices extends BaseController
 
         if (!$invoice) {
             throw PageNotFoundException::forPageNotFound();
+        }
+
+        // Una fattura bloccata non si elimina nemmeno con la cancellazione
+        // abilitata: l'impostazione serve alle bozze e agli errori di
+        // emissione, non a far sparire un documento che lo SdI ha gia'.
+        if ($this->invoiceModel->isLocked($invoice)) {
+            session()->setFlashdata('alert_error', trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.'));
+
+            return redirect()->to('/invoices/view/' . $invoiceId);
         }
 
         // Cancellazione consentita solo per bozze (o setting abilitato)
@@ -700,22 +805,45 @@ class Invoices extends BaseController
      */
     public function generatePdf(int $invoiceId, bool $stream = true, ?string $template = null)
     {
-        // Il perimetro si verifica qui, prima di toccare la fattura: con
-        // mark_invoices_sent_pdf attivo le due righe sotto assegnano il numero
-        // e marcano il documento come inviato. Su un id di un'altra azienda
-        // quelle scritture avverrebbero comunque, prima ancora che il
-        // rendering fallisca -- si sporcherebbe un documento che non si ha
-        // titolo nemmeno di vedere.
+        // Solo lettura. Prima, con mark_invoices_sent_pdf attivo, questa GET
+        // numerava e marcava la fattura come inviata: un link aperto per
+        // curiosita' cambiava lo stato di un documento fiscale, e l'export ZIP
+        // (che chiama questo metodo per ogni fattura) le spediva tutte in
+        // blocco senza che nessuno lo avesse chiesto. La marcatura ora ha il
+        // suo POST: Invoices::markSent().
+        return $this->renderInvoicePdf($invoiceId, $stream, $template);
+    }
+
+    /**
+     * "Segna come inviata" dopo aver scaricato il PDF (impostazione
+     * mark_invoices_sent_pdf).
+     *
+     * Staccata dalla generazione del PDF di proposito: generare e scaricare
+     * non e' inviare, e chi apre due volte il PDF non deve trovare la fattura
+     * gia' "spedita". Il POST lo dice esplicitamente, con il token CSRF.
+     */
+    public function markSent(int $invoiceId)
+    {
+        if (service('request')->getMethod() !== 'POST') {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
         if (!$this->invoiceModel->getByIdScoped($invoiceId)) {
             throw PageNotFoundException::forPageNotFound();
         }
 
-        if (get_setting('mark_invoices_sent_pdf', 0) == 1) {
-            $this->invoiceModel->generateInvoiceNumberIfApplicable($invoiceId);
-            $this->invoiceModel->markSent($invoiceId);
-        }
+        $this->invoiceModel->generateInvoiceNumberIfApplicable($invoiceId);
+        $this->invoiceModel->markSent($invoiceId);
 
-        return $this->renderInvoicePdf($invoiceId, $stream, $template);
+        log_message('info', 'Fattura {invoice} segnata come inviata da utente {user}', [
+            'invoice' => $invoiceId,
+            'user'    => (int) session('user_id'),
+        ]);
+
+        session()->setFlashdata('alert_success', trans('invoice_marked_sent', '',
+            'Fattura segnata come inviata.'));
+
+        return redirect()->to('/invoices/view/' . $invoiceId);
     }
 
     /**
@@ -938,6 +1066,41 @@ class Invoices extends BaseController
     /**
      * Elimina un'imposta a livello di fattura e ricalcola gli importi.
      */
+    /**
+     * Sblocca una fattura in sola lettura, se lo SdI non la considera chiusa
+     * (vedi InvoiceModel::canUnlock). Serve per correggere un'importata, una
+     * scartata o una scaricata a mano e mai consegnata.
+     */
+    public function unlock(int $invoiceId)
+    {
+        if (service('request')->getMethod() !== 'POST') {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        $invoice = $this->invoiceModel->getByIdScoped($invoiceId);
+
+        if (!$invoice) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        if (!$this->invoiceModel->isLocked($invoice)) {
+            return redirect()->to('/invoices/view/' . $invoiceId);
+        }
+
+        if (!$this->invoiceModel->canUnlock($invoiceId)) {
+            session()->setFlashdata('alert_error', trans('invoice_unlock_forbidden', '', 'Lo SdI ha già questa fattura: non si sblocca. Per correggerla emetti una nota di credito.'));
+
+            return redirect()->to('/invoices/view/' . $invoiceId);
+        }
+
+        $this->invoiceModel->setLocked($invoiceId, false);
+        log_message('info', 'Fattura {id} sbloccata dall\'utente {user}', ['id' => $invoiceId, 'user' => (int) session('user_id')]);
+
+        session()->setFlashdata('alert_success', trans('invoice_unlocked', '', 'Fattura sbloccata: ora si può modificare.'));
+
+        return redirect()->to('/invoices/view/' . $invoiceId);
+    }
+
     public function deleteInvoiceTax(int $invoiceId, int $invoiceTaxRateId)
     {
         // Due id dall'URL e nessuna lettura prima della cancellazione:
@@ -949,10 +1112,18 @@ class Invoices extends BaseController
         $taxRateModel = new InvoiceTaxRateModel();
         $taxRate      = $taxRateModel->find($invoiceTaxRateId);
 
+        $fattura = $taxRate ? $this->invoiceModel->findScoped($invoiceId) : null;
+
         if (!$taxRate
             || (int) $taxRate['invoice_id'] !== $invoiceId
-            || !$this->invoiceModel->findScoped($invoiceId)) {
+            || !$fattura) {
             throw PageNotFoundException::forPageNotFound();
+        }
+
+        if ($this->invoiceModel->isLocked($fattura)) {
+            session()->setFlashdata('alert_error', trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.'));
+
+            return redirect()->to('/invoices/view/' . $invoiceId);
         }
 
         $taxRateModel->deleteWithRecalculate($invoiceTaxRateId, $invoiceId);

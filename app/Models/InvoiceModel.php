@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Libraries\GuestPassword;
+
 class InvoiceModel extends IpBaseModel
 {
     protected $table            = 'ip_invoices';
@@ -17,16 +19,16 @@ class InvoiceModel extends IpBaseModel
     // esisteva gia' qui sotto ma non era registrato, quindi CI4 non lo
     // chiamava mai.
 
-    // La password del documento viaggia fino al cliente e deve restare
-    // leggibile dallo staff (la vista di modifica la mostra, perche' e' lo
-    // staff a comunicarla): quindi si cifra a riposo, non si hasha. Hasharla
-    // toglierebbe una funzione invece di proteggerla, e a ogni salvataggio
-    // ri-hasherebbe l'hash.
+    // La password del portale guest si salva come hash bcrypt: non serve a
+    // nessuno rileggerla (la scheda di modifica e' write-only), serve solo a
+    // dire sì o no quando il cliente la inserisce. Il vecchio encrypt_secret()
+    // era reversibile, quindi un dump del database esponeva la password.
     //
-    // Il "enc:" davanti rende la cifratura idempotente: un valore gia' cifrato
-    // -- per esempio quello copiato da un preventivo -- viene lasciato stare.
-    protected $beforeInsert = ['encryptDocumentPassword'];
-    protected $beforeUpdate = ['encryptDocumentPassword'];
+    // GuestPassword::hash() e' idempotente: un valore che e' gia' un hash -- per
+    // esempio quello copiato da un preventivo -- viene lasciato stare, e non
+    // viene ri-hashato a ogni salvataggio.
+    protected $beforeInsert = ['hashDocumentPassword'];
+    protected $beforeUpdate = ['hashDocumentPassword'];
 
     protected $afterInsert = ['clearFinanceCache'];
     protected $afterUpdate = ['clearFinanceCache'];
@@ -115,6 +117,8 @@ class InvoiceModel extends IpBaseModel
      */
     private function withFullJoins(): static
     {
+        $daysOverdue = days_since_sql('ip_invoices.invoice_date_due');
+
         $this->select("
             ip_invoices.*,
             ip_clients.client_name,
@@ -176,8 +180,8 @@ class InvoiceModel extends IpBaseModel
             ip_invoice_amounts.invoice_sign AS invoice_sign,
             ip_quotes.quote_number,
             ip_quotes.quote_id,
-            (CASE WHEN ip_invoices.invoice_status_id NOT IN (1,4) AND (CURRENT_DATE - ip_invoices.invoice_date_due) > 0 THEN 1 ELSE 0 END) AS is_overdue,
-            (CURRENT_DATE - ip_invoices.invoice_date_due) AS days_overdue,
+            (CASE WHEN ip_invoices.invoice_status_id NOT IN (1,4) AND {$daysOverdue} > 0 THEN 1 ELSE 0 END) AS is_overdue,
+            {$daysOverdue} AS days_overdue,
             (CASE (SELECT COUNT(*) FROM ip_invoices_recurring WHERE ip_invoices_recurring.invoice_id = ip_invoices.invoice_id AND ip_invoices_recurring.recur_next_date IS NOT NULL) WHEN 0 THEN 0 ELSE 1 END) AS invoice_is_recurring
         ", false)
         ->join('ip_clients', 'ip_clients.client_id = ip_invoices.client_id', 'left')
@@ -430,7 +434,7 @@ class InvoiceModel extends IpBaseModel
             case 'paid':
                 return $builder->where('ip_invoices.invoice_status_id', 4);
             case 'overdue':
-                return $builder->where('(CASE WHEN ip_invoices.invoice_status_id NOT IN (1,4) AND (CURRENT_DATE - ip_invoices.invoice_date_due) > 0 THEN 1 ELSE 0 END) = 1', null, false);
+                return $builder->where('(CASE WHEN ip_invoices.invoice_status_id NOT IN (1,4) AND ' . days_since_sql('ip_invoices.invoice_date_due') . ' > 0 THEN 1 ELSE 0 END) = 1', null, false);
             case 'open':
                 return $builder->whereIn('ip_invoices.invoice_status_id', [2, 3]);
             case 'all':
@@ -915,6 +919,53 @@ class InvoiceModel extends IpBaseModel
     /**
      * Assegna il numero definitivo quando il documento esce dalla bozza.
      */
+    /**
+     * La fattura e' in sola lettura?
+     *
+     * Il flag is_read_only veniva scritto (dall'importazione, dal cambio di
+     * stato con "Imposta in sola lettura", ora anche dagli esiti SdI) ma non
+     * lo leggeva nessuna pagina: l'impostazione c'era e non faceva niente.
+     * I controller lo controllano ora tutti con questo metodo.
+     *
+     * @param array<string, mixed> $invoice
+     */
+    public function isLocked(array $invoice): bool
+    {
+        return db_bool($invoice['is_read_only'] ?? 0);
+    }
+
+    public function setLocked(int $invoiceId, bool $locked): void
+    {
+        $this->update($invoiceId, ['is_read_only' => $locked ? 1 : 0]);
+    }
+
+    /**
+     * Si puo' sbloccare a mano?
+     *
+     * Solo se lo SdI non ha la fattura per buona: una consegnata, in attesa di
+     * esito su un canale automatico o notificata si corregge con una nota di
+     * credito, non cambiandola sotto i piedi dello SdI. Restano sbloccabili
+     * quelle mai trasmesse, scartate, importate da un altro gestionale (la
+     * copia che conta e' la' e correggere questa non cambia cio' che lo SdI
+     * ha ricevuto) e quelle solo scaricate dal canale manuale.
+     */
+    public function canUnlock(int $invoiceId): bool
+    {
+        $ultima = (new SdiTransmissionModel())->latestForInvoice($invoiceId);
+
+        if ($ultima === null) {
+            return true;
+        }
+
+        $esito = (string) ($ultima['esito'] ?? '');
+
+        return match (true) {
+            $esito === '', $esito === 'NS', $esito === 'IMP' => true,
+            $esito === 'pending'                              => (string) ($ultima['channel'] ?? '') === 'manual',
+            default                                           => false,
+        };
+    }
+
     public function finalizeNumber(int $invoiceId): void
     {
         $invoice = $this->find($invoiceId);
@@ -1008,7 +1059,7 @@ class InvoiceModel extends IpBaseModel
 
     public function isOverdue(): static
     {
-        $this->where('(CASE WHEN ip_invoices.invoice_status_id NOT IN (1,4) AND (CURRENT_DATE - ip_invoices.invoice_date_due) > 0 THEN 1 ELSE 0 END) = 1', null, false);
+        $this->where('(CASE WHEN ip_invoices.invoice_status_id NOT IN (1,4) AND ' . days_since_sql('ip_invoices.invoice_date_due') . ' > 0 THEN 1 ELSE 0 END) = 1', null, false);
 
         return $this;
     }
@@ -1193,20 +1244,47 @@ class InvoiceModel extends IpBaseModel
     }
 
     /**
-     * Callback eventi CI4: invalida la cache della pagina Finance.
+     * Callback eventi CI4: trasforma in hash la password del documento prima
+     * di scriverla.
+     *
+     * Il campo vuoto non arriva mai all'UPDATE: la scheda di modifica non
+     * mostra la password salvata, quindi "vuoto" vuol dire "non cambiarla".
+     * Un valore gia' in hash (copia da un altro documento, migrazione dal
+     * portale) resta com'è: GuestPassword::hash() è idempotente.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
      */
-    /**
-     * Callback eventi CI4: cifra la password del documento prima di scriverla.
-     */
-    protected function encryptDocumentPassword(array $data): array
+    protected function hashDocumentPassword(array $data): array
     {
-        $value = $data['data']['invoice_password'] ?? null;
-
-        if (!empty($value) && strpos((string) $value, 'enc:') !== 0) {
-            $data['data']['invoice_password'] = encrypt_secret((string) $value);
+        if (!array_key_exists('invoice_password', $data['data'])) {
+            return $data;
         }
 
+        $value = $data['data']['invoice_password'];
+
+        if ($value === null || $value === '') {
+            unset($data['data']['invoice_password']);
+
+            return $data;
+        }
+
+        $data['data']['invoice_password'] = GuestPassword::hash((string) $value);
+
         return $data;
+    }
+
+    /**
+     * Scrive un hash già calcolato (migrazione trasparente dal formato
+     * cifrato del portale guest).
+     *
+     * Il callback riconosce l'hash e lo lascia intatto, quindi non si passa
+     * dal testo in chiaro e non lo si ri-hasha.
+     */
+    public function replacePasswordHash(int $invoiceId, string $hash): void
+    {
+        $this->update($invoiceId, ['invoice_password' => $hash]);
     }
 
     protected function clearFinanceCache(array $data): array

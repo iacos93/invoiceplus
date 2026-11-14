@@ -5,8 +5,11 @@ namespace App\Controllers;
 use App\Libraries\FatturaXml;
 use App\Libraries\FatturaXmlStore;
 use App\Libraries\PurchaseInvoiceImporter;
+use App\Libraries\PublicEndpointThrottle;
+use App\Libraries\Sdi\SdiPayloadGuard;
 use App\Libraries\Sdi\SdiSoapMessage;
 use App\Models\CompanyModel;
+use App\Models\ExpenseCategoryModel;
 
 /**
  * Webservice RicezioneFatture: la controparte del canale SDICoop per le
@@ -32,14 +35,58 @@ class SdiRicezioneEndpoint extends BaseController
 {
     public function endpoint(string $token)
     {
+        // Tetto per IP PRIMA del token: anche i tentativi con token errato
+        // consumano il contatore. Rifiuto SOAP esplicito (429) con messaggio
+        // generico e Retry-After, senza dettagli sul token.
+        $wait = PublicEndpointThrottle::guard(
+            PublicEndpointThrottle::SCOPE_SDI,
+            (string) $this->request->getIPAddress()
+        );
+
+        if ($wait !== null) {
+            log_message('warning', 'SDIRicezione: richiesta bloccata dal tetto per IP (Retry-After ' . $wait . 's)');
+
+            return $this->soap(429, SdiSoapMessage::fault('Troppe richieste: riprova più tardi'))
+                ->setHeader('Retry-After', (string) $wait);
+        }
+
         if (!hash_equals(decrypt_secret((string) get_setting('sdi_ricezione_inbound_token', '')), $token) || $token === '') {
             return $this->response->setStatusCode(403)->setBody('Token non valido');
         }
 
+        // Limite sul body: se l'header Content-Length dice gia' che e' troppo
+        // grande, la richiesta si rifiuta senza leggere il corpo. Il secondo
+        // controllo copre gli header assenti o bugiardi e l'espansione di un
+        // body MTOM/base64.
+        $declared = $this->request->getHeaderLine('Content-Length');
+
+        if (($problem = SdiPayloadGuard::bodyProblem($declared)) !== null) {
+            log_message('error', 'SDIRicezione: ' . $problem);
+
+            return $this->soap(413, SdiSoapMessage::fault($problem));
+        }
+
+        $body = (string) $this->request->getBody();
+
+        if (($problem = SdiPayloadGuard::bodyProblem($declared, strlen($body))) !== null) {
+            log_message('error', 'SDIRicezione: ' . $problem);
+
+            return $this->soap(413, SdiSoapMessage::fault($problem));
+        }
+
         $request = SdiSoapMessage::parse(
-            (string) $this->request->getBody(),
+            $body,
             $this->request->getHeaderLine('Content-Type')
         );
+
+        // Un singolo XML (anche decodificato da MTOM o base64) ha un tetto
+        // piu' basso di quello del body: qui il contenuto e' gia' in mano,
+        // ma il rifiuto e' esplicito e avviene prima di scriverlo su disco.
+        if (($problem = SdiPayloadGuard::xmlProblem(strlen($request['params']['File'] ?? ''))) !== null) {
+            log_message('error', 'SDIRicezione: ' . (string) ($request['element'] ?? 'richiesta') . ' rifiutato: ' . $problem);
+
+            return $this->soap(413, SdiSoapMessage::fault($problem));
+        }
 
         $element = $request !== null ? strtolower($request['element']) : '';
 
@@ -79,7 +126,12 @@ class SdiRicezioneEndpoint extends BaseController
 
         if (($params['Metadati'] ?? '') !== '' && ($params['NomeFileMetadati'] ?? '') !== '') {
             $meta = dirname($path) . '/' . self::safeName($params['NomeFileMetadati']);
-            @file_put_contents($meta, $params['Metadati']);
+
+            // Consegna ripetuta: i metadati gia' conservati restano quelli
+            // del primo arrivo, come il file della fattura.
+            if (!is_file($meta)) {
+                @file_put_contents($meta, $params['Metadati']);
+            }
         }
 
         $name = self::safeName($params['NomeFile'] ?? basename($path));
@@ -101,7 +153,7 @@ class SdiRicezioneEndpoint extends BaseController
         try {
             // importFromPath, non importDocument: gestisce anche il .p7m
             // firmato e il file lotto con piu' fatture sotto una testata.
-            $result = (new PurchaseInvoiceImporter())->importFromPath($path, $name);
+            $result = (new PurchaseInvoiceImporter())->importFromPath($path, $name, $this->defaultCategoryId());
         } catch (\Throwable $e) {
             log_message('error', 'SDIRicezione: import di ' . $name . ' fallito: ' . $e->getMessage());
 
@@ -118,6 +170,29 @@ class SdiRicezioneEndpoint extends BaseController
         if ($problems === []) {
             invalidate_finance_cache();
         }
+    }
+
+    /**
+     * Categoria spesa da dare alle fatture che arrivano senza passare dal
+     * form (Impostazioni > Fattura elettronica > Ricezione).
+     *
+     * L'impostazione era salvata e mostrata ma nessuno la leggeva: le fatture
+     * entravano sempre senza categoria, che e' proprio cio' che il testo sotto
+     * il campo diceva di evitare. Le categorie sono comuni a tutte le aziende
+     * (la tabella non ha company_id), quindi non serve alcun perimetro. Una
+     * categoria cancellata nel frattempo vale "nessuna": un id che non esiste
+     * piu' farebbe fallire l'inserimento della spesa, e la fattura, che lo
+     * SdI considera gia' consegnata, resterebbe solo su disco.
+     */
+    private function defaultCategoryId(): ?int
+    {
+        $id = (int) get_setting('sdi_ricezione_default_expense_category_id', 0);
+
+        if ($id <= 0 || (new ExpenseCategoryModel())->find($id) === null) {
+            return null;
+        }
+
+        return $id;
     }
 
     /** Id dell'azienda la cui P.IVA o codice fiscale e' quello del committente. */
@@ -166,6 +241,14 @@ class SdiRicezioneEndpoint extends BaseController
             return null;
         }
 
+        // Seconda linea dopo il controllo sull'endpoint: qui il contenuto e'
+        // gia' decodificato da base64/MTOM e puo' essere cresciuto.
+        if (($problem = SdiPayloadGuard::xmlProblem(strlen($content))) !== null) {
+            log_message('error', 'SDIRicezione: ' . $tipo . ' rifiutato: ' . $problem);
+
+            return null;
+        }
+
         $dir = (new FatturaXmlStore())->dir() . 'incoming';
         if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
             log_message('error', 'SDIRicezione: cartella ' . $dir . ' non scrivibile');
@@ -174,9 +257,21 @@ class SdiRicezioneEndpoint extends BaseController
         }
 
         $name = self::safeName($params['NomeFile'] ?? '') ?: date('Ymd_His') . '_' . $tipo . '.xml';
-        $path = $dir . '/' . $name;
 
-        if (@file_put_contents($path, $content) === false) {
+        // Lo SdI puo' ripetere la consegna, o due documenti diversi possono
+        // arrivare con lo stesso NomeFile: il file gia' conservato non si
+        // sovrascrive mai. Contenuto identico -> stessa copia (idempotente);
+        // contenuto diverso -> nome con suffisso d'hash.
+        $destination = SdiPayloadGuard::destination($dir, $name, $content);
+        $path        = $destination['path'];
+
+        if ($destination['renamed']) {
+            log_message('warning', 'SDIRicezione: ' . $name . ' gia\' presente con contenuto diverso, conservato come ' . basename($path));
+        } elseif ($destination['duplicate']) {
+            log_message('info', 'SDIRicezione: ' . $tipo . ' ' . $name . ' gia\' presente identico, conservata la copia esistente');
+        }
+
+        if ($destination['write'] && @file_put_contents($path, $content) === false) {
             log_message('error', 'SDIRicezione: impossibile scrivere ' . $path);
 
             return null;

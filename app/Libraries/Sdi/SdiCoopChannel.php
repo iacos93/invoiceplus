@@ -51,6 +51,15 @@ class SdiCoopChannel implements SdiChannelInterface
             return ['ok' => false, 'message' => 'Endpoint SdIRiceviFile non configurato (Impostazioni > SdI > SDICoop)'];
         }
 
+        // Solo HTTPS: la chiamata porta il certificato client e il file della
+        // fattura, quindi un endpoint in chiaro o con schema diverso non deve
+        // mai essere aperto.
+        if (($problem = self::endpointProblem($endpoint)) !== null) {
+            log_message('error', 'SdiCoopChannel: ' . $problem);
+
+            return ['ok' => false, 'message' => $problem];
+        }
+
         if ($cert === '' || !is_file($cert) || $key === '' || !is_file($key)) {
             return ['ok' => false, 'message' => 'Certificato/chiave TLS del trasmittente non configurati (Impostazioni > SdI > SDICoop)'];
         }
@@ -77,6 +86,9 @@ class SdiCoopChannel implements SdiChannelInterface
             CURLOPT_SSLKEY         => $key,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
+            // Limite esplicito: anche se l'URL venisse riscritto a runtime,
+            // cURL non puo' uscire da https con questa richiesta.
+            CURLOPT_PROTOCOLS      => CURLPROTO_HTTPS,
         ];
 
         $passphrase = decrypt_setting_password((string) get_setting('sdi_coop_key_passphrase', ''));
@@ -130,5 +142,28 @@ class SdiCoopChannel implements SdiChannelInterface
             'ok'      => true,
             'message' => 'Fattura consegnata a SDICoop (IdentificativoSdI: ' . $result['identificativo'] . ')',
         ];
+    }
+
+    /**
+     * Problema dell'endpoint, o null se e' un URL https utilizzabile.
+     *
+     * Il messaggio non ripete l'URL: finisce nel log e nella risposta
+     * all'utente, che non devono contenere la configurazione.
+     */
+    public static function endpointProblem(string $endpoint): ?string
+    {
+        $parts = parse_url($endpoint);
+
+        if ($parts === false || !isset($parts['scheme'], $parts['host']) || $parts['host'] === '') {
+            return 'Endpoint SdIRiceviFile non valido: serve un URL https (Impostazioni > SdI > SDICoop)';
+        }
+
+        $scheme = strtolower((string) $parts['scheme']);
+
+        if ($scheme !== 'https') {
+            return 'Endpoint SdIRiceviFile non sicuro: serve https, non ' . $scheme . ' (Impostazioni > SdI > SDICoop)';
+        }
+
+        return null;
     }
 }

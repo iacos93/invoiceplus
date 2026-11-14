@@ -34,7 +34,7 @@ $title = trans('invoice', '', 'Fattura') . ' ' . esc($invoice['invoice_number'] 
 // Il numero provvisorio somiglia a uno definitivo: senza un segno esplicito si
 // rischia di citarlo al cliente come se fosse quello vero.
 if ($is_draft_number) {
-    $title .= ' <span class="badge text-bg-warning">'
+    $title .= ' <span class="badge ip-status text-bg-warning">'
         . esc(trans('provisional_number', '', 'Numero provvisorio'))
         . '</span>';
 }
@@ -46,11 +46,47 @@ if (!empty($sdi_transmission)) {
         . '</span>';
 }
 
+// Fattura in sola lettura (trasmessa allo SdI, importata, o bloccata dalle
+// impostazioni): niente "Modifica". Dove lo SdI non la considera chiusa
+// (importata, scartata, scaricata a mano) compare "Sblocca"; per una gia'
+// consegnata la correzione e' una nota di credito.
+$invoiceModelLock = new \App\Models\InvoiceModel();
+$locked           = $invoiceModelLock->isLocked((array) $invoice);
+
+if ($locked) {
+    $editAction = '<span class="btn btn-sm btn-secondary disabled" aria-disabled="true" title="'
+        . esc(trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.'), 'attr') . '">'
+        . '<i class="fa fa-solid fa-lock" aria-hidden="true"></i> ' . esc(trans('invoice_locked_badge', '', 'Bloccata')) . '</span>';
+
+    if ($invoiceModelLock->canUnlock((int) $invoice_id)) {
+        $editAction .= '<form method="post" action="' . site_url('invoices/unlock/' . $invoice_id) . '" class="d-inline">'
+            . csrf_field()
+            . '<button type="submit" class="btn btn-sm btn-secondary" data-bs-toggle="confirm"'
+            . ' data-confirm-title="' . esc(trans('confirm', '', 'Conferma'), 'attr') . '"'
+            . ' data-confirm-body="' . esc(trans('invoice_unlock_confirm', '', 'Sbloccare la fattura per modificarla? Se risulta già trasmessa, la modifica non cambia ciò che lo SdI ha ricevuto.'), 'attr') . '"'
+            . ' data-confirm-ok="' . esc(trans('invoice_unlock', '', 'Sblocca'), 'attr') . '">'
+            . '<i class="fa fa-solid fa-lock-open" aria-hidden="true"></i> ' . esc(trans('invoice_unlock', '', 'Sblocca')) . '</button></form>';
+    }
+} else {
+    $editAction = '<a class="btn btn-sm btn-primary" href="' . site_url('invoices/edit/' . $invoice_id) . '">'
+        . '<i class="fa fa-solid fa-pencil" aria-hidden="true"></i> ' . trans('edit', '', 'Modifica') . '</a>';
+}
+
 $actions = '<div class="ip-doc-actions">'
-    . '<a class="btn btn-sm btn-primary" href="' . site_url('invoices/edit/' . $invoice_id) . '">'
-    . '<i class="fa fa-solid fa-pencil" aria-hidden="true"></i> ' . trans('edit', '', 'Modifica') . '</a>'
+    . $editAction
     . '<a class="btn btn-sm btn-secondary" href="' . site_url('invoices/generate_pdf/' . $invoice_id) . '">'
     . '<i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> ' . trans('download_pdf', '', 'PDF') . '</a>';
+
+// Il PDF non marca piu' la fattura come inviata: quando l'impostazione lo
+// prevedeva, il passaggio di stato era una conseguenza nascosta dello scarico
+// (e un export la applicava a tutte). Ora e' questo clic esplicito.
+if ((int) get_setting('mark_invoices_sent_pdf', 0) === 1 && $is_draft) {
+    $actions .= '<form method="post" action="' . site_url('invoices/mark_sent/' . $invoice_id) . '" class="d-inline">'
+        . csrf_field()
+        . '<button type="submit" class="btn btn-sm btn-secondary">'
+        . '<i class="fa fa-solid fa-paper-plane" aria-hidden="true"></i> '
+        . esc(trans('mark_as_sent', '', 'Segna come inviata')) . '</button></form>';
+}
 
 // Invio per email: apre la schermata del Mailer con l'anteprima del messaggio,
 // il template e il PDF allegabile. La stessa pagina mostra come configurare
@@ -299,7 +335,7 @@ $actions .= '</ul></div></div>';
                                     <span class="ip-preview__payment-method ip-preview__track-recipient"><?= esc($track['track_recipient'] ?? '') ?></span>
                                     <span class="ip-preview__payment-amount">
                                         <?php if ($opened): ?>
-                                            <span class="badge text-bg-success"><?= esc($label) ?></span>
+                                            <span class="badge ip-status text-bg-success"><?= esc($label) ?></span>
                                         <?php else: ?>
                                             <span class="text-muted"><?= esc($label) ?></span>
                                         <?php endif; ?>
