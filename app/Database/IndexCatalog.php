@@ -60,10 +60,41 @@ final class IndexCatalog
         ['ip_user_clients',  'idx_client',   'client_id'],
     ];
 
+    /**
+     * [tabella, nome storico, colonne] — chiavi esterne delle tabelle figlie.
+     *
+     * Su MariaDB/InnoDB dichiarare una chiave esterna crea da solo l'indice
+     * sulla colonna; su PostgreSQL no. Il risultato era che proprio i JOIN piu'
+     * frequenti dell'applicazione (documento -> importi, righe, aliquote,
+     * pagamenti) non avevano indice sul motore di sviluppo: ogni lista e ogni
+     * ricalcolo dei totali scandiva la tabella figlia per intero, e lo stesso
+     * faceva ogni DELETE ... CASCADE. ensure() salta le colonne gia' coperte,
+     * quindi su MariaDB questo elenco non crea doppioni.
+     */
+    public const CHILDREN = [
+        ['ip_invoice_amounts',      'idx_invoice',  'invoice_id'],
+        ['ip_invoice_items',        'idx_invoice',  'invoice_id'],
+        ['ip_invoice_item_amounts', 'idx_item',     'item_id'],
+        ['ip_invoice_tax_rates',    'idx_invoice',  'invoice_id'],
+        ['ip_invoices_recurring',   'idx_invoice',  'invoice_id'],
+        ['ip_payments',             'idx_invoice',  'invoice_id'],
+        ['ip_quote_amounts',        'idx_quote',    'quote_id'],
+        ['ip_quote_items',          'idx_quote',    'quote_id'],
+        ['ip_quote_item_amounts',   'idx_item',     'item_id'],
+        ['ip_quote_tax_rates',      'idx_quote',    'quote_id'],
+        // Il link pubblico del preventivo cerca per chiave: la fattura ha gia'
+        // il suo indice unico, il preventivo non ne aveva nessuno.
+        ['ip_quotes',               'idx_url_key',  'quote_url_key'],
+        // ip_invoices.invoice_id <- ip_quotes.invoice_id: join di ogni lista fatture.
+        ['ip_quotes',               'idx_invoice',  'invoice_id'],
+        ['ip_uploads',              'idx_client',   'client_id'],
+        ['ip_uploads',              'idx_url_key',  'url_key'],
+    ];
+
     /** @return list<array{0: string, 1: string, 2: string}> */
     public static function all(): array
     {
-        return array_merge(self::PERFORMANCE, self::RELATIONS);
+        return array_merge(self::PERFORMANCE, self::RELATIONS, self::CHILDREN);
     }
 
     /**
@@ -100,7 +131,8 @@ final class IndexCatalog
             // Gia' coperto: dal nome nuovo, o dal nome storico di un database
             // che ha eseguito la migrazione prima di questo cambio.
             if (self::exists($db, $table, self::name($table, $name))
-                || self::exists($db, $table, $name)) {
+                || self::exists($db, $table, $name)
+                || self::covered($db, $table, $columns)) {
                 continue;
             }
 
@@ -134,6 +166,27 @@ final class IndexCatalog
     public static function name(string $table, string $name): string
     {
         return $table . '_' . $name;
+    }
+
+    /**
+     * Le colonne sono gia' il prefisso di un indice esistente, comunque si
+     * chiami: e' il caso degli indici che MariaDB crea da solo per le chiavi
+     * esterne, che portano il nome del vincolo. Senza questo controllo lo
+     * stesso elenco creerebbe li' un secondo indice identico.
+     */
+    private static function covered(BaseConnection $db, string $table, string $columns): bool
+    {
+        $wanted = array_map('trim', explode(',', $columns));
+
+        foreach ($db->getIndexData($table) as $index) {
+            $fields = array_map('trim', (array) ($index->fields ?? []));
+
+            if (array_slice($fields, 0, count($wanted)) === $wanted) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function exists(BaseConnection $db, string $table, string $name): bool
