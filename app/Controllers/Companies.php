@@ -180,8 +180,8 @@ class Companies extends BaseController
      * Sono quelle dell'azienda in questione — non dell'azienda attiva: si
      * modifica la Holding restando operativi su Novatech, e offrire le serie
      * di Novatech produrrebbe esattamente il riferimento incrociato che le
-     * colonne per azienda servono a evitare. Le serie senza company_id sono
-     * incluse perche' condivise da tutte (installazioni pre multi-azienda).
+     * colonne per azienda servono a evitare. Le vecchie serie senza
+     * company_id non esistono piu': BackfillOrphanCompanyData le ha assegnate.
      */
     private function groupsOf(?int $companyId): array
     {
@@ -191,10 +191,7 @@ class Companies extends BaseController
             return [];
         }
 
-        return $model->groupStart()
-                     ->where('company_id', $companyId)
-                     ->orWhere('company_id IS NULL', null, false)
-                     ->groupEnd()
+        return $model->where('company_id', $companyId)
                      ->orderBy('invoice_group_name', 'ASC')
                      ->findAll();
     }
@@ -332,11 +329,14 @@ class Companies extends BaseController
     }
 
     /**
-     * Elimina un'azienda e tutti i suoi dati collegati.
+     * Elimina un'azienda, se non ha piu' dati collegati.
      *
      * Non consente di eliminare l'azienda attiva ne' quella predefinita:
      * quest'ultima e' il fallback all'accesso e la prima e' il contesto
-     * corrente. L'eliminazione e' irreversibile.
+     * corrente. Non c'e' una cancellazione a cascata: un'azienda che ha
+     * clienti o documenti si disattiva, non si elimina, altrimenti quelle
+     * righe resterebbero con un company_id inesistente -- fuori da ogni
+     * perimetro e visibili a nessuno.
      */
     public function delete(int $id)
     {
@@ -360,6 +360,34 @@ class Companies extends BaseController
 
         if (db_bool($company['company_is_default'])) {
             session()->setFlashdata('alert_error', 'Non puoi eliminare l\'azienda predefinita.');
+
+            return redirect()->to('/companies');
+        }
+
+        // Verso ip_companies non c'e' chiave esterna: eliminare solo la riga
+        // lascerebbe clienti, fatture, serie e impostazioni con un company_id
+        // che non esiste piu'. Non sarebbero visibili a nessuna azienda e non
+        // comparirebbero nemmeno in companies:orphans, che guarda solo i NULL.
+        // Quindi: se ha dati, non si elimina; si disattiva.
+        $linked = (new \App\Services\CompanyOrphanReport())->countForCompany($id);
+
+        if ($linked['total'] > 0) {
+            $dettaglio = [];
+
+            foreach ($linked['tables'] as $table => $righe) {
+                $dettaglio[] = $table . ': ' . $righe;
+            }
+
+            log_message('warning', 'Eliminazione azienda {company} rifiutata: {total} righe collegate ({dettaglio})', [
+                'company'   => $id,
+                'total'     => $linked['total'],
+                'dettaglio' => implode(', ', $dettaglio),
+            ]);
+
+            session()->setFlashdata('alert_error',
+                'Questa azienda ha ancora ' . $linked['total'] . ' righe collegate (clienti, documenti, '
+                . 'serie, impostazioni). Non viene eliminata: disattivala, cosi\' i dati restano '
+                . 'consultabili e nessun documento resta senza azienda.');
 
             return redirect()->to('/companies');
         }

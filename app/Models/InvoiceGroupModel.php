@@ -107,10 +107,7 @@ class InvoiceGroupModel extends IpBaseModel
         $builder = $this->db->table('ip_invoice_groups')->where('invoice_group_id', $invoiceGroupId);
 
         if ($companyId) {
-            $builder->groupStart()
-                    ->where('company_id', $companyId)
-                    ->orWhere('company_id IS NULL', null, false)
-                    ->groupEnd();
+            $builder->where('company_id', $companyId);
         }
 
         return $builder->countAllResults() > 0;

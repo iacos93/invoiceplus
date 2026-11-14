@@ -30,14 +30,15 @@ class IpBaseModel extends Model
      * il rischio non è una lista incompleta, è vedere i documenti di un altro
      * soggetto giuridico.
      *
-     * I record con company_id NULL restano visibili: sono i dati anteriori
-     * all'introduzione del multi-azienda, e nasconderli farebbe sparire
-     * l'archivio invece di segnalarlo.
-     */
-    /**
-     * $table permette di applicare il filtro a una tabella in join anziche' a
-     * quella del model: ip_payments non ha company_id, ma l'azienda del
-     * pagamento e' quella della fattura pagata.
+     * Fino a oggi i record con company_id NULL restavano visibili "perche'
+     * anteriori al multi-azienda": l'effetto era che un residuo senza azienda
+     * finiva nei totali di tutte. Ora il backfill li ha assegnati
+     * (BackfillOrphanCompanyData) e `php spark companies:orphans` dice se ne
+     * restano: il perimetro e' uguaglianza, non "uguale o nullo".
+     *
+     * La parametrizzazione per tabella serve a ip_payments, che non ha
+     * company_id: li' l'azienda del pagamento e' quella della fattura pagata e
+     * il chiamante passa la tabella in join.
      */
     public function scopeToCompany(?int $companyId = null, ?string $table = null): static
     {
@@ -48,10 +49,7 @@ class IpBaseModel extends Model
             return $this;
         }
 
-        $this->groupStart()
-             ->where($table . '.company_id', $companyId)
-             ->orWhere($table . '.company_id IS NULL', null, false)
-             ->groupEnd();
+        $this->where($table . '.company_id', $companyId);
 
         return $this;
     }

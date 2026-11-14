@@ -136,6 +136,29 @@ if (!function_exists('year_sql')) {
     }
 }
 
+if (!function_exists('days_since_sql')) {
+    /**
+     * Espressione SQL dei giorni trascorsi da una colonna data a oggi
+     * (positiva se la data e' passata).
+     *
+     * Prima era scritto `CURRENT_DATE - colonna` in ogni model. Su PostgreSQL
+     * la sottrazione fra date da' i giorni; su MariaDB le due date diventano
+     * numeri AAAAMMGG e il risultato e' la loro differenza aritmetica: il
+     * segno resta giusto (quindi "scaduta si'/no" funzionava), ma i giorni no
+     * — dal 28 gennaio al 3 febbraio risultavano 75 giorni invece di 6, e le
+     * fasce del report di anzianita' dei crediti finivano nella colonna
+     * sbagliata. Ogni motore ha la sua funzione, quindi la scelta sta qui.
+     */
+    function days_since_sql(string $column): string
+    {
+        return match (db_connect()->DBDriver) {
+            'MySQLi'  => 'DATEDIFF(CURRENT_DATE, ' . $column . ')',
+            'SQLite3' => "CAST(julianday('now', 'localtime', 'start of day') - julianday(" . $column . ') AS INTEGER)',
+            default   => '(CURRENT_DATE - ' . $column . ')',
+        };
+    }
+}
+
 if (!function_exists('year_filter_sql')) {
     /**
      * Condizione SQL per un anno, stringa vuota quando l'anno è 0 ("tutti gli
@@ -189,6 +212,17 @@ if (!function_exists('available_years')) {
      */
     function available_years(): array
     {
+        // Il selettore sta nel layout e selected_year() lo interroga per
+        // validare l'anno: senza memoria le due SELECT DISTINCT partivano piu'
+        // volte nella stessa pagina. La chiave e' l'azienda attiva, perche'
+        // gli anni sono dentro il suo perimetro (e nei cron l'azienda cambia).
+        static $cache = [];
+
+        $companyId = active_company_id();
+        if (isset($cache[$companyId])) {
+            return $cache[$companyId];
+        }
+
         $years = array_unique(array_merge(
             (new \App\Models\InvoiceModel())->getAvailableYears(),
             (new \App\Models\QuoteModel())->getAvailableYears(),
@@ -196,7 +230,7 @@ if (!function_exists('available_years')) {
         ));
         rsort($years);
 
-        return $years;
+        return $cache[$companyId] = $years;
     }
 }
 
@@ -247,6 +281,25 @@ if (!function_exists('htmlsc')) {
     function htmlsc($output)
     {
         return htmlspecialchars((string) $output, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('flash_html')) {
+    /**
+     * Converte il testo di un messaggio flash (toast) in HTML sicuro.
+     *
+     * I flashdata contengono anche dati che arrivano da fuori: nome del file
+     * importato, errori di validazione, P.IVA letta da un XML. Senza escaping
+     * un file artigianale farebbe eseguire JavaScript nella sessione
+     * dell'amministratore che lo importa. Si scappa tutto e si trasformano
+     * soltanto i fine riga in <br>, l'unico markup che i toast usano.
+     *
+     * Va usata solo per i flashdata: il markup delle viste è fidato e non
+     * deve passare di qui.
+     */
+    function flash_html(mixed $message): string
+    {
+        return nl2br(esc((string) $message), false);
     }
 }
 
@@ -1394,16 +1447,15 @@ if (!function_exists('active_company')) {
     /** Dati dell'azienda attiva (ragione sociale, P.IVA, indirizzo, forma). */
     function active_company(): array
     {
-        static $cache = null;
+        // Per id, non un valore solo: i cron girano senza sessione e cambiano
+        // azienda attiva dentro un ciclo. Con una cache unica la prima azienda
+        // letta restava "attiva" per tutto il giro, e company_setting() dava
+        // alle successive le serie di numerazione della prima.
+        static $cache = [];
 
-        if ($cache !== null) {
-            return $cache;
-        }
+        $id = active_company_id();
 
-        $id    = active_company_id();
-        $cache = $id ? ((new \App\Models\CompanyModel())->find($id) ?: []) : [];
-
-        return $cache;
+        return $cache[$id] ??= $id ? ((new \App\Models\CompanyModel())->find($id) ?: []) : [];
     }
 }
 
@@ -1509,14 +1561,19 @@ if (!function_exists('company_scope_sql')) {
     /**
      * Frammento SQL che restringe una query grezza all'azienda attiva.
      *
-     * Va concatenato a una WHERE gia' presente: restituisce
-     * " AND (alias.company_id = N OR alias.company_id IS NULL)" oppure stringa
-     * vuota quando non c'e' un'azienda attiva. Le righe senza company_id sono
-     * incluse perche' precedono il multi-azienda e appartengono a tutti.
+     * Va concatenato a una WHERE gia' presente e restituisce
+     * " AND alias.company_id = N", oppure stringa vuota quando non c'e'
+     * un'azienda attiva.
      *
      * Esiste perche' i report e le viste di dettaglio usano SQL scritto a mano,
      * dove il scopeToCompany() dei model non arriva: senza questo, un report
      * sommava i documenti di tutte le aziende.
+     *
+     * Non c'e' piu' l'eccezione "OR company_id IS NULL": le righe anteriori al
+     * multi-azienda sono state assegnate (BackfillOrphanCompanyData) e quelle
+     * rimaste si vedono con `php spark companies:orphans`. Includerle qui
+     * significava mostrarle a tutte le aziende, cioè il contrario del
+     * perimetro.
      */
     function company_scope_sql(string $alias): string
     {
@@ -1526,7 +1583,7 @@ if (!function_exists('company_scope_sql')) {
             return '';
         }
 
-        return " AND ({$alias}.company_id = " . (int) $companyId . " OR {$alias}.company_id IS NULL)";
+        return " AND {$alias}.company_id = " . (int) $companyId;
     }
 }
 
@@ -1546,10 +1603,7 @@ if (!function_exists('scope_builder_to_company')) {
             return $builder;
         }
 
-        return $builder->groupStart()
-                       ->where($alias . '.company_id', $companyId)
-                       ->orWhere($alias . '.company_id IS NULL', null, false)
-                       ->groupEnd();
+        return $builder->where($alias . '.company_id', $companyId);
     }
 }
 

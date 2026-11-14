@@ -103,10 +103,9 @@ class InvoiceRecurringModel extends IpBaseModel
 
         // Le ricorrenti non hanno company_id proprio: lo si prende dalla fattura
         // joinata, altrimenti la lista admin mostra (e lascia agire su) quelle di
-        // tutte le aziende. Le righe pre-multi-company (company_id NULL) restano
-        // visibili a tutte, come da convenzione.
+        // tutte le aziende.
         if ($companyId) {
-            $builder->where('(ip_invoices.company_id = ' . (int) $companyId . ' OR ip_invoices.company_id IS NULL)');
+            $builder->where('ip_invoices.company_id', $companyId);
         }
 
         return $builder->findAll();

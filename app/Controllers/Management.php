@@ -348,7 +348,7 @@ class Management extends BaseController
             ->select('ii.item_id')
             ->join('ip_invoices i', 'i.invoice_id = ii.invoice_id')
             ->whereIn('ii.invoice_id', $invoiceIds)
-            ->where('(i.company_id = ' . (int) active_company_id() . ' OR i.company_id IS NULL)', null, false);
+            ->where('i.company_id', active_company_id());
 
         if (!$overwrite) {
             $builder->where('ii.costing_account_id IS NULL', null, false);
@@ -377,7 +377,7 @@ class Management extends BaseController
     {
         $builder = $this->db()->table('ip_expenses')
             ->whereIn('expense_id', $expenseIds)
-            ->where('(company_id = ' . (int) active_company_id() . ' OR company_id IS NULL)', null, false);
+            ->where('company_id', active_company_id());
 
         if (!$overwrite) {
             $builder->where('costing_account_id IS NULL', null, false);

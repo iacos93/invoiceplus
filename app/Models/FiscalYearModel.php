@@ -124,10 +124,15 @@ class FiscalYearModel extends IpBaseModel
 
     /**
      * Riga apribile dall'azienda attiva (sua o condivisa), o null.
+     *
+     * Passa da scopeEffective() e non da scopeToCompany(): la riga condivisa
+     * (company_id NULL) degli anni non ancora personalizzati e' l'unica che
+     * l'azienda puo' aprire, e senza questo ramo il form dell'anno comune
+     * rispondeva 404.
      */
     public function findEffective(int $id): ?array
     {
-        return $this->scopeToCompany()->where('fiscal_id', $id)->first();
+        return $this->scopeEffective()->where($this->table . '.fiscal_id', $id)->first();
     }
 
     /**

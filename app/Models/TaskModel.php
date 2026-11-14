@@ -61,7 +61,7 @@ class TaskModel extends IpBaseModel
 
     public function getAllWithProject(string $status = 'all'): array
     {
-        $this->select('ip_tasks.*, ip_projects.project_name, (CASE WHEN ip_tasks.task_status != 4 AND (CURRENT_DATE - ip_tasks.task_finish_date) > 0 THEN 1 ELSE 0 END) AS is_overdue', false)
+        $this->select('ip_tasks.*, ip_projects.project_name, (CASE WHEN ip_tasks.task_status != 4 AND ' . days_since_sql('ip_tasks.task_finish_date') . ' > 0 THEN 1 ELSE 0 END) AS is_overdue', false)
             ->join('ip_projects', 'ip_projects.project_id = ip_tasks.project_id', 'left')
             ->join('ip_clients', 'ip_clients.client_id = ip_projects.client_id', 'left');
 
@@ -69,7 +69,7 @@ class TaskModel extends IpBaseModel
             $this->where('ip_tasks.task_status', (int) $status);
         } elseif ($status === 'overdue') {
             $this->where('ip_tasks.task_status !=', 4)
-                 ->where('(CURRENT_DATE - ip_tasks.task_finish_date) >', 0);
+                 ->where(days_since_sql('ip_tasks.task_finish_date') . ' >', 0, false);
         }
 
         $this->scopeToCompany(null, 'ip_clients');

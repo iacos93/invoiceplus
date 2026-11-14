@@ -128,6 +128,7 @@ class ReportModel
         $builder->select('ip_clients.client_id, ip_clients.client_name, ip_clients.client_surname,
             CONCAT(ip_clients.client_name,\' \', ip_clients.client_surname) AS client_namesurname', false);
 
+        $days   = days_since_sql('ip_invoices.invoice_date_due');
         $ranges = [
             'range_1' => 'BETWEEN 1 AND 30',
             'range_2' => 'BETWEEN 31 AND 60',
@@ -143,7 +144,7 @@ class ReportModel
                         SELECT invoice_id FROM ip_invoices
                             WHERE ip_invoices.client_id = ip_clients.client_id
                                 AND ip_invoices.invoice_date_due < CURRENT_DATE
-                                AND (CURRENT_DATE - ip_invoices.invoice_date_due) {$range}{$scope}
+                                AND {$days} {$range}{$scope}
                     )
                     AND ip_invoice_amounts.invoice_balance > 0
             ) AS {$alias}", false);

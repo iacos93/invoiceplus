@@ -66,8 +66,10 @@ class Search extends BaseController
     }
 
     /**
-     * Restringe all'azienda attiva le tabelle che hanno company_id, includendo
-     * le righe senza azienda (dati precedenti al multi-azienda).
+     * Restringe all'azienda attiva le tabelle che hanno company_id.
+     *
+     * Solo uguaglianza: le righe senza azienda sono state assegnate dal
+     * backfill (vedi docs/dati-senza-azienda.md) e non vanno mostrate a tutti.
      */
     private function scoped(string $table)
     {
@@ -75,10 +77,7 @@ class Search extends BaseController
         $companyId = active_company_id();
 
         if ($companyId && db_connect()->fieldExists('company_id', $table)) {
-            $builder->groupStart()
-                    ->where($table . '.company_id', $companyId)
-                    ->orWhere($table . '.company_id IS NULL', null, false)
-                    ->groupEnd();
+            $builder->where($table . '.company_id', $companyId);
         }
 
         return $builder;

@@ -117,7 +117,7 @@ $deleteModals = [];
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= trans('close', '', 'Chiudi') ?>"></button>
                 </div>
                 <div class="modal-body">
-                    <?= trans('confirm_delete_company', '', 'Vuoi davvero eliminare questa azienda? L\'operazione è irreversibile.') ?>
+                    <?= trans('confirm_delete_company', '', 'Vuoi davvero eliminare questa azienda? L\'operazione è irreversibile. Viene rifiutata se l\'azienda ha ancora clienti, documenti o impostazioni collegate: in quel caso disattivala.') ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= trans('cancel', '', 'Annulla') ?></button>
