@@ -302,7 +302,7 @@ a:hover {
      card bianca: la soglia va verificata su ENTRAMBI i fondi su cui il campo
      puo' stare, card (#fff) e canvas (#f6f6f7), ed e' il secondo il caso
      peggiore. */
-  --ip-border-field:  #888f9c;     /* 3.25:1 su card, 3.01:1 su canvas */
+  --ip-border-field:  #82899a;     /* 3.5:1 su card, 3.24:1 su canvas (era #888f9c: 3.01:1 sul canvas, a un soffio dalla soglia 3:1) */
 
   /* Superfici piene dei pulsanti. Le tinte di stato (--ip-success, --ip-info)
      sono nate per badge e testo, dove il fondo e' chiaro: usate come fondo di
@@ -4794,7 +4794,10 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-auth-callout--warning {
   border-left-color: var(--ip-warning-text);
   background: var(--ip-warning-bg);
-  color: var(--ip-warning);
+  /* --ip-warning-text e non --ip-warning: l'arancio pieno su questa tinta sta
+     a 2.1:1, e qui è testo corrente che spiega cosa fare con il secondo
+     fattore. Il gradino "-text" è quello verificato sui fondi di stato. */
+  color: var(--ip-warning-text);
 }
 .ip-auth-callout--danger {
   border-left-color: var(--ip-danger-text);
@@ -5474,6 +5477,28 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   .ip-client-codes { width: 100%; min-width: 0; }
   .ip-client-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* -----------------------------------------------------------------------------
+   Aree tattili su dispositivi touch (WCAG 2.5.8 chiede 24px, qui si punta ai
+   44px delle linee guida per il dito).
+   --------------------------------------------------------------------------
+   Condizione sul puntatore e non sulla larghezza: un tablet largo 1024px usa
+   comunque le dita, un desktop con finestra stretta no. Con il mouse i 30px
+   di .btn-sm restano, perche' le barre dei filtri e le righe delle tabelle
+   sono dimensionate su quella misura. Cresce solo l'altezza dei pulsanti
+   compatti; per i controlli di sola icona anche la larghezza, altrimenti
+   restano un rettangolo alto e stretto. */
+@media (pointer: coarse) {
+  .btn-sm,
+  .btn-group-sm > .btn {
+    min-height: 44px;
+  }
+  .ip-theme-toggle,
+  .ip-import-chosen__clear {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 /* -----------------------------------------------------------------------------
    20. Aree tattili — sidebar off-canvas su mobile
    -------------------------------------------------------------------------- */
@@ -7011,6 +7036,7 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 }
 .ip-toast--success { border-left-color: var(--ip-success); }
 .ip-toast--info     { border-left-color: var(--ip-info); }
+.ip-toast--warning  { border-left-color: var(--ip-warning); }
 .ip-toast--danger   { border-left-color: var(--ip-danger); }
 
 .ip-toast .toast-body {
@@ -7029,6 +7055,7 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 }
 .ip-toast--success .ip-toast-icon { color: var(--ip-success-text); }
 .ip-toast--info     .ip-toast-icon { color: var(--ip-info-text); }
+.ip-toast--warning  .ip-toast-icon { color: var(--ip-warning-text); }
 .ip-toast--danger   .ip-toast-icon { color: var(--ip-danger-text); }
 
 .ip-toast-message {
@@ -8288,7 +8315,7 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
 }
 .ip-item-row__save:hover {
   background: var(--ip-success-bg);
-  color: var(--ip-success);
+  color: var(--ip-success-text);
 }
 
 /* Imponibile + IVA sotto il totale di riga: in modifica servono i dettagli,
@@ -11274,9 +11301,11 @@ html[data-theme="dark"] #content form[action*="clients/form"] .card:has(.ip-fiel
 .ip-ie-list li i{
   margin-top: 2px;
   font-size: var(--ip-text-xs);
-  color: var(--ip-success);
+  /* La spunta dice "incluso": è informazione, quindi il gradino di testo
+     (sopra 4.5:1 in entrambi i temi) e non il verde pieno, che in chiaro si
+     ferma a 4.3:1. Con il token "-text" non serve più la regola per lo scuro. */
+  color: var(--ip-success-text);
 }
-html[data-theme="dark"] .ip-ie-list li i{ color: var(--ip-success-text); }
 
 .ip-ie-card__actions{
   margin-top: auto;

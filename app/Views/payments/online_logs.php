@@ -37,9 +37,9 @@
                     </td>
                     <td data-label="<?= esc(trans('status')) ?>">
                         <?php if ($log['merchant_response_successful']): ?>
-                            <span class="badge text-bg-success"><?= trans('success') ?></span>
+                            <span class="badge ip-status text-bg-success"><?= trans('success') ?></span>
                         <?php else: ?>
-                            <span class="badge text-bg-danger"><?= trans('failure') ?></span>
+                            <span class="badge ip-status text-bg-danger"><?= trans('failure') ?></span>
                         <?php endif; ?>
                     </td>
                     <td data-label="<?= esc(trans('type')) ?>"><?= esc($log['merchant_response_driver']) ?></td>

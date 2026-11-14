@@ -112,7 +112,7 @@ $usageText = static function (array $counts): string {
                             <span class="ip-num"><?= esc($sdiCode) ?></span>
                             <div class="ip-cell-sub"><?= esc(PaymentMethodModel::SDI_CODES[$sdiCode] ?? '') ?></div>
                         <?php else: ?>
-                            <span class="badge text-bg-warning"><?= trans('not_set', '', 'Non impostata') ?></span>
+                            <span class="badge ip-status text-bg-warning"><?= trans('not_set', '', 'Non impostata') ?></span>
                             <div class="ip-cell-sub"><?= trans('sdi_payment_mode_missing', '', 'La fattura elettronica parte senza dati di pagamento') ?></div>
                         <?php endif; ?>
                     </td>

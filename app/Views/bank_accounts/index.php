@@ -115,7 +115,7 @@ $usageText = static function (array $counts): string {
 
                         <td data-label="<?= esc(trans('on_documents', '', 'Sui documenti')) ?>">
                             <?php if ($isDefault): ?>
-                                <span class="badge text-bg-success"><?= trans('default', '', 'Predefinito') ?></span>
+                                <span class="badge ip-status text-bg-success"><?= trans('default', '', 'Predefinito') ?></span>
                                 <div class="ip-cell-sub"><?= trans('bank_account_default_hint', '', 'Stampato quando la fattura non ne indica un altro') ?></div>
                             <?php else: ?>
                                 <span class="text-muted"><?= trans('bank_account_on_request', '', 'Solo se scelto sulla fattura') ?></span>

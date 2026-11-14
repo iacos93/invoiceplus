@@ -95,9 +95,9 @@ if (in_array((int) $quote['quote_status_id'], [2, 3], true)):
     $actions .= $quoteAction('approve', trans('approve_this_quote', '', 'Approva'), 'fa-check', 'btn-success')
         . $quoteAction('reject', trans('reject_this_quote', '', 'Rifiuta'), 'fa-times', 'btn-danger');
 elseif ((int) $quote['quote_status_id'] === 4):
-    $actions .= '<span class="badge text-bg-success"><i class="fa fa-solid fa-check" aria-hidden="true"></i> ' . trans('quote_approved', '', 'Approvato') . '</span>';
+    $actions .= '<span class="badge ip-status text-bg-success"><i class="fa fa-solid fa-check" aria-hidden="true"></i> ' . trans('quote_approved', '', 'Approvato') . '</span>';
 elseif ((int) $quote['quote_status_id'] === 5):
-    $actions .= '<span class="badge text-bg-danger"><i class="fa fa-solid fa-times" aria-hidden="true"></i> ' . trans('quote_rejected', '', 'Rifiutato') . '</span>';
+    $actions .= '<span class="badge ip-status text-bg-danger"><i class="fa fa-solid fa-times" aria-hidden="true"></i> ' . trans('quote_rejected', '', 'Rifiutato') . '</span>';
 endif;
 if (!empty($public_view)):
     $actions .= '<a class="btn btn-success" href="' . site_url('guest/view/generate_quote_pdf/' . $quote_url_key) . '"><i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> ' . trans('download_pdf', '', 'PDF') . '</a>';

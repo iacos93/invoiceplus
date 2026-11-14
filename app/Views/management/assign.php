@@ -113,7 +113,7 @@ $selectOptions = static function (array $options, string $empty): string {
                                         <td><a href="<?= site_url('invoices/view/' . (int) $invoice['invoice_id']) ?>"><?= esc($invoice['invoice_number']) ?></a></td>
                                         <td><?= esc(date_from_mysql($invoice['invoice_date_created'])) ?></td>
                                         <td><?= esc($invoice['client_name']) ?></td>
-                                        <td class="text-end"><span class="badge text-bg-warning"><?= (int) $invoice['missing_lines'] ?></span></td>
+                                        <td class="text-end"><span class="badge ip-status text-bg-warning"><?= (int) $invoice['missing_lines'] ?></span></td>
                                         <td class="text-end"><?= format_currency((float) $invoice['missing_amount']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>

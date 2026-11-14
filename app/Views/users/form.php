@@ -319,7 +319,7 @@ $legacyIban = trim((string) old('user_iban', $model->formValue('user_iban')));
             <div class="card-body">
                 <?php if ($mfa_enabled): ?>
                     <p class="mb-2">
-                        <span class="badge bg-success"><?= trans('active', '', 'Attivo') ?></span>
+                        <span class="badge ip-status text-bg-success"><?= trans('active', '', 'Attivo') ?></span>
                         <?= trans('mfa_enabled_help', '', 'L\'accesso richiede un codice dall\'app authenticator o una passkey.') ?>
                     </p>
                     <form method="post" action="<?= site_url('users/reset_mfa/' . $id) ?>">
