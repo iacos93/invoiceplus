@@ -114,9 +114,9 @@ La stessa pagina nel tema scuro:
 
 I documenti che l'applicazione produce:
 
-![Fattura di esempio: intestazione, righe con codice articolo, totali e saldo](docs/img/fattura.png)
+![Fattura di esempio: logo, emittente e destinatario affiancati, righe con codice articolo e aliquota IVA, totali, saldo e piè di pagina](docs/img/fattura.png)
 
-![Preventivo di esempio: intestazione, righe e totali](docs/img/preventivo.png)
+![Preventivo di esempio: logo, emittente e destinatario, righe con aliquota IVA e totali](docs/img/preventivo.png)
 
 ## Documentazione
 
