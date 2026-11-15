@@ -2313,3 +2313,22 @@ if (! function_exists('db_bool')) {
         return $value === true || $value === 1 || $value === '1' || $value === 't';
     }
 }
+
+if (!function_exists('sql_year_month')) {
+    /**
+     * Espressione SQL che riduce una data ad 'AAAA-MM' sul motore in uso.
+     *
+     * Le serie mensili (Bacheca, report, controllo di gestione) usavano
+     * TO_CHAR, che esiste solo su PostgreSQL: su MySQL la Bacheca si apriva
+     * con un errore 500 alla prima visita. I test unitari girano su SQLite,
+     * da qui il terzo ramo.
+     */
+    function sql_year_month(\CodeIgniter\Database\BaseConnection $db, string $column): string
+    {
+        return match ($db->DBDriver) {
+            'Postgre' => "TO_CHAR({$column}, 'YYYY-MM')",
+            'SQLite3' => "strftime('%Y-%m', {$column})",
+            default   => "DATE_FORMAT({$column}, '%Y-%m')",
+        };
+    }
+}

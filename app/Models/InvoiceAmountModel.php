@@ -290,7 +290,7 @@ class InvoiceAmountModel extends IpBaseModel
         $scopePay = company_scope_sql('ip_invoices');
 
         $invoicedRows = $this->db->query("
-            SELECT TO_CHAR(ip_invoices.invoice_date_created, 'YYYY-MM') AS ym,
+            SELECT " . sql_year_month($this->db, 'ip_invoices.invoice_date_created') . " AS ym,
                    COALESCE(SUM(ip_invoice_amounts.invoice_total), 0) AS invoiced
             FROM ip_invoice_amounts
             JOIN ip_invoices ON ip_invoices.invoice_id = ip_invoice_amounts.invoice_id
@@ -307,7 +307,7 @@ class InvoiceAmountModel extends IpBaseModel
         }
 
         $paidRows = $this->db->query("
-            SELECT TO_CHAR(ip_payments.payment_date, 'YYYY-MM') AS ym,
+            SELECT " . sql_year_month($this->db, 'ip_payments.payment_date') . " AS ym,
                    COALESCE(SUM(ip_payments.payment_amount), 0) AS paid
             FROM ip_payments
             JOIN ip_invoices ON ip_invoices.invoice_id = ip_payments.invoice_id
@@ -486,7 +486,7 @@ class InvoiceAmountModel extends IpBaseModel
         }
 
         $rows = $this->db->query("
-            SELECT TO_CHAR(ip_invoices.invoice_date_created, 'YYYY-MM') AS ym,
+            SELECT " . sql_year_month($this->db, 'ip_invoices.invoice_date_created') . " AS ym,
                    COALESCE(SUM(COALESCE(ip_invoice_amounts.invoice_item_tax_total, 0) + COALESCE(ip_invoice_amounts.invoice_tax_total, 0)), 0) AS total_tax
             FROM ip_invoice_amounts
             JOIN ip_invoices ON ip_invoices.invoice_id = ip_invoice_amounts.invoice_id
@@ -523,7 +523,7 @@ class InvoiceAmountModel extends IpBaseModel
         $scopePay = company_scope_sql('ip_invoices');
 
         $invoicedRows = $this->db->query("
-            SELECT TO_CHAR(ip_invoices.invoice_date_created, 'YYYY-MM') AS ym,
+            SELECT " . sql_year_month($this->db, 'ip_invoices.invoice_date_created') . " AS ym,
                    COALESCE(SUM(ip_invoice_amounts.invoice_total), 0) AS invoiced
             FROM ip_invoice_amounts
             JOIN ip_invoices ON ip_invoices.invoice_id = ip_invoice_amounts.invoice_id
@@ -541,7 +541,7 @@ class InvoiceAmountModel extends IpBaseModel
         }
 
         $paidRows = $this->db->query("
-            SELECT TO_CHAR(ip_payments.payment_date, 'YYYY-MM') AS ym,
+            SELECT " . sql_year_month($this->db, 'ip_payments.payment_date') . " AS ym,
                    COALESCE(SUM(ip_payments.payment_amount), 0) AS paid
             FROM ip_payments
             JOIN ip_invoices ON ip_invoices.invoice_id = ip_payments.invoice_id

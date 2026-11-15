@@ -517,7 +517,7 @@ class ExpenseModel extends IpBaseModel
         $scope = company_scope_sql('e');
 
         $rows = $this->db->query("
-            SELECT TO_CHAR(e.expense_date, 'YYYY-MM') AS ym,
+            SELECT " . sql_year_month($this->db, 'e.expense_date') . " AS ym,
                    COALESCE(SUM(e.expense_total), 0) AS total
             FROM ip_expenses e
             WHERE e.expense_date >= ? AND e.expense_date <= ?{$scope}
@@ -555,7 +555,7 @@ class ExpenseModel extends IpBaseModel
         $scope = company_scope_sql('e');
 
         $rows = $this->db->query("
-            SELECT TO_CHAR(e.expense_date, 'YYYY-MM') AS ym,
+            SELECT " . sql_year_month($this->db, 'e.expense_date') . " AS ym,
                    COALESCE(SUM(e.expense_tax), 0) AS total
             FROM ip_expenses e
             WHERE e.expense_date >= ? AND e.expense_date <= ?{$scope}

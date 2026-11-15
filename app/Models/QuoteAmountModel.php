@@ -188,7 +188,7 @@ class QuoteAmountModel extends IpBaseModel
         $scope = company_scope_sql('ip_quotes');
 
         $rows = $this->db->query("
-            SELECT TO_CHAR(ip_quotes.quote_date_created, 'YYYY-MM') AS ym,
+            SELECT " . sql_year_month($this->db, 'ip_quotes.quote_date_created') . " AS ym,
                    COALESCE(SUM(ip_quote_amounts.quote_total), 0) AS total
             FROM ip_quote_amounts
             JOIN ip_quotes ON ip_quotes.quote_id = ip_quote_amounts.quote_id

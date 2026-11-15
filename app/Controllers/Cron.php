@@ -117,18 +117,39 @@ class Cron extends BaseController
      */
     private function withCronLock(string $name, callable $work): string
     {
-        $db     = \Config\Database::connect();
-        $lockId = "SELECT pg_try_advisory_lock(hashtext('{$name}')::bigint) AS locked";
-        $locked = (bool) ($db->query($lockId)->getRow()->locked ?? false);
+        $db = \Config\Database::connect();
 
-        if (!$locked) {
+        // Il lock esiste in forme diverse per motore: advisory lock su
+        // PostgreSQL, GET_LOCK() su MySQL/MariaDB (anch'esso di sessione, si
+        // libera se la connessione cade). Prima c'era solo la sintassi
+        // PostgreSQL e su MySQL ogni giro di recur() finiva in errore 500.
+        // SQLite (test) non ha lock con nome: un solo processo, si procede.
+        [$acquire, $release] = match ($db->DBDriver) {
+            'Postgre' => [
+                "SELECT pg_try_advisory_lock(hashtext(?)::bigint) AS locked",
+                "SELECT pg_advisory_unlock(hashtext(?)::bigint)",
+            ],
+            'MySQLi' => [
+                'SELECT GET_LOCK(?, 0) AS locked',
+                'SELECT RELEASE_LOCK(?)',
+            ],
+            default => [null, null],
+        };
+
+        $lockName = 'invoiceplus_cron_' . $name;
+
+        // db_bool(): PostgreSQL restituisce 't'/'f', e (bool) 'f' è true —
+        // un lock già preso da un altro giro risultava acquisito.
+        if ($acquire !== null && !db_bool($db->query($acquire, [$lockName])->getRow()->locked ?? false)) {
             return 'Un\'altra esecuzione di "' . $name . '" e\' gia\' in corso, questo giro viene saltato.';
         }
 
         try {
             return $work();
         } finally {
-            $db->query("SELECT pg_advisory_unlock(hashtext('{$name}')::bigint)");
+            if ($release !== null) {
+                $db->query($release, [$lockName]);
+            }
         }
     }
 

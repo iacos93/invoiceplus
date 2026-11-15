@@ -68,6 +68,14 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Su MySQL la Bacheca dava errore 500 e il cron delle fatture ricorrenti
+  falliva a ogni giro: le serie mensili usavano TO_CHAR e il lock del cron
+  l'advisory lock, entrambi solo PostgreSQL. Ora le serie passano da
+  `sql_year_month()` e il lock usa GET_LOCK() su MySQL; su PostgreSQL un lock
+  già preso da un altro giro non risulta più acquisito per errore (`'f'` letto
+  come vero). Un test di guardia segnala SQL solo PostgreSQL senza ramo per
+  l'altro motore.
+
 - Su MySQL l'installazione pulita si fermava a metà migrazioni: gli indici su
   `passkey_credential_id` e `client_vat_id` (colonne TEXT) ora usano una
   lunghezza di prefisso, che MySQL richiede e MariaDB tollerava.
