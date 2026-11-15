@@ -24,8 +24,8 @@ class SystemStatus extends BaseController
         $service = SystemStatusService::fromApp();
         $checks  = $service->checks();
 
-        $checks[] = $this->databaseCheck();
-        $checks[] = $this->migrationCheck();
+        $checks[] = $service->databaseCheck();
+        $checks[] = $service->migrationCheck();
         $checks[] = $this->incomingCheck($service);
         $checks[] = $service->sdiCertificateCheck((string) get_setting('sdi_channel', 'manual'), (string) get_setting('sdi_coop_cert_path', ''));
 
@@ -79,36 +79,6 @@ class SystemStatus extends BaseController
     }
 
     /**
-     * @return array{key: string, label: string, state: string, detail: string, hint: string}
-     */
-    private function databaseCheck(): array
-    {
-        $config = config('Database');
-        $group  = $config->defaultGroup;
-        $nome   = (string) (($config->{$group}['database'] ?? ''));
-
-        try {
-            $db = \Config\Database::connect();
-
-            return [
-                'key'    => 'database',
-                'label'  => 'Database',
-                'state'  => SystemStatusService::OK,
-                'detail' => trim(((string) ($config->{$group}['DBDriver'] ?? '')) . ' ' . $db->getVersion() . ' — ' . $nome),
-                'hint'   => '',
-            ];
-        } catch (\Throwable $e) {
-            return [
-                'key'    => 'database',
-                'label'  => 'Database',
-                'state'  => SystemStatusService::ERROR,
-                'detail' => 'Connessione non riuscita a ' . $nome . ': ' . mb_substr($e->getMessage(), 0, 160),
-                'hint'   => 'Controlla i parametri del gruppo "' . $group . '" nel .env e che il server sia raggiungibile.',
-            ];
-        }
-    }
-
-    /**
      * Nomi dei file gia' diventati spesa, per confrontarli con quelli arrivati
      * dallo SdI. Un elenco di nomi di file, senza importi ne' fornitori: la
      * cartella incoming/ e' unica per tutte le aziende, e il confronto con le
@@ -129,48 +99,5 @@ class SystemStatus extends BaseController
         }
 
         return $service->incomingCheck(array_map('strval', $nomi));
-    }
-
-    /**
-     * @return array{key: string, label: string, state: string, detail: string, hint: string}
-     */
-    private function migrationCheck(): array
-    {
-        try {
-            $runner    = \Config\Services::migrations();
-            $applicate = array_map(static fn ($row) => (string) $row->version, $runner->getHistory());
-
-            $pendenti = SystemStatusService::pendingMigrations($runner->findMigrations(), $applicate);
-        } catch (\Throwable $e) {
-            return [
-                'key'    => 'migrations',
-                'label'  => 'Migrazioni',
-                'state'  => SystemStatusService::ERROR,
-                'detail' => 'Impossibile leggere lo stato: ' . mb_substr($e->getMessage(), 0, 160),
-                'hint'   => 'Con il database irraggiungibile non si può sapere se lo schema è aggiornato: risolvi prima il controllo "Database".',
-            ];
-        }
-
-        if ($pendenti === []) {
-            return [
-                'key'    => 'migrations',
-                'label'  => 'Migrazioni',
-                'state'  => SystemStatusService::OK,
-                'detail' => 'Schema aggiornato (' . count($applicate) . ' migrazioni applicate)',
-                'hint'   => '',
-            ];
-        }
-
-        $elenco = implode(', ', array_slice($pendenti, 0, 3)) . (count($pendenti) > 3 ? '…' : '');
-
-        return [
-            'key'    => 'migrations',
-            'label'  => 'Migrazioni',
-            'state'  => SystemStatusService::ERROR,
-            'detail' => count($pendenti) === 1
-                ? '1 migrazione da applicare: ' . $elenco
-                : count($pendenti) . ' migrazioni da applicare: ' . $elenco,
-            'hint'   => 'Dopo un aggiornamento esegui `php spark migrate`. Con lo schema indietro rispetto al codice, le pagine possono fallire su colonne che il codice si aspetta.',
-        ];
     }
 }

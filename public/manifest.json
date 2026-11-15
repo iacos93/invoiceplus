@@ -10,7 +10,7 @@
   "display": "standalone",
   "orientation": "any",
   "background_color": "#151518",
-  "theme_color": "#1E73B8",
+  "theme_color": "#333c4a",
   "categories": ["business", "finance", "productivity"],
   "icons": [
     { "src": "assets/core/img/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

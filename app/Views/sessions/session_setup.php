@@ -56,6 +56,28 @@
     </button>
 </form>
 
+<?php if (!empty($checks)): ?>
+    <?php /* L'ambiente è a posto (altrimenti si vedrebbe la pagina di verifica):
+             si mostra comunque l'esito, chiuso, e gli avvisi in evidenza. */ ?>
+    <?php $avvisi = count(array_filter($checks, static fn ($c) => $c['state'] !== 'ok')); ?>
+    <details class="ip-setup-checks"<?= $avvisi > 0 ? ' open' : '' ?>>
+        <summary>
+            <?= esc(trans('setup_env_checks', '', 'Esito dei controlli')) ?>
+            <span class="text-muted">— <?= $avvisi > 0
+                ? esc($avvisi . ' ' . trans('setup_env_warnings', '', 'da controllare'))
+                : esc(trans('setup_env_allok', '', 'tutto regolare')) ?></span>
+        </summary>
+        <ul>
+            <?php foreach ($checks as $c): ?>
+                <li><i class="fa fa-solid <?= $c['state'] === 'ok' ? 'fa-circle-check' : 'fa-triangle-exclamation' ?>" aria-hidden="true"></i>
+                    <strong><?= esc($c['label']) ?></strong> — <?= esc($c['detail']) ?>
+                    <?php if ($c['state'] !== 'ok' && $c['hint'] !== ''): ?><br><span class="text-muted"><?= esc($c['hint']) ?></span><?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </details>
+<?php endif; ?>
+
 <p class="ip-webauthn-status">
     <?= trans('setup_only_first_run', '', 'Questa pagina è disponibile solo finché non esiste nessun utente.') ?>
 </p>

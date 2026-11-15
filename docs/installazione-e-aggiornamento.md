@@ -11,6 +11,14 @@ Il README copre già i passi (cartella `public/` come document root, `.env`,
 `php spark key:generate`, `php spark migrate`, `php spark users:create`). Qui
 restano le cose che si dimenticano e che non danno errore subito.
 
+Aprendo per la prima volta l'indirizzo dell'installazione, Invoice+ verifica
+PHP, database, schema, cartelle e ambiente e, se qualcosa non va, lo spiega
+prima di chiedere l'account (`sessions/setup`). Il database non si configura
+dal browser: va scritto nel `.env` a mano, perché la pagina è pubblica finché
+non esiste un utente e non deve poter scrivere credenziali né puntare
+l'applicazione a un database altrui. Dopo l'account la pagina **Primi passi**
+(`first_steps`) elenca cosa resta da sistemare.
+
 - **`writable/` deve essere scrivibile** dal processo PHP:
   `chown -R www-data:www-data writable` (o l'utente del pool PHP-FPM). Senza,
   log, sessioni, PDF e backup falliscono con errori che arrivano tardi.

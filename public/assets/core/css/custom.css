@@ -13959,3 +13959,121 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 .ip-secret-copy { min-width: 38px; justify-content: center; }
 .ip-secret-copy.is-copied { color: var(--ip-success-text); }
 .ip-secret-copy.is-copied .fa::before { content: "\f00c"; }
+
+
+/* Pulsante «Installa app» nella barra (PWA): compare solo se il browser offre
+   l'installazione (vedi layout/pwa_head.php). Contorno chiaro sulla barra
+   scura, così non compete con le azioni di pagina; su schermo stretto resta
+   la sola icona. */
+.ip-install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, .35);
+  border-radius: var(--ip-radius);
+  background: transparent;
+  color: var(--ip-navbar-text);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--ip-transition), border-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-install-btn[hidden] { display: none; }
+.ip-install-btn:hover { background: var(--ip-navbar-hover); border-color: rgba(255, 255, 255, .6); color: #fff; }
+.ip-install-btn:focus-visible { outline: 2px solid rgba(255, 255, 255, .75); outline-offset: 1px; }
+@media (max-width: 768px) { .ip-install-btn span { display: none; } .ip-install-btn { padding: 0 10px; } }
+
+/* Spiegazione dell'installazione quando il browser non offre il prompt
+   (incognito, Safari, Firefox): un fumetto sotto il pulsante. */
+.ip-install-help {
+  position: fixed;
+  z-index: var(--ip-z-popover);
+  width: min(340px, calc(100vw - 16px));
+  padding: 10px 12px;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-md);
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  color: var(--ip-text);
+}
+.ip-install-help[hidden] { display: none; }
+
+
+/* -----------------------------------------------------------------------------
+   Primi passi (pagina, promemoria in Bacheca) e verifica del primo avvio
+   ----------------------------------------------------------------------------- */
+.ip-first-steps__hero {
+  display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between;
+  padding: 18px 20px; margin-bottom: 22px;
+  background: var(--ip-bg-card); border: 1px solid var(--ip-border); border-radius: var(--ip-radius);
+}
+.ip-first-steps__title { font-family: var(--ip-display); font-size: 1.25rem; margin: 0; }
+.ip-first-steps__lead { margin: 6px 0 0; max-width: 56ch; color: var(--ip-text-muted); line-height: 1.5; }
+.ip-first-steps__meter { min-width: 180px; flex: 0 1 220px; }
+.ip-first-steps__count { margin: 0 0 6px; font-family: var(--ip-mono); font-size: var(--ip-text-lg); text-align: right; }
+.ip-first-steps__bar { height: 8px; border-radius: 999px; background: var(--ip-border-soft); overflow: hidden; }
+.ip-first-steps__bar span { display: block; height: 100%; background: var(--ip-success, #3d7a3e); border-radius: inherit;
+  transition: width .5s ease; }
+.ip-first-steps__group { margin-bottom: 22px; }
+.ip-first-steps__group-title {
+  margin: 0 0 8px; font-size: var(--ip-text-xs); font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ip-text-muted);
+}
+.ip-first-steps__list {
+  list-style: none; margin: 0; padding: 0;
+  background: var(--ip-bg-card); border: 1px solid var(--ip-border); border-radius: var(--ip-radius);
+}
+.ip-first-steps__item {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 14px; align-items: center;
+  padding: 14px 16px;
+}
+.ip-first-steps__item + .ip-first-steps__item { border-top: 1px solid var(--ip-border-soft); }
+.ip-first-steps__mark {
+  display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid var(--ip-border-strong); color: transparent; font-size: 11px;
+}
+.ip-first-steps__item.is-done .ip-first-steps__mark {
+  background: var(--ip-success-text, #3d7a3e); border-color: var(--ip-success-text, #3d7a3e); color: #fff;
+}
+.ip-first-steps__item:not(.is-done) .ip-first-steps__mark i { display: none; }
+.ip-first-steps__label { margin: 0; font-weight: 650; }
+.ip-first-steps__item.is-done .ip-first-steps__label { color: var(--ip-text-muted); }
+.ip-first-steps__why { margin: 2px 0 0; font-size: var(--ip-text-sm); line-height: 1.5; color: var(--ip-text-muted); }
+.ip-first-steps__foot { margin-top: 8px; }
+@media (max-width: 640px) {
+  .ip-first-steps__item { grid-template-columns: 28px minmax(0, 1fr); }
+  .ip-first-steps__item .btn { grid-column: 2; justify-self: start; }
+}
+
+.ip-first-steps-banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  margin: 0 0 16px; padding: 10px 14px;
+  background: var(--ip-primary-soft); border: 1px solid var(--ip-border); border-radius: var(--ip-radius);
+  font-size: var(--ip-text-base);
+}
+.ip-first-steps-banner > i { color: var(--ip-primary); }
+.ip-first-steps-banner > span { flex: 1 1 260px; }
+
+.ip-setup-checks { margin: 18px 0 0; font-size: var(--ip-text-sm); }
+.ip-setup-checks summary { cursor: pointer; font-weight: 600; }
+.ip-setup-checks ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.ip-setup-checks li i { margin-right: 6px; }
+
+/* Pulsanti delle modali di conferma alla misura dei pulsanti dell'app (.btn-sm:
+   13px). Nel partial erano .btn pieni (16px), e il codice che li ricolora per
+   «elimina» / «esci senza salvare» riscrive className da zero, quindi un
+   btn-sm nel markup non sopravviveva: la misura sta qui, sul contenitore. */
+#ip-confirm-modal .modal-footer .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--ip-text-sm);
+  padding: 5px 12px;
+  min-height: var(--ip-control-h-sm);
+}
+#ip-confirm-modal .modal-footer .btn .fa { font-size: var(--ip-text-sm); }

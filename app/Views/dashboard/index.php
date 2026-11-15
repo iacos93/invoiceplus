@@ -355,6 +355,18 @@ $windowsToggle .= '</div></div>';
 <?= $this->include('layout/headerbar', ['title' => trans('dashboard'), 'actions' => $windowsToggle]) ?>
 
 <div id="content" class="dashboard-content">
+    <?php if (!empty($first_steps)): ?>
+        <?php /* Promemoria dei primi passi: sottile, sopra la bacheca. Chiuderlo
+                 («Non mostrare più») sta nella pagina dei primi passi, così il
+                 gesto distratto di un clic qui non lo cancella per sempre. */ ?>
+        <div class="ip-first-steps-banner" role="status">
+            <i class="fa fa-solid fa-list-check" aria-hidden="true"></i>
+            <span><?= esc(trans('first_steps_banner', '', 'Primi passi')) ?>:
+                <strong><?= (int) $first_steps['done'] ?> su <?= (int) $first_steps['total'] ?></strong>
+                <?= esc(trans('first_steps_banner_tail', '', 'fatti. Mancano ancora alcune cose prima di usare l\'installazione per davvero.')) ?></span>
+            <a href="<?= site_url('first_steps') ?>" class="btn btn-sm btn-primary"><?= esc(trans('first_steps_open', '', 'Continua')) ?></a>
+        </div>
+    <?php endif; ?>
     <?php if (!empty($fiscal_year_warning)): ?>
         <div class="alert alert-warning alert-dismissible fade show ip-dashboard-alert" role="alert">
             <i class="fa fa-solid fa-exclamation-triangle" aria-hidden="true"></i>

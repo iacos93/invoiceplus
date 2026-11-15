@@ -828,4 +828,81 @@ final class SystemStatus
 
         return round($bytes / (1024 * 1024), 1) . ' MB';
     }
+
+    // I due controlli seguenti parlano con il database (gli altri solo con file
+    // e orologio): stanno qui, e non nel controller, perché li usa anche la
+    // verifica iniziale del primo avvio (vedi Sessions::setup).
+
+    /**
+     * @return array{key: string, label: string, state: string, detail: string, hint: string}
+     */
+    public function databaseCheck(): array
+    {
+        $config = config('Database');
+        $group  = $config->defaultGroup;
+        $nome   = (string) (($config->{$group}['database'] ?? ''));
+
+        try {
+            $db = \Config\Database::connect();
+
+            return [
+                'key'    => 'database',
+                'label'  => 'Database',
+                'state'  => self::OK,
+                'detail' => trim(((string) ($config->{$group}['DBDriver'] ?? '')) . ' ' . $db->getVersion() . ' — ' . $nome),
+                'hint'   => '',
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'key'    => 'database',
+                'label'  => 'Database',
+                'state'  => self::ERROR,
+                'detail' => 'Connessione non riuscita a ' . $nome . ': ' . mb_substr($e->getMessage(), 0, 160),
+                'hint'   => 'Controlla i parametri del gruppo "' . $group . '" nel .env e che il server sia raggiungibile.',
+            ];
+        }
+    }
+
+    /**
+     * @return array{key: string, label: string, state: string, detail: string, hint: string}
+     */
+    public function migrationCheck(): array
+    {
+        try {
+            $runner    = \Config\Services::migrations();
+            $applicate = array_map(static fn ($row) => (string) $row->version, $runner->getHistory());
+
+            $pendenti = self::pendingMigrations($runner->findMigrations(), $applicate);
+        } catch (\Throwable $e) {
+            return [
+                'key'    => 'migrations',
+                'label'  => 'Migrazioni',
+                'state'  => self::ERROR,
+                'detail' => 'Impossibile leggere lo stato: ' . mb_substr($e->getMessage(), 0, 160),
+                'hint'   => 'Con il database irraggiungibile non si può sapere se lo schema è aggiornato: risolvi prima il controllo "Database".',
+            ];
+        }
+
+        if ($pendenti === []) {
+            return [
+                'key'    => 'migrations',
+                'label'  => 'Migrazioni',
+                'state'  => self::OK,
+                'detail' => 'Schema aggiornato (' . count($applicate) . ' migrazioni applicate)',
+                'hint'   => '',
+            ];
+        }
+
+        $elenco = implode(', ', array_slice($pendenti, 0, 3)) . (count($pendenti) > 3 ? '…' : '');
+
+        return [
+            'key'    => 'migrations',
+            'label'  => 'Migrazioni',
+            'state'  => self::ERROR,
+            'detail' => count($pendenti) === 1
+                ? '1 migrazione da applicare: ' . $elenco
+                : count($pendenti) . ' migrazioni da applicare: ' . $elenco,
+            'hint'   => 'Dopo un aggiornamento esegui `php spark migrate`. Con lo schema indietro rispetto al codice, le pagine possono fallire su colonne che il codice si aspetta.',
+        ];
+    }
 }

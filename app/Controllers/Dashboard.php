@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Services\DashboardOverview;
+use App\Services\SetupGuide;
 
 /**
  * Dashboard controller
@@ -20,6 +21,17 @@ class Dashboard extends BaseController
     public function index()
     {
         $data = (new DashboardOverview())->overview(selected_year());
+
+        // Promemoria dei primi passi: solo finché ce n'è qualcuno da fare e
+        // nessuno l'ha chiuso. Costa una lettura di impostazioni e due o tre
+        // query leggere; sparisce da solo a lista completa.
+        $data['first_steps'] = null;
+        if (get_setting('first_steps_dismissed', '') !== '1') {
+            $progress = SetupGuide::progress(SetupGuide::steps(SetupGuide::facts()));
+            if ($progress['done'] < $progress['total']) {
+                $data['first_steps'] = $progress;
+            }
+        }
 
         return view('dashboard/index', ['title' => trans('dashboard')] + $data);
     }

@@ -37,7 +37,21 @@ class SettingModel extends Model
             if (is_array($cached)) {
                 self::$settingsCache = $cached;
             } else {
-                $rows = $this->findAll();
+                try {
+                    $rows = $this->findAll();
+                } catch (\Throwable $e) {
+                    // Database irraggiungibile o schema non ancora creato: è
+                    // la situazione del primo avvio, e proprio lì la pagina di
+                    // verifica (Sessions::setup) deve poter dire che cosa
+                    // manca. Si risponde "nessuna impostazione" senza metterla
+                    // in cache, così alla richiesta dopo si riprova. L'errore
+                    // resta nel log: non si perde.
+                    log_message('warning', 'Impostazioni non leggibili: {msg}', ['msg' => $e->getMessage()]);
+                    self::$settingsCache = [];
+
+                    return self::$settingsCache;
+                }
+
                 self::$settingsCache = [];
 
                 foreach ($rows as $row) {

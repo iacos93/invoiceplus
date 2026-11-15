@@ -306,6 +306,8 @@ $routes->group('', ['filter' => 'auth'], static function ($routes) {
     // In sola lettura: legge PHP, database, schema, permessi, backup e stato
     // delle automazioni. Serve a vedere i guasti silenziosi (un backup che non
     // viene prodotto) senza dover leggere i log del server.
+    $routes->get('first_steps', 'FirstSteps::index');
+    $routes->post('first_steps/dismiss', 'FirstSteps::dismiss');
     $routes->get('system/status', 'SystemStatus::index');
     // Download dell'ultimo backup, per portarlo fuori dal server. GET perché
     // è una lettura: non crea né modifica niente. Il file non si sceglie

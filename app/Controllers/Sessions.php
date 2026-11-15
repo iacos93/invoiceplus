@@ -103,7 +103,20 @@ class Sessions extends BaseController
      */
     public function setup()
     {
-        $request   = service('request');
+        $request = service('request');
+
+        // Prima di toccare gli utenti si controlla l'ambiente: con il database
+        // irraggiungibile o lo schema indietro, UserModel fallirebbe con
+        // un'eccezione, e il primo avvio mostrerebbe una pagina d'errore
+        // invece di dire che cosa manca. Il controllo non è però una
+        // configurazione: il database si imposta a mano nel .env (vedi
+        // sessions/session_setup_env per il perché).
+        $checks = \App\Services\SetupGuide::environment();
+
+        if (\App\Services\SetupGuide::blocking($checks)) {
+            return view('sessions/session_setup_env', ['checks' => $checks]);
+        }
+
         $userModel = new UserModel();
 
         if ($userModel->countAllResults() > 0) {
@@ -144,30 +157,28 @@ class Sessions extends BaseController
                 }
 
                 // Primo avvio in un passo solo: l'account appena creato entra
-                // subito, senza ripassare dal login. La destinazione non e' la
-                // dashboard ma i dati dell'azienda -- quella precompilata dalla
-                // migrazione col solo nome di ripiego "Azienda" va completata
-                // prima che le fatture abbiano un emittente sensato.
+                // subito, senza ripassare dal login.
                 $this->completeLogin($created);
 
-                $company = (new \App\Models\CompanyModel())
-                    ->orderBy('company_id', 'ASC')->first();
-
                 session()->setFlashdata('alert_success',
-                    trans('setup_user_created', '', 'Account creato. Completa ora i dati della tua azienda.'));
+                    trans('setup_user_created', '', 'Account creato. Ecco i primi passi per mettere a punto l\'installazione.'));
 
-                return redirect()->to($company
-                    ? '/companies/form/' . (int) $company['company_id']
-                    : '/companies/form');
+                // Non dritto al modulo dell'azienda, come prima: i suoi dati
+                // (la migrazione lascia il nome di ripiego «Azienda») restano
+                // il primo passo della lista, ma accanto agli altri — logo,
+                // SdI, automazioni, backup — che altrimenti si scoprono uno
+                // alla volta e tardi.
+                return redirect()->to('/first_steps');
             }
 
             return view('sessions/session_setup', [
                 'errors' => $validation->getErrors(),
                 'values' => $post,
+                'checks' => $checks,
             ]);
         }
 
-        return view('sessions/session_setup');
+        return view('sessions/session_setup', ['checks' => $checks]);
     }
 
     /**

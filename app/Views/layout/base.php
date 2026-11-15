@@ -223,6 +223,16 @@
 
         <div class="ip-topbar-right">
 
+            <?php /* Pulsante di installazione (PWA): nasce nascosto e lo mostra
+                     lo script di layout/pwa_head.php solo se il browser offre
+                     davvero di installare l'app. Sparisce a installazione fatta
+                     e non compare mai nella finestra dell'app installata. */ ?>
+            <button type="button" class="ip-install-btn" data-ip-install hidden
+                    title="<?= esc(trans('pwa_install_title', '', 'Installa Invoice+ come app'), 'attr') ?>">
+                <i class="fa fa-solid fa-download" aria-hidden="true"></i>
+                <span><?= esc(trans('pwa_install', '', 'Installa app')) ?></span>
+            </button>
+
             <?php /* Le impostazioni stanno nella sidebar, sotto "Gestione": il
                      gear qui era una seconda porta per la stessa stanza. */ ?>
 

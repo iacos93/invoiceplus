@@ -33,6 +33,31 @@ le colonne dei loghi e del piè di pagina dei documenti).
   «Scadenzario». Il service worker tiene in cache solo i file statici (stili,
   script, icone) e mostra una pagina «Sei offline» se manca la rete; pagine e
   dati non vengono mai salvati sul dispositivo. Serve HTTPS (o `localhost`).
+- **Primo avvio guidato.** Su un'installazione nuova, prima del modulo per
+  creare l'account, Invoice+ controlla PHP, database, schema, cartelle
+  scrivibili e ambiente: se qualcosa è guasto lo dice in chiaro e spiega come
+  sistemarlo, invece di mostrare un errore. Il database resta da configurare
+  a mano nel `.env`, e la pagina spiega perché (una pagina pubblica non deve
+  poter scrivere credenziali né puntare l'app a un database altrui).
+- **Pagina «Primi passi».** Dopo l'account si arriva a una lista di nove
+  cose da sistemare (dati e logo dell'azienda, piè di pagina, aliquote IVA,
+  invio allo SdI, chiave per le automazioni, backup, verifica in due
+  passaggi, ambiente di produzione): ogni voce porta alla pagina che già
+  esiste e lo stato si ricava dai dati. Un promemoria in Bacheca resta finché
+  non sono tutte fatte o lo si chiude dalla pagina.
+- **Impostazioni non leggibili non bloccano più la pagina.** Con il database
+  irraggiungibile o lo schema non creato, la lettura delle impostazioni non
+  solleva più un'eccezione (resta nel log): serve alla verifica del primo
+  avvio per poter mostrare che cosa manca.
+- **Barra del titolo dell'app installata.** Era blu (il colore del marchio) sopra
+  la barra scura dell'app; ora ha lo stesso colore della barra, chiaro o
+  scuro secondo il tema scelto. Dopo l'aggiornamento il colore cambia
+  nella finestra già installata alla riapertura (o reinstallando).
+- **Pulsante «Installa app» nella barra.** Sta in alto a destra finché
+  l'app non è installata; con Chrome o Edge apre la finestra di installazione,
+  negli altri casi (incognito, Safari, Firefox, dove il browser non offre il
+  prompt) spiega come installare. Scompare a installazione fatta e non si
+  vede nella finestra dell'app.
 - **Colonna IVA nei documenti.** Anteprima e PDF di fatture e preventivi
   mostrano l'aliquota di ogni riga («22%», «–» se la riga non ha imposta).
 - **Calendario: totali del mese.** Il riepilogo laterale apre con l'importo in
@@ -141,6 +166,9 @@ le colonne dei loghi e del piè di pagina dei documenti).
   una pagina 404 dopo la conferma (era un link, e l'eliminazione accetta solo
   richieste POST). Ora è un modulo, come nella scheda cliente; un test
   impedisce che altre viste ripetano l'errore.
+- **Pulsanti delle conferme**: «Annulla» e «Esci senza salvare» (e le altre
+  conferme di eliminazione) erano a 16px, più grandi dei pulsanti del resto
+  dell'app; ora hanno la misura dei pulsanti piccoli.
 - **Iniziali nella scheda cliente**: «Comune di Carpignano Sesia» mostrava
   «CD», con la preposizione al posto del nome. Articoli e preposizioni ora si
   saltano («CC»), le virgolette non contano come iniziale e per le persone si
