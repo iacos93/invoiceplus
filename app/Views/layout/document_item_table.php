@@ -144,10 +144,10 @@ $defaultItemTaxRateId = (int) get_setting('default_item_tax_rate', 0);
                      il documento mostra il codice del prodotto. */ ?>
             <th scope="col" class="ip-items-table__code"><?= trans('item_code', '', 'Codice') ?></th>
             <th scope="col" class="ip-items-table__desc"><?= trans('description', '', 'Descrizione') ?></th>
-            <th scope="col" class="ip-items-table__num"><?= trans('quantity', '', 'Qtà') ?></th>
+            <th scope="col" class="ip-items-table__num ip-items-table__num--qty"><abbr title="<?= esc(trans('quantity', '', 'Quantità'), 'attr') ?>"><?= trans('quantity_short', '', 'Q.tà') ?></abbr></th>
             <th scope="col" class="ip-items-table__unit"><?= trans('product_unit', '', 'Unità') ?></th>
-            <th scope="col" class="ip-items-table__num"><?= trans('price', '', 'Prezzo') ?></th>
-            <th scope="col" class="ip-items-table__num"><?= trans('discount', '', 'Sconto') ?></th>
+            <th scope="col" class="ip-items-table__num ip-items-table__num--price"><?= trans('price', '', 'Prezzo') ?></th>
+            <th scope="col" class="ip-items-table__num ip-items-table__num--discount"><?= trans('discount', '', 'Sconto') ?></th>
             <th scope="col" class="ip-items-table__tax"><?= trans('tax_rate', '', 'IVA') ?></th>
             <th scope="col" class="ip-items-table__total"><?= trans('total', '', 'Totale') ?></th>
             <th scope="col" class="ip-items-table__actions"><span class="visually-hidden"><?= trans('options', '', 'Opzioni') ?></span></th>
@@ -205,8 +205,12 @@ $defaultItemTaxRateId = (int) get_setting('default_item_tax_rate', 0);
             </span>
         </td>
         <td class="ip-items-table__code">
+            <?php /* Il suggerimento sta nel title e non nel placeholder: la
+                     colonna è stretta apposta e "Cod. articolo / MEPA" vi si
+                     leggeva tagliato ("Cod. a"). L'intestazione dice già
+                     "Codice". */ ?>
             <input type="text" class="form-control input-sm" data-field="item_code" maxlength="60"
-                   placeholder="<?= esc(trans('item_code_placeholder', '', 'Cod. articolo / MEPA'), 'attr') ?>"
+                   title="<?= esc(trans('item_code_placeholder', '', 'Cod. articolo / MEPA'), 'attr') ?>"
                    aria-label="<?= esc(trans('item_code', '', 'Codice'), 'attr') ?>">
         </td>
         <td class="ip-items-table__desc">
@@ -222,10 +226,12 @@ $defaultItemTaxRateId = (int) get_setting('default_item_tax_rate', 0);
                 <input type="hidden" data-field="item_task_id">
             <?php endif; ?>
             <input type="text" class="form-control input-sm" data-field="item_name"
-                   placeholder="<?= esc(trans('item', '', 'Articolo'), 'attr') ?>">
+                   placeholder="<?= esc(trans('item', '', 'Articolo'), 'attr') ?>"
+                   aria-label="<?= esc(trans('item', '', 'Articolo'), 'attr') ?>">
             <textarea rows="1" class="form-control input-sm ip-item-row__desc ip-desc-counter-field"
                       data-field="item_description" maxlength="1000"
-                      placeholder="<?= esc(trans('description', '', 'Descrizione'), 'attr') ?>"></textarea>
+                      placeholder="<?= esc(trans('description', '', 'Descrizione'), 'attr') ?>"
+                      aria-label="<?= esc(trans('description', '', 'Descrizione'), 'attr') ?>"></textarea>
             <?php /* Voce di ricavo del Bilancino, per riga: una fattura può
                      contenere vendita di merce e prestazione di servizio, che
                      nel conto economico riclassificato vanno in voci diverse.
@@ -243,7 +249,7 @@ $defaultItemTaxRateId = (int) get_setting('default_item_tax_rate', 0);
                 </select>
             <?php endif; ?>
         </td>
-        <td class="ip-items-table__num">
+        <td class="ip-items-table__num ip-items-table__num--qty">
             <input type="text" class="form-control input-sm amount" data-field="item_quantity" value="1"
                    aria-label="<?= esc(trans('quantity', '', 'Qtà'), 'attr') ?>">
         </td>
@@ -255,11 +261,11 @@ $defaultItemTaxRateId = (int) get_setting('default_item_tax_rate', 0);
                 <?= view('layout/unit_options', ['unit_groups' => $unit_groups]) ?>
             </select>
         </td>
-        <td class="ip-items-table__num">
+        <td class="ip-items-table__num ip-items-table__num--price">
             <input type="text" class="form-control input-sm amount" data-field="item_price" placeholder="0"
                    aria-label="<?= esc(trans('price', '', 'Prezzo'), 'attr') ?>">
         </td>
-        <td class="ip-items-table__num">
+        <td class="ip-items-table__num ip-items-table__num--discount">
             <input type="text" class="form-control input-sm amount" data-field="item_discount_amount" placeholder="0"
                    title="<?= esc(trans('item_discount', '', 'Sconto per unità'), 'attr') ?>"
                    aria-label="<?= esc(trans('item_discount', '', 'Sconto per unità'), 'attr') ?>">

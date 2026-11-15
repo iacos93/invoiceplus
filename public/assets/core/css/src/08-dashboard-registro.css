@@ -1,0 +1,713 @@
+/* -----------------------------------------------------------------------------
+   22b. Dashboard a finestre (stile Fattura24)
+   --------------------------------------------------------------------------
+   La dashboard e' un report di sintesi a "finestre": card indipendenti con
+   header (icona + titolo + azioni espandi/nascondi) e corpo. L'utente puo'
+   espandere una finestra a tutta larghezza, nasconderla e ripristinarla dal
+   pannello "Personalizza finestre" (persistenza in localStorage). Il
+   periodo di riferimento e' l'anno del filtro globale in topbar; il pulsante
+   "Personalizza finestre" vive nell'headerbar della pagina (slot azioni).
+   -------------------------------------------------------------------------- */
+
+.ip-dash-personalize {
+  position: relative;
+}
+.ip-windows-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  border: 1px solid var(--ip-border);
+  background: var(--ip-bg-card);
+  color: var(--ip-text);
+  font-weight: 500;
+}
+.ip-windows-toggle:hover {
+  border-color: var(--ip-primary);
+  color: var(--ip-primary);
+  background: var(--ip-primary-soft);
+}
+.ip-windows-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--ip-z-modal);
+  min-width: 240px;
+  padding: 10px;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-md);
+}
+.ip-windows-panel[hidden] { display: none; }
+.ip-windows-panel-title {
+  margin: 0 6px 8px;
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+}
+.ip-windows-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  padding: 4px 6px;
+  margin: 0;
+  border-radius: var(--ip-radius-sm);
+  font-size: var(--ip-text-base);
+  color: var(--ip-text);
+  cursor: pointer;
+}
+.ip-windows-opt:hover { background: var(--ip-hover); }
+.ip-windows-opt input[type="checkbox"] { margin: 0; }
+
+/* Griglia finestre: 3 colonne desktop, 2 tablet, 1 mobile. */
+.ip-dash-windows {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ip-space-7);
+  /* stretch (non start): le finestre della stessa riga chiudono alla stessa
+     altezza. Con align-items:start bastava un sottotitolo in più (IVA) o in
+     meno (Saldo) perché la riga di KPI risultasse a gradini. */
+  align-items: stretch;
+  margin-bottom: var(--ip-space-7);
+}
+@media (max-width: 1099.98px) {
+  .ip-dash-windows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767.98px) {
+  .ip-dash-windows { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Finestra: stessa base delle card moderne, ma strutturata in colonna
+   header + corpo. Le tabelle dentro le finestre flush restano a bordo. */
+.ip-window {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  /* Ombra di sistema (stessa di .card/.ip-table-card) invece del rgba
+     cablato: così tutte le superfici condividono lo stesso rigo d'ombra. */
+  box-shadow: var(--ip-shadow-sm);
+  overflow: hidden;
+}
+.ip-window--wide,
+.ip-window--expanded { grid-column: 1 / -1 !important; }
+/* La finestra "Indice" è già a tutta larghezza (--wide): il pulsante espandi
+   togglerebbe una classe senza effetto visibile, sembrando rotto. Via. */
+.ip-window--wide .ip-window-expand { display: none; }
+.ip-window.is-hidden { display: none !important; }
+.ip-window--alert { border-left: 3px solid var(--ip-danger); }
+
+.ip-window-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ip-border-soft);
+}
+.ip-window-title {
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+  text-decoration: none;
+  /* Titolo <h2>: il margine inferiore di Bootstrap (8px) lo spostava in su di
+     4px dentro la testata flex, rispetto a icona, conteggio e azioni. */
+  margin: 0;
+}
+.ip-window-title:hover { color: var(--ip-primary); }
+/* Il titolo della finestra è anche il link alla schermata di dettaglio: da
+   solo è alto 17px, sotto il minimo di 24px per un bersaglio (WCAG 2.5.8).
+   Il padding cresce l'area senza muovere il testo. */
+.ip-window-title a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: inherit;
+  text-decoration: none;
+}
+.ip-window-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+  font-size: var(--ip-text-sm);
+  font-weight: 700;
+}
+.ip-window-more {
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ip-window-more:hover { color: var(--ip-primary); }
+/* Footer della finestra: ospita il link "Mostra tutto", spostato dalla
+   testata per non affollare la riga dei comandi. Barra leggera che chiude la
+   card e riprende l'allineamento della testata. */
+.ip-window-footer {
+  padding: 8px 14px;
+  border-top: 1px solid var(--ip-border-soft);
+  text-align: right;
+}
+.ip-window-footer .ip-window-more { font-weight: 600; }
+/* Le azioni chiudono la riga a destra (margin-left:auto) e restano discrete
+   finche' il puntatore non entra nella finestra. Con 15 finestre a schermo,
+   30 icone sempre accese (fra cui altrettante "x") coprivano di rumore i
+   titoli. */
+.ip-window-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-1);
+  margin-left: auto;
+  /* Controlli di layout della finestra, non dati: restano discreti finche'
+     il puntatore non entra nella finestra. Con 15 finestre a schermo, 30
+     icone sempre accese (fra cui altrettante "x") coprivano di rumore i
+     titoli. */
+  opacity: 0;
+  transition: opacity var(--ip-transition);
+}
+.ip-window:hover .ip-window-actions,
+.ip-window:focus-within .ip-window-actions { opacity: 1; }
+/* Touch e utenti che riducono le animazioni: niente hover da cui dipendere,
+   i controlli restano sempre visibili. */
+@media (hover: none) {
+  .ip-window-actions { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ip-window-actions { transition: none; }
+}
+.ip-window-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  background: transparent;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  cursor: pointer;
+  transition: background var(--ip-transition), color var(--ip-transition);
+}
+.ip-window-btn:hover {
+  background: var(--ip-hover);
+  color: var(--ip-text);
+}
+/* Focus da tastiera: il bottone deve essere visibile anche prima che il
+   :focus-within accenda il gruppo, e avere un anello proprio. */
+.ip-window-btn:focus-visible {
+  outline: 0;
+  background: var(--ip-hover);
+  color: var(--ip-text);
+  box-shadow: var(--ip-shadow-focus);
+}
+
+/* flex: le finestre in griglia (.ip-dash-windows / .ip-window-split) sono
+   grid item con align-items: stretch (default di Grid): quando una finestra
+   e' più corta della vicina sulla stessa riga, viene allungata all'altezza
+   della più alta. .ip-window e' flex column ma prima nessun figlio aveva
+   flex-grow: l'altezza in più restava come spazio vuoto dopo l'ultimo
+   figlio (il footer "Vedi tutto"), che quindi sembrava "crescere" — in
+   realta' era il vuoto fra fine tabella e link a farsi enorme. flex:1 fa
+   assorbire lo spazio avanzato al corpo (tabella/contenuto), così il
+   footer resta ancorato subito sotto, alla sua altezza naturale, invece di
+   galleggiare in fondo a una card più alta. Stesso fix gia' applicato a
+   .ip-window-body--kpi qui sotto per lo stesso problema sulle KPI. */
+.ip-window-body { padding: 14px; flex: 1 1 auto; }
+.ip-window-body--flush { padding: 0; }
+
+/* Corpo delle finestre KPI: riga [contenuto | trend], come la colonna
+   trend delle vecchie card KPI (badge in alto a destra). */
+.ip-window-body--kpi {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: var(--ip-space-7);
+  padding: 16px 14px;
+  /* Occupa l'altezza avanzata dalla finestra: con le righe a stretch il corpo
+     si distende e il sottotitolo resta ancorato in basso invece di lasciare
+     un vuoto sotto la card più corta. */
+  flex: 1 1 auto;
+}
+.ip-window-body-kpi-main {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+/* La cifra (e il dettaglio che la segue) si appoggiano al fondo della
+   card: così i numeri grossi di una riga di KPI condividono la stessa
+   linea di base, indipendentemente dal numero di righe di nota (IVA ne ha
+   tre, "Saldo da incassare" nessuna). L'etichetta resta in alto, il vuoto
+   si apre tra etichetta e cifra invece che sotto la nota. */
+.ip-window-body-kpi-main .card-value { margin-top: auto; }
+.ip-window-body-kpi-main .card-subtext { padding-top: 2px; }
+.ip-window-body--kpi .ip-window-trend {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ip-space-3);
+}
+/* Telefono: le finestre KPI vanno in colonna singola, quindi le sei card sono
+   sei schermate di scorrimento prima dei grafici. La cifra resta la voce
+   dominante della card ma non deve valere 2rem su 375px di larghezza, e la
+   sparkline (informazione accessoria) si ritira.
+   La soglia era 1200px, ereditata dalle vecchie .kpi-card a tre colonne: ma
+   sotto 1100px la griglia passa a due colonne e le finestre diventano piu'
+   larghe, non più strette — la sparkline spariva proprio dove c'era piu'
+   spazio, lasciando mezza card vuota su tablet. */
+@media (max-width: 575.98px) {
+  .ip-window-header { padding: 8px 12px; }
+  .ip-window-body--kpi { padding: 12px; }
+  .ip-window-body--kpi .card-value {
+    font-size: 1.625rem;
+    margin: 2px 0 4px;
+  }
+  .ip-window-body--kpi .ip-window-trend .ip-spark { display: none; }
+}
+
+/* Barra impilata "composizione stati" dentro la finestra flush: il suo
+   padding non viene ereditato dalla tabella. */
+.ip-status-bar-wrap {
+  padding: 14px 14px 0;
+}
+.ip-status-bar-wrap .ip-status-bar { border-radius: var(--ip-radius-sm); }
+
+/* Riga "IVA" della dashboard: la cifra e' la "da pagare" (esclusa la
+   scissione dei pagamenti), e il dettaglio si legge come un mini mastro —
+   vendite e acquisti in annotazione, l'IVA versata dagli enti in split
+   payment isolata in blu sotto una riga di chiusura. */
+.ip-iva-detail {
+  padding-top: 8px;
+  border-top: 1px dashed var(--ip-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-1);
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  line-height: 1.35;
+}
+.ip-iva-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--ip-space-5);
+}
+.ip-iva-row dt {
+  color: var(--ip-text-muted);
+  letter-spacing: .02em;
+}
+.ip-iva-row dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-strong);
+}
+.ip-iva-row--split {
+  margin-top: 3px;
+  padding-top: 4px;
+  border-top: 1px solid var(--ip-border);
+}
+.ip-iva-row--split dt,
+.ip-iva-row--split dd {
+  color: var(--ip-info-text);
+}
+.ip-iva-row--split dd {
+  font-weight: 600;
+}
+
+/* -----------------------------------------------------------------------------
+   22c. Dashboard come registro di cassa — tipografia e blocco di chiusura:
+   - le cifre delle finestre KPI e dell'Indice passano a Fraunces (il serif di
+     display del sistema, finora riservato ai titoli di pagina): la pagina dei
+     soldi si legge come un registro contabile stampato.
+   - etichette e sottotitoli in IBM Plex Mono: annotazioni di mastro, stesso
+     linguaggio degli assi dei grafici e dei numeri documento (.ip-num).
+   - il sommario dell'Indice diventa il blocco "chiusura del periodo": fondo
+     carta verde pallido + doppia riga sotto l'utile (il tratto che il
+     ragioniere traccia sotto il totale quando chiude una pagina del mastro).
+   Scoped alle finestre: .card-label / .card-value / .card-subtext sono usati
+   anche dalla scheda cliente, che non deve cambiare voce.
+   -------------------------------------------------------------------------- */
+
+/* Etichette KPI e Indice: annotazione di mastro (mono, maiuscole). */
+.ip-window-body--kpi .card-label,
+.ip-indice .card-label {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+/* Sottotitoli KPI e Indice: stessa voce di annotazione, cifre tabulari. */
+.ip-window-body--kpi .card-subtext,
+.ip-indice .card-subtext {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+}
+/* Cifre in Fraunces. Il peso scende a 600: il serif a 700 (peso del titolo
+   di pagina) sarebbe più pesante del necessario per un importo. */
+.ip-window-body--kpi .card-value,
+.ip-indice .card-value {
+  font-family: var(--ip-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+/* Cifra dell'Indice: è la voce dominante della pagina (totale di chiusura). */
+.ip-indice .card-value { font-size: 2.5rem; }
+@media (max-width: 575.98px) {
+  .ip-indice .card-value { font-size: 1.875rem; }
+}
+
+/* Doppia riga di chiusura: due tratti (1px + 2px) sotto il totale, come la
+   chiusura del mastro. Firma della finestra Indice: non ripetuta altrove. */
+.ip-ledger-rule {
+  display: block;
+  width: 64px;
+  height: 8px;
+  margin: 2px 0 8px;
+  border-top: 1px solid var(--kpi, var(--ip-primary));
+  border-bottom: 2px solid var(--kpi, var(--ip-primary));
+}
+
+/* Blocco "chiusura del periodo": fondo soft della metrica con bordo calibrato. */
+.ip-indice-summary {
+  background: var(--kpi-bg, var(--ip-success-bg));
+  border: 1px solid color-mix(in srgb, var(--kpi, var(--ip-success)) 25%, var(--ip-border));
+  border-radius: var(--ip-radius);
+  padding: 14px 16px;
+}
+
+/* Finestre espanse: i grafici SVG scalavano col viewBox (testo ~1.9x più
+   grande). Il cap riporta il grafico a una larghezza di lettura (~820px) e
+   lo centra nella finestra; le KPI cappano la sparkline. Il testo resta
+   leggibile e la finestra piena non è più un'etichetta ingrandita. */
+.ip-window--expanded svg.ip-chart {
+  max-width: 820px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.ip-window--expanded .ip-window-body--kpi .ip-window-trend .ip-spark {
+  width: 280px;
+  max-width: 280px;
+}
+
+/* Finestra "Indice di redditività": sommario a sinistra, grafico ad area
+   a destra; a mobile si impila. */
+.ip-indice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ip-space-9);
+  flex-wrap: wrap;
+}
+.ip-indice-summary { min-width: 200px; }
+.ip-indice-trend { margin-top: 8px; }
+.ip-indice-chart {
+  flex: 1 1 320px;
+  min-width: 0;
+  /* Su schermi molto larghi (21:9) la finestra --wide si allunga e il grafico
+     ad area, con aspect-ratio fisso, scalava di conseguenza: etichette degli
+     assi e mesi ingranditi fino a ~3x. Stesso cap di lettura delle finestre
+     espanse: il testo resta leggibile e il contenuto resta proporzionato. */
+  max-width: 820px;
+}
+/* Il cap da 820px valeva per le finestre espanse, non per questo grafico: la
+   gabbia SVG è larga 480 unità, quindi a 820px il testo (asse e mesi) veniva
+   scalato a ~1.7x e superava in corpo le etichette del sommario accanto.
+   A 560px la scala resta ~1.15, allineata ai grafici a barre. */
+.ip-dash-windows .ip-indice-chart { max-width: 560px; }
+/* A tutta larghezza (la finestra e' --wide) l'aspect 600x170 produceva oltre
+    220px di altezza per una serie di 6 punti: più spazio di entrambi i grafici
+    a barre messi insieme, per meno informazione. Il cap tiene la finestra
+    proporzionata al resto della griglia. */
+.ip-area {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 480 / 150;
+  display: block;
+}
+/* -----------------------------------------------------------------------------
+   22d. KPI — inchiostro per metrica + pulizia colonna trend:
+   - ogni finestra KPI porta il proprio "inchiostro" (colore di stato coerente
+     col resto dell'app): ricavi=info, incassato=success, saldo=warning,
+     scadute=danger, costi=violet, iva=neutro. Il filetto superiore da 3px e
+     l'icona d'intestazione tinteggiati dello stesso inchiostro fanno scansionare
+     la parete di KPI a colto d'occhio, come le colonne colorate di un mastro.
+   - la colonna trend ha larghezza fissa: le 6 sparkline condividono così la
+     stessa misura e la stessa baseline, invece di ridimensionarsi sul badge.
+   - badge + sparkline impilati dall'alto (non space-between): restano affiancati
+     alla cifra invece di scivolare in fondo alla card.
+   - micro-interazione hover (sollevamento + ombra) per far "vivere" la parete,
+     neutralizzata sotto prefers-reduced-motion.
+   -------------------------------------------------------------------------- */
+
+/* Inchiostro per finestra: ereditato da header e icona via custom property.
+   Le sei KPI restano ancorate al loro colore di metrica; le altre finestre
+   (breakdown, grafici, tabelle "recenti", indice) ricevono lo stesso
+   trattamento così l'intera parete si legge con la medesima "inchiostrazione". */
+.ip-window[data-window="ricavi"]          { --kpi: var(--ip-info);    --kpi-bg: var(--ip-info-bg); }
+.ip-window[data-window="incassato"]       { --kpi: var(--ip-success); --kpi-bg: var(--ip-success-bg); }
+.ip-window[data-window="saldo"]           { --kpi: var(--ip-warning); --kpi-bg: var(--ip-warning-bg); }
+.ip-window[data-window="scadute"]         { --kpi: var(--ip-danger);  --kpi-bg: var(--ip-danger-bg); }
+.ip-window[data-window="costi"]           { --kpi: var(--ip-violet);  --kpi-bg: var(--ip-violet-bg); }
+.ip-window[data-window="iva"]             { --kpi: var(--ip-primary); --kpi-bg: var(--ip-primary-soft); }
+.ip-window[data-window="indice"]          { --kpi: var(--ip-success); --kpi-bg: var(--ip-success-bg); }
+.ip-window[data-window="indice"].ip-window--alert { --kpi: var(--ip-danger); --kpi-bg: var(--ip-danger-bg); }
+.ip-window[data-window="graf_ricavi"]     { --kpi: var(--ip-info);    --kpi-bg: var(--ip-info-bg); }
+.ip-window[data-window="graf_costi"]      { --kpi: var(--ip-violet);  --kpi-bg: var(--ip-violet-bg); }
+.ip-window[data-window="stato_fatture"]   { --kpi: var(--ip-info);    --kpi-bg: var(--ip-info-bg); }
+.ip-window[data-window="stato_preventivi"]{ --kpi: var(--ip-info);    --kpi-bg: var(--ip-info-bg); }
+.ip-window[data-window="ultime_fatture"]  { --kpi: var(--ip-info);    --kpi-bg: var(--ip-info-bg); }
+.ip-window[data-window="ultimi_preventivi"]{ --kpi: var(--ip-info);   --kpi-bg: var(--ip-info-bg); }
+.ip-window[data-window="ultimi_ddt"]      { --kpi: var(--ip-warning); --kpi-bg: var(--ip-warning-bg); }
+.ip-window[data-window="progetti"]        { --kpi: var(--ip-success); --kpi-bg: var(--ip-success-bg); }
+.ip-window[data-window="attivita"]        { --kpi: var(--ip-warning); --kpi-bg: var(--ip-warning-bg); }
+
+/* Filetto superiore: l'unica variazione cromatica per card. Tutto il resto
+   della finestra resta disciplinato (valore Fraunces, etichette mono, testo
+   neutro), così l'inchiostro segnala la metrica senza rumore. La finestra ha
+   overflow:hidden, quindi il filetto non deborda sugli angoli arrotondati.
+   Esteso a TUTTE le finestre della dashboard (non più solo le sei KPI): ogni
+   card porta il proprio --kpi, così la parete si inchiostra in modo uniforme. */
+.ip-dash-windows .ip-window .ip-window-header {
+  box-shadow: inset 0 3px 0 0 var(--kpi, var(--ip-primary));
+}
+/* Icona d'intestazione tinteggiata: lo stesso segnale dell'inchiostro, ma in
+   superficie soft, così l'header non "grida" colore pieno. */
+.ip-dash-windows .ip-window .card-header-icon {
+  background: var(--kpi-bg, var(--ip-primary-soft));
+  color: var(--kpi, var(--ip-primary));
+}
+/* Scadute e' una finestra --alert (bordo rosso a sinistra di default): lo
+   togliamo per non doppiare il segnale, che ora e' portato dal filetto superiore
+   rosso (inchiostro della metrica). Ripristiniamo il bordo neutro da 1px come
+   le altre KPI, così la card resta allineata per misura. */
+.ip-window[data-window="scadute"].ip-window--alert {
+  border-left: 1px solid var(--ip-border-soft);
+}
+
+/* Colonna trend a larghezza fissa: tutte e sei le KPI la condividono, quindi
+   le sparkline sono allineate per misura e per baseline lungo la riga. */
+.ip-window-body--kpi .ip-window-trend {
+  flex: 0 0 92px;
+  justify-content: flex-start;
+  gap: var(--ip-space-4);
+}
+/* La sparkline riempie la colonna fissa: niente più larghezze a scalino sul
+   badge. Margine azzerato (prima 4px di troppo spingevano la barra sul bordo). */
+.ip-window-body--kpi .ip-window-trend .ip-spark {
+  width: 100%;
+  height: 30px;
+  margin-top: 0;
+}
+/* Cifra KPI: dimensione calibrata sulla griglia a 3 colonne, in Fraunces
+   (ereditata da 22c). Limitata ai viewport >= 576px: sotto i 575px vale gia'
+   la regola mobile (1.625rem) definita più sopra, che altrimenti perderebbe
+   per ordine di sorgente. */
+@media (min-width: 576px) {
+  .ip-window-body--kpi .card-value {
+    font-size: 1.875rem;
+    line-height: 1.05;
+    margin: 4px 0 6px;
+  }
+}
+/* Micro-interazione: la finestra si solleva e acquista ombra all'hover,
+   dando alla parete una sensazione "viva" senza alterare la gerarchia.
+   Esteso a tutte le finestre della dashboard. */
+.ip-dash-windows .ip-window {
+  transition: box-shadow var(--ip-transition), transform var(--ip-transition);
+}
+.ip-dash-windows .ip-window:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ip-shadow-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ip-dash-windows .ip-window { transition: none; }
+  .ip-dash-windows .ip-window:hover { transform: none; }
+}
+
+/* Velo d'inchiostro: la parete di finestre si legge come "colonne colorate di
+   un mastro" (come già anticipa il filetto superiore della finestra). Un lavaggio
+   dell'inchiostro della metrica, appena percettibile e solo in testa alla card,
+   tinge il corpo senza "gridare" colore: il resto resta disciplinato (numeri in
+   Fraunces, etichette in mono) e la cifra resta la voce dominante. Il velo sale
+   dal bordo superiore e sfuma prima del sottotitolo, così la metrica si
+   riconosce a colpo d'occhio anche quando le finestre sono accostate.
+   Esteso a tutte le finestre della dashboard. */
+.ip-dash-windows .ip-window {
+  position: relative;
+}
+.ip-dash-windows .ip-window::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 92px;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--kpi, var(--ip-primary)) 12%, transparent),
+    transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+/* Header e corpo restano sopra il velo: la cifra non ci passa sotto. */
+.ip-dash-windows .ip-window > .ip-window-header,
+.ip-dash-windows .ip-window > .ip-window-body {
+  position: relative;
+  z-index: 1;
+}
+
+/* -----------------------------------------------------------------------------
+   22e. Dashboard — animazioni di caricamento (registro che si compone):
+   - le finestre salgono e sfumano a scaletta (--i assegnato via JS), come la
+     pagina di mastro che si riempie quando la si apre.
+   - le barre dei grafici e delle sparkline "crescono" dalla baseline (scaleY).
+   - le cifre Fraunces si "stendono" dall'inchiostro (opacity + blur leggero),
+     lo stesso gesto della penna che scrive l'importo sul registro.
+   Tutto e' guidato da classi CSS: se il JS non assegnasse --i, le finestre
+   appaiono comunque (ritardo 0). Neutralizzato sotto prefers-reduced-motion.
+   -------------------------------------------------------------------------- */
+@keyframes ip-window-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ip-bar-grow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes ip-ink-settle {
+  from { opacity: 0; filter: blur(3px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+
+/* Finestre: ingresso a scaletta. La chronologia e' data da --i (ordine DOM
+   delle .ip-window) impostato dallo script della dashboard. */
+.ip-dash-windows .ip-window {
+  animation: ip-window-rise 520ms cubic-bezier(.22, .61, .36, 1) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+/* Barre dei grafici e delle sparkline: crescono dalla baseline. transform-box
+   fill-box ancora l'origine alla singola barra, non al viewBox. */
+.ip-chart-bar,
+.ip-spark rect {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: ip-bar-grow 620ms cubic-bezier(.22, .61, .36, 1) both;
+  animation-delay: calc(220ms + var(--i, 0) * 55ms);
+}
+/* Grafico ad area (Indice): sfuma e sale insieme alla sua finestra. */
+.ip-area {
+  animation: ip-window-rise 600ms ease both;
+  animation-delay: calc(220ms + var(--i, 0) * 55ms);
+}
+/* Cifre KPI: si stendono dall'inchiostro, sfasate con la card. */
+.ip-window-body--kpi .card-value,
+.ip-indice .card-value {
+  animation: ip-ink-settle 600ms ease both;
+  animation-delay: calc(140ms + var(--i, 0) * 55ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ip-dash-windows .ip-window,
+  .ip-chart-bar,
+  .ip-spark rect,
+  .ip-area,
+  .ip-window-body--kpi .card-value,
+  .ip-indice .card-value {
+    animation: none !important;
+  }
+}
+/* Punti della serie: rendono leggibili i 6 valori mensili e danno un bersaglio
+   al <title> nativo. */
+.ip-area-dot {
+  stroke: var(--ip-bg-card);
+  stroke-width: 2;
+}
+
+/* Meta dei grafici: periodo a sinistra, legenda a destra (prima stavano
+   nell'header della card, ora l'header è della finestra). */
+.ip-chart-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ip-space-5);
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+/* Spese (grafico mensile): rosso costo, in opposizione ai verdi incassati.
+   Stesso ruolo del --ip-danger delle KPI scaduto: segnala l'uscita. */
+.ip-chart-legend-dot--expenses { background: var(--ip-danger); }
+.ip-chart-bar--expenses        { fill: var(--ip-danger); }
+.ip-chart-summary-item--expenses .ip-chart-summary-value { color: var(--ip-danger-text); }
+.ip-chart-summary-item--profit    .ip-chart-summary-value { color: var(--ip-success-text); }
+
+/* Riga a tutta larghezza dentro la griglia finestre: grafici affiancati
+   e dettaglio su due colonne, come le finestre "grafico" di Fattura24.
+   Le sezioni del dettaglio sono figli diretti (niente più wrapper a
+   colonna): la griglia a due colonne li accoppia per posizione DOM —
+   l'ordine nel view è interleaved (stato fatture, stato preventivi,
+   ultime fatture, ultimi preventivi, progetti, attività) così le coppie
+   stanno sulla stessa riga e i due gruppi restano affiancati. L'ordine
+   DOM conta: con 3+3 sezioni impilate l'auto-placement spaccava i
+   preventivi (Progetti finiva in mezzo). Con progetti disattivi restano
+   4 sezioni, comunque accoppiate. */
+.ip-window-split {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ip-space-7);
+}
+/* Sotto i 1200px le due colonne non bastano più alle tabelle "recenti":
+   a 1100px la colonna scende sotto i 500px e le cinque colonne di
+   fatture/preventivi sforavano di 20-50px, con la finestra che scorreva di
+   lato senza che lo si vedesse (niente barra, niente indizio). Stessa soglia
+   delle liste .ip-table-card, che sotto 1200 riattivano lo scorrimento
+   interno: qui invece si passa a una colonna sola, così la tabella resta
+   intera — togliere una colonna o lasciarla scorrere dentro una card a metà
+   pagina costava più di quanto la coppia affiancata rendesse. */
+@media (max-width: 1199.98px) {
+  .ip-window-split { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Gerarchia a fasce: hero (indice) -> striscia KPI -> grafici -> tabelle.
+   Prima tutte le finestre stavano in un'unica griglia con lo stesso gap
+   uniforme (15px ovunque): hero, KPI, grafici e tabelle si leggevano come
+   una massa unica invece di quattro livelli. Un margine crescente prima di
+   ogni riga ".ip-window-split" (che nel DOM segna sempre l'inizio di un
+   nuovo livello: prima i due grafici affiancati, poi il dettaglio/tabelle)
+   dà lo scarto d'aria che nel pattern "KPI in alto, grafico principale,
+   tabella sotto" separa i tre blocchi senza toccare il markup PHP. */
+.ip-window-split {
+  margin-top: 10px;
+}
+.ip-window-split + .ip-window-split {
+  margin-top: 4px;
+}
+
+/* Le due finestre-grafico sono il "main chart" della pagina (il centro del
+   pattern KPI -> grafico -> tabella): un'ombra e un bordo leggermente più
+   marcati delle KPI/tabelle danno loro il peso visivo di blocco primario,
+   non solo un'altra card della griglia. */
+.ip-window-split:first-of-type .ip-window {
+  box-shadow: var(--ip-shadow-md, 0 4px 14px rgba(24, 24, 27, .1));
+  border-color: var(--ip-border-strong, var(--ip-border));
+}
+
+/* Periodo di riferimento nell'header del grafico dashboard */
+.ip-chart-period {
+  font-size: var(--ip-text-sm);
+  font-weight: 500;
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}

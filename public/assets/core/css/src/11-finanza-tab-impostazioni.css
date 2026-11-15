@@ -1,0 +1,1264 @@
+/* -----------------------------------------------------------------------------
+   35. Esportazioni
+   --------------------------------------------------------------------------
+   Le scelte sono poche ma con conseguenze diverse (un CSV non è un archivio
+   fiscale): schede con descrizione invece di radio in fila, così si sceglie
+   leggendo cosa si ottiene. */
+
+.ip-export-types {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--ip-space-5);
+}
+
+/* Il resto dell'aspetto delle schede (bordo, selezione, titolo, nota) sta
+   nel blocco "card tipo" più sotto. Qui c'era un primo strato che dava al
+   corpo interno padding, raggio e fondo propri sulla scheda selezionata: con
+   la card che a sua volta ha bordo e fondo, la selezione si vedeva come un
+   riquadro dentro il riquadro. */
+
+/* Formato non disponibile per il tipo scelto: resta visibile ma spento, così
+   si capisce che esiste e perché ora non si può usare. */
+
+.ip-export-shortcuts .ip-doc-label { margin: 0 4px 0 0; }
+
+/* -----------------------------------------------------------------------------
+   36. Utile e imposte
+   -------------------------------------------------------------------------- */
+
+/* Prospetto scalare — la forma del conto economico che questa pagina riassume:
+   ricavi in alto, le sottrazioni in discesa, il netto in fondo. Prima erano
+   quattro riquadri affiancati, che davano lo stesso peso agli addendi (ricavi,
+   costi) e ai risultati (utile, imposte) e non mostravano il legame fra le
+   cifre — che e' esattamente cio' che la pagina deve dire. Gli operatori
+   stanno in colonna propria: codificano l'aritmetica, non decorano. */
+.ip-prospetto {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ip-prospetto th,
+.ip-prospetto td {
+  padding: 9px 0;
+  vertical-align: baseline;
+  border: 0;
+}
+.ip-prospetto__op {
+  width: 26px;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-lg);
+  text-align: center;
+  user-select: none;
+}
+.ip-prospetto__label {
+  text-align: left;
+  font-size: var(--ip-text-md);
+  font-weight: 500;
+  color: var(--ip-text);
+}
+/* Il dato di secondo piano (incassato, deducibile) resta agganciato alla sua
+   riga invece di occupare un riquadro proprio. */
+.ip-prospetto__note {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--ip-text-sm);
+  font-weight: 400;
+  color: var(--ip-text-muted);
+}
+.ip-prospetto__amount {
+  width: 190px;
+  text-align: right;
+  font-size: var(--ip-text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ip-text);
+}
+.ip-prospetto__amount.is-expense { color: var(--ip-danger-text); }
+.ip-prospetto__amount.is-tax     { color: var(--ip-warning-text); }
+.ip-prospetto__amount.is-net     { color: var(--ip-success-text); }
+
+/* Composizione di una riga: rientra, si alleggerisce e stringe il passo, cosi'
+   si legge come dettaglio del totale sopra e non come un altro addendo del
+   prospetto. La freccia nella colonna operatori dice la stessa cosa in un
+   segno. Il secondo livello (le due addizionali dentro il loro totale) rientra
+   ancora, senza freccia: la gerarchia la porta gia' il margine. */
+.ip-prospetto tr.is-detail > * {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.ip-prospetto tr.is-detail .ip-prospetto__op {
+  /* Il segno deve reggere il suo compito — dire che la riga appartiene al
+     totale sopra — quindi resta quieto ma leggibile: sul bordo forte era
+     sotto 2:1 su bianco e spariva. */
+  color: var(--ip-neutral);
+  font-size: var(--ip-text-sm);
+}
+.ip-prospetto tr.is-detail .ip-prospetto__label {
+  padding-left: 10px;
+  font-size: var(--ip-text-sm);
+  font-weight: 400;
+  color: var(--ip-text-muted);
+}
+.ip-prospetto tr.is-detail .ip-prospetto__amount {
+  font-size: var(--ip-text-sm);
+  font-weight: 500;
+  color: var(--ip-text-muted);
+}
+.ip-prospetto tr.is-detail.is-nested .ip-prospetto__label { padding-left: 26px; }
+/* Fiato prima e dopo il blocco di dettaglio, per staccarlo dagli operandi. */
+.ip-prospetto tr.is-detail:first-of-type > * { padding-top: 6px; }
+.ip-prospetto tr.is-detail + tr:not(.is-detail) > * { padding-top: 12px; }
+
+/* Filo singolo sopra il subtotale, filo doppio sopra il risultato: e' la
+   notazione dei prospetti contabili, e dice quali righe sono operandi e quali
+   conclusioni senza bisogno di ripeterlo a parole. */
+.ip-prospetto tr.is-subtotal > * { border-top: 1px solid var(--ip-border); }
+.ip-prospetto tr.is-result > *   { border-top: 3px double var(--ip-border-strong); }
+.ip-prospetto tr.is-result .ip-prospetto__label { font-weight: 600; }
+/* Fraunces per la cifra risolutiva: e' la convenzione gia' in uso per le cifre
+   KPI e per l'Indice, il serif del registro contabile. */
+.ip-prospetto tr.is-result .ip-prospetto__amount {
+  font-family: var(--ip-display);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Barra di ripartizione: dove finiscono i ricavi dell'anno. Le tre quote
+   sommano per costruzione (costi + imposte + netto = ricavi), quindi la barra
+   e' una divisione onesta e non un'approssimazione. E' l'unico elemento
+   colorato in grande della pagina: risponde a colpo d'occhio alla domanda che
+   la pagina riceve davvero, "quanto di quello che ho fatturato e' mio". */
+.ip-split { margin-top: 22px; }
+.ip-split .ip-doc-label { margin-bottom: 8px; }
+.ip-split__bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--ip-border-soft);
+}
+.ip-split__seg { display: block; height: 100%; }
+/* Filo di carta fra i segmenti: due tinte contigue altrimenti si toccano e la
+   divisione si perde. Inset, per non alterare le larghezze in percentuale. */
+.ip-split__seg + .ip-split__seg { box-shadow: inset 1px 0 0 var(--ip-bg-card); }
+/* Vermiglio = uscito, ambra = accantonato, verde postale = tuo. Stessa
+   semantica dei colori di stato dell'app; l'ambra e' la versione scurita
+   (--ip-warning-text), perché l'arancione pieno accanto al vermiglio e al
+   verde spenti griderebbe. */
+.ip-split__seg.is-costi    { background: var(--ip-danger); }
+.ip-split__seg.is-imposte  { background: var(--ip-warning-text); }
+.ip-split__seg.is-netto    { background: var(--ip-success); }
+
+.ip-split__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+.ip-split__legend li { display: flex; align-items: center; gap: var(--ip-space-3); }
+.ip-split__legend b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text);
+}
+.ip-split__key {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.ip-split__key.is-costi   { background: var(--ip-danger); }
+.ip-split__key.is-imposte { background: var(--ip-warning-text); }
+.ip-split__key.is-netto   { background: var(--ip-success); }
+
+/* Le stesse quattro tinte dei timbri di stato delle attivita', perché la
+   barra sta sopra una tabella che quei timbri li mostra: se il segmento
+   "in corso" fosse blu e il badge ambra, la pagina si contraddirebbe da sola.
+   Grigio = fermo, ambra = in movimento, inchiostro = concluso, verde = incassato
+   (il verde postale della cartoleria, che nell'app vuol dire sempre denaro). */
+.ip-split__seg.is-not-started, .ip-split__key.is-not-started { background: var(--ip-neutral); }
+.ip-split__seg.is-in-progress, .ip-split__key.is-in-progress { background: var(--ip-warning-text); }
+.ip-split__seg.is-complete,    .ip-split__key.is-complete    { background: var(--ip-primary); }
+.ip-split__seg.is-invoiced,    .ip-split__key.is-invoiced    { background: var(--ip-success); }
+
+/* Intestazione della barra: etichetta a sinistra, avanzamento a destra. */
+.ip-split__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ip-space-6);
+  margin-bottom: 8px;
+}
+.ip-split__head .ip-doc-label { margin: 0; }
+.ip-split__progress {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+/* Nel riepilogo progetto la legenda porta conteggi, non percentuali: "3
+   attivita' in corso" e' l'informazione che si cerca, non "il 37,5%". */
+.ip-project-split { margin: 4px 0 20px; }
+
+.ip-split__loss {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ip-space-4);
+  margin: 20px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--ip-radius);
+  background: var(--ip-danger-bg);
+  color: var(--ip-danger-text);
+  font-size: var(--ip-text-base);
+}
+
+@media (max-width: 640px) {
+  .ip-prospetto__amount { width: 130px; font-size: var(--ip-text-md); }
+  .ip-prospetto tr.is-result .ip-prospetto__amount { font-size: var(--ip-text-3xl); }
+}
+
+/* Andamento mensile come registro a barre: ricavi in verde postale (il colore
+   del denaro), costi in vermiglio (il colore del timbro), importi in inchiostro
+   sopra la barra. La scala e' unica per l'anno (il massimo del prospetto):
+   due importi uguali hanno la stessa lunghezza, e il confronto fra le colonne
+   e' diretto. Il mese resta un dato di riga: la posizione delle righe codifica
+   la sequenza, non c'e' bisogno di numerare nulla. */
+/* .ip-items-table (da cui eredita) usa border-collapse: collapse per il
+   look "righe cucite" dei documenti — ma con collapse i browser ignorano il
+   border-radius sulle celle, quindi l'arrotondamento dell'ultima riga (vedi
+   sezione tabelle più sopra: ".ip-doc-section ... tfoot > tr:last-child")
+   non veniva disegnato e la riga Totale sforava l'angolo della card in
+   hover. Qui basta separare le celle senza spaziatura visibile: stesso
+   effetto del collapse, ma il border-radius torna a funzionare. */
+.ip-finance-month { border-collapse: separate; border-spacing: 0; }
+/* Niente min-width: la tabella vive nella colonna principale di .ip-preview,
+   che accanto al pannello da 300px scende a ~450px sui laptop. Con 640px di
+   minimo Spese e Saldo finivano dietro lo scroll orizzontale; quattro colonne
+   di importi ci stanno, purché il padding laterale resti contenuto. Su
+   schermi più stretti .table-responsive fa comunque da rete. */
+.ip-finance-month td { padding: 9px 12px; vertical-align: middle; }
+.ip-finance-month__name {
+  white-space: nowrap;
+  font-weight: 500;
+}
+.ip-finance-month th.ip-finance-month__col,
+.ip-finance-month th.ip-items-table__total { text-align: right; }
+.ip-finance-month__cell {
+  display: grid;
+  gap: var(--ip-space-2);
+  /* 100 e non 120: il binario della barra resta leggibile e le due colonne
+     di importi rientrano nella colonna di .ip-preview anche sui laptop. */
+  min-width: 100px;
+  position: relative;
+}
+/* Separatore visivo tra le colonne Ricavi e Costi per evitare che le barre
+   sembrino attraversare il confine (WCAG 1.4.11 - confini chiari). */
+.ip-finance-month__col.is-income + .ip-finance-month__col.is-expense .ip-finance-month__cell::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 80%;
+  background: var(--ip-border);
+}
+.ip-finance-month__amount {
+  display: block;
+  text-align: right;
+  font-size: var(--ip-text-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text);
+}
+/* La barra cresce da destra, ancorata allo stesso bordo dell'importo che
+   descrive: crescendo da sinistra finiva sotto la colonna precedente e a
+   colpo d'occhio non si capiva a quale delle due cifre appartenesse. */
+.ip-finance-month__bar {
+  display: flex;
+  justify-content: flex-end;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ip-border-soft);
+  overflow: hidden;
+}
+.ip-finance-month__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+/* Il fondo del binario si vede solo dove c'è una barra: senza valore la
+   cella non ne stampa nessuno. */
+.ip-finance-month__bar { background: var(--ip-border-soft); }
+.ip-finance-month__bar.is-income > span { background: var(--ip-success); }
+.ip-finance-month__bar.is-expense > span { background: var(--ip-danger); }
+.ip-finance-month__saldo { white-space: nowrap; }
+
+/* Mese senza movimenti: resta in elenco, perché i vuoti fanno parte della
+   forma dell'anno, ma arretra. Prima ogni mese fermo stampava due binari grigi
+   vuoti e i mesi con lavoro finivano in mezzo al rumore. */
+.ip-finance-month tr.is-quiet .ip-finance-month__amount,
+.ip-finance-month tr.is-quiet .ip-finance-month__name,
+.ip-finance-month tr.is-quiet .ip-finance-month__saldo {
+  color: var(--ip-text-muted);
+  font-weight: 500;
+}
+
+/* Totale d'anno: lega le dodici righe alle cifre del prospetto, che prima
+   andavano sommate a mente per verificare che parlassero dello stesso anno.
+   Gli importi stanno sulla cella e non dentro .ip-finance-month__amount: quella
+   classe porta display:block, che su un <td> lo toglie dal layout tabellare e
+   sfascia la riga. */
+.ip-finance-month__foot > * {
+  padding: 11px 12px;
+  border-top: 2px solid var(--ip-border-strong);
+  font-weight: 600;
+}
+.ip-finance-month__foot th { text-align: left; }
+.ip-finance-month__foot td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quota per categoria: solo la cifra. La barra qui non si guadagnava il posto —
+   le categorie sono poche e gia' ordinate per importo, quindi le percentuali si
+   confrontano leggendole; nei dodici mesi invece la barra serve, perché li' si
+   scorre. In più la colonna con la barra sfondava la tabella. */
+/* .ip-items-table impone min-width:760px, soglia giusta per la tabella delle
+   righe di un documento (descrizione, quantita', prezzo, IVA, totale, azioni)
+   ma non per quattro colonne corte: ereditandola, questa tabella sfondava la
+   card appena la colonna centrale scendeva sotto i 760px. */
+.ip-finance-cat { min-width: 0; }
+.ip-finance-cat__share {
+  width: 110px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-muted);
+}
+.ip-finance-cat__hint { margin-top: 12px; }
+
+/* Campo numerico con unità di misura appiccicata: l'unita' e' parte del dato
+   (un'aliquota e' 24,48 *per cento*, un minimale e' 18.955 *euro*), e tenerla
+   nell'etichetta costringeva a rileggerla per capire cosa si sta digitando. */
+/* -----------------------------------------------------------------------------
+   Campo con segno: unita' (%, €) o icona dentro il campo
+   -----------------------------------------------------------------------------
+   Regola unica per i campi "con appendice", che l'app scriveva in due modi:
+   .input-group di Bootstrap (riquadro attaccato fuori dal campo) e questo
+   segno interno. Due aspetti per la stessa cosa — l'aliquota della scheda
+   azienda e quella delle imposte si compilavano allo stesso modo e si
+   vedevano diverse.
+
+   Il criterio ora e': segno che si legge (unita', icona) sta dentro il campo,
+   perché fa parte del valore; comando che si preme (pulsante Genera, Copia,
+   Filtra) resta un .input-group attaccato, perché e' un elemento a se'. */
+.ip-input-suffix { position: relative; }
+.ip-input-suffix .form-control { padding-right: 30px; }
+/* Gli importi restano allineati a destra come dentro .input-group: il
+   padding lascia il posto al segno, quindi le cifre non ci finiscono sotto. */
+.ip-input-suffix .form-control.amount { text-align: right; }
+.ip-input-suffix__mark {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  line-height: 1;
+  pointer-events: none;
+}
+.ip-input-suffix__mark .fa { font-size: var(--ip-text-base); }
+/* Il campo attivo porta con se' il proprio segno. */
+.ip-input-suffix:focus-within .ip-input-suffix__mark { color: var(--ip-text); }
+/* I numeri degli scaglioni si confrontano in colonna: niente min-width da
+   tabella-documento, che qui lascerebbe due campi persi in mezzo al vuoto. */
+/* === Parametri fiscali: tabella — impronta aliquote e anno selezionato ===
+   Le colonne di soli numeri rendevano difficile cogliere le differenze tra
+   anni; la barra a segmenti sovrapposti e' la "firma" di ogni anno (la
+   proporzione tra IRES, IRAP, addizionali e forfettario si vede prima di
+   leggere le cifre). La riga dell'anno attivo nel filtro globale e' marcata
+   perché la tabella alimenta la stima di quell'anno. */
+.ip-fyear-profile-col { width: 200px; }
+
+/* IRPEF: mini-scala a gradini per riga (stessa "firma" del form), con
+   l'aliquota marginale massima come numero di riferimento. */
+.ip-fyear-irpef-col { width: 140px; }
+.ip-fyear-irpef { display: flex; align-items: flex-end; gap: 9px; }
+.ip-fyear-irpef__ladder {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ip-space-1);
+  height: 32px;
+}
+.ip-fyear-irpef__bar {
+  width: 7px;
+  min-width: 7px;
+  border-radius: 2px 2px 0 0;
+  background: var(--ip-primary);
+  transition: height var(--ip-transition), opacity var(--ip-transition);
+}
+.ip-fyear-irpef__bar:hover { filter: brightness(1.1); }
+.ip-fyear-irpef__meta { display: flex; flex-direction: column; line-height: 1.15; }
+.ip-fyear-irpef__top {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-base);
+  font-weight: 600;
+  color: var(--ip-text-strong);
+}
+.ip-fyear-irpef__count { font-size: var(--ip-text-xs); color: var(--ip-text-muted); }
+
+.ip-fyear-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-1);
+  height: 14px;
+  min-width: 120px;
+}
+.ip-fyear-seg {
+  height: 100%;
+  border-radius: 2px;
+  min-width: 2px;
+  transition: width var(--ip-transition);
+}
+.ip-fyear-seg:hover { filter: brightness(1.08); }
+
+/* Sotto i 576px la tabella collassa in card (.ip-table-card-collapse):
+   ogni <td> normale diventa una riga "etichetta a sinistra / valore a
+   destra". La scala IRPEF e la barra profilo pero' hanno bisogno della
+   larghezza intera per restare leggibili — affiancate all'etichetta
+   finirebbero schiacciate in meta' card. Qui le impiliamo (etichetta
+   sopra, "firma" visiva sotto) invece di lasciarle nel pattern generico. */
+@media (max-width: 575.98px) {
+  .ip-table-card table.ip-table-card-collapse tbody td.ip-fyear-irpef-col,
+  .ip-table-card table.ip-table-card-collapse tbody td.ip-fyear-profile-col {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--ip-space-3);
+  }
+  .ip-fyear-profile-col .ip-fyear-bar { width: 100%; }
+}
+
+.ip-row-current { background: var(--ip-primary-soft); }
+.ip-row-current:hover { background: var(--ip-primary-soft); }
+/* Misure dall'ossatura comune dei badge (in fondo al foglio): qui restano solo
+   colore e posizione. Il raggio era 999px, quindi "selezionato" era una pillola
+   accanto a timbri ad angoli 4px. */
+.ip-row-current-badge {
+  margin-left: 6px;
+  color: var(--ip-on-primary);
+  background: var(--ip-primary);
+}
+
+.ip-brackets { min-width: 0; }
+.ip-brackets td { padding: 6px 12px; vertical-align: middle; }
+.ip-brackets .form-control { text-align: right; }
+
+/* Cifre tassonomiche: allineamento tabellare su limiti e aliquote, così la
+   colonna dei numeri resta leggibile mentre si digita. */
+.ip-brackets input,
+.ip-input-suffix .form-control {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scala progressiva IRPEF — la firma della schermata. Ogni scaglione e' una
+   barra; l'altezza e' proporzionale all'aliquota, l'opacita' pure, così la
+   natura "a gradini" dell'imposta si vede prima di leggere i numeri. Ridisegnata
+   live da ip-fiscal-form.js mentre si compila (fallback: tabella comunque presente). */
+.ip-brackets-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: var(--ip-space-9);
+  align-items: start;
+}
+.ip-ladder {
+  position: sticky;
+  top: calc(var(--ip-navbar-height) + 64px);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ip-space-3);
+  height: 180px;
+  padding: 12px 10px 0;
+  background: var(--ip-bg);
+  border: 1px solid var(--ip-border-soft);
+  border-radius: var(--ip-radius);
+}
+.ip-ladder__col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+}
+.ip-ladder__bar {
+  width: 100%;
+  max-width: 30px;
+  background: var(--ip-violet);
+  border-radius: 3px 3px 0 0;
+  transition: height var(--ip-transition), opacity var(--ip-transition);
+}
+.ip-ladder__rate {
+  margin-top: 5px;
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-weight: 500;
+  color: var(--ip-text);
+  white-space: nowrap;
+}
+.ip-ladder__limit {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-2xs);
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+@media (max-width: 767.98px) {
+  .ip-brackets-layout { grid-template-columns: minmax(0, 1fr); }
+  .ip-ladder { position: static; height: 140px; }
+}
+
+/* Didascalie riservate agli screen reader (la tabella del prospetto). */
+.ip-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Verifica tracciato XML: gli errori dello schema sono tecnici ma vanno letti
+   uno per uno, quindi elenco spaziato e non paragrafo unico. */
+.ip-xml-errors {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--ip-text-base);
+  line-height: 1.6;
+}
+.ip-xml-errors li { margin-bottom: 6px; }
+
+.ip-xml-preview {
+  max-height: 420px;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-bg);
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  white-space: pre;
+}
+
+/* Blocco XML: una barra sola con i comandi che servono su un tracciato lungo
+   (copia tutto, vai a capo). Bordo e angoli stanno sul blocco, così barra e
+   codice si leggono come un oggetto solo invece di due rettangoli accostati. */
+.ip-xml-block {
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius-sm);
+  overflow: hidden;
+}
+.ip-xml-block__tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ip-space-3);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--ip-border-soft);
+  background: var(--ip-bg-card);
+}
+.ip-xml-block .ip-xml-preview,
+.ip-xml-block .ip-xml-code {
+  max-height: 480px;
+  border: 0;
+  border-radius: 0;
+}
+/* Su un tracciato la riga del namespace è più larga dello schermo: senza
+   questo si scorre in orizzontale per leggerne un pezzo alla volta. */
+.ip-xml-block.is-wrapped .ip-xml-preview,
+.ip-xml-block.is-wrapped .ip-xml-code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ip-xml-tool-btn {
+  padding: 3px 9px;
+  border: 1px solid var(--ip-border-soft);
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-bg-card);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--ip-transition);
+}
+.ip-xml-tool-btn:hover { color: var(--ip-text); border-color: var(--ip-border); }
+.ip-xml-tool-btn.is-done { color: var(--ip-success); border-color: var(--ip-success); }
+.ip-xml-tool-btn[aria-pressed="true"] { color: var(--ip-primary); border-color: var(--ip-primary); }
+
+/* -----------------------------------------------------------------------------
+   37. Tab (.ip-tabs) — un solo componente per tutte le schermate a schede
+   --------------------------------------------------------------------------
+   Nell'app convivevano due grafiche per la stessa funzione: la barra segmentata
+   delle impostazioni e le linguette Bootstrap (.nav-tabs) della scheda cliente.
+   Vince la barra segmentata, coerente con i filtri delle liste; il markup lo
+   emette layout/tabs.php, quindi le due schermate non possono più divergere.
+   Niente .nav-tabs sulla lista: lo shim legacy (sezione 12) avrebbe specificità
+   maggiore e sovrascriverebbe bordo/raggio/padding/active della barra. */
+
+/* La barra sta fuori da #content (fra headerbar e pannelli), quindi non ne
+   eredita il padding: con margine orizzontale 0 correva da bordo a bordo
+   mentre titolo e card sotto partivano da 20px. Il margine ripete l'inset di
+   #headerbar / #content, compreso il valore ridotto sotto i 576px. Il margine
+   superiore tiene la barra staccata dall'headerbar sticky: senza, la toccava
+   con il bordo inferiore. */
+.ip-tabs {
+  /* Sticky sotto la headerbar: nelle schermate a schede lunghe (impostazioni,
+     scheda cliente) senza questo, appena si scorreva sotto il primo pannello
+     la barra spariva e cambiare scheda voleva dire risalire in cima.
+     top:var(--ip-navbar-height) come la headerbar: quando entrambe sono
+     agganciate, la barra (z-index 1015) scivola SOTTO la headerbar (1020) e
+     riappare esattamente sotto il suo bordo inferiore, a qualunque altezza
+     sia arrivata la headerbar (wrap su viewport strette inclusi). Il margine
+     superiore è lo stacco a riposo: appena la barra si aggancia finisce
+     dietro la headerbar, quindi niente contenuto che sbuca dalla fessura. */
+  position: sticky;
+  top: var(--ip-navbar-height);
+  z-index: 1015;
+  gap: var(--ip-space-1);
+  padding: 4px;
+  margin: 10px 20px 18px;
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  background: var(--ip-bg-card);
+  flex-wrap: wrap;
+}
+.ip-tabs .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  padding: 7px 14px;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-base);
+  font-weight: 500;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-tabs .nav-link:hover {
+  background: var(--ip-hover);
+  color: var(--ip-text);
+}
+.ip-tabs .nav-link.active {
+  background: var(--ip-primary);
+  color: var(--ip-on-primary);
+}
+/* Focus da tastiera: l'anello ci sarebbe gia' (Bootstrap lo mette su
+   .nav-link:focus-visible) ma e' il blu di default del framework, l'unico
+   punto dell'app in cui comparirebbe. Qui usa il token dell'app. */
+.ip-tabs .nav-link:focus-visible {
+  outline: 0;
+  box-shadow: var(--ip-shadow-focus);
+  color: var(--ip-text);
+}
+.ip-tabs .nav-link.active:focus-visible { color: var(--ip-on-primary); }
+
+/* Conteggio dentro la scheda (preventivi/fatture/pagamenti del cliente).
+   Prima era un .badge.text-bg-secondary: sulla pastiglia attiva, scura, il
+   badge grigio con testo bianco spariva. Qui il contatore prende il colore
+   dallo stato della scheda che lo ospita. */
+.ip-tab-badge {
+  justify-content: center;
+  min-width: 20px;
+  /* Fondo --ip-bg e non --ip-primary-soft: il testo muted su quella tinta
+     dava 4.27:1, sotto la soglia, per un conteggio che si legge di sfuggita. */
+  background: var(--ip-bg);
+  color: var(--ip-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.ip-tabs .nav-link.active .ip-tab-badge {
+  /* Sul fondo --ip-primary il testo passa al token "on-primary" invece del
+     bianco fisso: in tema scuro il primary è chiaro e il bianco spariva. */
+  background: color-mix(in srgb, var(--ip-on-primary) 22%, transparent);
+  color: var(--ip-on-primary);
+}
+
+/* Il pannello attivo riceve il focus quando si arriva con la tastiera: senza
+   outline proprio, perché il contorno lo da' gia' la scheda selezionata. */
+.tab-content > .tab-pane:focus { outline: 0; }
+
+@media (max-width: 575.98px) {
+  .ip-tabs { padding: 3px; margin: 14px 16px 14px; }
+  .ip-tabs .nav-link { padding: 6px 10px; font-size: var(--ip-text-sm); }
+}
+
+/* Variante inline della barra schede: usata nell'anteprima della fattura
+   elettronica, dove le "schede" sono i fogli di stile e stanno su una riga
+   insieme all'etichetta e ai bottoni. */
+.ip-tabs--inline {
+  display: inline-flex;
+  /* Dentro .ip-xml-preview-bar (flex) la barra e' un item: senza questi due
+     vincoli si allargava a tutta la riga e le due pastiglie si stiravano a
+     meta' schermo ciascuna. */
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  vertical-align: middle;
+}
+.ip-tabs--inline .nav-link { flex: 0 0 auto; white-space: nowrap; }
+.ip-tabs .nav-link.is-missing {
+  color: var(--ip-warning-text);
+}
+.ip-tabs .nav-link.is-missing .fa { font-size: var(--ip-text-xs); }
+
+/* -----------------------------------------------------------------------------
+   37b. Impostazioni di sistema
+   --------------------------------------------------------------------------
+   Le sezioni erano incolonnate su 8/12 con offset: su monitor larghi metà
+   schermo restava vuota mentre i campi si stringevano. Qui il pannello usa la
+   larghezza disponibile. */
+
+/* Il pannello si estende su tutta la larghezza del contenuto, come le altre
+   pagine "card dock". Le card qui sono .ip-table-card: il margine del dock
+   (18px 0) raddoppierebbe i vuoti, quindi lo riportiamo a quello del pannello. */
+/* .ip-form-pane e' lo stesso guscio fuori dalle impostazioni. Le schermate di
+   modifica (serie di numerazione, conti, aliquote, categorie, campi
+   personalizzati…) incolonnavano la card in "col-lg-8 offset-lg-2" o
+   "col-md-6 offset-md-3": su un monitor largo restavano centinaia di pixel
+   vuoti ai due lati mentre i campi dentro si stringevano. E' lo stesso
+   difetto gia' corretto qui sopra per le impostazioni, rimasto pero' in
+   diciannove altre view perché il rimedio era stato scritto a mano su una
+   sola schermata invece che dato un nome.
+
+   Il guscio da solo non basta: un form di due campi steso su tutta la
+   larghezza produce righe di input lunghissime, peggio del riquadro
+   centrato. Chi lo usa mette i campi in .ip-doc-grid, che li tiene a un
+   terzo di riga. */
+.ip-form-pane,
+.ip-settings-pane {
+  width: 100%;
+}
+.ip-form-pane .card,
+.ip-settings-pane .card,
+.ip-settings-pane > .ip-doc-section { margin: 0 0 16px; }
+.ip-form-pane .card:last-child,
+.ip-settings-pane .card:last-child,
+.ip-settings-pane > .ip-doc-section:last-child { margin-bottom: 0; }
+
+/* Pannello Sicurezza sotto il form del profilo utente (users/form): sta
+   nello stesso #content del form, quindi ne eredita i margini; qui solo lo
+   stacco dall'ultima scheda, uguale a quello fra le schede del form. */
+.ip-user-security { margin-top: 16px; }
+.ip-user-security__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ip-user-security__status { display: flex; flex-wrap: wrap; gap: 8px; }
+.ip-user-security__status .ip-status-pill { gap: 6px; }
+
+/* I pannelli impostazioni impaginano i campi sulla griglia Bootstrap
+   (.row > .col), non su .ip-doc-grid: il campo porta quindi con se' il suo
+   margine, che la griglia canonica azzera — e l'ultima riga di ogni card
+   finiva con il doppio spazio sotto (16 di margine + 18 di padding del
+   body), con le card "pesanti" in fondo rispetto alla testa. Il reset
+   replica quello di .ip-doc-grid limitato all'ultimo campo di ogni colonna:
+   le righe della stessa colonna restano distanziate perche' a farlo e' il
+   campo precedente, non l'ultimo. */
+.ip-settings-pane .ip-doc-section__body .row > [class*="col-"] > .ip-doc-field:last-child {
+  margin-bottom: 0;
+}
+
+/* Separatore fra invio e credenziali SMTP: l'<hr> di Bootstrap porta 1rem
+   su entrambi i lati che, sommato ai margini dei campi adiacenti, faceva
+   buchi irregolari sopra e sotto la riga. Stesso respiro del resto della
+   pagina: 16 sopra, 16 sotto, bordo morbido di sistema. */
+.ip-settings-pane .ip-doc-section__body hr {
+  margin: 16px 0;
+  border-color: var(--ip-border-soft);
+  opacity: 1;
+}
+
+/* Campo di ricerca delle impostazioni (slot filters della headerbar): icona
+   incastonata e larghezza contenuta, così non ruba spazio al pulsante Salva
+   e resta leggibile anche affiancato alle azioni. */
+.ip-settings-search { position: relative; }
+.ip-settings-search__icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  pointer-events: none;
+}
+.ip-settings-search .form-control {
+  width: 230px;
+  max-width: 46vw;
+  padding-left: 28px;
+}
+
+/* Nessuna corrispondenza dal filtro delle impostazioni: senza un messaggio la
+   pagina sembra vuota e non si capisce se il filtro sta lavorando o se i campi
+   sono spariti. */
+.ip-doc-empty {
+  margin: 0 0 16px;
+  padding: 24px;
+  border: 1px dashed var(--ip-border-strong);
+  border-radius: var(--ip-radius);
+  color: var(--ip-text-muted);
+  text-align: center;
+  font-size: var(--ip-text-base);
+}
+.ip-doc-empty[hidden] { display: none; }
+
+/* Riga introduttiva delle sezioni impostazioni: dice in una riga cosa si
+   configura nella sezione. Sta fra la barra schede e le card, con lo stesso
+   inset orizzontale delle card. */
+.ip-settings-intro {
+  margin: 0 0 16px;
+  font-size: var(--ip-text-base);
+  line-height: 1.5;
+  color: var(--ip-text-muted);
+}
+
+/* Sottotitolo dei gruppi di campi condizionali (es. canali SdI). */
+.ip-settings-subtitle {
+  margin: 20px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--ip-border, #e3e6ea);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+}
+.ip-settings-subtitle:first-child { margin-top: 0; }
+
+/* ==========================================================================
+   Ricerca globale (topbar)
+   Il blocco brand a sinistra occupa esattamente la colonna della sidebar
+   (236px), e il gap del contenitore sale a 20px su desktop: lo stesso
+   padding di #content. Risultato: il campo di ricerca comincia esattamente
+   dove cominciano le card (bordo destro della sidebar + padding del
+   contenuto), allineato con la colonna che riempie. Sotto lg la sidebar e'
+   off-canvas: il vincolo cade e la ricerca si prende lo spazio che resta.
+   ========================================================================== */
+@media (min-width: 992px) {
+  .ip-topbar-inner { padding-left: 0; gap: var(--ip-space-8); }
+  .ip-topbar-left {
+    flex: 0 0 var(--ip-sidebar-width, 236px);
+    width: var(--ip-sidebar-width, 236px);
+    /* Il padding di 16px che prima era del contenitore ora sta qui: il
+       blocco occupa 0..236 (il bordo della sidebar), con il brand interno
+       che comincia a 16px come il menu a fianco. */
+    padding-left: 16px;
+  }
+}
+
+.ip-global-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  max-width: 520px;
+  min-width: 0;
+}
+
+.ip-global-search__icon {
+  position: absolute;
+  left: 12px;
+  font-size: var(--ip-text-base);
+  color: var(--ip-text-muted);
+  pointer-events: none;
+}
+
+.ip-global-search__input {
+  width: 100%;
+  height: 36px;
+  padding: 0 38px 0 34px;
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  background: var(--ip-bg-card, #fff);
+  color: var(--ip-text);
+  font-size: var(--ip-text-base);
+  /* Ombra di riposo leggera: la pill bianca "galleggia" sulla topbar scura e
+     si legge subito come il comando primario di navigazione. */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  transition: border-color var(--ip-transition), box-shadow var(--ip-transition);
+}
+.ip-global-search__input::placeholder { color: var(--ip-text-muted); }
+.ip-global-search__input:focus {
+  outline: none;
+  /* Focus coerente col resto dell'app: bordo primary + anello, non il
+     vermiglio di default di un token --ip-accent mai definito. */
+  border-color: var(--ip-primary);
+  box-shadow: var(--ip-shadow-focus), 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+/* Focus catturato sul wrapper (click sull'icona/risultati): solleva la pill
+   anche quando il fuoco finisce sull'input figlio, non solo sull'input stesso. */
+.ip-global-search:focus-within .ip-global-search__input {
+  border-color: var(--ip-primary);
+  box-shadow: var(--ip-shadow-focus), 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Scorciatoia (Ctrl K, che su Mac diventa ⌘ K): indicata sul campo perché
+   altrimenti resterebbe una funzione invisibile. Una sola forma, non due:
+   con "Ctrl + K / Cmd + K" l'etichetta era larga 103px, più della metà del
+   campo su telefono, e correva sotto il segnaposto. Sparisce quando il campo
+   e' in uso. */
+.ip-global-search__kbd {
+  position: absolute;
+  right: 10px;
+  min-width: 18px;
+  padding: 1px 5px;
+  border: 1px solid var(--ip-border);
+  border-radius: 4px;
+  background: var(--ip-bg, #f6f6f7);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-xs);
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+.ip-global-search__input:focus ~ .ip-global-search__kbd,
+.ip-global-search.is-filled .ip-global-search__kbd { display: none; }
+
+.ip-global-search__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: var(--ip-z-toast);
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  background: var(--ip-bg-card, #fff);
+  box-shadow: var(--ip-shadow-lg);
+}
+.ip-global-search__panel[hidden] { display: none; }
+
+.ip-global-search__group-label {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  padding: 8px 10px 4px;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.ip-global-search__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ip-space-5);
+  padding: 7px 10px;
+  border-radius: var(--ip-radius);
+  color: var(--ip-text);
+  text-decoration: none;
+}
+.ip-global-search__item:hover,
+.ip-global-search__item.is-active {
+  background: var(--ip-hover, #f4f4f5);
+  color: var(--ip-text);
+  text-decoration: none;
+}
+.ip-global-search__item-main { min-width: 0; flex: 1 1 auto; }
+.ip-global-search__item-title {
+  display: block;
+  font-size: var(--ip-text-base);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ip-global-search__item-sub {
+  display: block;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ip-global-search__item-meta {
+  flex: 0 0 auto;
+  font-size: var(--ip-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-muted);
+}
+
+.ip-global-search__empty {
+  padding: 20px 12px;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-base);
+  text-align: center;
+}
+
+/* Su schermi stretti il campo diventa il solo elemento espandibile: brand e
+   comandi di destra restano, l'etichetta del brand no. */
+@media (max-width: 767.98px) {
+  .ip-global-search { max-width: none; }
+  .ip-global-search__kbd { display: none; }
+}
+
+/* Sottogruppo dentro .ip-doc-grid: occupa l'intera riga della griglia e separa
+   blocchi di campi che si compilano insieme. Serve nei form lunghi (dati
+   documento, fattura elettronica) dove un elenco piatto di quindici campi non
+   lascia capire quali si riferiscono a cosa. */
+.ip-doc-subgroup {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: var(--ip-space-4);
+  margin: 4px 0 -4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ip-border);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+/* Il primo sottogruppo apre la sezione: la riga sopra sarebbe doppia
+   rispetto al bordo dell'intestazione. */
+.ip-doc-grid > .ip-doc-subgroup:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.ip-doc-subgroup__hint {
+  font-size: var(--ip-text-sm);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Sezione "Fattura elettronica": logica stile FattureinCloud. I campi
+   essenziali (tipo documento, esigibilita' IVA) restano in vista; tutto il
+   resto vive in gruppi collassabili "opzionali" che si aprono da soli quando
+   contengono gia' dei valori (così in modifica non si nasconde cio' che e'
+   stato compilato) e mostrano un contatore dei campi valorizzati. Ogni gruppo
+   e' una card annidata dentro la card della sezione. */
+.ip-einv-group {
+  grid-column: 1 / -1;
+  border: 1px solid var(--ip-border-soft, var(--ip-border));
+  border-radius: var(--ip-radius, 10px);
+  margin: 12px 0 2px;
+  overflow: hidden;
+  background: var(--ip-bg-card, #fff);
+}
+.ip-einv-group:first-of-type {
+  margin-top: 4px;
+}
+.ip-einv-group__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-5);
+  padding: 12px 14px;
+  background: var(--ip-bg-card, #fff);
+  border: 0;
+  color: var(--ip-text);
+  font-size: var(--ip-text-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s ease;
+}
+.ip-einv-group__toggle:hover {
+  background: rgba(128, 128, 128, .08);
+}
+.ip-einv-group__toggle:focus-visible {
+  outline: 2px solid var(--ip-primary, #0d6efd);
+  outline-offset: -2px;
+}
+.ip-einv-group__title {
+  flex: 1 1 auto;
+}
+.ip-einv-group__tag {
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+  background: var(--ip-bg, #f6f6f7);
+  border: 1px solid var(--ip-border-soft, var(--ip-border));
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+.ip-einv-group__tag:not(:empty) {
+  color: var(--ip-primary, #0d6efd);
+  border-color: color-mix(in srgb, var(--ip-primary, #0d6efd) 28%, transparent);
+  background: color-mix(in srgb, var(--ip-primary, #0d6efd) 9%, transparent);
+}
+.ip-einv-group__chevron {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ip-text-xs);
+  color: var(--ip-text-muted);
+  border-radius: 50%;
+  background: var(--ip-bg, #f6f6f7);
+  transition: transform .2s ease, background .15s ease;
+}
+.ip-einv-group__toggle[aria-expanded="true"] .ip-einv-group__chevron {
+  transform: rotate(180deg);
+  background: color-mix(in srgb, var(--ip-primary, #0d6efd) 14%, transparent);
+  color: var(--ip-primary, #0d6efd);
+}
+.ip-einv-group__body {
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--ip-border-soft, var(--ip-border));
+}
+/* Dentro il corpo collassato la griglia dei campi respira un po' meno. */
+.ip-einv-group__body .ip-doc-grid {
+  gap: var(--ip-space-7);
+}
+.ip-einv-group__body .ip-doc-subgroup:first-child {
+  margin-top: 6px;
+}
+
+/* Scelta fra poche alternative che cambiano il resto del form (tipologia
+   cliente). Una select nasconderebbe le opzioni dietro un clic proprio dove
+   serve capire subito le differenze, e ognuna porta una riga di spiegazione. */
+.ip-type-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--ip-space-4);
+}
+
+.ip-type-choice__option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "icon label" "icon hint";
+  align-items: center;
+  gap: 2px 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  background: var(--ip-bg-card, #fff);
+  cursor: pointer;
+  transition: border-color var(--ip-transition), background var(--ip-transition);
+}
+.ip-type-choice__option:hover { border-color: var(--ip-text-muted); }
+.ip-type-choice__option.is-active {
+  /* Come per la ricerca globale: niente token --ip-accent (mai definito,
+     con fallback vermiglio fuori palette): il selezionato usa il primary. */
+  border-color: var(--ip-primary);
+  background: var(--ip-primary-soft);
+}
+
+/* Il radio resta nel DOM per il POST e per la navigazione da tastiera, ma la
+   selezione la comunica il riquadro. */
+.ip-type-choice__option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.ip-type-choice__option i {
+  grid-area: icon;
+  font-size: var(--ip-text-xl);
+  color: var(--ip-text-muted);
+}
+.ip-type-choice__option.is-active i { color: var(--ip-primary); }
+.ip-type-choice__label { grid-area: label; font-size: var(--ip-text-base); font-weight: 600; }
+.ip-type-choice__hint  { grid-area: hint;  font-size: var(--ip-text-sm); color: var(--ip-text-muted); }
+
+/* Focus da tastiera: senza questo il riquadro selezionato con le frecce non
+   darebbe alcun segnale, essendo il radio invisibile. */
+.ip-type-choice__option:focus-within {
+  outline: 2px solid var(--ip-primary);
+  outline-offset: 2px;
+}
+
+/* Quando la card "Informazioni personali" (genere, data di nascita) si
+   nasconde perché il cliente non è una persona fisica (JS in clients/form.php),
+   la card fiscale accanto occupa tutta la riga invece di restare a metà con
+   uno spazio vuoto a destra. */
+.row:has(> .ip-client-personal-col[hidden]) > .col-12.col-sm-6:not([hidden]) {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+[data-client-type-only] { display: none; }
+[data-client-type-only].is-visible { display: block; }
+/* Il campo canonico è flex e la sua regola sta più in basso nel foglio:
+   a parità di specificità vinceva lei, quindi Cognome (solo persona fisica)
+   e Partita IVA (solo azienda/PA) restavano sempre visibili. Qui la
+   specificità del componente, con il display corretto. */
+.ip-doc-field[data-client-type-only] { display: none; }
+.ip-doc-field[data-client-type-only].is-visible { display: flex; }
+
+/* Tipologia cliente in elenco e in scheda: si legge come contesto del nome,
+   non come stato, quindi niente pillola colorata. */
+.ip-client-type {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-2);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  white-space: nowrap;
+}
+.ip-client-type i { font-size: var(--ip-text-xs); }
+
+/* Riga secondaria del nome negli elenchi di anagrafiche (tipo cliente,
+   partita IVA). Rientrata della larghezza dell'avatar (22px + margine) perché
+   parta allineata al testo del nome.
+   Colore e corpo stanno qui, non nei figli: clienti e fornitori mettono nella
+   stessa riga due cose diverse — il timbro del tipo e la P. IVA — e le due
+   liste le mostravano in modo diverso, il tipo grigio a 11px e la P. IVA nera
+   a 12px in semibold. Nella stessa posizione lo stesso ruolo: testo
+   secondario, più piccolo e spento del nome che sta sopra. Così la riga
+   scala uguale in entrambe le tabelle e il nome resta l'unico elemento
+   marcato della cella. */
+.ip-anagrafica-meta {
+  margin-top: 2px;
+  padding-left: 30px;
+  line-height: 1.2;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+}
+.ip-anagrafica-meta .ip-client-type,
+.ip-anagrafica-meta .ip-num {
+  font-size: inherit;
+  font-weight: 400;
+  color: inherit;
+}
+/* Conteggio in una colonna numerica (es. "Spese" nei fornitori): è un numero
+   da leggere, non una cifra da confrontare. Resta tabulare e allineato a
+   destra come gli importi (porta .amount accanto), ma si spegne: due numeri
+   affiancati dello stesso nero — un conteggio e un totale in euro — si
+   leggono come se fossero la stessa grandezza. */
+/* Il selettore non è "solo" .ip-col-count: Bootstrap dipinge il colore del
+   testo direttamente sulla cella con .table > :not(caption) > * > *, che ha
+   specificità (0,1,2) e batte una classe singola. Con .table davanti la
+   regola vince, e resta confinata alle tabelle. */
+.table .ip-col-count {
+  color: var(--ip-text-muted);
+  font-weight: 400;
+}
+
+/* La tipologia accanto al nome nel titolo di scheda: dimensione e peso del
+   testo secondario, non dell'intestazione che accompagna. */
+.ip-client-type-title { margin-left: 10px; font-weight: 400; vertical-align: middle; }
+

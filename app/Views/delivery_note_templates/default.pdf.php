@@ -93,11 +93,18 @@ $badge = $invoiced
 </head>
 <body>
 
+<?php /* Logo su una riga sua, sopra le due colonne: quando stava dentro la
+         colonna dell'emittente spingeva in basso i suoi dati, e il riquadro
+         del destinatario partiva più in alto, sfalsato. Ora emittente e
+         destinatario cominciano alla stessa altezza, ciascuno con la sua
+         etichetta. */ ?>
+<div class="logo"><?= invoice_logo_pdf($note ?? null) ?></div>
+
 <table class="layout doc-head">
     <tr>
         <td class="emitter">
-            <div class="logo"><?= invoice_logo_pdf() ?></div>
             <?= $this->include('layout/pdf_party', [
+                'label'   => trans('issued_by', '', 'Emittente'),
                 'name'     => $company['company_name'] ?? '',
                 'ids'      => $emitterIds,
                 'lines'    => $emitterLines,
@@ -190,18 +197,7 @@ $badge = $invoiced
     </tr>
 </table>
 
-<div class="doc-footer">
-    <?php $docFooter = trim((string) get_setting('pdf_invoice_footer')); ?>
-    <?php if ($docFooter !== ''): ?>
-        <div class="doc-footer-note"><?= $docFooter ?></div>
-    <?php endif; ?>
-    <table class="layout">
-        <tr>
-            <td><?= invoice_logo_footer_pdf() ?></td>
-            <td class="text-end"><span class="pages">%%PAGINE%%</span></td>
-        </tr>
-    </table>
-</div>
+<?= $this->include('layout/pdf_footer', ['footerKey' => 'pdf_invoice_footer', 'document' => $note ?? null]) ?>
 
 </body>
 </html>

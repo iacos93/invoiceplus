@@ -1,0 +1,25 @@
+{
+  "name": "Invoice+",
+  "short_name": "Invoice+",
+  "description": "Fatture, preventivi e incassi su un unico registro.",
+  "lang": "it",
+  "dir": "ltr",
+  "id": "./",
+  "start_url": "./dashboard",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#151518",
+  "theme_color": "#1E73B8",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    { "src": "assets/core/img/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/core/img/pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/core/img/pwa-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Nuova fattura", "url": "./invoices/form_create", "icons": [{ "src": "assets/core/img/pwa-192.png", "sizes": "192x192" }] },
+    { "name": "Nuovo preventivo", "url": "./quotes/form_create", "icons": [{ "src": "assets/core/img/pwa-192.png", "sizes": "192x192" }] },
+    { "name": "Scadenzario", "url": "./schedule", "icons": [{ "src": "assets/core/img/pwa-192.png", "sizes": "192x192" }] }
+  ]
+}

@@ -152,29 +152,6 @@ class Settings extends BaseController
     /** Loghi caricabili dal form (campo file => impostazione omonima). */
     private const LOGO_FIELDS = ['invoice_logo', 'invoice_logo_footer', 'login_logo', 'login_logo_dark'];
 
-    /** Estensioni ammesse per i loghi (le stesse che logo_data_uri sa servire). */
-    private const LOGO_EXTENSIONS = ['gif', 'jpg', 'jpeg', 'png', 'svg'];
-
-    /**
-     * Dimensione massima di un logo. Il valore arriva nel data URI di ogni
-     * pagina che lo mostra e dentro i PDF: senza limite un file da decine di MB
-     * faceva crescere la memoria a ogni tag, e il browser restava fermo.
-     */
-    private const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-
-    /**
-     * Tipo reale atteso per ogni estensione ammessa. L'SVG è un documento XML:
-     * libmagic lo riconosce come image/svg+xml solo a volte, altrimenti lo
-     * classifica come testo o XML generico (il contenuto lo controlla isSafeSvg).
-     */
-    private const LOGO_MIMES = [
-        'gif'  => ['image/gif'],
-        'jpg'  => ['image/jpeg'],
-        'jpeg' => ['image/jpeg'],
-        'png'  => ['image/png'],
-        'svg'  => ['image/svg+xml', 'text/plain', 'text/html', 'application/xml', 'text/xml'],
-    ];
-
     private SettingModel $settingModel;
 
     public function __construct()
@@ -366,7 +343,7 @@ class Settings extends BaseController
         // riesce a scrivere, l'utente torna al form con l'errore e nessuna
         // impostazione è stata cambiata.
         foreach ($logos as $field => $file) {
-            $name = $this->storeLogo($file, $field);
+            $name = \App\Libraries\LogoUpload::store($file, $field);
 
             if ($name === '') {
                 session()->setFlashdata('alert_error', trans($field, '', $field) . ': caricamento non riuscito.');
@@ -538,39 +515,12 @@ class Settings extends BaseController
                 continue;
             }
 
-            $label     = trans($field, '', $field);
-            $extension = strtolower((string) $file->getClientExtension());
+            // Le regole (formato, peso, tipo reale, SVG senza parti attive)
+            // sono le stesse della scheda azienda: stanno in LogoUpload.
+            $error = \App\Libraries\LogoUpload::check($file, trans($field, '', $field));
 
-            if (!in_array($extension, self::LOGO_EXTENSIONS, true)) {
-                $errors[$field] = $label . ': formato non consentito ('
-                    . $extension . '). Formati ammessi: GIF, JPEG, PNG, SVG.';
-
-                continue;
-            }
-
-            if ($file->getSize() > self::LOGO_MAX_BYTES) {
-                $errors[$field] = $label . ': immagine troppo grande (massimo '
-                    . (self::LOGO_MAX_BYTES / 1024 / 1024) . ' MB).';
-
-                continue;
-            }
-
-            // L'estensione dice solo come si chiama il file: il tipo lo legge
-            // fileinfo dal file temporaneo, non il browser (che può mentire).
-            $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($file->getTempName()) ?: '';
-
-            if (!in_array($mime, self::LOGO_MIMES[$extension], true)) {
-                $errors[$field] = $label . ': il file non contiene un\'immagine ' . strtoupper($extension) . '.';
-
-                continue;
-            }
-
-            // Un SVG è un documento, non solo un'immagine: può portare script,
-            // gestori di eventi o HTML incorporato. Nell'<img> non girano, ma il
-            // file sta in una cartella scaricabile: qui si rifiuta il contenuto
-            // attivo invece di sperare che nessuno lo apra da solo.
-            if ($extension === 'svg' && !$this->isSafeSvg($file->getTempName())) {
-                $errors[$field] = $label . ': il file SVG contiene codice o contenuti attivi.';
+            if ($error !== null) {
+                $errors[$field] = $error;
 
                 continue;
             }
@@ -579,70 +529,6 @@ class Settings extends BaseController
         }
 
         return $logos;
-    }
-
-    /**
-     * Vero se l'SVG è un disegno e non un documento con parti attive: script,
-     * gestori di eventi (onload, onclick…), entità esterne o foreignObject con
-     * HTML dentro. Tutti modi per far eseguire qualcosa a chi apre il file.
-     */
-    private function isSafeSvg(string $path): bool
-    {
-        // Basta l'inizio del file: un SVG con contenuti attivi li ha nelle
-        // prime righe, e leggere 256 KB evita di caricare in memoria un file
-        // enorme solo per controllarlo.
-        $source = @file_get_contents($path, false, null, 0, 262144);
-
-        if ($source === false || stripos($source, '<svg') === false) {
-            return false;
-        }
-
-        return preg_match('/<\s*script|<\s*foreignObject|javascript:|<!ENTITY|\son[a-z]+\s*=/i', $source) !== 1;
-    }
-
-    /**
-     * Sposta un logo in writable/uploads e restituisce il nome salvato ('' se
-     * il file non si è potuto scrivere).
-     *
-     * Il nome del browser non è fidato: può contenere percorsi ("../../x.png")
-     * e due campi diversi possono caricare lo stesso "logo.png", sovrascriven-
-     * dosi a vicenda. Qui il nome si costruisce: campo + originale ripulito.
-     */
-    private function storeLogo(\CodeIgniter\HTTP\Files\UploadedFile $file, string $field): string
-    {
-        $uploadDir = WRITEPATH . 'uploads';
-
-        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
-            return '';
-        }
-
-        try {
-            // move() lancia FileException se move_uploaded_file() fallisce
-            // (permessi, disco pieno): qui diventa un errore da mostrare.
-            $file->move($uploadDir, $this->logoFileName($file, $field), true);
-        } catch (\Throwable) {
-            return '';
-        }
-
-        return $file->getName();
-    }
-
-    /**
-     * Nome da scrivere per un logo: prefisso del campo, nome originale ridotto
-     * a lettere, numeri e trattini, estensione già verificata.
-     */
-    private function logoFileName(\CodeIgniter\HTTP\Files\UploadedFile $file, string $field): string
-    {
-        $extension = strtolower((string) $file->getClientExtension());
-        $base      = strtolower(pathinfo((string) $file->getClientName(), PATHINFO_FILENAME));
-        $base      = preg_replace('/[^a-z0-9_-]+/', '-', $base) ?? '';
-        $base      = trim($base, '-_');
-
-        if ($base === '') {
-            $base = 'logo';
-        }
-
-        return $field . '-' . mb_substr($base, 0, 40) . '.' . $extension;
     }
 
     /**

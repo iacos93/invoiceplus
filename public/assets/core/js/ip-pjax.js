@@ -415,7 +415,54 @@
         );
     }
 
-    function scrollAfterRender(saved) {        if (typeof saved === 'number') {
+    // Cambiare pagina dal pager rinnova solo le righe: riportare la pagina in
+    // cima faceva saltare via anche filtri, periodo e titolo, cioè il contesto
+    // di quello che si sta guardando. Si allinea invece la card della lista
+    // subito sotto le barre fisse, usando le altezze che layout/base.php misura
+    // e pubblica come variabili CSS (le stesse del thead sticky).
+    function scrollToList() {
+        var list = document.querySelector('#main-content .ip-table-card')
+            || document.querySelector('#main-content .table-content')
+            || document.getElementById('content');
+
+        if (!list) {
+            window.scrollTo(0, 0);
+            return;
+        }
+
+        var style = document.documentElement.style;
+        var chrome = (parseInt(style.getPropertyValue('--ip-navbar-height'), 10) || 56)
+                   + (parseInt(style.getPropertyValue('--ip-headerbar-height'), 10) || 0);
+        var top = list.getBoundingClientRect().top + window.scrollY - chrome - 8;
+
+        window.scrollTo(0, Math.max(0, top));
+    }
+
+    // Un link che rinnova la stessa lista — pager, filtri di stato e tipo —
+    // deve riportare alla cima della lista e non del documento: i filtri sono
+    // proprio ciò da cui si sta scegliendo.
+    //
+    // La barra dei mesi fa eccezione e non muove nulla ('keep'): chi sceglie
+    // un mese ha la barra sotto il puntatore e spesso ne sceglie subito un
+    // altro (o estende con shift/ctrl+clic). Allineare la lista sotto le barre
+    // fisse gliela portava via da sotto il mouse a ogni clic.
+    function scrollIntent(link) {
+        if (link.closest('.ip-period-nav')) {
+            return 'keep';
+        }
+
+        return link.closest('.ip-pager, .ip-filter-bar, .ip-filter-panel')
+            ? 'list'
+            : undefined;
+    }
+
+    function scrollAfterRender(saved) {
+        if (saved === 'list') {
+            scrollToList();
+            return;
+        }
+
+        if (typeof saved === 'number') {
             window.scrollTo(0, saved);
             return;
         }
@@ -456,6 +503,12 @@
             return;
         }
 
+        // 'keep': la pagina resta dov'è. La posizione va letta adesso, prima
+        // che il contenuto venga sostituito (una lista più corta la cambia).
+        if (opts.scroll === 'keep') {
+            opts.scroll = window.scrollY;
+        }
+
         if (opts.push) {
             // Salva lo scroll della pagina che si sta lasciando: al ritorno
             // con il tasto Indietro si torna dove si era.
@@ -491,7 +544,17 @@
                 && currentUrl.hash === nextUrl.hash;
 
             if (!sameUrl) {
-                history.pushState({ pjax: true, scroll: 0 }, '', finalUrl);
+                // 'list' viaggia nella voce di cronologia: tornando indietro
+                // sulla pagina del pager si ricade sulla cima della lista e
+                // non in cima al documento.
+                history.pushState(
+                    {
+                        pjax: true,
+                        scroll: (opts.scroll === 'list' || typeof opts.scroll === 'number') ? opts.scroll : 0
+                    },
+                    '',
+                    finalUrl
+                );
             }
         }
 
@@ -674,7 +737,7 @@
                 return;
             }
 
-            navigate(href, { push: true });
+            navigate(href, { push: true, scroll: scrollIntent(link) });
         });
 
         // Form GET (filtri, ricerche): stessa navigazione parziale, senza
@@ -724,13 +787,15 @@
             });
             url.search = params.toString();
 
-            navigate(url.href, { push: true });
+            // I form GET dell'app sono filtri e ricerche di una lista: come il
+            // pager, riportano alla cima dei risultati e non del documento.
+            navigate(url.href, { push: true, scroll: 'list' });
         });
     }
 
     // API per le pagine che navigano da codice (es. righe cliccabili della
     // bacheca) invece che da un <a>.
-    window.ipNavigate = function (url) {
+    window.ipNavigate = function (url, opts) {
         if (!isSameOrigin(url) || isDownload(url)) {
             full(url);
             return;
@@ -738,7 +803,7 @@
         if (typeof window.ipBeforeNavigate === 'function' && window.ipBeforeNavigate() === false) {
             return;
         }
-        navigate(url, { push: true });
+        navigate(url, { push: true, scroll: opts && opts.scroll });
     };
 
     if (document.readyState === 'loading') {

@@ -1,0 +1,755 @@
+/* ==============================================================================
+   InvoicePlane CI4 — custom.css (file unico)
+   -----------------------------------------------------------------------------
+   Unificazione di modern-theme.css + custom.css + saas.css in un solo file,
+   nello stesso ordine di cascata di prima (i tre erano già pensati come layer
+   successivi sullo stesso :root). Nessuna regola è stata cambiata nel merge.
+   ========================================================================== */
+
+/* -----------------------------------------------------------------------------
+   Base del documento (ex layer "modern-theme")
+   -----------------------------------------------------------------------------
+   Questo tratto teneva un secondo set di token --bg-main, --primary,
+   --card-shadow, --transition... che rimappava sui --ip-*: 25 alias per 32 usi,
+   quattro dei quali (--secondary, --success, --success-bg, --success-text)
+   senza alcun consumatore. Gli usi sono stati portati sui token --ip-* e il
+   layer rimosso: ora il foglio ha una sola famiglia di token, e chi legge non
+   deve più capire quale delle due vince.
+   .modern-card è stato rimosso con lo stesso criterio: nessuna view lo emette
+   (0 occorrenze, contro 412 di .card). Le classi .card-label/.card-value/
+   .card-subtext restano perché sono usate dalle KPI card.
+   -------------------------------------------------------------------------- */
+
+/* -----------------------------------------------------------------------------
+   Scale del sistema (uguali nei due temi)
+   -----------------------------------------------------------------------------
+   Tipografia, spaziatura, elevazioni e altezze dei controlli. Prima esistevano
+   solo i token di colore: le misure erano valori sciolti (35 dimensioni di
+   testo, 140 padding, 17 z-index), quindi due componenti simili finivano per
+   differire di mezzo pixel senza che nessuno lo decidesse. Questi gradini sono
+   la scala su cui vanno mappate le eccezioni.
+   -------------------------------------------------------------------------- */
+:root {
+  /* Tipografia — 11 gradini da 10 a 32px, il corpo è --ip-text-md (14px).
+     I gradini bassi sono fitti (1px) perché l'interfaccia è densa; sopra i 16px
+     si allargano. Ogni titolo e ogni cifra grande deve cadere su uno di questi,
+     che sia un <h3> o un KPI: era il motivo per cui due card simili finivano a
+     15.5 e 16px senza che nessuno lo avesse deciso. */
+  --ip-text-2xs:  10px;   /* badge, timbri, note minute */
+  --ip-text-xs:   11px;   /* etichette compatte */
+  --ip-text-sm:   12px;   /* metadati, intestazioni di tabella */
+  --ip-text-base: 13px;   /* testo secondario, celle, h6 */
+  --ip-text-md:   14px;   /* corpo, h5 */
+  --ip-text-lg:   16px;   /* sottotitoli, h4 */
+  --ip-text-xl:   18px;   /* titoli di sezione minori */
+  --ip-text-2xl:  20px;   /* h3, titolo di modale */
+  --ip-text-3xl:  22px;   /* h2, titoli di card */
+  --ip-text-4xl:  28px;   /* h1, titolo di pagina */
+  --ip-text-5xl:  32px;   /* cifre KPI (.card-value, .count) */
+
+  /* Spaziatura — passo 2px, fino a 24. Usata da gap/padding/margin. */
+  --ip-space-1: 2px;
+  --ip-space-2: 4px;
+  --ip-space-3: 6px;
+  --ip-space-4: 8px;
+  --ip-space-5: 10px;
+  --ip-space-6: 12px;
+  --ip-space-7: 16px;
+  --ip-space-8: 20px;
+  --ip-space-9: 24px;
+
+  /* Strati di sovrapposizione: l'ordine è quello di Bootstrap, scritto una
+     volta. I valori locali (0/1/2/3 e 1015/1024/1025) restano sciolti perché
+     sono contestuali, non strati globali. */
+  --ip-z-base: 1;
+  --ip-z-raised: 5;
+  --ip-z-sticky: 50;
+  --ip-z-header: 1020;
+  --ip-z-dropdown: 1030;
+  --ip-z-popover: 1035;
+  --ip-z-overlay: 1050;
+  --ip-z-modal: 1060;
+  --ip-z-toast: 1080;
+  --ip-z-sheet: 1085;
+  --ip-z-top: 2000;
+
+  /* Altezze dei controlli: due taglie, non sette. */
+  --ip-control-h: 36px;
+  --ip-control-h-sm: 30px;
+}
+html {
+    font-size: var(--ip-text-lg);
+}
+body {
+    font-family: var(--ip-font);
+    background-color: var(--ip-bg);
+    color: var(--ip-text);
+    font-size: var(--ip-text-md);
+}
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: var(--ip-text);
+    font-family: var(--ip-font);
+}
+h1 {
+    font-size: var(--ip-text-4xl);
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+    /* Fraunces (--ip-display) per i titoli di pagina: il contrasto serif/sans
+       con Figtree da' gerarchia immediata senza usare il colore, che resta
+       riservato alla semantica di stato. */
+    font-family: var(--ip-display);
+}
+/* I livelli sono i gradini della scala (28/22/20/18/16/13), non rem sciolti:
+   così un cambio di scala si propaga ai titoli invece di lasciarli indietro. */
+h2 { font-size: var(--ip-text-3xl); }
+h3 { font-size: var(--ip-text-2xl); }
+h4 { font-size: var(--ip-text-xl); }
+h5 { font-size: var(--ip-text-lg); }
+h6 { font-size: var(--ip-text-base); }
+/* I titoli dei modali sono <h5>: senza questa riga scenderebbero da 20 a 16px,
+   perché la scala sopra uniforma i livelli e il modale non è un sottotitolo. */
+.modal-title { font-size: var(--ip-text-2xl); }
+/* Etichetta e valore delle KPI card (dashboard, scheda cliente, ospite). */
+.card-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ip-text-muted);
+    font-weight: 600;
+}
+.card-value {
+    font-size: var(--ip-text-5xl);
+    font-weight: 700;
+    margin: 0.5rem 0;
+    color: var(--ip-primary);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+.card-value.card-value-danger {
+    color: var(--ip-danger-text);
+}
+.card-value.card-value-warning {
+    color: var(--ip-warning-text);
+}
+/* Stat card del guest dashboard — coerente con .card-value del KPI. */
+.count {
+    font-size: var(--ip-text-5xl);
+    font-weight: 700;
+    margin: 0.5rem 0;
+    color: var(--ip-primary);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+.card-subtext {
+    color: var(--ip-text-muted);
+    font-size: 0.8125rem;
+}
+/* KPI cards dashboard — 6 card, quindi le colonne devono essere un divisore di
+   6 (3, 2, 1): con auto-fit si ottenevano righe da 5 + 1 orfana. E ogni card e'
+   una riga flex [icona | contenuto | trend], che sotto ~200px di contenuto
+   tronca l'importo con l'ellissi (il tasso di incasso diventava "1..."):
+   percio' niente 4/5/6 colonne, si va da 3 a 2 a 1. */
+/* Uniform Form Styling */
+.card-header,
+.card-title {
+    font-size: var(--ip-text-md);
+    font-family: var(--ip-font);
+}
+/* Le etichette e i campi hanno dimensioni differenziate più sotto
+   (.form-group > label 13px, .ip-doc-label / .form-badge 12.5px, ricerca
+   live 13.5px): prima questo blocco usava !important anche su label e
+   .form-control, e ogni raffinamento successivo era silenziosamente
+   annullato. La misura base resta 14px ma senza !important. .btn è
+   escluso: ha dimensioni differenziate (.btn-sm 12px, .btn 14px). */
+label,
+.control-label,
+.form-label {
+    font-size: var(--ip-text-md);
+    font-family: var(--ip-font);
+}
+/* Color Corrections */
+.form-control,
+.control-label,
+.form-label,
+label,
+.card > .card-header {
+    color: var(--ip-text);
+}
+a {
+    color: var(--ip-primary);
+    transition: var(--ip-transition);
+}
+a:hover {
+    color: var(--ip-primary-hover);
+    text-decoration: none;
+}
+/* ---- ex custom.css ---- */
+/* =============================================================================
+   InvoicePlane CI4 — Custom UI/UX overrides
+   -----------------------------------------------------------------------------
+   Layer finale di raffinamento interposto tra style.css (Bootstrap 3 + tema IP)
+   e modern-theme.css (look moderno). Aggiunge coerenza visiva, micro-stati,
+   e un punto di vista più calmo/professionale per un'app di fatturazione.
+   ========================================================================== */
+
+/* I font (Figtree / Fraunces / IBM Plex Mono) arrivano da <link> nel <head>,
+   partial layout/fonts.php. Qui c'era un @import: dopo la fusione dei tre
+   fogli non era più in testa al file, quindi il browser lo ignorava e la
+   tipografia dell'app cadeva tutta sui fallback di sistema. */
+
+/* -----------------------------------------------------------------------------
+   1. Design tokens — "Casa verde postale"
+   -----------------------------------------------------------------------------
+   La cartoleria finanziaria: carta calda ma non crema, inchiostro verde-nero,
+   verde postale come colore del denaro (primary/paid), vermiglio come colore
+   del timbro (scaduto/attenzione), ambra per le situazioni intermedie.
+   Mappa i token BS5 ai nostri per allineare .text-bg-*, .link-*, .alert-* .
+   -------------------------------------------------------------------------- */
+:root {
+  /* Palette IP — neutra, professionale (grigio/bianco + accento slate scuro;
+     colore riservato solo alla semantica di stato: pagato/scaduto/attenzione) */
+  --ip-bg:            #f6f6f7;     /* canvas neutro */
+  --ip-bg-card:       #ffffff;
+  --ip-border:        #e4e4e7;
+  --ip-border-soft:   #ececef;
+  --ip-border-strong: #d4d4d8;      /* bordo .btn-secondary (leggibile come pulsante) */
+  --ip-border-strong-hover: #a1a1aa;/* hover/active dello stesso bordo */
+  /* Hover dei campi: deve essere piu' scuro del bordo a riposo, non piu'
+     chiaro. Quando --ip-border-field e' salito a 3:1 questo token (#cbd5e1,
+     1.5:1) e' finito sotto il valore di riposo e l'hover schiariva il bordo. */
+  --ip-border-hover:  #6b7280;      /* bordo campi su hover (input, IPSelect) */
+  --ip-text:          #18181b;     /* quasi nero neutro */
+  --ip-text-strong:   #18181b;     /* testo "inchiostro" per cifre evidenziate */
+  /* Scurito il 2026-10-24: #71717a stava a 4.47:1 sul canvas (sotto 4.5 per il
+     testo da 12-14px, e il canvas è il fondo più frequente). Ora 4.89:1 sul
+     canvas e 5.28:1 sulla card. */
+  --ip-text-muted:    #6b6b73;
+  --ip-primary:       #18181b;     /* slate/nero — accento primario neutro */
+  --ip-primary-hover: #27272a;
+  --ip-primary-dark:  #09090b;     /* (active) */
+  /* Tinte derivate invece che scritte in rgba(): un rgba() con i numeri del
+     tema chiaro resta identico quando il tema si ribalta, quindi la tinta
+     "soft" di un accento chiaro diventa un velo scuro su fondo scuro. Con
+     color-mix la tinta segue il token e i due temi non possono divergere. */
+  --ip-primary-soft:  color-mix(in srgb, var(--ip-primary) 6%, transparent);
+  --ip-on-primary:    #ffffff;     /* testo su sfondo --ip-primary (chiaro: primary scuro) */
+  /* Testo sui chip pieni neutri (--ip-neutral-solid). In chiaro il grigio
+     pieno è scuro e vuole bianco; in tema scuro lo stesso token diventa
+     chiaro e vuole il canvas. Tenere #fff nei due temi faceva 2.60:1 sui
+     conteggi. Un solo token, ribaltato insieme al fondo. */
+  --ip-on-neutral:    #ffffff;
+  /* Tinte di servizio che erano riferite senza essere definite. */
+  --ip-bg-subtle:     #f2f4f6;   /* riga in trascinamento */
+  --ip-warning-border:#f0ad4e;   /* barra del feed calendario senza token */
+  --ip-shadow-focus-danger: 0 0 0 3px color-mix(in srgb, var(--ip-danger) 15%, transparent);
+  --ip-level:         0;         /* rientro dei sottoconti, sovrascritto inline */
+  --ip-bulk-bar-h:    0px;       /* altezza della barra azioni, misurata da JS */
+
+  /* Skeleton di caricamento: base e riflesso dello shimmer. La base e'
+     volutamente più scura di un bordo leggero (1.55:1 sulla card bianca,
+     1.44:1 sul canvas) così i placeholder restano percepibili anche a bassa
+     acuità; le varianti prefers-contrast e forced-colors stanno in fondo al
+     file. */
+  --ip-skeleton-bg:   #cfcfd6;
+  --ip-skeleton-shine:#e9e9ec;
+
+/* Colori di stato ripresi dal tema originale InvoicePlane
+      (html/assets/invoiceplane/sass/_ip_variables.scss): sono la parte piu'
+      riconoscibile dell'identita' dell'app, perché i badge di stato compaiono
+      in ogni lista di fatture e preventivi. Il resto della cromia resta neutro. */
+  --ip-success:       #468847;     /* $color_green — paid / approved */
+  --ip-success-bg:    #eef5ee;
+  --ip-warning:       #F89406;     /* $color_yellow — viewed */
+  --ip-warning-bg:    #fdf4e6;
+  --ip-danger:        #B94A48;     /* $color_red — overdue / rejected / delete */
+  --ip-danger-bg:     #f9eded;
+  --ip-danger-soft:   #fee2e2;      /* bg hover delle righe con stato pericolo */
+  --ip-info:          #3A87AD;     /* $color_blue — sent */
+  --ip-info-bg:       #edf3f7;
+  --ip-violet:        #6d5dd3;     /* costi / money-out: inchiostro distinto da rosso e blu */
+  --ip-violet-bg:     #f1eefe;
+
+  --ip-neutral:       #999999;     /* $color_grey — draft / stato neutro */
+  --ip-neutral-solid: #6E6E6E;     /* grigio pieno: serve più scuro per reggere testo bianco */
+  --ip-canceled:      #333333;     /* $color_status_canceled */
+
+  /* Varianti "testo su fondo chiaro" delle tinte di stato. I badge sono
+      outline (bordo + testo colorati su bianco) e a 10px il testo deve stare
+      sopra 4.5:1: l'arancione originale #F89406 su bianco da' solo 2.28, il blu
+      4.00. Il bordo mantiene la tinta originale, così il chip resta
+      riconoscibile; il testo usa questa versione scurita. */
+  /* Scurite il 2026-10-24: sul proprio fondo tinto i valori precedenti
+     stavano a 4.14 / 4.16 / 4.44 / 4.02, sotto 4.5 per il testo da 11px dei
+     badge --soft. Ora 4.67 / 4.97 / 5.02 / 4.80 sul fondo e 5.18 / 5.42 /
+     5.74 / 5.38 sul bianco: stesso tono, un gradino più profondo. */
+  /* Regola d'uso: i colori di stato pieni (--ip-success, --ip-warning…) sono
+     per fili, icone, fondi e barre; il testo usa sempre la variante -text.
+     L'ambra piena su bianco o crema sta intorno a 2:1 e il verde/blu pieni
+     poco sotto 4,5:1: avvisi, KPI e riepiloghi grafici che li usavano come
+     colore del testo erano i punti meno leggibili del tema chiaro. */
+  --ip-success-text:  #3d7a3e;
+  --ip-warning-text:  #9a5b03;
+  --ip-danger-text:   #ad4341;
+  --ip-info-text:     #2e7194;
+  --ip-hover:         #f4f4f5;     /* bg hover bottoni neutri/righe */
+  --ip-success-hover: #2f6330;     /* verde scuro per hover .btn-success */
+  --ip-danger-hover:  #9d3d3b;     /* rosso scuro per hover .btn-danger  */
+
+  /* Bordo dedicato ai campi input: 3:1 su card per WCAG 1.4.11.
+     --ip-border resta per separatori decorativi (tabelle, card).
+     Il valore precedente (#cbd5e1) dichiarava 3.2:1 ma ne misurava 1.48 su
+     card bianca: la soglia va verificata su ENTRAMBI i fondi su cui il campo
+     puo' stare, card (#fff) e canvas (#f6f6f7), ed e' il secondo il caso
+     peggiore. */
+  --ip-border-field:  #82899a;     /* 3.5:1 su card, 3.24:1 su canvas (era #888f9c: 3.01:1 sul canvas, a un soffio dalla soglia 3:1) */
+
+  /* Superfici piene dei pulsanti. Le tinte di stato (--ip-success, --ip-info)
+     sono nate per badge e testo, dove il fondo e' chiaro: usate come fondo di
+     un pulsante con testo bianco restano sotto 4.5:1 (4.31 e 4.00). I pulsanti
+     hanno quindi una versione piu' profonda, mentre badge e stati continuano a
+     usare la tinta originale — che e' la parte riconoscibile dell'identita'. */
+  --ip-success-solid: #3d7a3e;     /* 5.18:1 con testo bianco */
+  --ip-info-solid:    #31708f;     /* 5.46:1 con testo bianco */
+
+  /* Inchiostro per i fondi chiari e saturi (ambra): il bianco su #F89406 da'
+     2.28:1. In tema scuro diventa il canvas scuro, vedi blocco dark. */
+  --ip-on-bright:     #18181b;
+
+  /* Altezza navbar: fallback statico usato solo prima che lo script inline in
+     layout/base.php misuri l'altezza reale (font Figtree, avatar, eventuale
+     wrap su viewport strette) e sovrascriva questa variabile via JS. Vedi
+     sezione 2 qui sotto. */
+  --ip-navbar-height: 56px;
+  /* Altezza headerbar: fallback statico, come per la navbar, per ancorare
+     l'eventuale thead sticky (vedi .table--sticky-head) subito sotto la
+     headerbar stessa invece che sotto la navbar. Sovrascritta via JS in
+     layout/base.php con l'altezza misurata. */
+  --ip-headerbar-height: 56px;
+
+  /* Barra superiore scura, ripresa da $navbar-inverse-bg del tema originale
+     (#333c4a): e' la firma visiva più riconoscibile di InvoicePlane. */
+  --ip-navbar-bg:     #333c4a;
+  --ip-navbar-border: #29313c;
+  --ip-navbar-text:   rgba(255, 255, 255, 0.78);
+  --ip-navbar-hover:  rgba(255, 255, 255, 0.10);
+
+  --ip-radius:        6px;
+  --ip-radius-sm:     4px;
+  /* Raggio più morbido per superfici "fluttuanti" grandi (modali, popover,
+     toast): stacca dal raggio di default dei campi/card senza introdurre
+     una nuova famiglia di forme. */
+  --ip-radius-lg:     10px;
+  /* Geometria delle superfici a card — una misura sola per intestazione,
+     corpo e piè di card. Prima erano tre ritmi: il footer stava a 16px di
+     rientro mentre header e body stavano a 18 (il testo del piè di card non
+     cadeva sotto quello del corpo), e le sezioni documento rispondevano a
+     13/16 e 18/16 mentre le card degli altri form a 14/18 e 16/18 — due
+     famiglie per lo stesso ruolo, con l'intestazione alta 49 o 59px secondo
+     la pagina. --ip-card-head-y e' l'unico valore che imposta l'altezza
+     dell'intestazione: il contenuto (icona 30px o pallino 22px) ci sta
+     dentro con lo stesso respiro. */
+  --ip-card-pad-x:   18px;
+  --ip-card-head-y:  14px;
+  --ip-card-body-y:  16px;
+  --ip-card-foot-y:  10px;
+  --ip-sidebar-width: 236px;
+  --ip-shadow-sm:     0 1px 2px 0 rgba(24, 24, 27, 0.05);
+  --ip-shadow-focus:  0 0 0 3px rgba(24, 24, 27, 0.14);
+  /* Scala di elevazione: --ip-shadow-md per pannelli fluttuanti (modali,
+     dropdown, IPSelect/IPDatepicker gia' usano la propria), --ip-shadow-lg per
+     overlay/drag. Prima l'unica ombra era --ip-shadow-sm: aprendo più livelli
+     (modale dentro card) tutto poggiava sulla stessa profondita' piatta. */
+  --ip-shadow-md:     0 4px 12px -2px rgba(24, 24, 27, 0.10), 0 2px 4px rgba(24, 24, 27, 0.04);
+  --ip-shadow-lg:     0 18px 48px -12px rgba(24, 24, 27, 0.22), 0 6px 16px rgba(24, 24, 27, 0.08);
+  --ip-preview-bg:    #52525b;      /* fondo "carta" dell'anteprima .ip-preview__sheet */
+  --ip-transition:    150ms ease;
+  --ip-font:          "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --ip-display:       "Fraunces", Georgia, "Times New Roman", serif;
+  /* Carattere del solo nome accanto al logo. Ha un token suo, e non riusa
+     --ip-display, perché il nome è un marchio e non un titolo: così cambiare
+     il serif dei titoli non ritocca il marchio, e viceversa. */
+  --ip-brand-font:    "Sora", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ip-mono:          "IBM Plex Mono", "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+  /* Bootstrap dà a <code>, <kbd> e <pre> il proprio stack (SFMono-Regular):
+     identificatori di serie e chiavi MCP uscivano in un monospazio diverso
+     dalle cifre del resto dell'app, che sono tutte in IBM Plex Mono. */
+  --bs-font-monospace: var(--ip-mono);
+
+  /* Mapping BS5 → palette IP (per .text-bg-*, .link-primary, .alert-* etc.) */
+  --bs-primary:        var(--ip-primary);
+  --bs-primary-rgb:    24, 24, 27;
+  --bs-success:        var(--ip-success);
+  --bs-success-rgb:    70, 136, 71;
+  --bs-warning:        var(--ip-warning);
+  --bs-warning-rgb:    248, 148, 6;
+  --bs-danger:         var(--ip-danger);
+  --bs-danger-rgb:     185, 74, 72;
+  --bs-info:           var(--ip-info);
+  --bs-info-rgb:       58, 135, 173;
+  --bs-link-color:     var(--ip-primary);
+  --bs-link-color-rgb: 24, 24, 27;
+  --bs-link-hover-color: var(--ip-primary-hover);
+
+  /* Bordi: senza questa mappatura Bootstrap continua a disegnare con il proprio
+     default #dee2e6 (tabelle, card, input-group, hr, dropdown). Sulla stessa
+     pagina convivevano quattro grigi di bordo diversi, di cui il più diffuso
+     non era un nostro token: le linee risultavano leggermente disallineate di
+     tono fra tabella e card. */
+  --bs-border-color: var(--ip-border);
+  --bs-border-color-translucent: var(--ip-border);
+  --bs-table-border-color: var(--ip-border);
+}
+/* -----------------------------------------------------------------------------
+   1bis. Tema scuro — stesso sistema di token, valori per fondo scuro
+   ----------------------------------------------------------------------------
+   html[data-theme="dark"] viene impostato da layout/theme_head.php (script
+   inline nel <head>, prima dei CSS: niente lampeggio del tema sbagliato).
+   La preferenza sta in localStorage (ip-theme), altrimenti segue
+   prefers-color-scheme. data-bs-theme (stesso valore) attiva il tema scuro
+   nativo di Bootstrap 5.3 per le superfici dei componenti; qui si ribaltano
+   solo i token --ip-* — tutto il resto (card, tabelle, sidebar, form,
+   dropdown, modali) li consuma e si ribalta da solo.
+
+   Specificità html[data-theme="dark"] > :root: i token scuri vincono sul
+   blocco chiaro anche quando ridefiniscono le stesse variabili.
+   -------------------------------------------------------------------------- */
+html[data-theme="dark"] {
+  --ip-bg:                #151518;    /* canvas */
+  --ip-bg-card:           #1e1e23;    /* superfici (card, sidebar, pannelli) */
+  --ip-border:            #33333b;
+  --ip-border-soft:       #2a2a31;
+  --ip-border-strong:     #4b4b55;
+  --ip-border-strong-hover: #63636e;
+  --ip-text:              #e7e7ea;
+  --ip-text-strong:       #f4f4f5;
+  --ip-text-muted:        #9b9ba5;
+  --ip-primary:           #e7e7ea;    /* accento invertito: link/testo chiari */
+  --ip-primary-hover:     #f4f4f5;
+  --ip-primary-dark:      #c9c9d0;    /* (active) */
+  --ip-primary-soft:      color-mix(in srgb, var(--ip-primary) 9%, transparent);
+  --ip-on-primary:        var(--ip-bg);    /* testo su sfondo --ip-primary (scuro: primary chiaro) */
+  --ip-on-neutral:        var(--ip-bg);    /* chip neutri: in scuro il grigio pieno è chiaro */
+  --ip-bg-subtle:         #26262d;
+  --ip-warning-border:    #7a5520;
+  --ip-shadow-focus-danger: 0 0 0 3px color-mix(in srgb, var(--ip-danger) 30%, transparent);
+
+  /* Tinte di stato adattate: il vermiglio/verde/ambra originali su fondo
+     scuro non reggevano il contrasto, qui le varianti più chiare. */
+  --ip-success:           #57a859;
+  --ip-success-bg:        #1c271d;
+  --ip-success-text:      #7ec780;
+  --ip-success-hover:     #4d9650;
+  --ip-warning:           #e89c2f;
+  --ip-warning-bg:        #2e2414;
+  --ip-warning-text:      #e8a13d;
+  --ip-danger:            #d0716e;
+  --ip-danger-bg:         #2d1c1c;
+  --ip-danger-soft:       #3a2323;
+  --ip-danger-text:       #da8f8c;
+  --ip-danger-hover:      #b95a57;
+  --ip-info:              #5d9fbe;
+  --ip-info-bg:           #192430;
+  --ip-info-text:         #7ab4d4;
+  --ip-violet:            #9b8ce8;    /* costi, adattato al fondo scuro */
+  --ip-violet-bg:         #211d33;
+  --ip-neutral:           #8a8a92;
+  --ip-neutral-solid:     #a0a0a8;
+--ip-canceled:          #4a4a52;
+
+   --ip-border-field:      #6e6e7a;    /* 3.3:1 su card scura (#1e1e23) */
+   --ip-border-hover:      #8a8a97;    /* hover campi: piu' chiaro del riposo */
+   /* In scuro i fondi dei pulsanti sono gia' chiari e il testo e' scuro
+      (vedi html[data-theme="dark"] .btn-success): la tinta di stato va bene
+      cosi' com'e'. */
+   --ip-success-solid:     var(--ip-success);
+   --ip-info-solid:        var(--ip-info);
+   --ip-on-bright:         var(--ip-bg);
+
+   --ip-hover:             #26262d;    /* hover bottoni neutri/righe */
+  /* Barra superiore. I due tentativi precedenti hanno fissato altrettanti
+     vincoli: #262b36 era troppo vicino per luminosita' a card/sidebar
+     (#1e1e23, ~12/255 di luminanza percepita) e la barra si perdeva nello
+     sfondo; il navy del tema chiaro (#333c4a) risolveva la distinzione ma
+     restava l'unica superficie satura dell'intero tema scuro — su canvas
+     #151518 e card #1e1e23 leggeva come una fascia azzurra estranea alla
+     palette, e per giunta la più chiara dello schermo.
+     Nel tema chiaro la topbar e' una fascia molto più scura del contenuto:
+     tradotta su fondo scuro, la stessa relazione vuole una fascia piu'
+     chiara delle superfici. Quello che va tolto non e' la luminosita' ma la
+     saturazione. #3b3b45 tiene la stessa luminanza percepita del navy
+     (~59/255: resta identico lo stacco netto da card e canvas che serviva a
+     far leggere la fascia) e la riporta sulla rampa neutra della palette,
+     che ha gia' la stessa lieve dominante bluastra (#33333b = 51,51,59).
+     Il testo (bianco a 0.78) resta a ~7.6:1, invariato. Il pannello brand
+     del login usa lo stesso token, così le due superfici restano coerenti. */
+  --ip-navbar-bg:         #3b3b45;
+  --ip-navbar-border:     #2a2a31;
+  --ip-navbar-text:       rgba(255, 255, 255, 0.78);
+  --ip-navbar-hover:      rgba(255, 255, 255, 0.10);
+
+  --ip-shadow-sm:         0 1px 2px 0 rgba(0, 0, 0, 0.45);
+  --ip-shadow-focus:      0 0 0 3px color-mix(in srgb, var(--ip-primary) 18%, transparent);
+  --ip-shadow-md:         0 6px 16px -4px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.30);
+  --ip-shadow-lg:         0 22px 56px -14px rgba(0, 0, 0, 0.70), 0 8px 20px rgba(0, 0, 0, 0.45);
+  --ip-preview-bg:        #0f0f12;    /* fondo "carta" dell'anteprima */
+  --ip-skeleton-bg:       #33333b;
+  --ip-skeleton-shine:    #26262d;
+
+  /* Mapping BS5 -> palette scura: gli rgb servono alle varianti rgba() */
+  --bs-body-bg:           var(--ip-bg);
+  --bs-body-color:        var(--ip-text);
+  --bs-primary-rgb:       231, 231, 234;
+  --bs-link-color-rgb:    231, 231, 234;
+  --bs-success-rgb:       87, 168, 89;
+  --bs-warning-rgb:       232, 156, 47;
+  --bs-danger-rgb:        208, 113, 110;
+  --bs-info-rgb:          93, 159, 190;
+}
+/* Superfici BS5 che non ereditano i token --ip-*: dropdown, modali, liste,
+   accordion restano sui grigi di default di Bootstrap (--bs-*-bg) anche con
+   i token scuri. Le riallineamo alle nostre superfici. */
+html[data-theme="dark"] .dropdown-menu {
+  --bs-dropdown-color: var(--ip-text);
+  --bs-dropdown-bg: var(--ip-bg-card);
+  --bs-dropdown-border-color: var(--ip-border);
+  --bs-dropdown-link-color: var(--ip-text);
+  --bs-dropdown-link-hover-color: var(--ip-text);
+  --bs-dropdown-link-hover-bg: var(--ip-hover);
+  --bs-dropdown-link-active-color: var(--ip-bg);
+  --bs-dropdown-link-active-bg: var(--ip-primary);
+}
+html[data-theme="dark"] .modal-content {
+  --bs-modal-color: var(--ip-text);
+  --bs-modal-bg: var(--ip-bg-card);
+  --bs-modal-border-color: var(--ip-border);
+}
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select {
+  background-color: var(--ip-bg-card);
+  color: var(--ip-text);
+}
+html[data-theme="dark"] .input-group-text {
+  background-color: var(--ip-hover);
+  color: var(--ip-text);
+}
+/* Spunta su fondo scuro: l'accento in dark e' quasi bianco (--ip-primary
+   #e7e7ea), quindi il segno bianco spariva dentro la casella selezionata.
+   Stessa regola dei pulsanti primari, che in dark scrivono in --ip-bg.
+   Il colore sta dentro l'SVG e non puo' venire da una variabile: serve la
+   coppia di regole, una per tema. */
+html[data-theme="dark"] .form-check-input:checked[type="checkbox"],
+html[data-theme="dark"] input[type="checkbox"]:checked,
+html[data-theme="dark"] .form-check-input[type="checkbox"]:indeterminate,
+html[data-theme="dark"] input[type="checkbox"]:indeterminate {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23151518' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.2' d='m4 8.2 2.6 2.6L12 5.4'/%3e%3c/svg%3e");
+}
+html[data-theme="dark"] .form-check-input[type="checkbox"]:indeterminate,
+html[data-theme="dark"] input[type="checkbox"]:indeterminate {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23151518' stroke-linecap='round' stroke-width='2.2' d='M4.5 8h7'/%3e%3c/svg%3e");
+}
+html[data-theme="dark"] .form-check-input:checked[type="radio"],
+html[data-theme="dark"] input[type="radio"]:checked {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3ccircle cx='8' cy='8' r='3.2' fill='%23151518'/%3e%3c/svg%3e");
+}
+html[data-theme="dark"] .list-group-item {
+  background-color: var(--ip-bg-card);
+  color: var(--ip-text);
+}
+html[data-theme="dark"] .list-group-item.active {
+  background-color: var(--ip-primary);
+  border-color: var(--ip-primary);
+  color: var(--ip-bg);
+}
+html[data-theme="dark"] .accordion-button {
+  background-color: var(--ip-bg-card);
+  color: var(--ip-text);
+}
+html[data-theme="dark"] .accordion-button:not(.collapsed) {
+  background-color: var(--ip-hover);
+  color: var(--ip-text);
+}
+/* Badge .text-bg-light (contatori dashboard): su fondo scuro un badge
+    chiarissimo con testo scuro fisso di Bootstrap è illeggibile. */
+html[data-theme="dark"] .text-bg-light {
+  color: var(--ip-text-muted) !important;
+  background-color: var(--ip-hover) !important;
+}
+/* In scuro il fondo del conteggio è --ip-hover (#3d3d43), più chiaro del
+   canvas: il testo "muted" su quella superficie dava 3.0:1. Il tono spento
+   resta, ma sul gradino di testo pieno (8.6:1). In chiaro la stessa scelta
+   non serve: --ip-text-muted su --ip-bg sta già a 4.89:1. */
+html[data-theme="dark"] .ip-count-badge {
+  color: var(--ip-text) !important;
+  background-color: var(--ip-hover) !important;
+  border: 1px solid var(--ip-border-strong);
+}
+/* Testo bianco sui fondi --ip-primary: in tema scuro il primary è chiaro,
+    il testo va ribaltato sul canvas scuro. */
+html[data-theme="dark"] .btn-primary {
+  --bs-btn-color: var(--ip-bg);
+  --bs-btn-hover-color: var(--ip-bg);
+  --bs-btn-active-color: var(--ip-bg);
+  --bs-btn-focus-shadow-rgb: 231, 231, 234;
+}
+/* btn-success e btn-danger: in tema scuro i fondi sono chiari (#57a859, #d0716e)
+   ma il testo era bianco fisso -> contrasto insufficiente. Usano testo scuro
+   come .btn-primary, così superano 4.5:1 in entrambi i temi. */
+html[data-theme="dark"] .btn-success {
+  --bs-btn-color: var(--ip-bg);
+  --bs-btn-hover-color: var(--ip-bg);
+  --bs-btn-active-color: var(--ip-bg);
+  --bs-btn-focus-shadow-rgb: 87, 168, 89;
+}
+html[data-theme="dark"] .btn-danger {
+  --bs-btn-color: var(--ip-bg);
+  --bs-btn-hover-color: var(--ip-bg);
+  --bs-btn-active-color: var(--ip-bg);
+  --bs-btn-focus-shadow-rgb: 208, 113, 110;
+}
+/* btn-info e btn-warning in tema scuro: fondi chiari, testo scuro per contrasto */
+html[data-theme="dark"] .btn-info {
+  --bs-btn-color: var(--ip-bg);
+  --bs-btn-hover-color: var(--ip-bg);
+  --bs-btn-active-color: var(--ip-bg);
+  --bs-btn-focus-shadow-rgb: 93, 159, 190;
+}
+html[data-theme="dark"] .btn-warning {
+  --bs-btn-color: var(--ip-bg);
+  --bs-btn-hover-color: var(--ip-bg);
+  --bs-btn-active-color: var(--ip-bg);
+  --bs-btn-focus-shadow-rgb: 232, 156, 47;
+}
+html[data-theme="dark"] .ip-dp__day.is-selected,
+html[data-theme="dark"] .ip-dp__month.is-selected { color: var(--ip-bg); }
+/* IPSelect (pannello dropdown azienda/anno/anagrafiche con ricerca): la voce
+   corrente usa background: var(--ip-primary) + color: #fff fisso. In tema
+   chiaro --ip-primary e' un blu scuro e il bianco regge; in tema scuro
+   --ip-primary si ribalta in quasi-bianco (#e7e7ea) ma il colore testo
+   restava #fff fisso, quindi la voce selezionata diventava bianco su bianco,
+   illeggibile. Stesso ribaltamento gia' applicato sopra a .btn-primary e
+   .ip-dp__day.is-selected. */
+html[data-theme="dark"] .ip-select-option.is-selected { color: var(--ip-bg); }
+html[data-theme="dark"] .btn-group.index-options .btn.btn-primary,
+html[data-theme="dark"] .btn-group.index-options .btn.active { color: var(--ip-bg); }
+html[data-theme="dark"] .ip-topbar .ip-topbar-link:hover .ip-nav-avatar { color: var(--ip-bg); }
+html[data-theme="dark"] .ip-tabs .nav-link.active,
+html[data-theme="dark"] .ip-tabs .nav-link.active:focus-visible { color: var(--ip-on-primary); }
+html[data-theme="dark"] .ip-tabs .nav-link.active .ip-tab-badge {
+  background: rgba(0, 0, 0, 0.14);
+  color: var(--ip-on-primary);
+}
+html[data-theme="dark"] .ip-period-month.is-active {
+  color: var(--ip-on-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 1px 2px rgba(0, 0, 0, .2);
+}
+
+/* -----------------------------------------------------------------------------
+   1ter. Font globale — applica il token --ip-font (Figtree) a tutta l'app.
+   Prima era definito ma mai collegato a body/html: l'app rendeva ancora con
+   il fallback di sistema nonostante il token fosse pronto.
+   -------------------------------------------------------------------------- */
+html, body {
+  font-family: var(--ip-font);
+}
+/* -----------------------------------------------------------------------------
+   1quater. Scrollbar sottile on-brand
+   -----------------------------------------------------------------------------
+   Il default di sistema e' rumoroso e sfasa rispetto alla palette. scrollbar-
+   color vale per Firefox; la pseudo-scrollbar copre WebKit (Chrome/Safari/
+   Edge). Su fondo chiaro e scuro eredita i token --ip-border / --ip-bg, quindi
+   si ribalta da sola col tema. */
+html {
+  scrollbar-color: var(--ip-border) transparent;
+  scrollbar-width: thin;
+}
+html::-webkit-scrollbar { width: 10px; height: 10px; }
+html::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb {
+  background: var(--ip-border);
+  border: 3px solid var(--ip-bg);
+  border-radius: 999px;
+}
+html::-webkit-scrollbar-thumb:hover { background: var(--ip-border-strong); }
+/* Selezione del testo on-brand: invece del blu di sistema, usa il soft del
+   primary, così anche evidenziare resta dentro la palette neutra. */
+::selection {
+  background: var(--ip-primary-soft);
+  color: var(--ip-text);
+}
+/* Rispetto di prefers-reduced-motion: chi lo chiede non vuole movimento.
+   Spengniamo shimmer, transizioni e animazioni di entrata mantenendo il
+   layout identico. Coerente con l'attenzione all'accessibilita' gia' presente
+   nel foglio (skip-link, focus-ring, contrasto degli scheletri). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* Entrata dolce del contenuto a ogni caricamento pagina: evita il "pop" rigido
+   del DOM pronto, senza ritardare la lettura (200ms). La guardia reduced-motion
+   la neutralizza.
+   Solo opacita', niente translateY: un'animazione su transform con fill "both"
+   resta applicata anche dopo la fine, e in Chromium un antenato con
+   animazione transform attiva diventa containing block dei discendenti
+   position:fixed — la barra delle azioni di gruppo (ip-bulk-bar, fixed) si
+   sarebbe ancorata a #content invece che al viewport, comparendo in mezzo
+   alla tabella. */
+@keyframes ip-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+#main-content #content {
+  animation: ip-fade-in 200ms ease both;
+}
+/* Transizione di tema morbida: abilitata solo durante il toggle (la classe
+   .ip-theme-animating e' messa/levata da layout/base.php), così il cambio
+   chiaro<->scuro non e' brusco ma il caricamento iniziale resta istantaneo.
+   La guardia prefers-reduced-motion la neutralizza comunque. */
+html.ip-theme-animating,
+html.ip-theme-animating *,
+html.ip-theme-animating *::before,
+html.ip-theme-animating *::after {
+  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease !important;
+}
+/* -----------------------------------------------------------------------------
+   1sexies. Primitive di dettaglio — sticky head, zebra, icon-button
+   --------------------------------------------------------------------------
+   Tutte opt-in via classe, per non alterare le tabelle/azioni gia' definite. */
+/* Header di tabella ancorato allo scroll: resta leggibile sulle liste lunghe
+   senza introdurre colore (sfondo neutro ereditato dal thead). Si ancora
+   sotto navbar + headerbar grazie ai token misurati via JS, così non finisce
+   mai dietro la headerbar fissa. Le tabelle dentro card con overflow:hidden
+   (dashboard) restano fuori da questo comportamento. */
+.table--sticky-head > thead > tr > th {
+  position: sticky;
+  top: calc(var(--ip-navbar-height) + var(--ip-headerbar-height));
+  z-index: var(--ip-z-raised);
+}
+/* Zebratura leggera per tabelle dati fitte (liste a molte righe): aiuta la
+   scansione orizzontale restando sul grigio neutro, senza colore. L'hover
+   resta prevalente. */
+.table--zebra > tbody > tr:nth-child(even) > td {
+  background: var(--ip-bg);
+}
+.table--zebra.table-hover > tbody > tr:hover > td {
+  background: var(--ip-primary-soft);
+}
+/* Pulsante solo-icona: cerchio con hover soft, riutilizzabile su azioni
+   compatte (es. toggle). La variante in topbar usa l'hover della barra. */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.btn-icon:hover { background: var(--ip-hover); color: var(--ip-text); }

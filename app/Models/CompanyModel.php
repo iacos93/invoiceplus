@@ -38,6 +38,13 @@ class CompanyModel extends IpBaseModel
         // Casella email di sistema (notifiche cron, reset password, SdI di
         // ripiego): scelta per-azienda, letta via company_setting().
         'company_system_sender_id',
+        // Loghi dei documenti dell'azienda (intestazione e piè di pagina).
+        // Non passano da dbArrayFromPost: sono file, li scrive il controller
+        // dopo averli controllati (vedi Companies::form e LogoUpload).
+        'invoice_logo', 'invoice_logo_footer',
+        // Testo del piè di pagina dei documenti dell'azienda (fatture e DDT,
+        // preventivi): vuoto = vale quello delle Impostazioni.
+        'pdf_invoice_footer', 'pdf_quote_footer',
     ];
 
     /**
@@ -82,6 +89,10 @@ class CompanyModel extends IpBaseModel
         'default_quote_group'   => 'permit_empty|is_natural',
         'draft_quote_group'     => 'permit_empty|is_natural',
         'company_system_sender_id' => 'permit_empty|is_natural',
+        // Stesso tetto delle Impostazioni: il testo finisce in fondo a ogni
+        // pagina di ogni PDF, e fuori misura spinge il contenuto fuori dal foglio.
+        'pdf_invoice_footer' => 'permit_empty|max_length[5000]',
+        'pdf_quote_footer'   => 'permit_empty|max_length[5000]',
     ];
 
     protected $validationMessages = [

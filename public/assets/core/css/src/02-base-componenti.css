@@ -1,0 +1,1225 @@
+/* -----------------------------------------------------------------------------
+   2. Layout / Spacing globale — allineamento coerente headerbar ↔ content
+   --------------------------------------------------------------------------
+
+   Problema risolto: modern-theme.css setta #main-content { padding: 15px },
+   che si sommava al padding interno dell'headerbar (12px 20px) producendo
+   un doppio padding (27px sui lati) e disallineamento orizzontale fra il
+   titolo (a 35px dal bordo) e il content (a 15px).
+
+   Soluzione: #main-content padding 0; l'headerbar gestisce il proprio
+   padding a tutta larghezza (full-bleed); #content usa lo stesso padding
+   orizzontale (20px) dell'headerbar così titolo e corpo si allineano. Le
+   pagine tabella (.table-content) mantengono padding orizzontale 20px ma
+   azzerano il verticale così la tabella aderisce alla headerbar.
+
+   Inoltre: il contenitore #main-area e' reso flexbox (row) così .sidebar
+   sta a sinistra e #main-content a destra, affiancati. Senza questo, la
+   sidebar si accatasta SOPRA il content. */
+
+/* body.padding-top (il CSS legacy la fissava a 51px statici) va sostituito
+   dalla misura reale della navbar: con l'avatar utente, il font Figtree e le
+   voci di menu, l'altezza effettiva è quasi sempre > 51px, e la differenza
+   faceva scivolare #main-area (quindi #headerbar e il suo titolo) sotto la
+   navbar fixed, "coprendo" il titolo pagina invece di lasciarlo mancante.
+   --ip-navbar-height viene ri-scritta via JS in layout/base.php non appena
+   la navbar è nel DOM (vedi commento token in sezione 1). */
+/* Scoped a :has(.ip-topbar): le pagine senza topbar fissa (login, password
+   reset, guest senza header, ecc.) non devono ereditare lo spazio riservato
+   alla navbar, altrimenti resta una fascia bianca vuota in alto. */
+body:has(.ip-topbar) {
+  padding-top: var(--ip-navbar-height);
+}
+/* Contenitore principale: flexbox row, la sidebar è ora fixed (sezione 20,
+   selettore #ip-sidebar ~ #main-area per il margine) */
+#main-area {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: calc(100vh - var(--ip-navbar-height));
+}
+/* Content area: flex-grow, si espande al resto della larghezza */
+#main-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+}
+/* Content area: padding orizzontale coerente con headerbar (20px).
+   Su mobile ridotto a 16px per più area utile.
+   Scoped a #main-content per non applicarsi a pagine standalone (.container > #content)
+   come welcome.php che hanno il proprio container Bootstrap. */
+#main-content #content {
+  padding: 16px 20px;
+}
+@media (max-width: 575.98px) {
+  #main-content #content { padding: 14px 16px; }
+  #headerbar { padding: 12px 16px; }
+}
+/* Pagine tabella: padding orizzontale allineato, verticale azzerato.
+   La tabella aderisce al bordo inferiore dell'headerbar senza gap. */
+#main-content #content.table-content {
+  padding: 0 20px;
+}
+@media (max-width: 575.98px) {
+  #main-content #content.table-content { padding: 0 16px; }
+}
+/* Rispetto di .no-padding quando usato esplicitamente (tabs pages, partial-item):
+   ha la precedenza sul padding di default per #content */
+#main-content #content.no-padding,
+#main-content #content.tabbable,
+#main-content #content .tabbable {
+  padding: 0;
+}
+/* Il padding tolto a #content va restituito al singolo pannello del tab,
+   altrimenti il contenuto finisce a filo viewport: le .row hanno gutter
+   negativi (-.75rem) e senza padding del contenitore sporgono oltre il bordo.
+   .tab-rich-content = pannello con card (stesso padding di #content);
+   .tab-pane.table-content = pannello con tabella (solo padding orizzontale,
+   come #content.table-content, così la card tabella si allinea alle liste).
+   Il top lo lascia alla barra schede: .ip-tabs ha il margine inferiore (18px),
+   sommato qui darebbe quasi il doppio del respiro standard. */
+.tab-pane.tab-rich-content {
+  padding: 0 20px 16px;
+}
+.tab-pane.table-content {
+  padding: 0 20px 20px;
+}
+@media (max-width: 575.98px) {
+  .tab-pane.tab-rich-content { padding: 0 16px 14px; }
+  .tab-pane.table-content { padding: 0 16px 16px; }
+}
+/* La pagina impostazioni tiene #content col padding di default: come per i
+   pannelli delle schede, il top lo gestisce la barra .ip-tabs (margine
+   inferiore 18px), altrimenti col suo padding si arriva quasi al doppio. */
+#form-settings #content { padding-top: 0; }
+/* -----------------------------------------------------------------------------
+   2bis. Headerbar
+   -------------------------------------------------------------------------- */
+
+/* L'headerbar è la 'toccata' visiva di ogni schermata: tipografia più decisa,
+   separazione netta, spazio coerente. Non va gridato: 1.2rem + peso 600.
+   Layout a 3 zone: titolo | filtri (desktop) | azioni. Su mobile le azioni
+   vanno a capo sotto il titolo per evitare affollamento, resta solo il
+   bottone primario + il toggle filtri in linea. */
+/* position: sticky — l'headerbar resta incollata sotto la navbar fixed
+   durante lo scroll. top: var(--ip-navbar-height) la fa combaciare col
+   bordo inferiore della navbar (la variabile è misurata a runtime dallo
+   script in layout/base.php, quindi si adatta a navbar più alte su mobile
+   o quando l'hamburger menu è aperto). z-index 1020 la mantiene sopra il
+   contenuto (navbar è 1030) senza coprire dropdown/filtri. */
+#headerbar {
+  position: sticky;
+  top: var(--ip-navbar-height);
+  z-index: 1020;
+  min-height: 56px;
+  padding: 12px 20px;
+  background: var(--ip-bg-card);
+  border-bottom: 1px solid var(--ip-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+#headerbar .headerbar-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ip-text);
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1.4;
+  /* Stessa famiglia display dei titoli di pagina: la "toccata" di ogni
+     schermata parla la stessa lingua tipografica. */
+  font-family: var(--ip-display);
+}
+/* Slot destinato a breadcrumb/metadata sotto il titolo (opt-in via .headerbar-meta) */
+#headerbar .headerbar-meta {
+  width: 100%;
+  margin: -4px 0 0;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+/* Quando c'e' meta, il titolo tiene un minimo di respiro sopra */
+#headerbar:has(.headerbar-meta) { padding-top: 10px; padding-bottom: 14px; }
+#headerbar:has(.headerbar-meta) .headerbar-title { margin-bottom: 2px; }
+/* Zone right: gruppo singolo (BS3 .pull-right o BS5 .float-end). Unifica i
+   selettori morti in uno coerente per tutte le view legacy e nuove. */
+#headerbar .headerbar-item,
+#headerbar .headerbar-item.pull-right,
+#headerbar .headerbar-item.float-end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ip-space-4);
+  align-items: center;
+  margin-left: auto;
+}
+/* Filtri e azioni formano un solo gruppo a destra. Con due margin-left:auto
+   lo spazio si distribuiva fra i due e la ricerca di Impostazioni restava
+   sospesa a metà pagina, con un vuoto prima dei pulsanti. */
+#headerbar .headerbar-item + .headerbar-item { margin-left: 0; }
+/* Keep inline filter e primary action visually adjacent */
+#headerbar .headerbar-item > .btn-group.index-options + .btn,
+#headerbar .headerbar-item > .btn + .btn-group.index-options { margin-left: 4px; }
+/* Su schermi piccoli l'headerbar item va full-width per evitare che le
+   azioni escano fuori dal viewport (xs <= 575px). */
+@media (max-width: 575.98px) {
+  #headerbar .headerbar-item,
+  #headerbar .headerbar-item.pull-right,
+  #headerbar .headerbar-item.float-end {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+  #headerbar .headerbar-item .btn-group.index-options { flex: 1 1 auto; }
+}
+
+/* Totale del documento nell'headerbar (fatture, preventivi, importazioni,
+   RiBa, esportazioni): stessa resa di quella che prima stava nella barra di
+   salvataggio fissa in fondo alla pagina, ora accanto ai pulsanti azione
+   dentro .headerbar-item, così il flex row li allinea sulla stessa riga. */
+.headerbar-total {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ip-space-4);
+  margin-right: 4px;
+}
+.headerbar-total__label {
+  font-size: var(--ip-text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.headerbar-total__amount {
+  font-size: var(--ip-text-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text);
+}
+@media (max-width: 575.98px) {
+  .headerbar-total { width: 100%; margin-right: 0; }
+}
+
+/* Gruppo filtri stato nei listati: separato, non invadente */
+.btn-group.index-options {
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  overflow: hidden;
+}
+.btn-group.index-options .btn {
+  border: none;
+  border-radius: 0;
+  border-right: 1px solid var(--ip-border);
+  background: var(--ip-bg-card);
+  color: var(--ip-text-muted);
+  padding: 5px 12px;
+  font-size: var(--ip-text-base);
+  font-weight: 500;
+}
+.btn-group.index-options .btn:last-child { border-right: 0; }
+.btn-group.index-options .btn:hover {
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+}
+.btn-group.index-options .btn.btn-primary,
+.btn-group.index-options .btn.active {
+  background: var(--ip-primary);
+  color: var(--ip-on-primary);
+  box-shadow: none;
+}
+/* -----------------------------------------------------------------------------
+   3. Pannelli (Card BS5) — bordi soft, lieve ombra, padding coerente
+   -------------------------------------------------------------------------- */
+
+.card {
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-sm);
+  background: var(--ip-bg-card);
+  /* Distanza fra card = gradino 16 della scala spaziature. Era 18px, valore
+     fuori scala che conviveva con i 16 di .ip-doc-section e con il mb-3 di
+     Bootstrap: la stessa pila di pannelli aveva due passi diversi secondo la
+     pagina. */
+  margin-bottom: var(--ip-space-7);
+}
+.card > .card-header {
+  background: var(--ip-bg-card);
+  border-bottom: 1px solid var(--ip-border-soft);
+  color: var(--ip-text);
+  font-weight: 600;
+  font-size: var(--ip-text-md);
+  /* Ritmo di respiro condiviso con .ip-table-card / .ip-doc-section__head
+     (14px 18px): lo stesso header su card diverse non cambia mai altezza. */
+  padding: var(--ip-card-head-y) var(--ip-card-pad-x);
+}
+.card-body { padding: var(--ip-card-body-y) var(--ip-card-pad-x); }
+/* L'ultimo elemento di un corpo non porta con sé il proprio margine: il
+   respiro di chiusura lo dà il padding della card. Senza questo, un campo
+   (margin-bottom 16) dentro un corpo con padding 16 lasciava 32px sotto e 16
+   sopra, e il contenuto sembrava salito. Vale anche per le colonne: un form
+   largo mette i campi in .row e il margine dell'ultima colonna si sommava
+   allo stesso modo. */
+.card-body > :last-child,
+.ip-doc-section__body > :last-child,
+.ip-window-body > :last-child,
+.card-body > .row:last-child > [class*="col-"] > :last-child,
+.ip-doc-section__body > .row:last-child > [class*="col-"] > :last-child {
+  margin-bottom: 0;
+}
+/* Il footer di default BS5 usa un grigio esterno al tema (rgba(0,0,0,.03)):
+   lo portiamo sul sistema — sfondo canvas, filetto soft, testo muto. */
+.card > .card-footer {
+  background: var(--ip-bg);
+  border-top: 1px solid var(--ip-border-soft);
+  /* Stesso rientro orizzontale di header e body: il piè di card chiude il
+     contenuto sulla stessa colonna (era 16px contro 18px, e il pager
+     rientrava di 2px rispetto alle celle della tabella sopra). */
+  padding: var(--ip-card-foot-y) var(--ip-card-pad-x);
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+/* Variante compatta: card annidate (es. note del cliente) — senza ombra,
+   margine ridotto, padding del corpo allineato al resto. */
+.card.small {
+  margin-bottom: 10px;
+  box-shadow: none;
+}
+.card.small .card-body { padding: 12px 14px; }
+/* La variante compatta rientra a 14px anche nel piè di card: le note del
+   cliente hanno corpo e data che devono chiudersi sulla stessa colonna. */
+.card.small > .card-footer { padding: var(--ip-card-foot-y) 14px; }
+/* Filetto orizzontale (es. sezione SMTP): opacita' default BS5 spenta,
+   allineato ai bordi hairline del tema. */
+hr {
+  border: 0;
+  border-top: 1px solid var(--ip-border-soft);
+  opacity: 1;
+}
+/* -----------------------------------------------------------------------------
+   4. Tabelle — hover più morbido, righe compatte, allineamento importi
+   -------------------------------------------------------------------------- */
+
+.table {
+  font-size: var(--ip-text-base);
+  margin-bottom: 0;
+}
+.table > thead > tr > th {
+  font-weight: 600;
+  color: var(--ip-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--ip-text-sm);
+  border-bottom: 1px solid var(--ip-border);
+  background: var(--ip-bg);
+}
+.table > tbody > tr > td {
+  border-top: 1px solid var(--ip-border-soft);
+  vertical-align: middle;
+}
+.table-hover > tbody > tr {
+  transition: background-color var(--ip-transition);
+}
+/* Il colore va sulla td, non sulla tr: una tr non rispetta in modo affidabile
+   il proprio border-radius (ne' quello ereditato), quindi uno sfondo dipinto
+   a livello di riga sfora sempre gli angoli arrotondati della card sotto
+   l'ultima riga. Dipingendo la td invece della tr, l'arrotondamento messo
+   sulle celle d'angolo (vedi sezione "ultima riga senza footer" qui sotto)
+   ritaglia correttamente lo sfondo hover. Stessa convenzione gia' in uso per
+   le righe scadute (.ip-row-overdue) qualche riga sotto. */
+.table-hover > tbody > tr:hover > td {
+  background: var(--ip-primary-soft);
+}
+/* Ultima riga di una tabella che chiude la card (nessun card-footer/pager
+   sotto): senza questo, l'hover della riga (sopra) resta un rettangolo
+   squadrato che sfora visibilmente gli angoli arrotondati della card. Le due
+   celle d'angolo prendono lo stesso raggio della card (1px in meno per
+   restare dentro al bordo di 1px), così lo sfondo hover — ora dipinto sulla
+   td — viene ritagliato alla stessa curva. Guardia :has() perché se c'e' un
+   footer/pager sotto, l'ultima riga non e' più il bordo visivo della card e
+   arrotondarla creerebbe un incavo innaturale sopra il footer. */
+/* Selettore su "table" (elemento), non ".table" (classe Bootstrap): alcune
+   tabelle del tema (es. .ip-items-table del prospetto finanziario e delle
+   righe documento) non portano la classe .table e restavano fuori da questa
+   regola, quadrando l'angolo in hover. Stesso motivo per cui includiamo
+   .ip-doc-section fra i contenitori: e' lo stesso guscio "a card" (bg,
+   bordo, border-radius) usato nelle pagine documento e nel prospetto
+   finanziario, ma senza la classe .card. Il ramo ":has(tfoot)" copre le
+   tabelle con riga Totale in tfoot (es. finance/index.php): li' l'ultima
+   riga "reale" e' quella del tfoot, non dell'ultima <tr> del tbody, e la sua
+   prima cella e' spesso un <th scope="row"> anziche' un <td> — per questo
+   si usa ":first-child"/":last-child" invece di "td:first-child". */
+.card:not(:has(.card-footer)) table:not(:has(tfoot)) > tbody > tr:last-child > :first-child,
+.ip-table-card:not(:has(.card-footer)) table:not(:has(tfoot)) > tbody > tr:last-child > :first-child,
+.ip-doc-section:not(:has(.card-footer)) table:not(:has(tfoot)) > tbody > tr:last-child > :first-child,
+.card:not(:has(.card-footer)) table > tfoot > tr:last-child > :first-child,
+.ip-table-card:not(:has(.card-footer)) table > tfoot > tr:last-child > :first-child,
+.ip-doc-section:not(:has(.card-footer)) table > tfoot > tr:last-child > :first-child {
+  border-bottom-left-radius: calc(var(--ip-radius) - 1px);
+}
+.card:not(:has(.card-footer)) table:not(:has(tfoot)) > tbody > tr:last-child > :last-child,
+.ip-table-card:not(:has(.card-footer)) table:not(:has(tfoot)) > tbody > tr:last-child > :last-child,
+.ip-doc-section:not(:has(.card-footer)) table:not(:has(tfoot)) > tbody > tr:last-child > :last-child,
+.card:not(:has(.card-footer)) table > tfoot > tr:last-child > :last-child,
+.ip-table-card:not(:has(.card-footer)) table > tfoot > tr:last-child > :last-child,
+.ip-doc-section:not(:has(.card-footer)) table > tfoot > tr:last-child > :last-child {
+  border-bottom-right-radius: calc(var(--ip-radius) - 1px);
+}
+/* Importi allineati a destra con numeri tabulari per scansionare cifre */
+.table .amount,
+.amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Tabella dentro card senza padding doppio */
+.card .table-responsive,
+.table-responsive { margin-bottom: 0; }
+/* Ricerca live sulle liste (clienti/fatture/preventivi) — usa il backend
+   filter/filter_* gia' esistente (FilterAjax), prima non collegato a nessuna UI. */
+.ip-live-search {
+  position: relative;
+  max-width: 360px;
+  margin-bottom: 14px;
+}
+.ip-live-search .fa-search {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-base);
+  pointer-events: none;
+}
+.ip-live-search input.form-control {
+  padding-left: 34px;
+}
+@media (max-width: 575.98px) {
+  .ip-live-search { max-width: 100%; }
+}
+/* -----------------------------------------------------------------------------
+   5. Status badge (BS5 .badge / .text-bg-*) — coerenti e leggibili
+   -------------------------------------------------------------------------- */
+
+/* Ossatura unica di ogni etichetta compatta (timbri di stato, conteggi,
+   badge di import/export, tab, aging, XML). Prima ogni famiglia aveva le
+   proprie misure: tre raggi (3px, 4px, 999px), due corpi (10 e 11px), due pesi
+   e padding in em — che su corpi diversi davano 3,08px invece di 3. Stesso
+   significato, aspetto diverso a seconda della pagina: era il difetto che si
+   vedeva di più. Ora le misure stanno qui e nei token, e i componenti portano
+   solo il colore e la forma (bordo, pieno, pillola).
+   Il padding in px, non in em: in em dipende dal corpo e produce le differenze
+   di un pixel che rendevano due timbri affiancati diversi in altezza. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: var(--ip-badge-padding-y) var(--ip-badge-padding-x);
+  font-size: var(--ip-badge-font-size);
+  font-weight: var(--ip-badge-font-weight);
+  line-height: var(--ip-badge-line-height);
+  letter-spacing: var(--ip-badge-letter-spacing);
+  /* Il bordo trasparente non è decorazione: occupa spazio, quindi una pillola
+     piena e una con bordo hanno la stessa altezza. Senza, "Bozza" e "Pagata"
+     nella stessa colonna differivano di 2px. */
+  border: 1px solid transparent;
+  border-radius: var(--ip-badge-radius);
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+/* Didascalia secondaria accanto a un badge in cella tabella (es. il codice
+   Natura IVA + descrizione estesa in tax_rates/index.php): stessa idea del
+   sottotitolo sotto un valore, ma in linea invece che a capo, perché un
+   badge di poche lettere (N6.3) accanto a una riga intera vuota sembrerebbe
+   sproporzionato. */
+.ip-table-cell-note {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+/* Prima colonna di liste dove il testo e' scelto dall'utente e puo' quindi
+   essere arbitrariamente lungo (es. tax_rates/index.php: "Nome imposta").
+   Senza un limite la cella spinge in larghezza le colonne accanto (importo,
+   Natura) finche' non restano schiacciate contro il bordo della card. Il
+   troncamento con ellissi rende visibile che il testo continua; il title
+   sull'elemento (stesso valore, non escapizzato due volte) recupera il nome
+   intero al passaggio del mouse senza dover aprire il form. */
+.ip-table-cell-truncate {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 767.98px) {
+  .ip-table-cell-truncate { max-width: 160px; }
+}
+/* -----------------------------------------------------------------------------
+   6. Bottoni — micro-feedback controllato, niente decorazione esuberante
+   -------------------------------------------------------------------------- */
+
+.btn {
+  border-radius: var(--ip-radius-sm);
+  font-weight: 500;
+  transition: all var(--ip-transition);
+  border: 1px solid transparent;
+}
+.btn:focus { outline: none; }
+/* Feedback tattile al click: la leggera compressione segnala l'azione senza
+   ombra ne' colore aggiunti — resta coerente col linguaggio sobrio dell'app. */
+.btn:active { transform: scale(0.985); }
+/* Varianti outline sui token dell'app. Non erano mai state tematizzate:
+   restavano i colori di Bootstrap (#6c757d, che sul fondo scuro fa 3,5:1, e
+   il blu #0d6efd, che non compare in nessun altro punto dell'interfaccia), e
+   il bordo spariva perché .btn qui sopra lo dichiara trasparente con lo
+   shorthand. Le variabili --bs-btn-* tengono coerenti hover, active e
+   disabled senza riscrivere ogni stato. */
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.btn-outline-danger,
+.btn-outline-warning {
+  --bs-btn-bg: transparent;
+  --bs-btn-disabled-bg: transparent;
+  color: var(--bs-btn-color);
+  border-color: var(--bs-btn-border-color);
+}
+.btn-outline-primary {
+  --bs-btn-color: var(--ip-primary);
+  --bs-btn-border-color: var(--ip-primary);
+  --bs-btn-hover-color: var(--ip-on-primary);
+  --bs-btn-hover-bg: var(--ip-primary);
+  --bs-btn-hover-border-color: var(--ip-primary);
+  --bs-btn-active-color: var(--ip-on-primary);
+  --bs-btn-active-bg: var(--ip-primary-hover);
+  --bs-btn-active-border-color: var(--ip-primary-hover);
+}
+/* La secondaria è la più usata (calendario, "Valida"): testo pieno e bordo
+   forte, come btn-secondary ma senza fondo, non grigio su grigio. */
+.btn-outline-secondary {
+  --bs-btn-color: var(--ip-text);
+  --bs-btn-border-color: var(--ip-border-strong);
+  --bs-btn-hover-color: var(--ip-text);
+  --bs-btn-hover-bg: var(--ip-hover);
+  --bs-btn-hover-border-color: var(--ip-border-strong-hover);
+  --bs-btn-active-color: var(--ip-text);
+  --bs-btn-active-bg: var(--ip-hover);
+  --bs-btn-active-border-color: var(--ip-border-strong-hover);
+}
+.btn-outline-success {
+  --bs-btn-color: var(--ip-success-text);
+  --bs-btn-border-color: var(--ip-success);
+  --bs-btn-hover-color: var(--ip-success-text);
+  --bs-btn-hover-bg: var(--ip-success-bg);
+  --bs-btn-hover-border-color: var(--ip-success);
+  --bs-btn-active-color: var(--ip-success-text);
+  --bs-btn-active-bg: var(--ip-success-bg);
+  --bs-btn-active-border-color: var(--ip-success);
+}
+.btn-outline-danger {
+  --bs-btn-color: var(--ip-danger-text);
+  --bs-btn-border-color: var(--ip-danger);
+  --bs-btn-hover-color: var(--ip-danger-text);
+  --bs-btn-hover-bg: var(--ip-danger-bg);
+  --bs-btn-hover-border-color: var(--ip-danger);
+  --bs-btn-active-color: var(--ip-danger-text);
+  --bs-btn-active-bg: var(--ip-danger-bg);
+  --bs-btn-active-border-color: var(--ip-danger);
+}
+.btn-outline-warning {
+  --bs-btn-color: var(--ip-warning-text);
+  --bs-btn-border-color: var(--ip-warning-border);
+  --bs-btn-hover-color: var(--ip-warning-text);
+  --bs-btn-hover-bg: var(--ip-warning-bg);
+  --bs-btn-hover-border-color: var(--ip-warning);
+  --bs-btn-active-color: var(--ip-warning-text);
+  --bs-btn-active-bg: var(--ip-warning-bg);
+  --bs-btn-active-border-color: var(--ip-warning);
+}
+.btn-outline-primary:hover, .btn-outline-secondary:hover, .btn-outline-success:hover,
+.btn-outline-danger:hover, .btn-outline-warning:hover {
+  color: var(--bs-btn-hover-color);
+  background-color: var(--bs-btn-hover-bg);
+  border-color: var(--bs-btn-hover-border-color);
+}
+/* Anello focus da tastiera coerente su tutta l'app: link, bottoni e i nostri
+   controlli custom condividono lo stesso --ip-shadow-focus delle input, cosi'
+   la navigazione da tastiera resta sempre leggibile. */
+a:focus-visible,
+.btn:focus-visible,
+.ip-select__control:focus-visible,
+.ip-nav-link:focus-visible,
+.ip-nav-sub-link:focus-visible {
+  outline: none;
+  box-shadow: var(--ip-shadow-focus);
+}
+/* Alias BS5: .btn-secondary e' il sostituto di .btn-default.
+   Bordo un gradino più marcato di --ip-border: su fondo card (bianco su bianco)
+   il bordo dei campi risulterebbe troppo debole per leggere come pulsante. */
+.btn-secondary {
+  background: var(--ip-bg-card);
+  border-color: var(--ip-border-strong);
+  color: var(--ip-text);
+  box-shadow: var(--ip-shadow-sm);
+}
+.btn-secondary:hover {
+  background: var(--ip-hover);
+  border-color: var(--ip-border-strong-hover);
+  color: var(--ip-text);
+}
+.btn-secondary:active,
+.btn-secondary:focus-visible {
+  background: var(--ip-hover);
+  border-color: var(--ip-border-strong-hover);
+  color: var(--ip-text);
+}
+/* Bootstrap imposta hover/active/focus/disabled di ogni variante come proprie
+   CSS custom properties (--bs-btn-hover-bg, --bs-btn-active-bg, ecc.),
+   inizializzate al blu/verde/rosso di default del framework. Sovrascrivere
+   solo background/border-color (stato di riposo + :hover) lascia intatto
+   --bs-btn-active-bg: al mousedown (:active) il bottone lampeggiava del
+   colore Bootstrap originale prima di tornare al nostro colore al rilascio —
+   capitava su ogni .btn-primary/.btn-success/.btn-danger dell'app (es. il
+   pulsante "Login"), non un caso isolato. Qui si sovrascrivono le variabili
+   stesse, così tutti gli stati derivano dai nostri token. */
+.btn-primary {
+  --bs-btn-color: var(--ip-on-primary);
+  --bs-btn-bg: var(--ip-primary);
+  --bs-btn-border-color: var(--ip-primary);
+  --bs-btn-hover-color: var(--ip-on-primary);
+  --bs-btn-hover-bg: var(--ip-primary-hover);
+  --bs-btn-hover-border-color: var(--ip-primary-hover);
+  --bs-btn-active-color: var(--ip-on-primary);
+  --bs-btn-active-bg: var(--ip-primary-dark);
+  --bs-btn-active-border-color: var(--ip-primary-dark);
+  --bs-btn-active-shadow: none;
+  --bs-btn-focus-shadow-rgb: 24, 24, 27;
+  --bs-btn-disabled-bg: var(--ip-primary);
+  --bs-btn-disabled-border-color: var(--ip-primary);
+  background: var(--ip-primary);
+  border-color: var(--ip-primary);
+}
+.btn-primary:hover {
+  background: var(--ip-primary-hover);
+  border-color: var(--ip-primary-hover);
+}
+.btn-success {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--ip-success-solid);
+  --bs-btn-border-color: var(--ip-success-solid);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--ip-success-hover);
+  --bs-btn-hover-border-color: var(--ip-success-hover);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--ip-success-hover);
+  --bs-btn-active-border-color: var(--ip-success-hover);
+  --bs-btn-active-shadow: none;
+  --bs-btn-focus-shadow-rgb: 70, 136, 71;
+  --bs-btn-disabled-bg: var(--ip-success-solid);
+  --bs-btn-disabled-border-color: var(--ip-success-solid);
+  background: var(--ip-success-solid); border-color: var(--ip-success-solid);
+}
+.btn-success:hover { background: var(--ip-success-hover); border-color: var(--ip-success-hover); }
+.btn-danger {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--ip-danger);
+  --bs-btn-border-color: var(--ip-danger);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--ip-danger-hover);
+  --bs-btn-hover-border-color: var(--ip-danger-hover);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--ip-danger-hover);
+  --bs-btn-active-border-color: var(--ip-danger-hover);
+  --bs-btn-active-shadow: none;
+  --bs-btn-focus-shadow-rgb: 185, 74, 72;
+  --bs-btn-disabled-bg: var(--ip-danger);
+  --bs-btn-disabled-border-color: var(--ip-danger);
+  background: var(--ip-danger); border-color: var(--ip-danger);
+}
+.btn-danger:hover { background: var(--ip-danger-hover); border-color: var(--ip-danger-hover); }
+/* btn-info e btn-warning ricondotti ai token del tema: prima usavano i ciano
+   e giallo puri di Bootstrap (#0dcaf0, #ffc107) che stonavano con la palette. */
+.btn-info {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--ip-info-solid);
+  --bs-btn-border-color: var(--ip-info-solid);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: color-mix(in srgb, var(--ip-info-solid) 88%, black);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--ip-info-solid) 88%, black);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: color-mix(in srgb, var(--ip-info-solid) 80%, black);
+  --bs-btn-active-border-color: color-mix(in srgb, var(--ip-info-solid) 80%, black);
+  --bs-btn-active-shadow: none;
+  --bs-btn-focus-shadow-rgb: 49, 112, 143;
+  --bs-btn-disabled-bg: var(--ip-info-solid);
+  --bs-btn-disabled-border-color: var(--ip-info-solid);
+  background: var(--ip-info-solid); border-color: var(--ip-info-solid);
+}
+.btn-info:hover {
+  background: color-mix(in srgb, var(--ip-info-solid) 88%, black);
+  border-color: color-mix(in srgb, var(--ip-info-solid) 88%, black);
+}
+.btn-warning {
+  --bs-btn-color: var(--ip-on-bright);
+  --bs-btn-bg: var(--ip-warning);
+  --bs-btn-border-color: var(--ip-warning);
+  --bs-btn-hover-color: var(--ip-on-bright);
+  --bs-btn-hover-bg: var(--ip-warning);
+  --bs-btn-hover-border-color: var(--ip-warning);
+  --bs-btn-active-color: var(--ip-on-bright);
+  --bs-btn-active-bg: color-mix(in srgb, var(--ip-warning) 85%, black);
+  --bs-btn-active-border-color: color-mix(in srgb, var(--ip-warning) 85%, black);
+  --bs-btn-active-shadow: none;
+  --bs-btn-focus-shadow-rgb: 248, 148, 6;
+  --bs-btn-disabled-bg: var(--ip-warning);
+  --bs-btn-disabled-border-color: var(--ip-warning);
+  background: var(--ip-warning); border-color: var(--ip-warning);
+}
+.btn-warning:hover { background: var(--ip-warning); border-color: var(--ip-warning); }
+.btn-sm, .btn-group-sm > .btn { font-size: var(--ip-text-sm); padding: 5px 10px; min-height: var(--ip-control-h-sm); }
+/* Il <button> centra da sé il contenuto quando min-height lo allunga a 40px;
+   un <a> no: resta un blocco e il testo parte dal padding superiore. Nella
+   stessa barra convivono le due forme ("Filtra" è un <button>, "Crea
+   preventivo" un <a>) e nella misura i due riquadri risultavano alti entrambi
+   40px (68→108) ma il centro dell'etichetta stava a 87,75px nel button e
+   82,75px nell'anchor: stesso pulsante, testo 5px più in alto. Qui l'anchor
+   diventa inline-flex e centra. Il gap sostituisce lo spazio fra icona e
+   testo, che in un contenitore flex fra due elementi non viene reso. */
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+/* Icone dentro bottoni: leggero margine e dimensione coerente */
+.btn .fa.fa-margin { margin-right: 4px; }
+/* pulsante delle dropdown "Opzioni": tono più sobrio */
+.dropdown-toggle.btn-default .fa,
+.dropdown-toggle.btn-secondary .fa { font-size: var(--ip-text-base); }
+/* -----------------------------------------------------------------------------
+   7. Form — base condivisa .form-control / select native / input data
+    --------------------------------------------------------------------------
+    Tutti i campi (text, select, datepicker) condividono bordo, raggio,
+    font, hover e focus-ring. I dettagli specifici di Select2 (popup, risultati,
+    Il select con ricerca (IPSelect) è in 12a; il calendario (IPDatepicker) in 12b.
+    -------------------------------------------------------------------------- */
+
+/* Base condivisa: .form-control, <select class="form-control">, <select class="form-select">
+   condividono bordo, raggio, altezza, font, colore e transizione. Lo styling di
+   Select2 (bordo/hover/focus/altezza/popup) vive per intero in sezione 12a più
+   sotto, per evitare due blocchi che si sovrascrivono a vicenda.
+
+   Altezza, raggio e corpo sono dichiarati QUI una volta sola. Prima le tre
+   misure arrivavano da contesti diversi: un campo dentro .ip-doc-field era
+   36px/8px/13px (regole scritte per la pagina export, ma non limitate al suo
+   contenitore), uno nudo fuori da lì 35px/4px/14px, uno compatto 30px/4px/12px.
+   Tre campi dello stesso tipo, tre aspetti: il raggio 8px per giunta senza
+   token e in disaccordo con i 4px dell'appendice dello stesso input-group. */
+.form-control,
+select.form-control,
+select.form-select {
+  border-color: var(--ip-border-field);
+  border-radius: var(--ip-radius);
+  box-shadow: none;
+  transition: border-color var(--ip-transition), box-shadow var(--ip-transition), background-color var(--ip-transition);
+  height: var(--ip-control-h);
+  /* Padding orizzontale e basta: con `height` fissa il centraggio verticale lo
+     fa la riga, e padding sopra/sotto spostava il testo di un pixel rispetto
+     all'altezza dichiarata. */
+  padding: 0 var(--ip-space-6);
+  font-size: var(--ip-text-base);
+  color: var(--ip-text);
+  background-color: var(--ip-bg-card);
+}
+/* Testo lungo e selezioni multiple non hanno un'altezza sola: lì si parte dal
+   minimo di un controllo e crescono col contenuto. (Il textarea dentro
+   .ip-doc-field veniva schiacciato a 36px dalla regola dell'export: due righe
+   di note diventavano una sola.) */
+textarea.form-control {
+  height: auto;
+  min-height: calc(var(--ip-control-h) + var(--ip-space-6));
+  padding: var(--ip-space-3) var(--ip-space-6);
+  line-height: 1.45;
+}
+select.form-control[multiple],
+select.form-control[size] { height: auto; }
+/* Hover: leggero scenic hint (non solo 'rimane identico') su tutti i campi */
+.form-control:hover,
+select.form-control:hover,
+select.form-select:hover {
+  border-color: var(--ip-border-hover);
+}
+/* Focus coerente a tutta l'app: bordo primary + anello focus */
+.form-control:focus,
+select.form-control:focus,
+select.form-select:focus {
+  border-color: var(--ip-primary);
+  box-shadow: var(--ip-shadow-focus);
+  outline: none;
+}
+/* Select native <select class="form-control"> (markup legacy BS3) —
+   niente freccia di sistema, padding destro per hover coerente con .form-select BS5. */
+select.form-control {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2364748b'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .75rem center;
+  background-size: 12px 12px;
+  padding-right: 2.25rem;
+}
+/* Select nativa con .input-sm mantiene proporzioni */
+select.form-control.input-sm,
+select.input-sm.form-control {
+  background-position: right .5rem center;
+  padding-right: 1.75rem;
+}
+/* Anche gli input compatti (righe articolo, barre filtro): .input-sm è una
+   classe BS3 morta in BS5 e i campi tornavano all'altezza piena. Stessa forma
+   del campo normale, un gradino più piccola: altezza e corpo dalla scala, non
+   un'eccezione a sé. */
+.form-control.input-sm,
+.form-control-sm {
+  height: var(--ip-control-h-sm);
+  padding: 0 var(--ip-space-5);
+  font-size: var(--ip-text-sm);
+  border-radius: var(--ip-radius);
+}
+/* Select multipla nativa: niente freccia, padding-right normale */
+select.form-control[multiple],
+select.form-control[size] { background-image: none; padding-right: .75rem; }
+/* BS5 .form-select: sostituiamo il chevron nativo con uno in palette IP */
+select.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2364748b'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+}
+/* Stato validazione BS5: valori coerenti coi token IP */
+.form-control.is-invalid,
+select.form-control.is-invalid,
+select.form-select.is-invalid { border-color: var(--ip-danger); }
+.form-control.is-invalid:focus,
+select.form-control.is-invalid:focus,
+select.form-select.is-invalid:focus {
+  border-color: var(--ip-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ip-danger) 22%, transparent);
+}
+.form-control.is-valid,
+select.form-control.is-valid,
+select.form-select.is-valid { border-color: var(--ip-success); }
+.form-control.is-valid:focus,
+select.form-control.is-valid:focus,
+select.form-select.is-valid:focus {
+  border-color: var(--ip-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ip-success) 22%, transparent);
+}
+/* Placeholder grigio coerente con BS5 */
+.form-control::placeholder { color: var(--ip-text-muted); opacity: 1; }
+/* Disabled / readonly: abbassano il contrasto invece di cambiare tono */
+.form-control:disabled,
+.form-control[readonly],
+select.form-control:disabled,
+select.form-select:disabled {
+  background-color: var(--ip-bg);
+  color: var(--ip-text-muted);
+  cursor: not-allowed;
+}
+/* input-group di tipo data (icona calendario affiancata al piè):
+   l'appendice .input-group-text eredita bordo/raggio coerenti. */
+.input-group-text {
+  background-color: var(--ip-bg);
+  border-color: var(--ip-border);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-base);
+  /* Lo stesso raggio del campo che affianca: prima l'appendice era a 4px e il
+     campo a 8px, e i due angoli sinistri del gruppo non combaciavano. */
+  border-radius: var(--ip-radius);
+}
+.input-group > .form-control,
+.input-group > .form-select,
+/* Anche un bottone in coda (filtri "Filtra fatture", genera chiave cron):
+   il gruppo è un controllo solo, e con il raggio dei bottoni (4px) da una
+   parte e quello del campo (6px) dall'altra gli angoli esterni non
+   combaciavano. */
+.input-group > .btn { border-radius: var(--ip-radius); }
+/* Il gruppo e' un controllo solo: gli angoli interni vanno dritti, altrimenti
+   campo e appendice sembrano due pillole accostate con una tacca in mezzo.
+   Prima il raggio pieno era imposto a tutti e quattro gli angoli. */
+.input-group > :not(:last-child):not(.dropdown-menu):not(.form-floating),
+.input-group > .form-floating:not(:last-child) > .form-control {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.invalid-tooltip) {
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.input-group .input-group-text .fa { font-size: var(--ip-text-base); }
+.input-group:focus-within .input-group-text {
+  border-color: var(--ip-primary);
+  color: var(--ip-primary);
+  transition: color var(--ip-transition), border-color var(--ip-transition);
+}
+/* Qui stava il fallback che dava stile alle label nude dentro .form-group,
+   .mb-3, .control-label e .form-label — le quattro grafie con cui l'app
+   scriveva un campo prima di unificarle su .ip-doc-field + .ip-doc-label.
+   Le prime tre non esistono più in nessuna view; l'ultima, .mb-3 > label,
+   restava agganciata solo alle checkbox .form-check rimaste dentro un .mb-3
+   di spaziatura, a cui imponeva un 13px in grassetto che nessun'altra
+   checkbox dell'app ha — l'esatto contrario dell'uniformita' che la regola
+   voleva garantire. Non va sostituita: le label di campo hanno .ip-doc-label
+   e le checkbox seguono il pattern Bootstrap.
+
+   Nota di specificita', il motivo per cui questa regola andava tolta e non
+   solo svuotata: .mb-3 > label vale 0-1-1 e batteva .form-badge (0-1-0), la
+   variante compatta voluta per login e form brevi, che quindi non si vedeva
+   mai dove serviva. */
+
+/* .form-badge: etichetta compatta dei form compatti (login, serie di
+   numerazione, conti, categorie…). Prima esisteva solo dentro
+   .ip-auth-form-box: la stessa classe fuori dal login rendeva a 14px. */
+.form-badge {
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  color: var(--ip-text);
+  margin-bottom: 6px;
+}
+/* Messaggio di validazione sotto un campo. Prima questo blocco era agganciato
+   a .text-danger, che in Bootstrap e' una utility di colore: ogni elemento
+   colorato di rosso nell'app ereditava display:block + 12px + margin-top.
+   Effetti collaterali reali, non teorici: i <td> "importo negativo" di
+   fatture/finance uscivano dalla riga (display:block su una cella), la voce
+   "Logout" del menu utente rendeva a 12px contro i 14px delle altre, e nelle
+   tabelle della dashboard la data scaduta spingeva a capo l'icona allungando
+   la riga. Le ~50 view che mostrano un errore di validazione usano ora questa
+   classe; .text-danger torna a essere solo un colore (BS5 la definisce con
+   !important, quindi la tinta era comunque gia' la sua).
+   NB: il colore qui vince perché .ip-field-error non e' una utility BS. */
+.ip-field-error {
+  display: block;
+  font-size: var(--ip-text-sm);
+  margin-top: 4px;
+  color: var(--ip-danger);
+}
+/* -----------------------------------------------------------------------------
+   Checkbox e radio — un controllo solo per tutta l'app
+   -----------------------------------------------------------------------------
+   Prima ne convivevano tre: il quadrato di Bootstrap sulle .form-check-input,
+   il controllo di sistema tinto con accent-color sulle checkbox nude delle
+   tabelle, e il misto delle due dentro le righe ripetibili. Cambiavano
+   dimensione, raggio, colore della spunta e allineamento rispetto alla label,
+   quindi la stessa azione ("seleziona") aveva tre aspetti a seconda della
+   pagina.
+
+   Qui il controllo e' disegnato una volta sola: appearance:none azzera il
+   rendering nativo e la spunta e' un SVG inline (background-image), l'unico
+   modo affidabile di decorare un <input>, che essendo elemento sostituito non
+   ha pseudo-elementi. */
+/* Anche le due varianti con attributo: Bootstrap scrive
+   .form-check-input[type="checkbox"] (0-2-0), che batte input[type="checkbox"]
+   (0-1-1) e teneva il raggio a 0.25em = 3.5px sui quadrati da 16px. */
+.form-check-input,
+.form-check-input[type="checkbox"],
+.form-check-input[type="radio"],
+input[type="checkbox"],
+input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ip-border-field);
+  border-radius: 4px;
+  background-color: var(--ip-bg-card);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  cursor: pointer;
+  vertical-align: -3px;
+  transition: background-color var(--ip-transition),
+              border-color var(--ip-transition),
+              box-shadow var(--ip-transition);
+  print-color-adjust: exact;
+}
+input[type="radio"],
+.form-check-input[type="radio"] { border-radius: 50%; }
+
+.form-check-input:hover:not(:disabled),
+input[type="checkbox"]:hover:not(:disabled),
+input[type="radio"]:hover:not(:disabled) { border-color: var(--ip-border-strong-hover); }
+
+.form-check-input:checked,
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  background-color: var(--ip-primary);
+  border-color: var(--ip-primary);
+}
+.form-check-input:checked[type="checkbox"],
+input[type="checkbox"]:checked {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.2' d='m4 8.2 2.6 2.6L12 5.4'/%3e%3c/svg%3e");
+}
+.form-check-input:checked[type="radio"],
+input[type="radio"]:checked {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3ccircle cx='8' cy='8' r='3.2' fill='%23fff'/%3e%3c/svg%3e");
+}
+/* Spunta parziale delle liste con "seleziona tutto": senza, una selezione a
+   meta' si legge come nessuna selezione.
+   L'attributo nel selettore non e' decorativo: Bootstrap scrive
+   .form-check-input[type="checkbox"]:indeterminate, e senza lo stesso peso
+   la casella restava blu di sistema. */
+.form-check-input[type="checkbox"]:indeterminate,
+input[type="checkbox"]:indeterminate {
+  background-color: var(--ip-primary);
+  border-color: var(--ip-primary);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-width='2.2' d='M4.5 8h7'/%3e%3c/svg%3e");
+}
+.form-check-input:focus-visible,
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  border-color: var(--ip-primary);
+  box-shadow: var(--ip-shadow-focus);
+  outline: none;
+}
+.form-check-input:disabled,
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+  background-color: var(--ip-bg);
+  border-color: var(--ip-border);
+  cursor: not-allowed;
+  opacity: .65;
+}
+
+/* La riga "controllo + etichetta" e' una sola: flex con gap, invece del
+   padding-left compensato da un margine negativo (il float di Bootstrap), che
+   nelle celle strette mandava l'etichetta sotto il quadrato. */
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  min-height: 0;
+  margin: 0;
+  padding-left: 0;
+}
+.form-check + .form-check { margin-top: 8px; }
+/* Aiuto sotto una checkbox: .form-check e' una riga flex, quindi il paragrafo
+   di spiegazione ci finiva dentro come terzo elemento, di fianco all'etichetta
+   invece che sotto — con l'etichetta schiacciata su due righe e il testo lungo
+   che le rubava meta' riga. Va a capo e si allinea all'etichetta (16px della
+   casella + 8px di gap). */
+.form-check { flex-wrap: wrap; }
+.form-check > .ip-field-help,
+.form-check > .ip-number-help {
+  flex: 0 0 100%;
+  margin-left: 24px;
+}
+.form-check.form-check-inline {
+  display: inline-flex;
+  margin-right: 1rem;
+}
+.form-check .form-check-input { float: none; margin: 0; }
+.form-check-label {
+  margin: 0;
+  font-size: var(--ip-text-base);
+  line-height: 1.4;
+  color: var(--ip-text);
+  cursor: pointer;
+}
+.form-check-input:disabled ~ .form-check-label {
+  color: var(--ip-text-muted);
+  cursor: not-allowed;
+}
+/* -----------------------------------------------------------------------------
+   8. Alert — border-left accent per scansione veloce del tipo
+   -------------------------------------------------------------------------- */
+
+.alert {
+  border-radius: var(--ip-radius);
+  padding: 12px 16px 12px 14px;
+  border: 1px solid transparent;
+  border-left-width: 3px;
+  font-size: var(--ip-text-md);
+}
+/* Il filo a sinistra usa il colore di stato pieno, il testo la sua variante
+   -text: l'ambra #F89406 sul fondo crema dell'avviso faceva 2,1:1 e gli
+   avvisi di Utile e imposte, RiBa e modifica fattura erano i testi meno
+   leggibili dell'app proprio dove dicono qualcosa di importante. */
+.alert-success { background: var(--ip-success-bg); border-left-color: var(--ip-success); color: var(--ip-success-text); }
+.alert-info    { background: var(--ip-info-bg);    border-left-color: var(--ip-info);    color: var(--ip-info-text); }
+.alert-warning { background: var(--ip-warning-bg); border-left-color: var(--ip-warning); color: var(--ip-warning-text); }
+.alert-danger  { background: var(--ip-danger-bg);  border-left-color: var(--ip-danger);  color: var(--ip-danger-text); }
+/* Entrata dolce degli alert (toast di conferma/errore compresi): il messaggio
+   non "appare" bruscamente. La guardia prefers-reduced-motion la neutralizza. */
+@keyframes ip-alert-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+.alert {
+  animation: ip-alert-in 180ms ease both;
+}
+/* -----------------------------------------------------------------------------
+   9. Empty states — il momento in cui il vuoto diventa invito
+   -------------------------------------------------------------------------- */
+
+/* Quando una tabella è vuota: niente riga piattissima. Spazio + tono + invito. */
+.table > tbody > tr.empty-row > td {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-md);
+}
+.table > tbody > tr.empty-row > td .empty-icon {
+  display: block;
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+/* L'opacità e il colore dell'icona sono definiti una sola volta in sezione 5
+   (tr.empty-row .empty-icon: primary, 0.5): qui restano solo forma e spazio.
+   Anche il CTA è unico (sezione 5, chip con bordo): il vecchio blocco qui
+   sotto lo ridefiniva come link semplice con margini diversi. */
+/* Empty states: stili qualsiasi td[colspan] usato come stato vuoto, in modo che
+   anche le view senza classi esplicite abbiano un invito leggibile e coerente.
+   Le view esistenti usano variante: td text-muted (senza class), td text-muted
+   text-center, o semplicemente td con messaggio. Copriamo tutti i casi. */
+.table > tbody > tr > td[colspan]:only-child {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-md);
+}
+/* L'icona non viene più iniettata automaticamente per ogni td[colspan] vuoto
+   (iniettava "utenti" anche su fatture/pagamenti/attività vuote). Le view che
+   vogliono un'icona contestuale usano .empty-row con markup esplicito. */
+
+/* -----------------------------------------------------------------------------
+   10. Topbar e sidebar — la navbar scura legacy e l'icon-rail sono stati
+   sostituiti dalla topbar chiara + sidebar a gruppi (markup in
+   layout/base.php, stili più sotto in questo file). Il blocco CSS legacy
+   della navbar scura è stato rimosso: qualunque residuo .navbar nelle view
+   ricade sui default Bootstrap. L'avatar utente .ip-nav-avatar resta usato
+   nella topbar (ristilizzato qui sotto).
+   -------------------------------------------------------------------------- */
+
+/* -----------------------------------------------------------------------------
+   11. Pagine auth — il login è stato ridisegnato come pannello doppio
+   (brand + modulo), sezione più sotto. Il CSS legacy #login è stato
+   rimosso: il markup nuovo usa .ip-auth-shell / .ip-auth-card.
+   -------------------------------------------------------------------------- */
+
+/* -----------------------------------------------------------------------------
+   12. Utilità — spaziature e micro-dettato
+   -------------------------------------------------------------------------- */
+
+/* Margin standard per form importi (evita .amount inline */
+.input-group .form-control.amount { text-align: right; }
+/* Spaziatura coerente fra pannelli in una sezione multi-panel */
+#content > .row + .row,
+#content .panel + .form-actions,
+#content .card + .form-actions { margin-top: 4px; }
+/* Azione rapida dashboard: distanziamento coerente dei bottoni in card */
+.panel .panel-body .btn-default.btn-sm,
+.panel .panel-body .btn-secondary.btn-sm,
+.card .card-body .btn-default.btn-sm,
+.card .card-body .btn-secondary.btn-sm { margin: 2px 4px 2px 0; }
+/* Options dropdown globale: stile ghost coerente con il pulsante "Altro"
+   dell'headerbar, e larghezza minima per il menu. */
+.options.btn-group > .btn-secondary.dropdown-toggle {
+  background: transparent;
+  border: 1px solid var(--ip-border);
+  color: var(--ip-text-muted);
+  box-shadow: none;
+  transition: background-color var(--ip-transition), border-color var(--ip-transition), color var(--ip-transition);
+}
+.options.btn-group > .btn-secondary.dropdown-toggle:hover,
+.options.btn-group > .btn-secondary.dropdown-toggle:focus-visible {
+  background: var(--ip-hover);
+  border-color: var(--ip-border-strong);
+  color: var(--ip-text);
+}
+.options.btn-group > .btn-secondary.dropdown-toggle:focus-visible {
+  box-shadow: var(--ip-shadow-focus);
+}
+.options.btn-group .dropdown-menu { min-width: 180px; }
+.options.btn-group .dropdown-menu > li > a > i.fa.fa-margin { width: 16px; text-align: center; }
+.options.btn-group .dropdown-menu > li > form { margin: 0; }
+/* Rosso solo dove l'azione distrugge qualcosa. Il rosso era sul selettore di
+   base perché lì .dropdown-button era sempre e solo "Elimina"; ora che il menu
+   contiene anche copia e nota di credito, tingerle tutte di rosso le faceva
+   sembrare tutte pericolose. La conferma è il segnale che distingue le due
+   famiglie: le azioni distruttive la chiedono, le altre no. */
+.dropdown-menu .dropdown-button[data-bs-toggle="confirm"] { color: var(--ip-danger); }
+.dropdown-menu .dropdown-button[data-bs-toggle="confirm"]:hover { background: var(--ip-danger-bg); }
+/* Tabella dentro #content.table-content: .table-responsive senza bordo extra
+   (padding gestito da #content.table-content qui sopra, sezione 2). */
+.table-content .table-responsive { border: 0; border-radius: 0; }
+/* Lo shim per le linguette legacy .nav-tabs e' stato rimosso: le uniche due
+   schermate a schede (impostazioni e scheda cliente) usano ora il componente
+   .ip-tabs della sezione 37, emesso da layout/tabs.php, e nessuna view emette
+   più quel markup. */
+/* Voci dei menu a tendina. Nell'app convivono tre forme di markup: l'<a> nudo
+   dentro <li> (forma legacy CI3, usata da tutti i menu "Opzioni" delle tabelle),
+   .dropdown-item e .dropdown-button (quest'ultimo è un <button> dentro un
+   <form> per le azioni POST, quindi non è figlio diretto del <li>). Sono lo
+   stesso componente visivo, quindi condividono un'unica regola: prima la forma
+   legacy restava con padding e colori di default Bootstrap mentre il menu
+   utente in navbar era gia' ridisegnato, e i due menu non si somigliavano; e i
+   .dropdown-button (dietro <form>) non venivano presi dal selettore > li > e
+   restavano con il vecchio padding 3px 20px, disallineati dalle voci vicine. */
+.dropdown-menu > li > a:not(.dropdown-button),
+.dropdown-menu > li > a.dropdown-item,
+.dropdown-menu .dropdown-button,
+.dropdown-menu > .dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  /* I <button> sono form control: si dimensionano sul contenuto anche da
+     display:flex, mentre gli <a> riempiono il <li>. Senza questo, la riga
+     "Elimina" era larga la meta' del menu e l'evidenziazione al passaggio del
+     mouse copriva solo il testo — con l'effetto che voci lunghe sembravano
+     piene e voci corte no. */
+  width: 100%;
+  gap: var(--ip-space-4);
+  padding: 7px 10px;
+  clear: both;
+  border-radius: var(--ip-radius-sm);
+  font-weight: 400;
+  color: var(--ip-text);
+  text-align: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.dropdown-menu > li > a:not(.dropdown-button):hover,
+.dropdown-menu > li > a:not(.dropdown-button):focus-visible,
+.dropdown-menu .dropdown-button:hover,
+.dropdown-menu > .dropdown-item:hover {
+  color: var(--ip-text);
+  background-color: var(--ip-hover);
+}
+/* Voci distruttive (Elimina/Logout) */
+.dropdown-menu > li > a.text-danger:hover,
+.dropdown-menu .dropdown-button.text-danger:hover,
+.dropdown-menu > .dropdown-item.text-danger:hover {
+  background-color: var(--ip-danger-bg);
+  color: var(--ip-danger-text);
+}
+/* Icone incolonnate: fa-user e fa-power-off hanno larghezze diverse, senza
+   larghezza fissa le etichette non partivano allineate. */
+.dropdown-menu > li > a .fa,
+.dropdown-menu .dropdown-button .fa,
+.dropdown-menu > .dropdown-item .fa {
+  flex: 0 0 auto;
+  width: 15px;
+  margin-right: 0;
+  text-align: center;
+  opacity: .75;
+}
+/* Shim: .dropdown-divider legacy <li class="dropdown-divider"> deve essere <hr> */
+.dropdown-menu > li.dropdown-divider {
+  height: 0;
+  margin: 4px 0;
+  overflow: hidden;
+  border-top: 1px solid var(--ip-border-soft);
+  list-style: none;
+}

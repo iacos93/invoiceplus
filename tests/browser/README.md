@@ -10,7 +10,10 @@ farebbe una persona, sull'applicazione avviata da `php spark serve`.
 - cambio tema dal menu utente, con la scelta che sopravvive al ricaricamento;
 - ricerca in elenco (Anagrafiche) che sostituisce i risultati senza cambiare
   pagina;
-- `Ctrl+K` / `Cmd+K` che porta il focus nella ricerca globale.
+- `Ctrl+K` / `Cmd+K` che porta il focus nella ricerca globale;
+- menu utente che si apre senza spostarsi (un'animazione su `transform` lo
+  faceva saltare);
+- barra dei mesi: istruzioni dietro la «i» e pagina ferma al cambio mese.
 
 ## In locale
 

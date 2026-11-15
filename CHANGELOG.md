@@ -9,6 +9,190 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+**Da fare prima di aggiornare:** `php spark migrate` (aggiunge a ogni azienda
+le colonne dei loghi e del piè di pagina dei documenti).
+
+### Aggiunto
+
+- **Loghi dei documenti per azienda.** Nella scheda di ogni azienda si caricano
+  il logo esteso (intestazione) e il solo segno (piè di pagina), stampati su
+  fatture, preventivi e DDT di quell'azienda. Prima i due loghi erano unici
+  per tutta l'installazione, quindi due aziende uscivano con lo stesso marchio.
+  Il logo è quello dell'azienda che emette il documento, anche dal portale
+  clienti e dagli invii automatici; un'azienda senza logo proprio continua a
+  usare quello di Impostazioni → Fatture.
+- **Piè di pagina dei documenti per azienda.** Accanto ai loghi, la scheda
+  azienda ha ora il testo a piè di pagina di fatture e DDT e quello dei
+  preventivi: contatti e diciture di legge di quel soggetto (per una S.r.l.
+  sede, Registro delle imprese, capitale sociale) non finiscono più sui
+  documenti di un'altra azienda. Lasciato vuoto, vale il testo delle
+  Impostazioni.
+- **Installabile come app (PWA).** Da Chrome, Edge o Safari Invoice+ si può
+  installare sul computer o sul telefono: si apre in una finestra sua, con la
+  sua icona e le scorciatoie «Nuova fattura», «Nuovo preventivo» e
+  «Scadenzario». Il service worker tiene in cache solo i file statici (stili,
+  script, icone) e mostra una pagina «Sei offline» se manca la rete; pagine e
+  dati non vengono mai salvati sul dispositivo. Serve HTTPS (o `localhost`).
+- **Colonna IVA nei documenti.** Anteprima e PDF di fatture e preventivi
+  mostrano l'aliquota di ogni riga («22%», «–» se la riga non ha imposta).
+- **Calendario: totali del mese.** Il riepilogo laterale apre con l'importo in
+  scadenza nel mese e, se c'è, la parte già scaduta.
+- **Logo e contatti anche nei report PDF**: Utile e imposte, Bilancino e i
+  report (vendite per cliente, storico pagamenti, scaduto, vendite per anno)
+  aprono con il logo esteso e i contatti dell'azienda attiva, gli stessi di
+  fatture e preventivi.
+
+### Cambiato
+
+- **Nuovo logo e nuovo carattere del nome.** Il segno è ora una piastrella blu
+  con le righe di una fattura, l'ultima delle quali finisce in un "+"; il nome
+  accanto è in Sora al posto del serif. Compaiono nella barra, nella pagina di
+  accesso, nel portale clienti, nella favicon e nel logo del README. Sora è
+  servito dal sito stesso (`public/assets/core/fonts/`), quindi non richiede
+  modifiche alla Content-Security-Policy. Il logo caricato da Impostazioni per
+  la pagina di accesso non cambia.
+
+- **Piè di pagina dei documenti più compatto.** Logo, testo dell'azienda e
+  numero di pagina stanno ora su una sola riga (prima erano due, centrate e
+  fisse in ogni foglio), con il testo allineato a sinistra come il corpo; il
+  markup, copiato in tre modelli, è un solo parziale (`layout/pdf_footer.php`).
+
+- **Barra dei mesi**: l'istruzione della selezione multipla è ora una legenda
+  su tre voci (clic, `Shift`+clic, `Ctrl/⌘`+clic) invece di tre frasi con lo
+  stesso "con… si…" ripetuto. Stesso contenuto in metà del testo, quindi la
+  riga resta una sola anche quando la barra si restringe.
+
+- **Risposta al gesto**: pochi movimenti brevi dove l'interfaccia era muta.
+  I mesi della barra periodo si alzano di un pixel sotto il mouse e si
+  comprimono alla pressione; il mese appena scelto si accende crescendo dal
+  94%; i pannelli del select con ricerca e del calendario compaiono invece di
+  saltare fuori all'improvviso; la barra delle azioni di gruppo entra dal
+  basso quando si spunta la prima casella, e le righe delle liste entrano a
+  scaletta (22 ms di scarto, solo le prime otto) quando il contenuto arriva
+  dalla navigazione parziale o dal cambio pagina del pager. La scaletta vale
+  per tutte le liste, anche quelle in una card semplice, e resta fuori dalle
+  tabelle delle righe documento (lì si aggiungono righe mentre si compila) e
+  dalla bacheca, che ha già la sua. Tutto in CSS, su `transform` e `opacity`,
+  fra 140 e 300 ms, senza nessuna classe aggiunta dal JS, azzerato da
+  `prefers-reduced-motion` e spento anche in stampa.
+
+- **Foglio AssoSoftware più sobrio**: la griglia nera piena su ogni cella pesava
+  più delle cifre, ora le linee interne sono un grigio freddo e il contorno di
+  cedente e committente sta su un pixel; le intestazioni usano una tinta sola
+  (prima una era grigio e l'altra ciano), le etichette dei due soggetti sono in
+  maiuscoletto e le cifre hanno larghezza fissa, così gli importi restano
+  incolonnati anche cambiando le dimensioni dei numeri. In stampa le linee
+  tornano nere. Il foglio dell'Agenzia delle Entrate non è toccato.
+
+- **Cambio di pagina e di filtro che non perde il posto**: pager, filtri di
+  stato e tipo, barra dei mesi e moduli di ricerca GET non riportano più la
+  pagina in cima al documento, con l'elenco fuori vista: si riallinea la cima
+  della lista subito sotto le barre fisse, così le righe nuove entrano dove
+  stavi guardando e i filtri restano a portata d'occhio. Vale anche tornando
+  indietro sulla pagina di un pager; gli altri link si comportano come prima.
+
+- **Intestazione dei documenti allineata.** In fatture, preventivi e DDT il
+  logo sta su una riga sua; sotto, i dati di chi emette e quelli del
+  destinatario partono alla stessa altezza, ciascuno con la sua etichetta
+  («Emittente», «Fattura a»). Prima il logo spingeva in basso l'emittente e il
+  riquadro del cliente restava sfalsato.
+- **Esportazione con lo stesso impianto di Importazione.** La pagina ha ora i
+  passi numerati su un binario (cosa, periodo, formato), ciascuno in una
+  scheda con icona e sottotitolo, e in fondo la barra conclusiva col formato
+  scelto e il pulsante «Scarica»; la testata tiene solo il ritorno a
+  Importa / Esporta, come nella pagina di importazione.
+- **Importa / Esporta più asciutta.** Una riga d'introduzione al posto di
+  occhiello, slogan e tre righe; un solo pulsante principale per card («Nuova
+  importazione», «Esportazione») con la cronologia come strada secondaria; la
+  nota sui formati non è più una riga larga quanto lo schermo ma sta, divisa,
+  nella card a cui si riferisce.
+- **Chiave cron e feed del calendario nelle Impostazioni.** I pulsanti accanto
+  ai due campi hanno la misura del campo e lo stile secondario (prima «Genera»
+  era un blocco nero più grande del testo); il valore è in monospazio e
+  «Copia» conferma con una spunta.
+- **Calendario più leggibile.** Oggi è un disco pieno invece di un puntino; i
+  giorni passati senza scadenze si attenuano; nella lista laterale i titoli
+  vanno a capo invece di essere troncati; la barra di sottoscrizione del feed
+  si apre dal pulsante «Sottoscrivi» in testata invece di stare sempre sopra
+  la griglia.
+- **Cambio mese senza scroll.** Scegliere un mese dalla barra non sposta più
+  la pagina: prima la lista veniva allineata sotto le barre fisse e la barra
+  dei mesi scappava da sotto il puntatore a ogni clic. Pager e filtri
+  continuano a riportare alla cima della lista.
+- **Foglio di stile a pezzi.** `custom.css` è ora generato da quindici file in
+  `public/assets/core/css/src/`, uniti in ordine da `php tools/minify_css.php`
+  (lo stesso comando di prima). Il risultato è identico byte per byte: cambia
+  solo dove si scrive. `custom.css` non va più modificato a mano.
+- **Istruzioni dei mesi dietro una «i».** La riga «Clic: un mese · Shift+clic…»
+  sotto la barra dei mesi non occupa più spazio: resta nascosta e compare al
+  passaggio sulla «i», da tastiera o con un clic (Esc o clic fuori la chiudono).
+- **Più movimento, dove mancava.** Il "+" del logo ruota al passaggio sul
+  brand; la pagina di accesso entra a scaletta; menu utente e sottomenu della
+  sidebar si aprono con una breve dissolvenza invece di comparire di colpo.
+  Tutto su `transform` e `opacity`, e spento da chi ha `prefers-reduced-motion`.
+
+### Corretto
+
+- **Logo troppo piccolo nei PDF**: un SVG con `width`/`height` diversi dalla
+  `viewBox` (tipico dei file esportati da Illustrator o Inkscape) usciva a circa
+  un quarto della grandezza, qualunque fosse lo stile. Ora le dimensioni
+  dichiarate vengono allineate alla `viewBox` prima di incorporare il logo.
+- **Eliminare un progetto dalla sua scheda**: il pulsante «Elimina» portava a
+  una pagina 404 dopo la conferma (era un link, e l'eliminazione accetta solo
+  richieste POST). Ora è un modulo, come nella scheda cliente; un test
+  impedisce che altre viste ripetano l'errore.
+- **Iniziali nella scheda cliente**: «Comune di Carpignano Sesia» mostrava
+  «CD», con la preposizione al posto del nome. Articoli e preposizioni ora si
+  saltano («CC»), le virgolette non contano come iniziale e per le persone si
+  prende un'iniziale dal nome e una dal cognome.
+- **Saltino del menu utente**: aprendo il menu dell'utente (e i menu di riga)
+  nella barra in alto il pannello faceva un piccolo salto. L'animazione di
+  comparsa toccava `transform`, che Popper usa per posizionare il menu; ora i
+  menu a tendina usano la sola dissolvenza.
+
+- **Errore di schema spiegato**: quando manca indirizzo, CAP o comune di
+  cedente o cessionario, la verifica del tracciato mostrava solo il messaggio
+  della XSD ("Elemento 'Nazione': non atteso"), che parla dell'elemento
+  presente e non di quello mancante, e non dice a chi manca. Ora la pagina
+  dice quale scheda aprire — cliente o azienda, con nome e collegamento — e
+  lo stesso controllo blocca l'invio allo SdI prima della validazione, con un
+  messaggio che dice cosa compilare. La fattura Carta del Docente resta fuori
+  dal controllo del cliente: il destinatario del file è l'ufficio del
+  Ministero, con indirizzo fisso.
+
+- **Anteprima AssoSoftware leggibile**: il foglio dichiara 800 px fissi per
+  ogni tabella, quindi su una pagina da 1000 metà destra restava bianca e le
+  colonne dei totali, larghe 50–100 px, mandavano "Data documento" e "Prezzo
+  unitario" a capo su due righe. Ora le tabelle occupano la pagina, le cifre e
+  le loro intestazioni stanno sullo stesso lato, le righe di una tabella lunga
+  hanno un separatore (prima il bordo stava solo sul corpo tabella, quindi due
+  articoli si leggevano come una riga sola) e l'intestazione con cedente e
+  committente non esce più dal bordo, perché l'altezza fissa delle due celle è
+  stata tolta. Le regole della pagina erano scritte per un foglio che non ha
+  `#fattura-container`: condizione mai vera, quindi non si applicavano mai e
+  l'anteprima usciva senza margine in cima. Il foglio dell'Agenzia delle
+  Entrate non è toccato: nessuno dei selettori nuovi compare nel suo markup.
+
+- **Leggibilità**: le etichette sopra le cifre (riepiloghi delle liste, KPI
+  della bacheca, "Esporta", legenda del calendario) passano da 10 a 11 px e,
+  nei riepiloghi, a un grigio più scuro che rispetta il contrasto minimo. Le
+  righe degli stati a zero in bacheca e nelle anagrafiche restano spente ma
+  non sono più quasi illeggibili (da 2,2:1 a oltre 4,5:1).
+- **Telefono**: la barra delle sezioni del Controllo di gestione mostra
+  un'ombra sul lato da cui ci sono altre voci da scorrere.
+- **Righe di fatture e preventivi**: su schermi da 1280 px i campi Codice,
+  Quantità, Prezzo e Sconto erano più corti del loro contenuto ("4.883,00"
+  usciva tagliato). Le colonne sono state ribilanciate: ogni campo contiene il
+  suo valore tipico e lo spazio in più va alla descrizione. L'intestazione
+  Quantità è abbreviata in "Q.tà".
+- **Liste**: fra 1280 e 1399 px la colonna Cliente di fatture, preventivi e
+  spese andava a capo anche con nomi brevi; in quella fascia esce la colonna
+  secondaria non numerica (data di creazione, categoria) e il nome sta su una
+  riga.
+- **Accessibilità**: il filtro delle Impostazioni e i campi Articolo e
+  Descrizione delle righe di fatture e preventivi hanno ora un nome leggibile
+  dagli screen reader.
+
 ## [v0.10.0] — 2026-11-14
 
 **Da fare prima di aggiornare:** `php spark migrate` (aggiunge indici e, se

@@ -1,9 +1,24 @@
 <?php
 /**
- * Minifica public/assets/core/css/custom.css in custom.min.css usando
- * sabberworm/php-css-parser (gia' in vendor/). Specchio di scripts.min.js:
- * la sorgente resta custom.css (commenti "perche'" inclusi) e in produzione
- * si serve la versione compattata, senza commenti ne' spazi superflui.
+ * Costruisce il foglio di stile dell'app.
+ *
+ * Le sorgenti sono i file di public/assets/core/css/src/, uno per area
+ * (token, guscio, liste, documenti...). Lo script li unisce in ordine di nome
+ * in custom.css e ne ricava custom.min.css con sabberworm/php-css-parser
+ * (gia' in vendor/).
+ *
+ * Perche' a pezzi: custom.css era un file solo da quasi 14.000 righe, e una
+ * sostituzione sbagliata ne ha cancellata meta' in un colpo. File da un
+ * migliaio di righe si leggono, si confrontano e si rovinano uno alla volta.
+ *
+ * Perche' in ordine di nome e non per componente: il foglio e' cresciuto per
+ * strati e le regole piu' in basso correggono quelle piu' in alto. L'ordine
+ * dei file E' la cascata: rinominarli o spostare una regola da un file
+ * all'altro puo' cambiare cio' che vince. Il prefisso numerico lo fissa.
+ *
+ * custom.css resta nel repository perche' le viste lo servono cosi' com'e'
+ * fuori produzione, ma e' un file generato: si modifica src/ e si rilancia
+ * lo script. AssetFreshnessTest fallisce se i tre non coincidono.
  *
  * Uso: php tools/minify_css.php
  */
@@ -14,8 +29,15 @@ use Sabberworm\CSS\Parser;
 use Sabberworm\CSS\Settings;
 use Sabberworm\CSS\OutputFormat;
 
-$src  = __DIR__ . '/../public/assets/core/css/custom.css';
-$dest = __DIR__ . '/../public/assets/core/css/custom.min.css';
+$dir  = __DIR__ . '/../public/assets/core/css';
+$src  = $dir . '/custom.css';
+$dest = $dir . '/custom.min.css';
+
+require __DIR__ . '/../app/Libraries/CssBundle.php';
+
+$parts = App\Libraries\CssBundle::parts($dir . '/src');
+file_put_contents($src, App\Libraries\CssBundle::join($parts));
+printf("sorgenti   : %d file in css/src\n", count($parts));
 
 $settings = Settings::create()
     ->withMultibyteSupport(true)

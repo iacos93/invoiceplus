@@ -90,9 +90,20 @@ class Companies extends BaseController
                 }
             }
 
-            if ($this->companyModel->validate($post)) {
+            // I loghi si controllano prima di salvare qualsiasi cosa: un file
+            // sbagliato riporta al modulo senza aver scritto mezza azienda.
+            $logoErrors = [];
+            $logos      = $this->incomingLogos($logoErrors);
+
+            if ($this->companyModel->validate($post) && $logoErrors === []) {
                 $isNew     = !$id;
                 $companyId = $this->companyModel->saveCompany($id, $this->companyModel->dbArrayFromPost($post));
+
+                $logoFailure = $this->saveLogos($companyId, $logos, $post);
+
+                if ($logoFailure !== '') {
+                    session()->setFlashdata('alert_error', $logoFailure);
+                }
 
                 if ($isNew) {
                     // Configurazione minima riutilizzabile: senza serie di
@@ -112,8 +123,17 @@ class Companies extends BaseController
 
             $this->companyModel->formValues = $post;
 
+            // I loghi già salvati non arrivano dal POST: senza rimetterli nei
+            // valori del modulo, tornando qui con un errore le anteprime
+            // sparirebbero come se i loghi fossero stati cancellati.
+            $stored = $id ? ($this->companyModel->find($id) ?: []) : [];
+
+            foreach (self::LOGO_FIELDS as $field) {
+                $this->companyModel->formValues[$field] = $stored[$field] ?? '';
+            }
+
             return view('companies/form', [
-                'company_id' => $id, 'errors' => $this->companyModel->errors(), 'model' => $this->companyModel,
+                'company_id' => $id, 'errors' => $this->companyModel->errors() + $logoErrors, 'model' => $this->companyModel,
                 'invoice_groups' => $this->groupsOf($id),
                 'countries' => get_country_list(trans('cldr')),
             ]);
@@ -128,6 +148,95 @@ class Companies extends BaseController
             'invoice_groups' => $this->groupsOf($id),
             'countries' => get_country_list(trans('cldr')),
         ]);
+    }
+
+    /** Loghi dei documenti caricabili dalla scheda (campo file => colonna omonima). */
+    private const LOGO_FIELDS = ['invoice_logo', 'invoice_logo_footer'];
+
+    /**
+     * Loghi caricati con il modulo, già controllati (stesse regole delle
+     * Impostazioni: vedi LogoUpload). Gli errori finiscono in $errors per
+     * campo, così compaiono sotto il campo che li ha causati.
+     *
+     * @param array<string, string> $errors
+     *
+     * @return array<string, \CodeIgniter\HTTP\Files\UploadedFile>
+     */
+    private function incomingLogos(array &$errors): array
+    {
+        $logos = [];
+
+        foreach (self::LOGO_FIELDS as $field) {
+            $file = service('request')->getFile($field);
+
+            if (!$file || !$file->isValid() || $file->hasMoved()) {
+                continue;
+            }
+
+            $error = \App\Libraries\LogoUpload::check($file, trans($field, '', $field));
+
+            if ($error !== null) {
+                $errors[$field] = $error;
+
+                continue;
+            }
+
+            $logos[$field] = $file;
+        }
+
+        return $logos;
+    }
+
+    /**
+     * Scrive i loghi dell'azienda e toglie quelli spuntati con "Rimuovi".
+     *
+     * Avviene dopo il salvataggio dell'anagrafica perché il nome del file
+     * porta l'id dell'azienda ("company3-invoice_logo-…"), e per un'azienda
+     * nuova l'id esiste solo a quel punto: senza il prefisso due aziende che
+     * caricano entrambe "logo.png" si sovrascriverebbero il file a vicenda.
+     * Un nuovo file vince sulla spunta di rimozione: chi carica un logo e
+     * lascia spuntato "Rimuovi" vuole sostituirlo, non restare senza.
+     *
+     * @param array<string, \CodeIgniter\HTTP\Files\UploadedFile> $logos
+     *
+     * @return string messaggio d'errore, '' se è andato tutto bene
+     */
+    private function saveLogos(int $companyId, array $logos, array $post): string
+    {
+        $current = $this->companyModel->find($companyId) ?: [];
+        $changes = [];
+        $failure = '';
+
+        foreach (self::LOGO_FIELDS as $field) {
+            $old = (string) ($current[$field] ?? '');
+
+            if (isset($logos[$field])) {
+                $name = \App\Libraries\LogoUpload::store($logos[$field], 'company' . $companyId . '-' . $field);
+
+                if ($name === '') {
+                    $failure = trans($field, '', $field) . ': caricamento non riuscito.';
+
+                    continue;
+                }
+
+                // Il file vecchio si cancella solo se ha un altro nome: con lo
+                // stesso nome move() lo ha già sovrascritto.
+                if ($old !== '' && $old !== $name) {
+                    \App\Libraries\LogoUpload::delete($old);
+                }
+
+                $changes[$field] = $name;
+            } elseif (!empty($post['remove_' . $field]) && $old !== '') {
+                \App\Libraries\LogoUpload::delete($old);
+                $changes[$field] = null;
+            }
+        }
+
+        if ($changes !== []) {
+            $this->companyModel->update($companyId, $changes);
+        }
+
+        return $failure;
     }
 
     /**

@@ -1,0 +1,437 @@
+/* -----------------------------------------------------------------------------
+   19. Scheda cliente — intestazione dentro card
+   -------------------------------------------------------------------------- */
+
+.ip-client-title {
+  margin: 0 0 6px;
+  font-family: var(--ip-display);
+  font-size: var(--ip-text-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ip-text);
+}
+.ip-client-address {
+  margin: 0;
+  font-size: var(--ip-text-base);
+  line-height: 1.7;
+  color: var(--ip-text-muted);
+}
+/* Righe vuote dell'indirizzo (campi non compilati) non devono lasciare buchi. */
+.ip-client-address br + br { display: none; }
+/* Data di iscrizione sotto l'indirizzo: filo sottile prima della riga,
+   separa l'identità del cliente dal suo storico nell'app. */
+.ip-client-since {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--ip-border-soft);
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+/* Riepilogo economico del cliente: griglia 2x2 di cifre con etichetta
+   maiuscoletta muta, stesso linguaggio delle KPI del dashboard. */
+.ip-client-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 24px;
+}
+.ip-client-stat-label {
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+}
+.ip-client-stat-value {
+  margin-top: 3px;
+    font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text);
+}
+.ip-client-stat-value--success { color: var(--ip-success-text); }
+.ip-client-stat-value--warning { color: var(--ip-warning-text); }
+.ip-client-stat-value--danger  { color: var(--ip-danger-text); }
+/* Hint sotto le statistiche: quanti documenti sono scaduti (solo se > 0). */
+.ip-client-stat-hint {
+  margin: 12px 0 0;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-danger-text);
+}
+/* Il conteggio scadute e' anche un link diretto alla tab Fatture: stesso
+   colore del testo circostante, sottolineato solo al passaggio/focus per
+   non sembrare un'etichetta qualunque quando la pagina e' ferma. */
+.ip-client-stat-hint-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+.ip-client-stat-hint-link:hover,
+.ip-client-stat-hint-link:focus-visible {
+  text-decoration: underline;
+}
+.ip-client-stat-meta {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--ip-border-soft);
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+/* Riga segnaposto dentro una card-tabella senza dati.
+   Niente bordi: una riga unica in una tabella altrimenti vuota disegnava due
+   filetti orizzontali che sembravano un separatore rimasto li' per errore. */
+.ip-card-empty {
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-base);
+  font-style: italic;
+  text-align: center;
+  padding: 18px var(--ip-card-pad-x) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* -----------------------------------------------------------------------------
+   19b. Scheda cliente — masthead anagrafico e riepilogo rinnovati
+   -------------------------------------------------------------------------- */
+
+/* Tessera anagrafica: il biglietto da visita del cliente. Avatar monogramma,
+   identità testuale e — a destra — la piastra dei codici fiscali. */
+.ip-client-masthead__body {
+  display: flex;
+  gap: var(--ip-space-9);
+  align-items: flex-start;
+  padding: 22px 24px;
+}
+.ip-client-mono {
+  flex: 0 0 auto;
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-family: var(--ip-display);
+  font-weight: 600;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--ip-on-primary);
+  background: linear-gradient(140deg, var(--ip-primary), var(--ip-primary-dark));
+  box-shadow: var(--ip-shadow-sm);
+}
+.ip-client-id {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ip-client-name {
+  margin: 0;
+  font-family: var(--ip-display);
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ip-text);
+  overflow-wrap: anywhere;
+}
+.ip-client-id__meta {
+  margin-top: 7px;
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-6);
+  flex-wrap: wrap;
+  font-size: var(--ip-text-sm);
+}
+/* Il tipo cliente diventa un chip tondo all'interno della tessera. */
+.ip-client-masthead .ip-client-type {
+  background: var(--ip-primary-soft);
+  color: var(--ip-text);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.ip-client-id__loc {
+  color: var(--ip-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-2);
+}
+.ip-client-id__loc i { font-size: var(--ip-text-xs); }
+.ip-client-since {
+  margin: 10px 0 0;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-2);
+}
+.ip-client-since i { font-size: var(--ip-text-xs); }
+
+/* Piastra codici fiscali: i veri identificativi di un cliente italiano. Mono
+   perché i codici sono stringhe, non testo da leggere. */
+.ip-client-codes {
+  flex: 0 0 auto;
+  display: grid;
+  gap: var(--ip-space-5);
+  min-width: 240px;
+}
+.ip-fisc-code {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: var(--ip-space-5);
+  padding: 9px 12px;
+  background: var(--ip-bg);
+  border: 1px solid var(--ip-border-soft);
+  border-radius: var(--ip-radius);
+}
+.ip-fisc-code__label {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+}
+.ip-fisc-code__value {
+  grid-column: 1;
+  grid-row: 2;
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-md);
+  font-weight: 500;
+  letter-spacing: .02em;
+  color: var(--ip-text-strong);
+  overflow-wrap: anywhere;
+}
+.ip-fisc-code__copy {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  border: 0;
+  background: transparent;
+  color: var(--ip-text-muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--ip-radius-sm);
+  transition: var(--ip-transition);
+}
+.ip-fisc-code__copy:hover,
+.ip-fisc-code__copy:focus-visible { color: var(--ip-primary); background: var(--ip-primary-soft); }
+.ip-fisc-code__copy.is-copied { color: var(--ip-success); }
+.ip-fisc-code__copy:focus-visible { outline: none; box-shadow: var(--ip-shadow-focus); }
+
+/* Riepilogo economico: da griglia di sole cifre a piastrelle con icona. */
+.ip-client-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ip-client-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-2);
+  padding: 12px 14px;
+  background: var(--ip-bg);
+  border: 1px solid var(--ip-border-soft);
+  border-radius: var(--ip-radius);
+}
+.ip-client-stat-label { display: inline-flex; align-items: center; gap: var(--ip-space-3); }
+.ip-client-stat-label i { font-size: var(--ip-text-xs); opacity: .7; }
+.ip-client-stat-value { font-size: var(--ip-text-xl); }
+
+/* Contatti: lista con icona anziché tabella chiave/valore. */
+.ip-contact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.ip-contact-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-6);
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--ip-border-soft);
+}
+.ip-contact-list li:last-child { border-bottom: 0; }
+.ip-contact-list__ic {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+  font-size: var(--ip-text-base);
+}
+.ip-contact-list a { color: var(--ip-text); text-decoration: none; }
+.ip-contact-list a:hover { color: var(--ip-primary); text-decoration: underline; }
+
+/* Note del cliente: registro, non card annidate. Ogni nota era un .card.small
+   con bordo e piè di card grigio per la sola data: tre note facevano tre
+   scatole dentro la scatola e la data occupava una riga intera. Qui la voce
+   è testo + data separati da un filetto, come le righe di un registro. Il
+   tetto di altezza evita che dieci note allunghino la coppia di card e
+   lascino la rubrica contatti accanto mezza vuota. */
+.ip-note-list {
+  display: grid;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-bottom: var(--ip-space-6);
+  padding-right: var(--ip-space-2);
+}
+.ip-note {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ip-border-soft);
+}
+.ip-note:first-child { padding-top: 0; }
+.ip-note:last-child { padding-bottom: 0; border-bottom: 0; }
+.ip-note__text {
+  margin: 0;
+  font-size: var(--ip-text-md);
+  color: var(--ip-text);
+  overflow-wrap: anywhere;
+}
+.ip-note__date {
+  margin: var(--ip-space-2) 0 0;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Compositore: campo a tutta larghezza e azione sotto, allineata a destra.
+   L'input-group teneva il pulsante dentro il bordo del campo e toglieva al
+   testo 131px: su telefono restavano poche decine di pixel utili per riga. */
+.ip-note-form .form-control {
+  min-height: 56px;
+  resize: vertical;
+}
+.ip-note-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--ip-space-4);
+}
+
+/* La spunta "cliente attivo" vive nella testata della prima card del form:
+   resetta il margin-bottom di .form-badge per allinearsi alla riga icona+label. */
+.ip-table-card-header > .form-badge.ip-card-header-badge { margin: 0; }
+
+/* In colonna stretta le piastrelle tornano a 2, la tessera si impila. */
+@media (max-width: 767.98px) {
+  .ip-client-masthead__body { flex-direction: column; }
+  .ip-client-codes { width: 100%; min-width: 0; }
+  .ip-client-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* -----------------------------------------------------------------------------
+   Aree tattili su dispositivi touch (WCAG 2.5.8 chiede 24px, qui si punta ai
+   44px delle linee guida per il dito).
+   --------------------------------------------------------------------------
+   Condizione sul puntatore e non sulla larghezza: un tablet largo 1024px usa
+   comunque le dita, un desktop con finestra stretta no. Con il mouse i 30px
+   di .btn-sm restano, perche' le barre dei filtri e le righe delle tabelle
+   sono dimensionate su quella misura. Cresce solo l'altezza dei pulsanti
+   compatti; per i controlli di sola icona anche la larghezza, altrimenti
+   restano un rettangolo alto e stretto. */
+@media (pointer: coarse) {
+  .btn-sm,
+  .btn-group-sm > .btn {
+    min-height: 44px;
+  }
+  .ip-theme-toggle,
+  .ip-import-chosen__clear {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   20. Aree tattili — sidebar off-canvas su mobile
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 991.98px) {
+  .ip-nav-link {
+    min-height: 44px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .ip-nav-sub-link {
+    /* Target tattile pieno (44px, WCAG 2.5.5) come le voci di primo livello. */
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .ip-sidebar-toggle {
+    width: 44px;
+    height: 44px;
+  }
+  #submenu .nav-link {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+}
+/* -----------------------------------------------------------------------------
+   21. Shim classi Bootstrap 3 rimaste nel markup
+   --------------------------------------------------------------------------
+   Queste classi non esistono ne' in Bootstrap 5 ne' altrove nel foglio: erano
+   quindi inerti, e il markup che le usa rendeva con lo stile di default
+   (testo di aiuto come paragrafo normale, bottoni "xs" a grandezza piena,
+   tabelle "condensed" a densita' normale). Le rimappiamo sull'equivalente BS5
+   invece di riscrivere le view, così vale anche per il markup legacy residuo.
+   -------------------------------------------------------------------------- */
+
+/* .help-block → .form-text */
+.help-block {
+  margin-top: .25rem;
+  margin-bottom: 0;
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  color: var(--ip-text-muted);
+}
+/* .btn-xs → più compatto di .btn-sm (usato nelle righe fitte delle tabelle) */
+.btn-xs {
+  padding: .15rem .4rem;
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  border-radius: var(--ip-radius-sm);
+}
+/* .table-condensed → .table-sm */
+.table-condensed > :not(caption) > * > * {
+  padding: .3rem .5rem;
+}
+/* .clearfix → utilita' BS5 */
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+/* .no-margin → margini azzerati (BS3; usato ancora in molte viste per
+   stringere righe KPI, schede e intestazioni) */
+.no-margin {
+  margin: 0 !important;
+}
+/* .form-inline → riga orizzontale (in BS5 non esiste più) */
+.form-inline {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: var(--ip-space-5);
+}
+.form-inline .form-group,
+.form-inline .mb-3 { margin-bottom: 0; }
+.form-inline select.form-control,
+.form-inline .form-control { width: auto; }
+.form-inline > .float-end { margin-left: auto; }
+/* .btn-block → full-width */
+.btn-block {
+  display: block;
+  width: 100%;
+}
+/* Meter forza password (users/form_change_password): in BS5 le classi
+   progress-bar-danger/warning/success non esistono e le tre barre rendevano
+   tutte blu di default — il livello di forza non era più leggibile. */
+.progress-bar-danger  { background-color: var(--ip-danger); }
+.progress-bar-warning { background-color: var(--ip-warning); }
+.progress-bar-success { background-color: var(--ip-success); }
+/* Checkbox nelle celle: il controllo e' quello unico definito nella sezione
+   dei form, qui si allinea solo al testo della riga. */
+.ip-items-table td input[type="checkbox"],
+.ip-items-table th input[type="checkbox"],
+.table td input[type="checkbox"],
+.table th input[type="checkbox"] { vertical-align: middle; }

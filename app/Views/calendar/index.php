@@ -13,7 +13,14 @@ $typeInfo = [
     'task'    => ['label' => trans('tasks', '', 'Attività'), 'icon' => 'fa-regular fa-square-check'],
 ];
 
-$actions = '<div class="btn-group btn-group-sm ip-calendar-nav">'
+// Sottoscrizione: si configura una volta e poi non serve più, quindi non sta
+// aperta sopra la griglia a ogni visita. Un pulsante in testata apre la
+// barra; se il feed non è ancora stato generato il pulsante lo segnala.
+$actions = '<button type="button" class="btn btn-secondary btn-sm ip-calendar-feed-toggle" data-ip-feed-toggle'
+    . ' aria-expanded="false" aria-controls="ip-calendar-feed">'
+    . '<i class="fa fa-solid fa-rss" aria-hidden="true"></i> ' . trans('calendar_subscribe', '', 'Sottoscrivi')
+    . '</button>'
+    . '<div class="btn-group btn-group-sm ip-calendar-nav">'
     . '<a class="btn btn-secondary" href="' . site_url('calendar/' . $prev_year . '/' . $prev_month) . '" aria-label="' . esc(trans('previous', '', 'Precedente'), 'attr') . '"><i class="fa fa-solid fa-chevron-left" aria-hidden="true"></i></a>'
     . '<a class="btn btn-secondary" href="' . site_url('calendar/' . (int) $today->format('Y') . '/' . (int) $today->format('n')) . '">' . trans('today', '', 'Oggi') . '</a>'
     . '<a class="btn btn-secondary" href="' . site_url('calendar/' . $next_year . '/' . $next_month) . '" aria-label="' . esc(trans('next', '', 'Successivo'), 'attr') . '"><i class="fa fa-solid fa-chevron-right" aria-hidden="true"></i></a>'
@@ -36,6 +43,20 @@ foreach ($upcoming as $event) {
         $upcoming_sections[2]['items'][] = $event;
     }
 }
+
+// Totali in testa al riepilogo: quanto scade nel mese e quanto di quello è
+// già scaduto. La griglia dice "quando", questa riga dice "quanto" senza
+// dover sommare a mente gli importi della lista.
+$month_amount   = 0.0;
+$overdue_amount = 0.0;
+foreach ($upcoming as $event) {
+    if ($event['amount'] !== null) {
+        $month_amount += (float) $event['amount'];
+        if ($event['overdue']) {
+            $overdue_amount += (float) $event['amount'];
+        }
+    }
+}
 ?>
 <?= $this->include('layout/headerbar', ['title' => esc($month_label), 'actions' => $actions]) ?>
 
@@ -45,6 +66,7 @@ foreach ($upcoming as $event) {
              Google Calendar o il tuo client CalDAV. Un solo URL di sola
              lettura, non un accesso all'app — vedi il commento in
              CalendarService::toIcs(). */ ?>
+    <div id="ip-calendar-feed" hidden>
     <?php if ($feed_url): ?>
         <div class="ip-calendar-feed-bar">
             <div class="ip-calendar-feed-bar__main">
@@ -82,6 +104,7 @@ foreach ($upcoming as $event) {
             </a>
         </div>
     <?php endif; ?>
+    </div>
 
     <div class="ip-calendar-layout">
 
@@ -118,7 +141,7 @@ foreach ($upcoming as $event) {
                                     $cell_has_events = !empty($cell['events']);
                                     $cell_n_events   = count($cell['events']);
                                     ?>
-                                    <td class="ip-calendar-cell <?= $cell['is_today'] ? 'is-today' : '' ?> <?= in_array($w_real, [0, 6], true) ? 'is-weekend' : '' ?> <?= $cell_has_events ? 'has-events' : '' ?>"
+                                    <td class="ip-calendar-cell <?= $cell['is_today'] ? 'is-today' : '' ?> <?= $cell['date'] < $today->format('Y-m-d') ? 'is-past' : '' ?> <?= in_array($w_real, [0, 6], true) ? 'is-weekend' : '' ?> <?= $cell_has_events ? 'has-events' : '' ?>"
                                         <?= $cell['is_today'] ? 'aria-current="date"' : '' ?>>
                                         <?php if ($cell_has_events): ?>
                                             <button type="button"
@@ -201,6 +224,18 @@ foreach ($upcoming as $event) {
                             <?= trans('calendar_no_upcoming', '', 'Nessuna scadenza in questo mese.') ?>
                         </p>
                     <?php else: ?>
+                        <dl class="ip-calendar-totals">
+                            <div>
+                                <dt><?= trans('calendar_month_amount', '', 'In scadenza nel mese') ?></dt>
+                                <dd><?= format_currency($month_amount) ?></dd>
+                            </div>
+                            <?php if ($overdue_amount > 0): ?>
+                                <div class="is-overdue">
+                                    <dt><?= trans('calendar_overdue_amount', '', 'Di cui scaduto') ?></dt>
+                                    <dd><?= format_currency($overdue_amount) ?></dd>
+                                </div>
+                            <?php endif; ?>
+                        </dl>
                         <?php foreach ($upcoming_sections as $section): ?>
                             <?php if ($section['items']): ?>
                                 <p class="ip-calendar-group <?= $section['cls'] ?>">
@@ -232,6 +267,18 @@ foreach ($upcoming as $event) {
     </div>
 </div>
 
+<script>
+    // Barra di sottoscrizione: aperta e chiusa dal pulsante in testata.
+    (function () {
+        var toggle = document.querySelector('[data-ip-feed-toggle]');
+        var bar = document.getElementById('ip-calendar-feed');
+        if (!toggle || !bar) { return; }
+        toggle.addEventListener('click', function () {
+            bar.hidden = !bar.hidden;
+            toggle.setAttribute('aria-expanded', bar.hidden ? 'false' : 'true');
+        });
+    })();
+</script>
 <script>
     // Popover del giorno: clicca sul numero del giorno (o su "+N altre") per
     // vedere tutte le scadenze di quel giorno. Pannello montato in <body>

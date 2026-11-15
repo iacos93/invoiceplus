@@ -1,0 +1,795 @@
+/* -----------------------------------------------------------------------------
+   14. Submenu mobile — wrapper collassabile per filtri di stato su mobile
+   -------------------------------------------------------------------------- */
+
+#submenu {
+  background: var(--ip-bg-card);
+  border-bottom: 1px solid var(--ip-border);
+}
+/* Pannello chiuso = contenuto nascosto: senza questa regola restava il solo
+   bordo inferiore, una riga orfana appiccicata sotto l'headerbar. Sulle liste
+   con la barra filtri (fatture, spese, preventivi) il pannello è però aperto
+   anche senza .show — lo forza il CSS da 992px in su — quindi lì vale solo
+   su telefono. */
+#submenu:has(> .collapse:not(.show)):not(.ip-filter-panel) { border-bottom: 0; }
+@media (max-width: 991.98px) {
+  #submenu.ip-filter-panel:has(> .collapse:not(.show)) { border-bottom: 0; }
+}
+#submenu > .collapse {
+  /* Bootstrap .collapse usa height:0; lasciamo padding solo quando espanso */
+  padding: 0;
+}
+#submenu .submenu-row {
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ip-space-3);
+}
+#submenu .submenu-row .btn-group.index-options {
+  flex: 1 1 auto;
+}
+.submenu-toggle .fa { margin-right: 4px; }
+/* Su lg+ il pannello filtri (fatture, spese, preventivi) non ha un pulsante
+   che lo apra o lo chiuda — il toggle è d-lg-none — quindi va tenuto forzato
+   aperto: l'headerbar non ne ha più una copia e chiuderlo lascerebbe la lista
+   senza comandi di filtro. */
+@media (min-width: 992px) {
+  #submenu > .collapse { display: none !important; }
+  #submenu.ip-filter-panel > .collapse {
+    display: block !important;
+    height: auto !important;
+    visibility: visible !important;
+  }
+}
+/* -----------------------------------------------------------------------------
+   15. Empty-state condiviso — per report non ancora eseguiti e liste vuote
+   -------------------------------------------------------------------------- */
+
+.empty-state .empty-body {
+  text-align: center;
+  padding: 56px 16px 48px;
+  color: var(--ip-text-muted);
+}
+/* #content.table-content ha padding verticale 0: senza margine, la card
+   vuota aderirebbe all'headerbar. Stesso distacco delle card-lista. */
+.empty-state.card { margin: 18px 0; }
+.empty-state .empty-state-icon {
+  display: block;
+  font-size: 30px;
+  margin-bottom: 12px;
+}
+/* L'opacità e il colore dell'icona sono definiti in sezione 5 (0.4, primary). */
+.empty-state .empty-state-text {
+  font-size: var(--ip-text-md);
+  margin: 0 auto;
+  max-width: 60ch;
+}
+/* Il pulsante d'azione sotto il testo: senza distacco toccava l'ultima riga
+   (Importa dati, prima importazione). */
+.empty-state .empty-state-text + .btn { margin-top: 16px; }
+/* -----------------------------------------------------------------------------
+   16. Confirm modal — icona + corpo coerenti
+   -------------------------------------------------------------------------- */
+.confirm-modal-icon { font-size: 1.4rem; }
+.confirm-modal-icon-danger { color: var(--ip-danger); }
+#ip-confirm-modal .modal-dialog { max-width: 460px; }
+#ip-confirm-modal .modal-body { padding: 1.25rem 1.5rem; }
+#ip-confirm-modal .modal-footer { padding: 0.75rem 1.5rem; }
+/* Colore dell'icona guidato dallo stato: neutro di default, rosso solo
+   quando il delegate aggiunge .confirm-modal-icon-danger (azione distruttiva).
+   Prima c'era un override globale che rendeva l'icona sempre rossa anche per
+   conferme non-danger (es. " Genera PDF?"). */
+
+/* -----------------------------------------------------------------------------
+   17. Link — niente underline globale (Bootstrap 5 imposta a{text-decoration:
+   underline} di default). Per un'app di fatturazione l'underline su ogni link
+   risulta rumoroso: lo rimuoviamo e manteniamo il colore primary come
+   affordance, con hover che scurisce verso primary-hover. Gli stati che
+   vogliono dare affordance esplicita (btn-link-secondary:hover) ridichiano
+   l'underline localmente. Il CTA dello stato vuoto è un chip con bordo (sezione
+   5): l'hover cambia il fondo, non aggiunge sottolineatura.
+   -------------------------------------------------------------------------- */
+a,
+a:hover,
+a:focus {
+  text-decoration: none;
+}
+/* -----------------------------------------------------------------------------
+   18. Tabelle dashboard — padding coeso, footer "Vedi tutti" leggibile,
+   supporto .danger su <tr> (legacy BS3), e angoli arrotondati delle card
+   rispettati dal contenuto tabellare.
+   --------------------------------------------------------------------------
+   Le card del dashboard racchiudono .table-responsive senza .card-body: la
+   tabella aderisce al .card-header. Con .card senza overflow:hidden il
+   background delle righe striped "scavalca" i bordi arrotondati inferiori.
+   Le card del dashboard non ospitano dropdown che debordano, quindi possiamo
+   applicare overflow:hidden in sicurezza.
+   -------------------------------------------------------------------------- */
+.dashboard-content .card {
+  overflow: hidden;
+}
+/* Header + celle: padding verticale più compatto per stare dentro la card
+   senza gonfiarla. Orizzontale ridotto a 12px. */
+.dashboard-content .table > thead > tr > th {
+  /* 14px come la testata della finestra (.ip-window-header): il primo
+     testo di colonna cade sotto il titolo della finestra. */
+  padding: 8px 14px;
+}
+.dashboard-content .table > tbody > tr > td {
+  padding: 8px 14px;
+}
+/* Footer "Vedi tutti": riga finale dei listing recenti (quotes/invoices).
+   Separatore leggero (border-top gia' presente da .table td), testo muted,
+   hover accent primary. L'icona arrow-right segue il colore del link. */
+.dashboard-content .table > tbody > tr:last-child > td.text-end {
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+  background: var(--ip-bg);
+}
+.dashboard-content .table > tbody > tr:last-child > td.text-end a,
+.dashboard-content .table > tbody > tr:last-child > td.text-end a .fa {
+  color: var(--ip-primary);
+  font-weight: 600;
+}
+.dashboard-content .table > tbody > tr:last-child > td.text-end a:hover,
+.dashboard-content .table > tbody > tr:last-child > td.text-end a:focus {
+  color: var(--ip-primary-hover);
+}
+.dashboard-content .table > tbody > tr:last-child > td.text-end .fa-arrow-right {
+  margin-left: 4px;
+  transition: transform var(--ip-transition);
+}
+.dashboard-content .table > tbody > tr:last-child > td.text-end a:hover .fa-arrow-right {
+  transform: translateX(2px);
+}
+/* Righe overview (quote/invoice status totals): stile "elenco importi",
+   senza zebratura per un look più pulito nelle card di riepilogo. */
+.dashboard-content .table > tbody > tr:hover > * {
+  background: var(--ip-primary-soft);
+}
+/* Legacy: <tr class="danger"> (BS3) sulla riga "Fatture scadute" dell'Invoice
+   Overview. BS5 non ha questa classe via riga => senza regola la riga
+   restava identica alle altre, priva del segnale visivo di pericolo. */
+.dashboard-content .table > tbody > tr.danger > td {
+  background: var(--ip-danger-bg);
+  color: var(--ip-danger-text);
+}
+/* Utility di colore di Bootstrap sui token dell'app. .text-danger & co.
+   restavano i colori del framework (#dc3545, #198754…), con un !important
+   che vinceva anche sulle regole più specifiche qui sotto: nella tabella
+   scadute della bacheca il rosso era quello di Bootstrap, a 4,4:1 sul fondo
+   della riga. Stessa forza (!important) per poterle davvero sostituire. */
+.text-danger  { color: var(--ip-danger-text) !important; }
+.text-warning { color: var(--ip-warning-text) !important; }
+.text-success { color: var(--ip-success-text) !important; }
+.text-info    { color: var(--ip-info-text) !important; }
+.dashboard-content .table > tbody > tr.danger > td a,
+.dashboard-content .table > tbody > tr.danger > td .text-danger {
+  color: var(--ip-danger-text);
+  font-weight: 600;
+}
+/* Hover su riga danger: resta danger-soft (il default indigo sarebbe fuori
+   tono su una riga di allarme). */
+.dashboard-content .table-hover > tbody > tr.danger:hover > td {
+  background: var(--ip-danger-soft);
+}
+.dashboard-content .table-hover > tbody > tr.danger:hover > td a {
+  color: var(--ip-danger-hover);
+}
+/* -----------------------------------------------------------------------------
+   19. Dashboard — card KPI, header con icona, quick actions a tile, chip
+   cliente nelle tabelle "recenti".
+   -----------------------------------------------------------------------------
+   Obiettivo: dare alle card una gerarchia visiva più immediata (icona =
+   categoria a colpo d'occhio) senza toccare il resto del tema — tutto scoped
+   a .card-header-icon / .quick-action-* / .ip-avatar-sm per non avere effetti
+   collaterali fuori dal dashboard.
+   -------------------------------------------------------------------------- */
+
+/* Le .kpi-card* che stavano qui sono state rimosse: la dashboard e' passata
+   alle finestre .ip-window (sezione 22b) e nessuna view o script emetteva piu'
+   quel markup. L'equivalente odierno di .kpi-card--alert e' .ip-window--alert.
+   Restano invece .card-header-icon e .ip-avatar-sm, ancora in uso. */
+
+/* Icona nell'header di sezione: badge colorato compatto — dà identità visiva
+   immediata a ogni pannello (Preventivi, Fatture, Attività...) senza
+   appesantire l'header.
+   Dimensione unica (30px) condivisa con .ip-table-card-title e
+   .ip-report-card__icon: la "pillola di identità" è lo stesso linguaggio
+   visivo su ogni tipo di card dell'app, non un formato a caso per header. */
+.card-header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+  font-size: var(--ip-text-base);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+/* Chip cliente nelle tabelle "recenti" (Preventivi/Fatture/Progetti):
+   iniziale in cerchio + nome, più scansionabile del solo testo su liste
+   con molte righe — stesso linguaggio visivo di .ip-nav-avatar in navbar. */
+.ip-avatar-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ip-primary-soft);
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.05));
+  color: var(--ip-primary);
+  font-size: var(--ip-text-2xs);
+  font-weight: 700;
+  line-height: 1;
+  margin-right: 7px;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+/* -----------------------------------------------------------------------------
+   19b. Dashboard — card breakdown + tabelle recenti (ottimizzazione card):
+   - header con icona + titolo + selettore periodo inline / link "view_all"
+   - riga di breakdown mostra badge conteggio + importo (più scansionabile
+     del solo numero)
+   - riga fattura/preventivo evidenziata se scaduto
+   - a mobile le tabelle "recenti" collassano in card-row tramite data-label
+   - subtext KPI separa periodo e count per gerarchia visiva
+   -------------------------------------------------------------------------- */
+
+/* Subtext KPI: periodo + count affiancati con separatore intelligente.
+   count in badge soft per dare peso visivo alla quantità. */
+.ip-kpi-period {
+  display: inline-block;
+  margin-right: 6px;
+  /* Cifre e periodi allineati in colonna: stesso trattamento gia' riservato
+     agli importi, così periodi come "2024" o "Q1" non ballano tra le card. */
+  font-variant-numeric: tabular-nums;
+}
+.ip-kpi-count {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  /* "1 Fattura" andava a capo dentro il pill, spezzando la pastiglia in due
+     righe quando la colonna KPI si stringe. */
+  white-space: nowrap;
+}
+/* Make KPI card value a clickable link: mantiene le dimensioni e il peso
+   di .card-value ma diventa interattivo. */
+.ip-window-body .card-value {
+  text-decoration: none;
+  cursor: pointer;
+}
+.ip-window-body .card-value:hover {
+  color: var(--ip-primary-hover);
+  text-decoration: underline;
+}
+/* Header delle card breakdown: icona + titolo a sinistra, selettore periodo
+   o link "view_all" a destra. flex-wrap per non rompere su mobile medio. */
+.ip-breakdown-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  flex-wrap: wrap;
+}
+.ip-breakdown-title {
+  font-weight: 600;
+  margin-right: auto;
+}
+.ip-view-all-link {
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ip-view-all-link:hover {
+  text-decoration: underline;
+  color: var(--ip-primary-hover);
+}
+/* Selettore periodo inline: rimosso con i selettori della Panoramica —
+   il periodo ora è l'anno del filtro globale in topbar. */
+/* Breakdown table: riga "stato" con badge conteggio + importo.
+   Le righe vuote (num_total = 0) non sono filtrate in view: restano
+   visibili, ridotte a grigetto per non pesare sugli stati attivi. */
+.ip-overview-table .ip-amount-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  justify-content: flex-end;
+  width: 100%;
+}
+.ip-overview-table .ip-count-badge {
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-muted);
+  background: var(--ip-bg, #f6f6f7);
+  border: 1px solid var(--ip-border-soft);
+  padding: 2px 7px;
+}
+/* Righe di stato con conteggio 0: tenute visibili (l'utente vuole vedere
+   tutti gli stati) ma spente per non pesare sulla gerarchia visiva degli
+   stati attivi. Il link resta cliccabile. A spegnerle è il colore muted e il
+   peso normale, non più un'opacità sopra il muted: le due cose insieme
+   portavano il nome dello stato a 2,2:1 (2,9:1 in tema scuro), cioè un link
+   che si fatica a leggere. Il muted da solo resta sopra 4,5:1 e lo stacco
+   dalle righe attive, che sono in grassetto e nel colore pieno, si vede lo
+   stesso. */
+.ip-overview-table tbody tr.ip-status-empty > td {
+  color: var(--ip-text-muted);
+}
+.ip-overview-table tbody tr.ip-status-empty > td a,
+.ip-overview-table tbody tr.ip-status-empty .ip-amount-value {
+  color: var(--ip-text-muted);
+  font-weight: 400;
+}
+.ip-overview-table tbody tr.ip-status-empty:hover > td a { color: var(--ip-text); }
+/* Anagrafiche: la stessa riga spenta, che finora era definita solo dentro
+   .ip-overview-table (le tabelle "recenti" della dashboard) e quindi sui
+   fornitori non si vedeva: la classe c'era, il colore no. Vale per ogni lista
+   dentro una ip-table-card, clienti e fornitori compresi. */
+.ip-table-card tbody tr.ip-status-empty > td {
+  color: var(--ip-text-muted);
+}
+.ip-table-card tbody tr.ip-status-empty > td a {
+  color: var(--ip-text-muted);
+  font-weight: 400;
+}
+.ip-table-card tbody tr.ip-status-empty:hover > td a { color: var(--ip-text); }
+/* Righe "recenti" scadute: leggero sfondo rosso + accento sulla data.
+   Definito qui sotto forma di utility opaca (la classe è aggiunta dal view). */
+.ip-recent-table tbody tr.ip-row-overdue > td,
+.ip-recent-table tbody tr.ip-row-expired > td {
+  background-color: var(--ip-danger-bg);
+}
+.ip-recent-table tbody tr.ip-row-overdue:hover > td,
+.ip-recent-table tbody tr.ip-row-expired:hover > td {
+  background-color: color-mix(in srgb, var(--ip-danger-bg) 70%, var(--ip-bg-card));
+}
+/* Stessa evidenza nelle tabelle della scheda cliente (tab Fatture): le
+   fatture da sollecitare si vedono a colpo d'occhio anche nella lista
+   del singolo cliente. */
+.ip-table-card tbody tr.ip-row-overdue > td {
+  background-color: var(--ip-danger-bg);
+}
+.ip-table-card tbody tr.ip-row-overdue:hover > td {
+  background-color: color-mix(in srgb, var(--ip-danger-bg) 70%, var(--ip-bg-card));
+}
+/* Righe "recenti" cliccabili per intero (dashboard: fatture e preventivi).
+   Il link sul numero documento resta quello reale; queste regole servono solo
+   a dichiarare che l'intera riga e' un bersaglio, altrimenti il click che
+   funziona non si vede. L'hover di sfondo lo da' gia' .table-hover. */
+/* Cliente su una riga sola nelle tabelle "recenti" della bacheca: la
+   finestra è a mezza larghezza e la colonna resta sotto i 130 px, dove i
+   nomi andavano a capo su tre o quattro righe. Il max-width: 0 sulla cella è
+   il modo per far rispettare l'ellissi dentro una tabella a layout
+   automatico; la larghezza vera la decide la tabella. Nome intero nel title. */
+.ip-recent-table td:has(> .ip-client-chip__name) {
+  max-width: 0;
+  width: 40%;
+  white-space: nowrap;
+}
+.ip-client-chip__name {
+  display: inline-block;
+  max-width: calc(100% - 28px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.ip-recent-table tbody tr.ip-row-link {
+  cursor: pointer;
+}
+.ip-recent-table tbody tr.ip-row-link:hover .ip-num {
+  text-decoration: underline;
+}
+/* Focus da tastiera sul link interno: la riga si illumina come al passaggio
+   del mouse, così chi naviga con Tab vede quale riga sta per aprire. */
+.ip-recent-table tbody tr.ip-row-link:focus-within > td {
+  background: var(--ip-primary-soft);
+}
+.ip-recent-table .ip-row-meta {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: var(--ip-text-xs);
+  white-space: nowrap;
+}
+/* Segnale "scaduta" nella colonna scadenza: icona inline, non badge pieno.
+   Il badge occupava una riga propria quando la colonna si stringeva, e la
+   riga scaduta finiva più alta delle altre in tabella. */
+/* La data scaduta e l'icona di segnalazione restano sulla stessa riga. */
+.ip-due-cell { white-space: nowrap; }
+.ip-overdue-flag {
+  margin-left: 5px;
+  font-size: var(--ip-text-xs);
+  color: var(--ip-danger-text);
+  vertical-align: baseline;
+}
+/* Mobile: le tabelle "recenti" collassano in card-row senza scroll
+   orizzontale. Funziona via [data-label] emesso dal view: ogni td
+   diventa una riga con la label a sinistra (data-label) e il valore
+   a destra. thead nascosto perché ridondante. */
+@media (max-width: 575.98px) {
+  .ip-recent-table thead {
+    display: none;
+  }
+  .ip-recent-table,
+  .ip-recent-table tbody,
+  .ip-recent-table tr,
+  .ip-recent-table td {
+    display: block;
+    width: 100%;
+  }
+  .ip-recent-table tbody tr {
+    border: 1px solid var(--ip-border-soft);
+    border-radius: var(--ip-radius-sm);
+    margin-bottom: 10px;
+    padding: 6px 0;
+    background: var(--ip-bg-card);
+  }
+  .ip-recent-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+  .ip-recent-table tbody td {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--ip-space-6);
+    padding: 6px 12px;
+    border-bottom: 1px dashed var(--ip-border-soft);
+    text-align: right;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .ip-recent-table tbody td:last-child {
+    border-bottom: none;
+  }
+  /* Etichetta campo via ::before, dal data-label: riconosce la riga
+     senza duplicare traduzioni. */
+  .ip-recent-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: var(--ip-text-sm);
+    color: var(--ip-text-muted);
+    text-align: left;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+  /* La colonna amount deve rimanere allineata a destra; data-label a sx. */
+  .ip-recent-table tbody td.amount,
+  .ip-recent-table tbody td[class*="amount"] {
+    justify-content: space-between;
+  }
+  /* Metadati inline (riga scadenza quote) vanno a capo su cella verticale:
+     lo span meta diventa blocco sotto la data. */
+  .ip-recent-table .ip-row-meta {
+    display: block;
+    margin-left: 0;
+    margin-top: 2px;
+    text-align: left;
+  }
+  /* Finestre KPI scendono a 1 da molto stretto: più leggibili su telefono
+     piccolo (sovrascrive le 2 colonne del blocco precedente). */
+  .ip-dash-windows {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ip-chart-legend {
+  display: inline-flex;
+  gap: var(--ip-space-7);
+  margin-left: auto;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  align-items: center;
+}
+.ip-chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  white-space: nowrap;
+}
+.ip-chart-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  background: var(--ip-primary);
+}
+.ip-chart-legend-dot--invoiced { background: var(--ip-info); }
+.ip-chart-legend-dot--paid     { background: var(--ip-success); }
+.ip-chart-body {
+  padding: 12px 16px 14px;
+}
+/* Riepilogo totale periodo (sopra il grafico): mostra subito i totali
+   6-mesi senza costringere l'utente a scorrere le barre col mouse. */
+.ip-chart-summary {
+  display: flex;
+  gap: var(--ip-space-8);
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  padding: 0 4px;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+.ip-chart-summary-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--ip-space-3);
+}
+.ip-chart-summary-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-strong);
+}
+.ip-chart-summary-item--invoiced .ip-chart-summary-value { color: var(--ip-info-text); }
+.ip-chart-summary-item--paid     .ip-chart-summary-value { color: var(--ip-success-text); }
+/* ---------- SVG del grafico a barre -------------------------------------- */
+/* Il viewBox e' 600x190 e l'aspect di default e' "meet": con height fissa a
+   200px il disegno veniva scalato sulla larghezza (~183px) e centrato, con una
+   striscia morta sopra e sotto le barre. Legando l'altezza all'aspect del
+   viewBox il grafico riempie esattamente il suo box a ogni larghezza. */
+svg.ip-chart {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 600 / 190;
+  display: block;
+  /* Senza questo cap, su monitor larghi dove #main-content non ha un
+     max-width, le due colonne di .ip-window-split (ricavi | costi) possono
+     superare abbondantemente i 600px del viewBox: barre ed etichette
+     scalano insieme (l'aspect-ratio le lega) e il grafico appare
+     sproporzionato rispetto al resto della UI. 620px tiene il disegno alla
+     sua scala di lettura naturale (poco sopra il viewBox 1:1) anche quando
+     la colonna che lo ospita e' più larga; lo spazio in eccesso lo assorbe
+     il margin auto qui sotto, restando centrato nella card invece di
+     restare ancorato a sinistra. */
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* ---------- Donut composizione (scheda cliente) --------------------------- */
+/* SVG inline: tre archi su circonferenza unica (stroke-dasharray), nessuna
+   libreria esterna, coerente col resto dei grafici dell'app. Donut e legenda
+   viaggiano affiancati a OGNI larghezza: la card convive con il grafico a
+   barre accanto e, impilata in colonna, lasciava meta' card vuota sotto il
+   cerchio; su schermi stretti e' il wrap a riportare la legenda sotto.
+   Anello ispessito (+2px rispetto al valore precedente) per dare piu'
+   presenza alla sua card dedicata. */
+.ip-donut-wrap {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ip-space-8);
+  padding: 10px 6px;
+  width: 100%;
+}
+svg.ip-donut {
+  width: 100%;
+  max-width: 180px;
+  min-width: 148px;
+  height: auto;
+  display: block;
+  flex: 1 1 160px;
+  filter: drop-shadow(0 1px 6px rgba(0,0,0,.08));
+}
+html[data-theme="dark"] svg.ip-donut { filter: drop-shadow(0 1px 8px rgba(0,0,0,.30)); }
+.ip-donut-total {
+  fill: var(--ip-text-strong);
+  font-size: var(--ip-text-4xl);
+  font-weight: 700;
+  font-family: var(--ip-display, Fraunces, serif);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.04em;
+  line-height: 1;
+}
+.ip-donut-sub {
+  fill: var(--ip-text-muted);
+  font-size: var(--ip-text-xs);
+  font-weight: 500;
+  font-family: var(--ip-font, Figtree, sans-serif);
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: .92;
+}
+/* La legenda occupa lo spazio rimasto accanto al cerchio: importi allineati
+   a destra in colonna (tabular-nums) e quota percentuale di ogni fetta, che
+   sull'arco si stima ma non si legge. */
+.ip-donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 180px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+.ip-donut-legend li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ip-space-4);
+  padding: 7px 8px;
+  border-radius: var(--ip-radius-sm, 6px);
+  transition: background .15s ease;
+}
+.ip-donut-legend li:hover { background: var(--ip-hover, #f4f4f5); }
+html[data-theme="dark"] .ip-donut-legend li:hover { background: rgba(255,255,255,.06); }
+.ip-donut-legend-label { flex: 1 1 auto; }
+.ip-donut-legend b {
+  color: var(--ip-text-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: var(--ip-text-sm);
+}
+.ip-donut-share {
+  flex: 0 0 auto;
+  min-width: 3.8ch;
+  text-align: right;
+  font-family: var(--ip-mono, monospace);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  color: var(--ip-text-muted);
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ip-hover, #f4f4f5);
+}
+html[data-theme="dark"] .ip-donut-share { background: rgba(255,255,255,.08); }
+.ip-donut-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+}
+html[data-theme="dark"] .ip-donut-dot { box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+.ip-donut-dot--paid     { background: var(--ip-success); }
+.ip-donut-dot--open     { background: var(--ip-warning); }
+.ip-donut-dot--overdue  { background: var(--ip-danger); }
+/* L'arco sotto il puntatore si ispessisce (+4 su 24) e le altre fette si
+   abbassano: su tre colori simili per luminosita' (e per chi non distingue
+   i colori) il contrasto acceso/spento dice quale fetta si sta leggendo meglio
+   della posizione. Solo gli archi hanno stroke-dasharray, il cerchio di fondo
+   no: così il selettore li distingue senza classi extra. La riga di legenda
+   corrispondente si accende in coppia via :has() — zero JS. */
+svg.ip-donut circle[stroke-dasharray] { transition: stroke-width .15s ease, filter .15s ease, opacity .15s ease; }
+svg.ip-donut circle[stroke-dasharray]:hover { stroke-width: 28; filter: brightness(1.06); }
+svg.ip-donut:hover circle[stroke-dasharray]:not(:hover) { opacity: .35; }
+.ip-donut-wrap:has(svg.ip-donut circle[stroke-dasharray]:nth-child(2):hover) .ip-donut-legend li:nth-child(1),
+.ip-donut-wrap:has(svg.ip-donut circle[stroke-dasharray]:nth-child(3):hover) .ip-donut-legend li:nth-child(2),
+.ip-donut-wrap:has(svg.ip-donut circle[stroke-dasharray]:nth-child(4):hover) .ip-donut-legend li:nth-child(3) { background: var(--ip-hover, #f4f4f5); }
+html[data-theme="dark"] .ip-donut-wrap:has(svg.ip-donut circle[stroke-dasharray]:nth-child(2):hover) .ip-donut-legend li:nth-child(1),
+html[data-theme="dark"] .ip-donut-wrap:has(svg.ip-donut circle[stroke-dasharray]:nth-child(3):hover) .ip-donut-legend li:nth-child(2),
+html[data-theme="dark"] .ip-donut-wrap:has(svg.ip-donut circle[stroke-dasharray]:nth-child(4):hover) .ip-donut-legend li:nth-child(3) { background: rgba(255,255,255,.06); }
+/* Entrata discreta: le coppie traccia/incassato "crescono" dal basso mese
+   per mese (sfasamento via --i inline) e il donut sfuma, per dare vita al
+   riepilogo senza distrarre. Tutto neutralizzato se l'utente chiede
+   reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .ip-chart-bar {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: ipBarGrow .5s cubic-bezier(.22, .61, .36, 1) both;
+  }
+  svg.ip-donut { animation: ipDonutIn .5s ease-out both; }
+}
+@keyframes ipBarGrow { from { transform: scaleY(0); } }
+@keyframes ipDonutIn { from { opacity: 0; transform: scale(.94); } }
+.ip-chart-grid {
+  stroke: var(--ip-border);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.7;
+}
+/* Etichette della scala dei valori (asse y) — 12px/600 leggibili anche
+   sul fondo scuro: in dark il muted (#94a3b8 su #1c2128) scende sotto 4.5:1. */
+.ip-chart-axis {
+  fill: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  font-family: var(--ip-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+html[data-theme="dark"] .ip-chart-axis { fill: #cbd5e1; }
+.ip-chart-baseline {
+  stroke: var(--ip-border-strong);
+  stroke-width: 1.5;
+}
+.ip-chart-bar {
+  /* colore di default (sovrascritto dalle varianti sotto) */
+  transition: opacity .15s ease;
+}
+.ip-chart-bar:hover {
+  opacity: 0.78;
+}
+/* "Barra di incasso" (scheda cliente): la traccia e' il fatturato (tinta
+   chiara dello stesso blu acciaio), il riempimento verde e' l'incassato.
+   Il gap fra i due e' la quota ancora da riscuotere, leggibile a colpo
+   d'occhio senza tooltip. La traccia resta sotto ma al 22%: sotto quella
+   soglia il "non ancora incassato" spariva sul fondo della card. */
+.ip-chart-bar--track { fill: var(--ip-info); fill-opacity: 0.22; }
+.ip-chart-bar--paid  { fill: var(--ip-success); }
+/* Coppia blu acciaio + verde: i colori della coppia fatturato/incassato,
+   meno duri del nero pieno su fondo chiaro. La variante --invoiced serve
+   ai grafici a barre affiancate (dashboard) dove fatturato e incassato
+   non si sovrappongono. */
+.ip-chart-bar--invoiced { fill: var(--ip-info); }
+/* Il pallino legenda mostra la stessa tinta della traccia: se i due
+   livelli di opacita' divergono, la legenda sembra descrivere un altro
+   colore rispetto alle barre. */
+.ip-chart-legend-dot--track { background: var(--ip-info); opacity: 0.45; }
+.ip-chart-label {
+  fill: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-family: var(--ip-font);
+  font-weight: 600;
+  user-select: none;
+}
+html[data-theme="dark"] .ip-chart-label { fill: #e2e8f0; }
+.ip-chart-month:hover .ip-chart-label { fill: var(--ip-text-strong); }
+html[data-theme="dark"] .ip-chart-month:hover .ip-chart-label { fill: #ffffff; }
+/* Colonna "viva": al passaggio la banda di sfondo si tinge e il mese
+   sotto le barre si scurisce, così occhio collega subito barre e mese
+   senza aspettare i tooltip nativi. La banda sta sotto le barre (prima
+   nel gruppo), che conservano i propri <title>. */
+.ip-chart-col {
+  fill: transparent;
+  transition: fill .15s ease;
+}
+.ip-chart-month:hover .ip-chart-col { fill: var(--ip-hover, #f4f4f5); }
+/* Stato vuoto: quando non ci sono serie o sono tutte zero, il grafico
+   viene nascosto e mostrato questo placeholder. */
+.ip-chart-empty {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--ip-text-muted);
+}
+.ip-chart-empty i {
+  font-size: var(--ip-text-4xl);
+  opacity: 0.6;
+  display: block;
+  margin-bottom: 8px;
+}
+/* ---------- Sparkline (mini bar chart dentro le KPI card) ----------------- */
+svg.ip-spark {
+  width: 100%;
+  height: 28px;
+  display: block;
+  margin-top: 4px;
+}
+/* ---------- Trend badge --------------------------------------------------- */
+.ip-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-2);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 6px;
+  border-radius: var(--ip-radius-sm, 4px);
+  white-space: nowrap;
+}
+.ip-trend--up    { color: var(--ip-success-text, var(--ip-success)); background: var(--ip-success-bg); }
+.ip-trend--down  { color: var(--ip-danger-text, var(--ip-danger));  background: var(--ip-danger-bg); }
+.ip-trend--muted { color: var(--ip-text-muted); background: var(--ip-hover, #f4f4f5); }
+@media (max-width: 575.98px) {
+  .ip-chart-legend {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+}

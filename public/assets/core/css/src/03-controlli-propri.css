@@ -1,0 +1,417 @@
+/* -----------------------------------------------------------------------------
+   12a. IPSelect — select con ricerca (componente proprio, vedi ip-components.js)
+   --------------------------------------------------------------------------
+   Sostituisce Select2. Il <select> nativo resta nel DOM (invio form + handler
+   'change' esistenti) ma è visivamente nascosto; il controllo visibile è un
+   <button> che replica esattamente .form-control, così un select e un input di
+   testo affiancati sono indistinguibili per altezza, bordo, hover e focus.
+   -------------------------------------------------------------------------- */
+
+.ip-select {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+/* Il select nativo resta accessibile ai form ma fuori dal flusso visivo.
+   display:none lo escluderebbe dalla validazione HTML5 (:invalid, required). */
+.ip-select__native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.ip-select__control {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  width: 100%;
+  height: calc(1.5em + .75rem + 2px);
+  padding: .375rem .75rem;
+  font-family: inherit;
+  font-size: var(--ip-text-md);
+  line-height: 1.5;
+  color: var(--ip-text);
+  text-align: left;
+  background-color: var(--ip-bg-card);
+  /* Stesso bordo degli input nativi: e' un controllo di modulo, non un
+     separatore decorativo (WCAG 1.4.11). */
+  border: 1px solid var(--ip-border-field);
+  border-radius: var(--ip-radius-sm);
+  cursor: pointer;
+  transition: border-color var(--ip-transition), box-shadow var(--ip-transition), background-color var(--ip-transition);
+}
+.ip-select__control:hover { border-color: var(--ip-border-hover); }
+.ip-select__control:focus-visible,
+.ip-select.is-open .ip-select__control {
+  border-color: var(--ip-primary);
+  box-shadow: var(--ip-shadow-focus);
+  outline: none;
+}
+.ip-select__control:disabled {
+  background-color: var(--ip-bg);
+  color: var(--ip-text-muted);
+  cursor: not-allowed;
+}
+.ip-select--sm .ip-select__control {
+  height: calc(1.5em + .5rem + 2px);
+  padding: .25rem .5rem;
+  font-size: var(--ip-text-base);
+}
+.ip-select__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ip-select__value.is-placeholder { color: var(--ip-text-muted); }
+.ip-select__arrow {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-xs);
+  transition: transform var(--ip-transition);
+}
+.ip-select.is-open .ip-select__arrow { transform: rotate(180deg); }
+.ip-select__clear {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-2xs);
+  cursor: pointer;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-select__clear:hover { background: var(--ip-hover); color: var(--ip-danger); }
+/* Pannello: in position fixed e agganciato al body (o alla modale), così non
+   viene tagliato da contenitori con overflow. */
+.ip-select-panel {
+  position: fixed;
+  z-index: var(--ip-z-toast);
+  display: none;
+  max-width: calc(100vw - 16px);
+  padding: 4px;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-md);
+}
+.ip-select-panel.is-open { display: block; }
+.ip-select-panel__search {
+  padding: 4px 4px 6px;
+  border-bottom: 1px solid var(--ip-border-soft);
+  margin-bottom: 4px;
+}
+.ip-select-panel__input {
+  width: 100%;
+  padding: .375rem .625rem;
+  font-family: inherit;
+  font-size: var(--ip-text-base);
+  color: var(--ip-text);
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius-sm);
+  transition: border-color var(--ip-transition), box-shadow var(--ip-transition);
+}
+.ip-select-panel__input:focus {
+  border-color: var(--ip-primary);
+  box-shadow: var(--ip-shadow-focus);
+  outline: none;
+}
+.ip-select-panel__list {
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ip-select-option {
+  padding: 7px 10px;
+  font-size: var(--ip-text-base);
+  color: var(--ip-text);
+  border-radius: var(--ip-radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* .is-active = riga sotto cursore/tastiera, .is-selected = valore corrente. */
+.ip-select-option.is-active { background: var(--ip-hover); }
+.ip-select-option.is-selected {
+  background: var(--ip-primary);
+  color: var(--ip-on-primary);
+  font-weight: 500;
+}
+.ip-select-option.is-selected.is-active { background: var(--ip-primary-hover); }
+.ip-select-option.is-disabled {
+  color: var(--ip-text-muted);
+  cursor: not-allowed;
+  opacity: .6;
+}
+.ip-select-group {
+  padding: 8px 10px 4px;
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ip-text-muted);
+}
+.ip-select-panel__empty {
+  padding: 12px 10px;
+  font-size: var(--ip-text-base);
+  color: var(--ip-text-muted);
+  text-align: center;
+}
+/* -----------------------------------------------------------------------------
+   12b. IPDatepicker — calendario (componente proprio, vedi ip-components.js)
+   --------------------------------------------------------------------------
+   Sostituisce bootstrap-datepicker. L'input resta una normale .form-control
+   (si può ancora digitare la data); il pannello è nostro e usa i token.
+   -------------------------------------------------------------------------- */
+
+.ip-dp {
+  position: fixed;
+  z-index: var(--ip-z-toast);
+  display: none;
+  width: 268px;
+  padding: 10px;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-md);
+}
+.ip-dp.is-open { display: block; }
+.ip-dp__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ip-space-2);
+  margin-bottom: 8px;
+}
+.ip-dp__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  padding: 0;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-dp__nav:hover { background: var(--ip-hover); color: var(--ip-text); }
+.ip-dp__title {
+  flex: 1 1 auto;
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: var(--ip-text-base);
+  font-weight: 600;
+  color: var(--ip-text);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: background-color var(--ip-transition);
+}
+.ip-dp__title:hover { background: var(--ip-hover); }
+.ip-dp__dow,
+.ip-dp__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--ip-space-1);
+}
+.ip-dp__dow {
+  margin-bottom: 4px;
+}
+.ip-dp__dow span {
+  padding: 4px 0;
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ip-text-muted);
+  text-align: center;
+}
+.ip-dp__day {
+  height: 32px;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--ip-text-base);
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-dp__day:hover { background: var(--ip-hover); }
+.ip-dp__day.is-outside { color: var(--ip-text-muted); opacity: .5; }
+.ip-dp__day.is-today {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--ip-border);
+}
+.ip-dp__day.is-selected {
+  background: var(--ip-primary);
+  color: var(--ip-on-primary);
+  font-weight: 600;
+  box-shadow: none;
+  opacity: 1;
+}
+.ip-dp__day.is-selected:hover { background: var(--ip-primary-hover); }
+.ip-dp__months {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ip-space-2);
+}
+.ip-dp__month {
+  padding: 10px 0;
+  font-family: inherit;
+  font-size: var(--ip-text-base);
+  color: var(--ip-text);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-dp__month:hover { background: var(--ip-hover); }
+.ip-dp__month.is-selected { background: var(--ip-primary); color: var(--ip-on-primary); font-weight: 600; }
+.ip-dp__foot {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ip-border-soft);
+  text-align: center;
+}
+.ip-dp__today {
+  padding: 5px 12px;
+  font-family: inherit;
+  font-size: var(--ip-text-sm);
+  font-weight: 500;
+  color: var(--ip-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-dp__today:hover { background: var(--ip-hover); color: var(--ip-text); }
+/* -----------------------------------------------------------------------------
+   12c. IPFile — input file personalizzato (sostituisce il nativo del browser)
+   --------------------------------------------------------------------------
+   L'input file nativo viene nascosto visivamente ma resta nel DOM per
+   l'invio del form. Il controllo visibile è un pulsante + area trascinamento
+   che mostra il nome del file selezionato e permette la rimozione. */
+.ip-file {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.ip-file__native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.ip-file__control {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  width: 100%;
+  min-height: calc(1.5em + .75rem + 2px);
+  padding: .375rem .75rem;
+  font-family: inherit;
+  font-size: var(--ip-text-md);
+  line-height: 1.5;
+  color: var(--ip-text);
+  text-align: left;
+  background-color: var(--ip-bg-card);
+  border: 1px solid var(--ip-border-field);
+  border-radius: var(--ip-radius-sm);
+  cursor: pointer;
+  transition: border-color var(--ip-transition), box-shadow var(--ip-transition), background-color var(--ip-transition);
+}
+.ip-file__control:hover { border-color: var(--ip-border-hover); }
+.ip-file__control:focus-visible,
+.ip-file.is-focused .ip-file__control {
+  border-color: var(--ip-primary);
+  box-shadow: var(--ip-shadow-focus);
+  outline: none;
+}
+.ip-file__control:disabled {
+  background-color: var(--ip-bg);
+  color: var(--ip-text-muted);
+  cursor: not-allowed;
+}
+.ip-file__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ip-text-muted);
+}
+.ip-file__name.has-file { color: var(--ip-text); }
+.ip-file__btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ip-space-2);
+  padding: .25rem .5rem;
+  font-size: var(--ip-text-base);
+  font-weight: 500;
+  color: var(--ip-primary);
+  background: var(--ip-primary-soft);
+  border: 1px solid transparent;
+  border-radius: var(--ip-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-file__btn:hover { background: var(--ip-primary); color: var(--ip-on-primary); }
+.ip-file__btn:disabled { opacity: .5; cursor: not-allowed; }
+.ip-file__clear {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ip-radius-sm);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  cursor: pointer;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-file__clear:hover { background: var(--ip-hover); color: var(--ip-danger); }
+.ip-file__clear:disabled { opacity: .5; cursor: not-allowed; }
+.ip-file__help {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+

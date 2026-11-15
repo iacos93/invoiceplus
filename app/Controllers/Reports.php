@@ -91,7 +91,7 @@ class Reports extends BaseController
                     $totalNet += (float) ($row['sales'] ?? 0);
                 }
 
-                $html = '<h2>' . trans('sales_by_client') . '</h2>'
+                $html = report_pdf_brand() . '<h2>' . trans('sales_by_client') . '</h2>'
                     . '<p>' . date_from_mysql($from) . ' - ' . date_from_mysql($to) . '</p>'
                     . '<table border="1" cellpadding="5" cellspacing="0" style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px">'
                     . '<tr style="background:#eee">'
@@ -167,7 +167,7 @@ class Reports extends BaseController
             $hasResults = true;
 
             if ($request->getPost('btn_submit_pdf')) {
-                $html = '<h2>' . trans('payment_history') . '</h2>'
+                $html = report_pdf_brand() . '<h2>' . trans('payment_history') . '</h2>'
                     . '<p>' . date_from_mysql($from) . ' - ' . date_from_mysql($to) . '</p>'
                     . '<table border="1" cellpadding="5" cellspacing="0" style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px">'
                     . '<tr style="background:#eee">'
@@ -275,6 +275,7 @@ class Reports extends BaseController
             . 'td.num{text-align:right}'
             . 'tfoot td{font-weight:bold;background:#f6f6f6}'
             . '</style></head><body>'
+            . report_pdf_brand()
             . '<h2>' . htmlsc(trans('invoice_aging')) . '</h2>'
             . '<p class="sub">' . htmlsc(trans('as_of', '', 'al')) . ' ' . htmlsc(date_from_mysql(date('Y-m-d'))) . '</p>'
             . '<table><thead><tr><th>' . htmlsc(trans('client')) . '</th>';
@@ -432,6 +433,7 @@ class Reports extends BaseController
             . 'th.year{text-align:center}'
             . 'tfoot td{font-weight:bold;background:#f6f6f6}'
             . '</style></head><body>'
+            . report_pdf_brand()
             . '<h2>' . htmlsc(trans('sales_by_date')) . '</h2>'
             . '<p class="sub">' . htmlsc($period)
             . ($withTax ? ' · ' . htmlsc(trans('values_with_taxes')) : '') . '</p>'

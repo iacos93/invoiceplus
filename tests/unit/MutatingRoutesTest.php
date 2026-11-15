@@ -73,4 +73,33 @@ final class MutatingRoutesTest extends CIUnitTestCase
             . "\nSe la scrittura e' voluta, la rotta va registrata su POST (con CSRF) e il form aggiornato."
         );
     }
+
+    /**
+     * Il rovescio della regola sopra: se eliminare è una POST, nessuna vista
+     * può portarci con un link. Un <a href=".../delete/1"> passa dalla
+     * conferma e poi fa una GET, che la rotta non conosce: l'utente conferma
+     * e si ritrova su un 404 (è successo nella scheda progetto).
+     */
+    public function testNessunaVistaLinkaUnaRottaDiEliminazione(): void
+    {
+        $colpevoli = [];
+        $iterator  = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(APPPATH . 'Views'));
+
+        foreach ($iterator as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php' || $file->getFilename() === 'confirm_modal.php') {
+                continue;
+            }
+
+            $source = (string) file_get_contents($file->getPathname());
+
+            // href="…/delete/…" scritto in chiaro oppure composto con site_url('x/delete/').
+            if (preg_match('#href="[^"<]*/delete/#', $source)
+                || preg_match('#href="\'\s*\.\s*site_url\(\'[a-z_/]+/delete/#', $source)
+                || preg_match('#href="<\?=\s*site_url\(\'[a-z_/]+/delete/#', $source)) {
+                $colpevoli[] = str_replace(APPPATH, '', $file->getPathname());
+            }
+        }
+
+        $this->assertSame([], $colpevoli, 'Viste con un link (GET) verso una rotta di eliminazione: usare un form POST.');
+    }
 }

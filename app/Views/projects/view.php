@@ -2,7 +2,11 @@
 <?= $this->section('content') ?>
 <?php $this->setVar('pageTitle', $project['project_name']); ?>
 <?php $title = esc($project['project_name']); ?>
-<?php $actions = '<div class="btn-group btn-group-sm"><a href="' . site_url('tasks/form?project_id=' . $project['project_id']) . '" class="btn btn-secondary"><i class="fa fa-regular fa-check-square fa-margin" aria-hidden="true"></i>' . trans('new_task') . '</a><a href="' . site_url('projects/form/' . $project['project_id']) . '" class="btn btn-secondary"><i class="fa fa-regular fa-edit" aria-hidden="true"></i> ' . trans('edit') . '</a><a class="btn btn-danger" href="' . site_url('projects/delete/' . $project['project_id']) . '" data-bs-toggle="confirm" data-confirm-title="' . esc(trans('confirm', '', 'Conferma')) . '" data-confirm-body="' . esc(trans('delete_record_warning')) . '" data-confirm-ok="' . esc(trans('delete', '', 'Elimina')) . '" data-confirm-danger="1"><i class="fa fa-solid fa-trash-can" aria-hidden="true"></i> ' . trans('delete') . '</a></div>'; ?>
+<?php $actions = '<div class="btn-group btn-group-sm"><a href="' . site_url('tasks/form?project_id=' . $project['project_id']) . '" class="btn btn-secondary"><i class="fa fa-regular fa-check-square fa-margin" aria-hidden="true"></i>' . trans('new_task') . '</a><a href="' . site_url('projects/form/' . $project['project_id']) . '" class="btn btn-secondary"><i class="fa fa-regular fa-edit" aria-hidden="true"></i> ' . trans('edit') . '</a></div>'
+    // Eliminare è una POST (Projects::delete rifiuta le altre richieste): il
+    // pulsante sta in un form col token CSRF, come nella scheda cliente. Prima
+    // era un link, quindi una GET, e la conferma portava a un 404.
+    . '<form action="' . site_url('projects/delete/' . $project['project_id']) . '" method="POST" style="display:inline-block">' . csrf_field() . '<button type="button" class="btn btn-danger btn-sm" data-bs-toggle="confirm" data-confirm-title="' . esc(trans('confirm', '', 'Conferma')) . '" data-confirm-body="' . esc(trans('delete_record_warning')) . '" data-confirm-ok="' . esc(trans('delete', '', 'Elimina')) . '" data-confirm-danger="1"><i class="fa fa-solid fa-trash-can" aria-hidden="true"></i> ' . trans('delete') . '</button></form>'; ?>
 <?= $this->include('layout/headerbar', ['title' => $title, 'actions' => $actions]) ?>
 
 <div id="content">

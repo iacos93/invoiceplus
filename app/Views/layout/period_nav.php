@@ -18,7 +18,6 @@
  *   $base_url           string  rotta della lista, es. 'invoices/status/all'
  *   $year               int     anno selezionato (0 = tutti)
  *   $months             list<int> mesi selezionati (vuoto = tutto l'anno)
- *   $month              int     ripiego storico per il mese singolo
  *   $totals             array   ['count','net','tax','total','balance']
  *   $month_totals       array   [mese => ['net','tax','total','balance']]
  *   $month_total_label  string  descrizione dell'importo sotto il mese
@@ -35,15 +34,6 @@ $months = array_values(array_unique(array_filter(
     array_map('intval', $months),
     static fn (int $m): bool => $m >= 1 && $m <= 12
 )));
-
-// Compatibilità con i chiamanti che passano ancora il vecchio $month scalare.
-if ($months === []) {
-    $legacyMonth = (int) ($_pn['month'] ?? ($month ?? 0));
-
-    if ($legacyMonth >= 1 && $legacyMonth <= 12) {
-        $months = [$legacyMonth];
-    }
-}
 
 $totals            = $_pn['totals'] ?? ($totals ?? []);
 $month_totals      = $_pn['month_totals'] ?? ($month_totals ?? []);
@@ -165,23 +155,28 @@ $navBase = site_url($base_url);
        la striscia di riepilogo, si leggeva come una nota ai totali e non
        come l'istruzione dei pulsanti a cui si riferisce. */
     ?>
+    <?php /* Le istruzioni non occupano più una riga fissa sotto i mesi: restano
+             dietro una "i", visibili al passaggio, alla tastiera (focus) o al
+             clic. Il testo resta nell'albero di accessibilità (aria-describedby
+             dei mesi) anche da chiuso: si nasconde con opacity/visibility e non
+             con `hidden`. */ ?>
     <p class="ip-period-hint" id="ip-period-hint" data-ip-period-hint hidden>
-        <i class="fa fa-solid fa-circle-info" aria-hidden="true"></i>
+        <button type="button" class="ip-period-hint__btn" data-ip-period-hint-btn
+                aria-expanded="false" aria-controls="ip-period-hint-text"
+                aria-label="<?= esc(trans('period_hint_label', '', 'Come selezionare più mesi'), 'attr') ?>">
+            <i class="fa fa-solid fa-circle-info" aria-hidden="true"></i>
+        </button>
         <?php
         /* I nomi dei tasti diventano <kbd> dopo l'escape, non dentro la
-           stringa di lingua: la traduzione resta testo puro (niente HTML da
-           fidarsi nei file di lingua) e "Shift", "Ctrl", "⌘" si scrivono
-           uguali in italiano e in inglese, quindi la sostituzione vale per
-           entrambe. Lo <span> serve perché il paragrafo è un contenitore
-           flex: senza, ogni <kbd> diventerebbe una voce flex a sé e la frase
-           si spezzerebbe in blocchi. */
+           stringa di lingua: la traduzione resta testo puro e "Shift", "Ctrl",
+           "⌘" si scrivono uguali in italiano e in inglese. */
         $hintText = esc(trans(
             'period_hint_multiselect',
             '',
-            'Un clic sceglie un mese. Con Shift+clic si estende l’intervallo; con Ctrl/⌘+clic si aggiunge o si toglie un mese.'
+            'Clic: un mese · Shift+clic: un intervallo · Ctrl/⌘+clic: aggiunge o toglie un mese.'
         ));
         ?>
-        <span><?= strtr($hintText, [
+        <span class="ip-period-hint__text" id="ip-period-hint-text" role="tooltip"><?= strtr($hintText, [
             'Shift' => '<kbd>Shift</kbd>',
             'Ctrl'  => '<kbd>Ctrl</kbd>',
             '⌘'     => '<kbd>⌘</kbd>',
@@ -239,6 +234,27 @@ $navBase = site_url($base_url);
     var hint = document.getElementById('ip-period-hint');
     if (hint) {
         hint.hidden = false;
+
+        // Il clic apre e chiude il pannello (Safari non dà il focus al clic su
+        // un pulsante, quindi :focus-within da solo non basta); Esc o un clic
+        // fuori lo chiudono. Il passaggio del mouse e il focus sono in CSS.
+        var hintBtn = hint.querySelector('[data-ip-period-hint-btn]');
+        if (hintBtn) {
+            var setHint = function (open) {
+                hint.classList.toggle('is-open', open);
+                hintBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            };
+            hintBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                setHint(!hint.classList.contains('is-open'));
+            });
+            ipOn(document, 'click', function (e) {
+                if (!hint.contains(e.target)) { setHint(false); }
+            });
+            ipOn(document, 'keydown', function (e) {
+                if (e.key === 'Escape') { setHint(false); }
+            });
+        }
     }
 
     var base = nav.dataset.base || '';
@@ -275,6 +291,18 @@ $navBase = site_url($base_url);
         return base + '?' + params.toString();
     }
 
+    // Anche la selezione multipla passa dalla navigazione parziale, come il
+    // clic singolo, e come quello lascia la pagina dov'è ('keep'): la barra
+    // dei mesi resta sotto il puntatore per il clic successivo.
+    function go(url) {
+        if (typeof window.ipNavigate === 'function') {
+            window.ipNavigate(url, { scroll: 'keep' });
+            return;
+        }
+
+        window.location.href = url;
+    }
+
     nav.addEventListener('click', function (event) {
         var link = event.target.closest('.ip-period-month');
         if (!link) {
@@ -298,7 +326,7 @@ $navBase = site_url($base_url);
                 range.push(m);
             }
 
-            window.location.href = urlFor(range);
+            go(urlFor(range));
             return;
         }
 
@@ -313,7 +341,7 @@ $navBase = site_url($base_url);
                 current.push(month);
             }
 
-            window.location.href = urlFor(current);
+            go(urlFor(current));
         }
     });
 })();

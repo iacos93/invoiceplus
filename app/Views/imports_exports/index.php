@@ -6,12 +6,15 @@
 
 <div id="content">
 
+    <?php /* Pagina di smistamento: una riga per dire cosa si fa qui e due
+             strade. Prima apriva con occhiello, slogan e tre righe di testo,
+             e chiudeva con una nota larga quanto lo schermo: si leggeva molto
+             prima di arrivare ai due pulsanti. L'occhiello ripeteva il titolo
+             della pagina; la nota è stata divisa e messa nella card a cui
+             ciascuna metà si riferisce. */ ?>
     <div class="ip-ie-intro">
-        <p class="ip-ie-intro__eyebrow"><?= esc(trans('imports_exports', '', 'Importa / Esporta')) ?> · <?= esc(trans('data_portability', '', 'Portabilità dati')) ?></p>
-        <h2 class="ip-ie-intro__title"><?= esc(trans('ie_intro_title', '', 'Sposta i dati senza riscriverli.')) ?></h2>
-        <p class="ip-ie-intro__desc">
-            <?= esc(trans('ie_intro_desc', '', 'Due direzioni, stesso registro: dentro dal CSV quando parti da un foglio esistente, fuori in CSV / ZIP quando il commercialista o l’archivio lo chiedono. Le scorciatoie rapide restano nelle anagrafiche dove le usi davvero.')) ?>
-        </p>
+        <h2 class="ip-ie-intro__title"><?= esc(trans('ie_intro_title', '', 'Porta dentro o fuori i tuoi dati')) ?></h2>
+        <p class="ip-ie-intro__desc"><?= esc(trans('ie_intro_desc', '', 'Importa da CSV quando parti da un foglio esistente; esporta in CSV o ZIP quando lo chiede il commercialista o l’archivio.')) ?></p>
     </div>
 
     <div class="ip-ie-grid">
@@ -40,20 +43,20 @@
                     <li><i class="fa fa-solid fa-check" aria-hidden="true"></i><span><?= esc(trans('ie_import_b2', '', 'Date e importi convertiti in lettura; righe già presenti segnalate e saltate')) ?></span></li>
                     <li><i class="fa fa-solid fa-check" aria-hidden="true"></i><span><?= esc(trans('ie_import_b3', '', 'Storico con righe ed errori, e annullamento dell’intera importazione')) ?></span></li>
                 </ul>
+                <p class="ip-ie-card__note"><?= esc(trans('ie_import_note', '', 'Separatore e codifica vengono riconosciuti da soli. Contano il nome del file e le intestazioni del modello scaricabile: un file esportato da qui ha etichette in italiano e non vale come tracciato d’importazione.')) ?></p>
             </div>
 
+            <?php /* Una sola azione principale per card: qui si viene per
+                     caricare un file, quindi il pulsante pieno è "Nuova
+                     importazione". La cronologia è la strada secondaria.
+                     Prima i due pulsanti erano "Importa dati" e "Nuova
+                     importazione", e non si capiva quale dei due importasse. */ ?>
             <div class="ip-ie-card__actions">
-                <a href="<?= site_url('import') ?>" class="btn btn-primary btn-sm">
-                    <?= esc(trans('import_data', '', 'Importa dati')) ?> <i class="fa fa-solid fa-arrow-right ms-1" aria-hidden="true"></i>
-                </a>
-                <?php /* Stessa etichetta e icona del pulsante in testa alla
-                         cronologia: "Vai al form" non diceva cosa si faceva, e
-                         la nota "Cronologia + upload" accanto ripeteva i due
-                         pulsanti a parole. Le note sono state tolte da entrambe
-                         le card: quella di destra andava a capo da sola e le
-                         due basi non erano più allineate. */ ?>
-                <a href="<?= site_url('import/form') ?>" class="btn btn-secondary btn-sm">
+                <a href="<?= site_url('import/form') ?>" class="btn btn-primary btn-sm">
                     <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= esc(trans('new_import', '', 'Nuova importazione')) ?>
+                </a>
+                <a href="<?= site_url('import') ?>" class="btn btn-secondary btn-sm">
+                    <i class="fa fa-solid fa-clock-rotate-left" aria-hidden="true"></i> <?= esc(trans('ie_history', '', 'Cronologia importazioni')) ?>
                 </a>
             </div>
         </article>
@@ -80,6 +83,7 @@
                     <li><i class="fa fa-solid fa-check" aria-hidden="true"></i><span><?= esc(trans('ie_export_b1', '', 'Filtri per periodo + periodi rapidi (anno/trimestre)')) ?></span></li>
                     <li><i class="fa fa-solid fa-check" aria-hidden="true"></i><span><?= esc(trans('ie_export_b2', '', 'Prospetti utile e imposte per categoria / per mese')) ?></span></li>
                 </ul>
+                <p class="ip-ie-card__note"><?= esc(trans('ie_export_note', '', 'I CSV usano ; e UTF-8 con BOM: il formato che Excel in italiano apre senza chiedere nulla.')) ?></p>
             </div>
 
             <?php /* Due pulsanti come nella card di ingresso: "Vai al form"
@@ -102,8 +106,8 @@
     <!-- Scorciatoie rapide — ancorate dove l’azione ha senso -->
     <section class="ip-ie-shortcuts" aria-labelledby="ie-shortcuts-title">
         <div class="ip-ie-shortcuts__head">
-            <h3 class="ip-ie-shortcuts__title" id="ie-shortcuts-title"><i class="fa fa-solid fa-bolt" aria-hidden="true"></i> <?= esc(trans('quick_import', '', 'Import rapido')) ?></h3>
-            <p class="ip-ie-shortcuts__hint"><?= esc(trans('quick_import_hint', '', 'Dall’anagrafica: scarica il modello, incolla i dati e importa — senza passare dall’hub.')) ?></p>
+            <h3 class="ip-ie-shortcuts__title" id="ie-shortcuts-title"><?= esc(trans('ie_shortcuts_title', '', 'Solo un’anagrafica?')) ?></h3>
+            <p class="ip-ie-shortcuts__hint"><?= esc(trans('ie_shortcuts_hint', '', 'Clienti e fornitori si importano anche dalla loro pagina: scarichi il modello, incolli i dati e carichi.')) ?></p>
         </div>
         <div class="ip-ie-shortcuts__body">
             <a href="<?= site_url('clients') ?>" class="ip-ie-shortcut">
@@ -128,11 +132,6 @@
             </a>
         </div>
     </section>
-
-    <p class="ip-ie-foot">
-        <i class="fa fa-solid fa-info-circle" aria-hidden="true"></i>
-        <span><?= esc(trans('ie_foot', '', 'In uscita i CSV usano ; e UTF-8 con BOM, il formato che Excel in locale italiano legge senza chiedere nulla. In entrata separatore e codifica sono riconosciuti da soli: contano il nome del file e le intestazioni, che trovi nel modello scaricabile — quelle dei file esportati sono etichette in italiano e non valgono come tracciato d’importazione.')) ?></span>
-    </p>
 
 </div>
 

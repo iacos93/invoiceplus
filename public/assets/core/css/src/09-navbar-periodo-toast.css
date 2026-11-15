@@ -1,0 +1,839 @@
+/* -----------------------------------------------------------------------------
+   23. Navbar — avatar utente e dropdown
+   --------------------------------------------------------------------------
+   .ip-nav-avatar non aveva alcuna regola di base: esistevano solo gli override
+   di colore, quindi lo span rendeva come testo inline (9x20px, spigoli vivi)
+   invece del cerchio con l'iniziale. Qui la forma, coerente con .ip-avatar-sm
+   usato nelle tabelle.
+   -------------------------------------------------------------------------- */
+
+.ip-nav-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  /* Leggera sheen diagonale: da' profondita' all'avatar senza introdurre
+     colore (resta sul neutro) e funziona identica in chiaro e scuro. */
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.05));
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+/* Freccia del dropdown: il caret di Bootstrap è più marcato del necessario
+   accanto all'avatar; qui resta ma smorzato e allineato. */
+.ip-topbar .dropdown-toggle::after {
+  margin-left: 2px;
+  opacity: .6;
+  border-top-color: currentColor;
+}
+/* ---------- Pannello dropdown ---------------------------------------------
+   Un menu flottante senza ombra si legge come attaccato alla pagina: la
+   navbar è scura e il pannello bianco aveva box-shadow:none. Stessa
+   elevazione dei pannelli IPSelect, per un linguaggio unico. */
+.dropdown-menu {
+  border-color: var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-md);
+  padding: 4px;
+  min-width: 200px;
+  font-size: var(--ip-text-base);
+  color: var(--ip-text);
+}
+.ip-topbar .dropdown-menu { margin-top: 6px; }
+/* Intestazione col nome utente: fa da titolo del menu, non da voce cliccabile */
+.dropdown-menu .dropdown-header {
+  padding: 7px 10px 6px;
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ip-text-muted);
+}
+/* Nota specificita': esiste più sopra uno shim
+   `.dropdown-menu > li > a.dropdown-item` (0,2,2) che vince su un semplice
+   `.dropdown-menu .dropdown-item` (0,2,0). Queste regole ne ricalcano la forma,
+   altrimenti display/padding restavano quelli dello shim. */
+.dropdown-menu > li > .dropdown-item,
+.dropdown-menu > li > a.dropdown-item,
+.dropdown-menu > .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  padding: 7px 10px;
+  border-radius: var(--ip-radius-sm);
+  color: var(--ip-text);
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.dropdown-menu > li > .dropdown-item:hover,
+.dropdown-menu > li > a.dropdown-item:hover,
+.dropdown-menu > li > .dropdown-item:focus-visible,
+.dropdown-menu > .dropdown-item:hover {
+  background: var(--ip-hover);
+  color: var(--ip-text);
+}
+.dropdown-menu > li > .dropdown-item.text-danger:hover,
+.dropdown-menu > li > a.dropdown-item.text-danger:hover,
+.dropdown-menu > li > .dropdown-item.text-danger:focus-visible {
+  background: var(--ip-danger-bg);
+  color: var(--ip-danger-text);
+}
+/* Icone su una colonna di larghezza fissa: senza, le etichette partivano da x
+   diverse a seconda della glifo (fa-user più stretta di fa-power-off). */
+.dropdown-menu > li > .dropdown-item .fa,
+.dropdown-menu > .dropdown-item .fa {
+  width: 15px;
+  margin-right: 0;
+  text-align: center;
+  opacity: .75;
+  flex: 0 0 auto;
+}
+/* Il separatore usava var(--bs-dropdown-divider-bg, #dee2e6): ennesimo grigio
+   di Bootstrap fuori palette. */
+.dropdown-menu .dropdown-divider,
+.dropdown-menu li.dropdown-divider {
+  border-top-color: var(--ip-border-soft);
+  margin: 4px 0;
+}
+/* -----------------------------------------------------------------------------
+   24. Composizione stati — barra impilata
+   --------------------------------------------------------------------------
+   Sostituisce la card col donut: la torta duplicava gli importi della tabella
+   "Fatture per stato" e aggiungeva solo la quota percentuale. Qui la quota
+   resta, su una barra impilata (lunghezza, più leggibile dell'angolo) alta
+   6px sotto l'header della stessa card.
+   -------------------------------------------------------------------------- */
+
+.ip-status-bar {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  background: var(--ip-border-soft);
+}
+.ip-status-bar-seg {
+  height: 100%;
+  min-width: 2px;
+  transition: opacity var(--ip-transition);
+  /* Colore di riserva: uno stato nuovo, o non mappato qui sotto, resta
+     visibile invece di produrre un segmento trasparente. */
+  background: var(--ip-neutral-solid);
+}
+/* Tinta del segmento per stato. Sono riempimenti grafici: chiedono 3:1 verso
+   la card (1.4.11), ma le tinte piene "identitarie" non li reggono in chiaro
+   (ambra 2.28, grigio 2.85). Le varianti *-text sono il gradino verificato su
+   entrambi i temi; "annullata" usa --ip-text perché --ip-canceled è quasi
+   nero in chiaro e quasi fondo-card in scuro, e sparirebbe in uno dei due.
+   Un tempo questi colori arrivavano inline dal PHP (Dashboard::DONUT_COLORS),
+   quindi non potevano ribaltarsi col tema. */
+.ip-status-bar-seg--draft    { background: var(--ip-neutral-solid); }
+.ip-status-bar-seg--sent     { background: var(--ip-info-text); }
+.ip-status-bar-seg--viewed   { background: var(--ip-warning-text); }
+.ip-status-bar-seg--paid,
+.ip-status-bar-seg--approved { background: var(--ip-success-text); }
+.ip-status-bar-seg--rejected,
+.ip-status-bar-seg--overdue  { background: var(--ip-danger-text); }
+.ip-status-bar-seg--canceled { background: var(--ip-text); }
+.ip-status-bar:hover .ip-status-bar-seg { opacity: .55; }
+.ip-status-bar .ip-status-bar-seg:hover { opacity: 1; }
+
+/* -----------------------------------------------------------------------------
+   25. Navigazione temporale della lista documenti (anno + mesi)
+   --------------------------------------------------------------------------
+   Impostazione presa da Fatture in Cloud: prima l'anno, poi il mese, con i
+   totali del periodo selezionato accanto. Vive fra headerbar e tabella, quindi
+   riprende il padding orizzontale di #content (20px) per allinearsi.
+   -------------------------------------------------------------------------- */
+
+.ip-period-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 20px;
+  padding: 14px 20px 12px;
+  background: var(--ip-bg-card);
+  border-bottom: 1px solid var(--ip-border);
+  /* La barra mesi si adatta alla larghezza del contenuto, non del viewport:
+     con la sidebar aperta (236px) lo spazio utile cambia molto tra 1024 e
+     1440, e le media query sul viewport sbaglierebbero. Le regole @container
+     più sotto scelgono griglia o riga fissa in base a questo. */
+  container-type: inline-size;
+}
+@media (max-width: 575.98px) {
+  .ip-period-nav { padding: 12px 16px 10px; }
+}
+
+.ip-period-nav-months {
+  /* Larghezza fissa per ogni voce: gli importi hanno cifre diverse e senza
+     un minimo comune i pulsanti cambiavano larghezza da un mese all'altro.
+     Con gli importi arrotondati (senza centesimi) 74px basta e avanza per
+     "47.601 €", e tiene le tredici voci in una riga su un contenuto da
+     ~1000px in su. Sotto quella soglia la striscia va a capo, centrata. */
+  --ip-period-month-w: 74px;
+  display: flex;
+  flex-wrap: wrap;
+  /* stretch, non center: la voce "Tutti i mesi" ha una riga sola, i mesi due
+     (nome + importo). Con center restava più bassa e sembrava un pulsante
+     rotto accanto agli altri; con stretch tutte le voci della stessa riga
+     prendono l'altezza della più alta. */
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--ip-space-1);
+  padding: 3px;
+  border-radius: var(--ip-radius);
+  background: var(--ip-primary-soft);
+}
+
+.ip-period-month {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 var(--ip-period-month-w);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: var(--ip-period-month-w);
+  padding: 5px 5px;
+  border-radius: var(--ip-radius-sm);
+  font-size: var(--ip-text-sm);
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--ip-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--ip-transition),
+              background-color var(--ip-transition),
+              box-shadow var(--ip-transition),
+              transform var(--ip-transition);
+}
+/* L'etichetta "Tutti i mesi" è più lunga di un nome di mese: un punto più
+   piccola sta nella stessa larghezza fissa senza allargare la voce. */
+.ip-period-month--all .ip-period-month-name {
+  font-size: var(--ip-text-xs);
+}
+/* Il contorno di focus del browser è nero e spesso: qui usa il colore
+   d'accento, con lo stesso offset su tutte le voci della barra. */
+.ip-period-month:focus-visible {
+  outline: 2px solid var(--ip-primary);
+  outline-offset: 2px;
+}
+.ip-period-month-name {
+  display: block;
+}
+/* Importo del mese sotto il nome: è un dato di supporto, non un secondo
+   titolo, quindi resta piccolo e tabulare. La cifra è il totale lordo del
+   mese con lo stesso perimetro della lista (stato, preferiti, pagamento). */
+.ip-period-month-amount {
+  display: block;
+  font-size: var(--ip-text-xs);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  opacity: .8;
+}
+.ip-period-month.is-active .ip-period-month-amount {
+  opacity: .95;
+}
+.ip-period-month--all {
+  justify-content: center;
+}
+.ip-period-month:hover {
+  color: var(--ip-text);
+  background: var(--ip-hover);
+}
+.ip-period-month.is-active {
+  background: var(--ip-primary);
+  color: var(--ip-on-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .08);
+}
+
+/* Istruzioni della selezione multipla (Shift/clic e Ctrl/clic). Senza una
+   riga di testo la funzione restava invisibile: chi voleva due mesi ne
+   apriva uno per volta. Compare solo con JavaScript attivo, perché lo
+   script del partial toglie `hidden`; senza script i mesi sono link singoli
+   e l'istruzione sarebbe una promessa falsa. */
+.ip-period-hint {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 8px;
+  /* Il contenitore distanzia le righe di 12px. La nota appartiene ai mesi,
+     non ai totali che la seguono: il margine negativo la avvicina alla
+     barra (6px) e lascia intero lo stacco verso la striscia di riepilogo. */
+  margin: -6px 0 0;
+  /* Un gradino sopra la prima versione (11px grigio): a quella misura la
+     nota c'era ma non si vedeva, ed era proprio il difetto da correggere.
+     Corpo 13px e colore del testo pieno la rendono leggibile a colpo
+     d'occhio; resta senza fondo né bordo per non competere con i mesi. */
+  font-size: var(--ip-text-base);
+  line-height: 1.45;
+  color: var(--ip-text);
+  text-align: center;
+}
+.ip-period-hint[hidden] { display: none; }
+/* L'icona nel colore primario fa da richiamo: è lei a segnalare che la riga
+   è un'istruzione e non un altro dato del periodo. */
+.ip-period-hint i { color: var(--ip-primary); }
+/* Shift, Ctrl e ⌘ in forma di tasto: sono la parte della frase che l'occhio
+   deve trovare. Bootstrap disegna <kbd> come blocco scuro a testo bianco,
+   troppo pesante dentro una nota; qui è un tasto chiaro col bordo, lo stesso
+   disegno della scorciatoia nella ricerca globale. Il bordo inferiore più
+   spesso dà il rilievo del tasto senza ricorrere a un'ombra. */
+.ip-period-hint kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border: 1px solid var(--ip-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--ip-bg, #f6f6f7);
+  color: var(--ip-text-strong);
+  font-family: inherit;
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Adattamento alla larghezza reale del contenuto (non del viewport).
+   Sotto i 1000px le tredici voci fisse non stanno su una riga: la striscia
+   diventa una griglia, "Tutti i mesi" occupa la riga intera come interruttore
+   generale e i dodici mesi si dispongono in celle uguali. */
+@container (max-width: 999px) {
+  .ip-period-nav-months {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    width: 100%;
+    gap: var(--ip-space-2);
+  }
+  .ip-period-month {
+    flex: initial;
+    width: auto;
+  }
+  .ip-period-month--all {
+    grid-column: 1 / -1;
+  }
+  /* Nella griglia la voce è larga quanto la cella: l'etichetta può tornare
+     alla dimensione dei nomi di mese. */
+  .ip-period-month--all .ip-period-month-name {
+    font-size: var(--ip-text-sm);
+  }
+}
+/* Su telefono stretto sei colonne diventano illeggibili: quattro per riga,
+   tre righe esatte per i dodici mesi. */
+@container (max-width: 575px) {
+  .ip-period-nav-months {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Contatore nei pulsanti filtro delle liste (es. "In corso 12"):
+   cifra piccola e tabulare, non deve competere con l'etichetta. */
+.ip-btn-count {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-variant-numeric: tabular-nums;
+  opacity: .75;
+  margin-left: 2px;
+}
+
+/* Riepilogo in testa a una schermata: conteggi e totali del perimetro
+   mostrato sotto. Unico componente per liste documenti, scadenzario,
+   progetti e attività — il markup sta in layout/summary_strip.php.
+   Prima erano quattro copie quasi uguali (.ip-period-total*, .ip-schedule-sum*,
+   .ip-summary-* e le card della bacheca): la stessa riga di numeri cambiava
+   faccia da una schermata all'altra. Le card KPI restano alla bacheca, dove
+   i numeri sono il contenuto della pagina e non l'intestazione di un elenco. */
+.ip-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ip-space-9);
+  padding: 12px 0 16px;
+}
+.ip-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 14px;
+  border-radius: var(--ip-radius);
+  background: var(--ip-primary-soft);
+  min-width: 0;
+}
+.ip-summary-item a { color: inherit; text-decoration: none; }
+.ip-summary-item a:hover { color: var(--ip-primary); }
+/* Etichette, non badge: 11px (--ip-text-xs) e non i 10px che la scala
+   riserva a badge e timbri. A 10px in maiuscolo spaziato erano il testo più
+   piccolo dell'app proprio dove si legge cosa misura la cifra sotto; la
+   stessa correzione vale per le etichette KPI della bacheca, per "Esporta"
+   e per la legenda del calendario.
+   Il colore è il muted scurito di un quarto verso il testo: il muted pieno,
+   sul fondo tinto della piastrella (--ip-primary-soft), si fermava a 4,3:1,
+   sotto la soglia di 4,5:1 per il testo piccolo. */
+.ip-summary-label {
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: color-mix(in srgb, var(--ip-text-muted) 75%, var(--ip-text));
+  line-height: 1;
+}
+.ip-summary-value {
+  font-family: var(--ip-display);
+  font-size: var(--ip-text-3xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text);
+  line-height: 1.2;
+  letter-spacing: -.01em;
+}
+.ip-summary-value.is-danger,
+.ip-summary-value.is-overdue { color: var(--ip-danger-text); }
+.ip-summary-value.is-warning { color: var(--ip-warning-text); }
+.ip-summary-value.is-success { color: var(--ip-success-text); }
+
+.ip-period-nav .ip-summary {
+  width: 100%;
+  padding: 6px 0 2px;
+  gap: var(--ip-space-6);
+  justify-content: center;
+}
+.ip-period-nav .ip-summary-item {
+  padding: 6px 12px;
+  background: transparent;
+  border-left: 2px solid var(--ip-border);
+  border-radius: 0;
+}
+.ip-period-nav .ip-summary-item:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+/* -----------------------------------------------------------------------------
+   Piede totale delle liste (fatture, spese): imponibile, IVA, totale lordo
+   --------------------------------------------------------------------------
+   Il footer resta dentro <tfoot>, sotto le colonne che riassume: l'importo
+   sotto "Importo", il saldo sotto "Saldo". Fondo soft e bordo superiore
+   separano i totali dalle righe senza aggiungere un secondo componente.
+   -------------------------------------------------------------------------- */
+
+.ip-list-totals th,
+.ip-list-totals td {
+  background: var(--ip-primary-soft);
+  border-top: 1px solid var(--ip-border-soft);
+  padding: 6px var(--ip-space-6);
+  font-size: var(--ip-text-sm);
+  vertical-align: middle;
+}
+.ip-list-totals__label {
+  text-align: right;
+  font-weight: 600;
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-list-totals__value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text);
+}
+.ip-list-totals__row--grand th,
+.ip-list-totals__row--grand td {
+  border-top: 1px solid var(--ip-border);
+  font-size: var(--ip-text-md);
+  color: var(--ip-text);
+}
+/* Su telefono le colonne secondarie spariscono: la riga dei totali non deve
+   restare con un'etichetta larga quanto mezza tabella. La tabella collassa in
+   card (thead nascosto, righe come blocchi), quindi anche il piede va letto
+   come un blocco: una riga per totale, etichetta a sinistra e cifra a destra.
+   Senza queste regole i <td> diventavano blocchi mentre i <th> restavano
+   celle di tabella, e il footer si sfaldava. */
+@media (max-width: 575.98px) {
+  .ip-table-card table.ip-table-card-collapse tfoot,
+  .ip-table-card table.ip-table-card-collapse tfoot tr,
+  .ip-table-card table.ip-table-card-collapse tfoot th,
+  .ip-table-card table.ip-table-card-collapse tfoot td {
+    display: block;
+    width: 100%;
+  }
+  .ip-table-card table.ip-table-card-collapse tfoot tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--ip-border-soft);
+  }
+  .ip-table-card table.ip-table-card-collapse tfoot th,
+  .ip-table-card table.ip-table-card-collapse tfoot td {
+    width: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .ip-table-card table.ip-table-card-collapse tfoot td:empty {
+    display: none;
+  }
+  .ip-table-card table.ip-table-card-collapse tfoot td[data-label]::before {
+    content: attr(data-label) " ";
+    font-weight: 600;
+    color: var(--ip-text-muted);
+  }
+  .ip-list-totals__label {
+    white-space: normal;
+    text-align: left;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Barra di esportazione in coda a un elenco
+   --------------------------------------------------------------------------
+   Stesso componente su fatture e spese: etichetta discreta a sinistra e
+   pulsanti a destra, sul bordo inferiore della card.
+   -------------------------------------------------------------------------- */
+
+.ip-list-export {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ip-space-5);
+  padding: 12px var(--ip-card-pad-x);
+  border-top: 1px solid var(--ip-border-soft);
+  background: var(--ip-bg-card);
+}
+.ip-list-export__label {
+  margin-right: auto;
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ip-text-muted);
+}
+.ip-list-export__label .fa {
+  margin-right: 4px;
+}
+@media (max-width: 575.98px) {
+  .ip-list-export {
+    justify-content: stretch;
+  }
+  .ip-list-export__label {
+    flex: 1 0 100%;
+    margin-right: 0;
+  }
+}
+
+/* Striscia di composizione nella lista progetti — la firma del registro:
+   ogni progetto mostra le sue attività come segmenti sottili nelle tinte
+   di stato (grigio = non iniziata, blu = in corso, verde = completata,
+   verde scuro = fatturata, il lavoro chiuso nel registro). Stesso
+   linguaggio della barra di stato della bacheca, a scala di riga. */
+.ip-strip-col { min-width: 170px; }
+.ip-task-strip-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-5);
+  min-width: 0;
+}
+.ip-task-strip {
+  display: flex;
+  gap: var(--ip-space-1);
+  width: 96px;
+  height: 4px;
+  flex: 0 0 auto;
+  border-radius: var(--ip-radius-sm);
+  /* Il token --ip-bg-muted non esiste mai esistito: il fondo della striscia
+     ricadeva sullo sfondo della card (trasparente) e la riga di 4px spariva
+     quando la lista aveva una sola attivita'. --ip-border-soft e' definito in
+     entrambi i temi e da' il fondo tenue da "registro" voluto dal commento
+     di sezione. */
+  background: var(--ip-border-soft);
+  overflow: hidden;
+}
+.ip-task-strip-seg {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 1px;
+}
+/* Stesse tinte dei timbri di stato e della barra di composizione nella
+   scheda progetto: le due viste raccontano lo stesso lavoro e devono usare
+   lo stesso alfabeto. */
+.ip-task-strip-seg.is-not-started { background: var(--ip-neutral); }
+.ip-task-strip-seg.is-in-progress { background: var(--ip-warning-text); }
+.ip-task-strip-seg.is-complete    { background: var(--ip-primary); }
+.ip-task-strip-seg.is-invoiced    { background: var(--ip-success); }
+.ip-task-strip-meta {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-task-strip-meta .ip-overdue-flag {
+  color: var(--ip-danger-text);
+  margin-left: 2px;
+}
+
+/* Nome progetto: voce del registro, in Fraunces come le cifre della
+   cartoleria; il cliente è l'annotazione a margine, più quieta. */
+.ip-project-name {
+  font-family: var(--ip-display);
+  font-weight: 600;
+  font-size: var(--ip-text-lg);
+  letter-spacing: -0.01em;
+  color: var(--ip-text);
+  text-decoration: none;
+}
+.ip-project-name:hover { color: var(--ip-primary-hover); }
+.ip-client-link { color: var(--ip-text-muted); text-decoration: none; }
+.ip-client-link:hover { color: var(--ip-primary); }
+.ip-date-cell {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Le opzioni si rivelano all'hover della riga (solo desktop): il registro
+   resta leggibile, il menu non compete con la striscia. Su touch restano
+   sempre visibili. */
+@media (min-width: 992px) {
+  .ip-table-card tbody tr .ip-row-options {
+    opacity: 0;
+    transition: opacity .15s ease;
+  }
+  .ip-table-card tbody tr:hover .ip-row-options,
+  .ip-table-card tbody tr:focus-within .ip-row-options {
+    opacity: 1;
+  }
+}
+
+/* Barra avanzamento in testa al dettaglio progetto: più larga della
+   versione in tabella, con la percentuale a fianco. */
+
+/* Contatti del cliente nella scheda progetto: prima il corpo della card
+   ripeteva lo stesso nome gia' visibile nell'intestazione. Riga per riga,
+   stessa forma icona+testo delle voci dei menu a tendina (icona 15px, testo
+   accanto), così non introduce un terzo linguaggio visivo. */
+.ip-project-client-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-4);
+  font-size: var(--ip-text-base);
+}
+.ip-project-client-contacts a {
+  display: flex;
+  align-items: center;
+  color: var(--ip-text);
+  text-decoration: none;
+}
+.ip-project-client-contacts a:hover { color: var(--ip-primary); }
+.ip-project-client-contacts .fa {
+  width: 15px;
+  /* .fa-margin da solo non basta: da' margine solo dentro .btn, e qui
+     l'icona sta in un <a> semplice. */
+  margin-right: 6px;
+  text-align: center;
+  opacity: .75;
+}
+
+/* Tabelle dettaglio (es. attività del progetto): collasso mobile
+   con [data-label], come le tabelle della bacheca. */
+@media (max-width: 767.98px) {
+  .ip-project-tasks thead { display: none; }
+  .ip-project-tasks,
+  .ip-project-tasks tbody,
+  .ip-project-tasks tr,
+  .ip-project-tasks td { display: block; width: 100%; }
+  .ip-project-tasks tbody tr {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--ip-border);
+  }
+  .ip-project-tasks tbody tr:last-child { border-bottom: 0; }
+  .ip-project-tasks tbody td {
+    padding: 3px 12px;
+    border: 0;
+    text-align: right;
+  }
+  .ip-project-tasks tbody td::before {
+    content: attr(data-label);
+    float: left;
+    font-size: var(--ip-text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ip-text-muted);
+    padding-top: 5px;
+  }
+  .ip-project-tasks tbody td.amount::before,
+  .ip-project-tasks tbody td[class*="amount"]::before { text-align: right; }
+  .ip-project-tasks .options { display: inline-flex; }
+}
+
+/* -----------------------------------------------------------------------------
+   26. Scadenzario
+   -------------------------------------------------------------------------- */
+
+/* Totale della fascia, allineato a destra nell'header della card */
+.ip-schedule-bucket-total {
+  margin-left: auto;
+  font-family: var(--ip-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text);
+}
+
+/* Filetto colorato a sinistra: identifica la fascia a colpo d'occhio, con le
+   stesse tinte di stato usate nel resto dell'app. */
+.ip-schedule-bucket { border-left: 3px solid var(--ip-border); }
+.ip-schedule-bucket--danger  { border-left-color: var(--ip-danger); }
+.ip-schedule-bucket--warning { border-left-color: var(--ip-warning); }
+.ip-schedule-bucket--info    { border-left-color: var(--ip-info); }
+.ip-schedule-bucket--neutral { border-left-color: var(--ip-neutral); }
+
+/* Distanza dalla scadenza, come nota accanto alla data */
+.ip-schedule-days {
+  display: block;
+  font-size: var(--ip-text-xs);
+  color: var(--ip-text-muted);
+}
+
+/* -----------------------------------------------------------------------------
+   27. Toast di notifica (flashdata: success/info/error)
+   --------------------------------------------------------------------------
+   Prima erano banner fissi in cima a #main-content: spingevano giù tutta la
+   pagina (il layout "saltava" al caricamento) e restavano finché non si
+   ricaricava la pagina. Ora sono toast Bootstrap 5 flottanti in alto a
+   destra, con auto-dismiss (tranne gli errori, che l'utente chiude a mano).
+   -------------------------------------------------------------------------- */
+
+.ip-toast-container {
+  position: fixed;
+  top: calc(var(--ip-navbar-height, 56px) + 12px);
+  right: 16px;
+  z-index: var(--ip-z-sheet);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-4);
+  width: min(360px, calc(100vw - 32px));
+}
+
+.ip-toast {
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-left: 3px solid var(--ip-neutral);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-md);
+}
+.ip-toast--success { border-left-color: var(--ip-success); }
+.ip-toast--info     { border-left-color: var(--ip-info); }
+.ip-toast--warning  { border-left-color: var(--ip-warning); }
+.ip-toast--danger   { border-left-color: var(--ip-danger); }
+
+.ip-toast .toast-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ip-space-5);
+  padding: 12px 14px;
+  font-size: var(--ip-text-base);
+  color: var(--ip-text);
+}
+
+.ip-toast-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: var(--ip-text-lg);
+}
+.ip-toast--success .ip-toast-icon { color: var(--ip-success-text); }
+.ip-toast--info     .ip-toast-icon { color: var(--ip-info-text); }
+.ip-toast--warning  .ip-toast-icon { color: var(--ip-warning-text); }
+.ip-toast--danger   .ip-toast-icon { color: var(--ip-danger-text); }
+
+.ip-toast-message {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.ip-toast .btn-close {
+  flex: 0 0 auto;
+  font-size: var(--ip-text-xs);
+  opacity: .55;
+}
+.ip-toast .btn-close:hover { opacity: .85; }
+
+/* La classe standard Bootstrap .fade gestisce già opacity + display in modo
+   corretto (serve per non avere uno scatto secco fra "assente" e "visibile");
+   qui si aggiunge solo lo slide orizzontale, sincronizzato sulla stessa
+   transizione. */
+.ip-toast.fade {
+  transition: transform .2s ease, opacity .15s linear;
+  transform: translateX(12px);
+}
+.ip-toast.fade.show {
+  transform: translateX(0);
+}
+
+/* -----------------------------------------------------------------------------
+   28. Filtro anno globale (topbar)
+   --------------------------------------------------------------------------
+   Componente dropdown custom (IPSelect, .simple-select), lo stesso usato nel
+   resto dell'app — non un <select> nativo che apre il menu di sistema.
+   Il pannello si apre comunque su sfondo chiaro standard (monta in <body>,
+   fuori dalla topbar): qui si sovrascrive solo il controllo chiuso, per
+   intonarlo alla barra scura. L'altezza massima del pannello (con scroll)
+   è già gestita da .ip-select-panel__list nella sezione 12a.
+   -------------------------------------------------------------------------- */
+
+.ip-year-filter,
+.ip-company-switch { display: flex; align-items: center; }
+
+/* Contesto (azienda + anno) in testa alla sidebar, vedi layout/base.php:
+   sono i due filtri che riscrivono ogni cifra della pagina e stanno sotto
+   un'unica etichetta, con lo stesso trattamento visivo delle voci di menu.
+   Su mobile la sidebar è off-canvas, quindi restano entrambi raggiungibili —
+   il filtro anno in topbar spariva del tutto sotto i 576px. */
+.ip-sidebar-context { margin-bottom: 4px; }
+.ip-sidebar-context > .ip-nav-eyebrow { margin-bottom: 6px; }
+.ip-sidebar-context form + form { margin-top: 6px; }
+.ip-sidebar .ip-company-switch,
+.ip-sidebar .ip-year-filter { display: block; }
+.ip-sidebar .ip-company-switch .ip-select,
+.ip-sidebar .ip-year-filter .ip-select { width: 100%; }
+.ip-sidebar .ip-company-switch .ip-select__control,
+.ip-sidebar .ip-year-filter .ip-select__control {
+  height: 36px;
+  padding: 0 10px;
+  border-color: var(--ip-border);
+  background-color: var(--ip-hover);
+  color: var(--ip-text);
+  font-size: var(--ip-text-base);
+  font-weight: 500;
+}
+.ip-sidebar .ip-company-switch .ip-select__control:hover,
+.ip-sidebar .ip-year-filter .ip-select__control:hover {
+  background-color: var(--ip-hover);
+  border-color: var(--ip-border-hover);
+}
+.ip-sidebar .ip-company-switch .ip-select.is-open .ip-select__control,
+.ip-sidebar .ip-company-switch .ip-select__control:focus-visible,
+.ip-sidebar .ip-year-filter .ip-select.is-open .ip-select__control,
+.ip-sidebar .ip-year-filter .ip-select__control:focus-visible {
+  background-color: var(--ip-hover);
+  border-color: var(--ip-primary);
+  box-shadow: none;
+}
+.ip-sidebar .ip-company-switch .ip-select__arrow,
+.ip-sidebar .ip-year-filter .ip-select__arrow { color: currentColor; opacity: .8; }
+/* L'anno è una cifra: incolonnata come tutte le altre dell'app. */
+.ip-sidebar .ip-year-filter .ip-select__value { font-variant-numeric: tabular-nums; }
+

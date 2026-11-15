@@ -48,11 +48,18 @@ if ($quoteStatusId === 4) {
 </head>
 <body>
 
+<?php /* Logo su una riga sua, sopra le due colonne: quando stava dentro la
+         colonna dell'emittente spingeva in basso i suoi dati, e il riquadro
+         del destinatario partiva più in alto, sfalsato. Ora emittente e
+         destinatario cominciano alla stessa altezza, ciascuno con la sua
+         etichetta. */ ?>
+<div class="logo"><?= invoice_logo_pdf($quote ?? null) ?></div>
+
 <table class="layout doc-head">
     <tr>
         <td class="emitter">
-            <div class="logo"><?= invoice_logo_pdf() ?></div>
             <?= $this->include('layout/pdf_party', [
+                'label'   => trans('issued_by', '', 'Emittente'),
                 'name'    => $company_name !== '' ? $company_name : $person_name,
                 'subname' => $company_name !== '' ? $person_name : '',
                 'ids'     => [
@@ -141,6 +148,7 @@ $has_item_code = array_filter(array_map($itemCode, $items)) !== [];
         <?php if ($show_item_discounts): ?>
             <th scope="col" class="c-discount num"><?= trans('discount') ?></th>
         <?php endif; ?>
+        <th scope="col" class="c-vat num"><?= trans('vat', '', 'IVA') ?></th>
         <th scope="col" class="c-total num"><?= trans('total') ?></th>
     </tr>
     </thead>
@@ -166,6 +174,7 @@ $has_item_code = array_filter(array_map($itemCode, $items)) !== [];
             <?php if ($show_item_discounts): ?>
                 <td class="num"><?= format_currency($item['item_discount'] ?? 0) ?></td>
             <?php endif; ?>
+            <td class="num"><?= esc(item_vat_label($item)) ?></td>
             <td class="num"><?= format_currency($item['item_total'] ?? 0) ?></td>
         </tr>
     <?php endforeach; ?>
@@ -229,18 +238,7 @@ $has_item_code = array_filter(array_map($itemCode, $items)) !== [];
     </div>
 <?php endif; ?>
 
-<div class="doc-footer">
-    <?php $docFooter = trim((string) get_setting('pdf_quote_footer')); ?>
-    <?php if ($docFooter !== ''): ?>
-        <div class="doc-footer-note"><?= $docFooter ?></div>
-    <?php endif; ?>
-    <table class="layout">
-        <tr>
-            <td><?= invoice_logo_footer_pdf() ?></td>
-            <td class="text-end"><span class="pages">%%PAGINE%%</span></td>
-        </tr>
-    </table>
-</div>
+<?= $this->include('layout/pdf_footer', ['footerKey' => 'pdf_quote_footer', 'document' => $quote ?? null]) ?>
 
 </body>
 </html>

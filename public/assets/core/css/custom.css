@@ -1,3 +1,5 @@
+/* FILE GENERATO: non modificarlo. Le sorgenti sono in css/src/*.css;
+   dopo una modifica eseguire `php tools/minify_css.php`. */
 /* ==============================================================================
    InvoicePlane CI4 — custom.css (file unico)
    -----------------------------------------------------------------------------
@@ -366,6 +368,10 @@ a:hover {
   --ip-transition:    150ms ease;
   --ip-font:          "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --ip-display:       "Fraunces", Georgia, "Times New Roman", serif;
+  /* Carattere del solo nome accanto al logo. Ha un token suo, e non riusa
+     --ip-display, perché il nome è un marchio e non un titolo: così cambiare
+     il serif dei titoli non ritocca il marchio, e viceversa. */
+  --ip-brand-font:    "Sora", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --ip-mono:          "IBM Plex Mono", "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
   /* Bootstrap dà a <code>, <kbd> e <pre> il proprio stack (SFMono-Regular):
      identificatori di serie e chiavi MCP uscivano in un monospazio diverso
@@ -2711,33 +2717,34 @@ a:focus {
   padding: 2px 7px;
 }
 /* Righe di stato con conteggio 0: tenute visibili (l'utente vuole vedere
-   tutti gli stati) ma ridotte a grigeto per non pesare sulla gerarchia
-   visiva degli stati attivi. Il link resta cliccabile. */
+   tutti gli stati) ma spente per non pesare sulla gerarchia visiva degli
+   stati attivi. Il link resta cliccabile. A spegnerle è il colore muted e il
+   peso normale, non più un'opacità sopra il muted: le due cose insieme
+   portavano il nome dello stato a 2,2:1 (2,9:1 in tema scuro), cioè un link
+   che si fatica a leggere. Il muted da solo resta sopra 4,5:1 e lo stacco
+   dalle righe attive, che sono in grassetto e nel colore pieno, si vede lo
+   stesso. */
 .ip-overview-table tbody tr.ip-status-empty > td {
-  opacity: 0.55;
+  color: var(--ip-text-muted);
 }
 .ip-overview-table tbody tr.ip-status-empty > td a,
 .ip-overview-table tbody tr.ip-status-empty .ip-amount-value {
   color: var(--ip-text-muted);
   font-weight: 400;
 }
-.ip-overview-table tbody tr.ip-status-empty:hover > td {
-  opacity: 1;
-}
+.ip-overview-table tbody tr.ip-status-empty:hover > td a { color: var(--ip-text); }
 /* Anagrafiche: la stessa riga spenta, che finora era definita solo dentro
    .ip-overview-table (le tabelle "recenti" della dashboard) e quindi sui
    fornitori non si vedeva: la classe c'era, il colore no. Vale per ogni lista
    dentro una ip-table-card, clienti e fornitori compresi. */
 .ip-table-card tbody tr.ip-status-empty > td {
-  opacity: 0.55;
+  color: var(--ip-text-muted);
 }
 .ip-table-card tbody tr.ip-status-empty > td a {
   color: var(--ip-text-muted);
   font-weight: 400;
 }
-.ip-table-card tbody tr.ip-status-empty:hover > td {
-  opacity: 1;
-}
+.ip-table-card tbody tr.ip-status-empty:hover > td a { color: var(--ip-text); }
 /* Righe "recenti" scadute: leggero sfondo rosso + accento sulla data.
    Definito qui sotto forma di utility opaca (la classe è aggiunta dal view). */
 .ip-recent-table tbody tr.ip-row-overdue > td,
@@ -3883,10 +3890,23 @@ html[data-theme="dark"] .ip-theme-toggle__label[data-action="dark"] { display: n
 .ip-sidebar-toggle:hover { background: var(--ip-hover); color: var(--ip-text); }
 .ip-sidebar-toggle:focus-visible { outline: 2px solid var(--ip-primary); outline-offset: 1px; }
 @media (min-width: 992px) { .ip-sidebar-toggle { display: none; } }
-/* Marchio: un foglio con l'angolo piegato e un "+" in un tondo scuro — il
-   documento e la parte "plus" del nome — con il nome accanto nel font
-   display. Sostituisce l'aeroplanino di InvoicePlane, che era il loro logo
-   (nome e logo sono coperti dal loro avviso sul marchio). */
+/* Marchio: una piastrella blu con le righe di una fattura, l'ultima delle
+   quali finisce in un "+" — la voce in più, cioè la parte "plus" del nome —
+   con il nome accanto in Sora. I tracciati stanno in layout/brand_mark.php.
+   Sostituisce l'aeroplanino di InvoicePlane, che era il loro logo (nome e
+   logo sono coperti dal loro avviso sul marchio). */
+/* Sora è servito dal sito e non da Google Fonts come gli altri tre: serve a
+   una sola parola, e in locale non aggiunge un'origine alla
+   Content-Security-Policy né una richiesta a terzi. È un @font-face, non un
+   @import: a differenza di quello può stare in qualunque punto del foglio.
+   File variabile (pesi 400-800), sottoinsieme latino, licenza OFL. */
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../fonts/sora-latin.woff2") format("woff2");
+}
 .ip-brand {
   display: flex;
   align-items: center;
@@ -3894,48 +3914,45 @@ html[data-theme="dark"] .ip-theme-toggle__label[data-action="dark"] { display: n
   text-decoration: none;
   min-width: 0;
 }
-/* Il chip dietro il segno serviva a far leggere l'aeroplanino come emblema,
-   perché il tracciato era sottile e sui fondi chiari spariva. Il nuovo segno
-   ha già massa propria (foglio chiaro, piega, tondo scuro) e sta bene su
-   entrambi i fondi; il chip resta quindi solo nella barra scura, dove serve a
-   staccare il segno dal navy. box-sizing: content-box perché il padding
-   allarghi il chip senza schiacciare il tracciato SVG. */
+/* Niente chip dietro il segno: serviva ai segni precedenti (un tracciato
+   sottile, poi un foglio chiaro) per staccarsi dal fondo, ma questo è già
+   una piastrella piena e un riquadro dentro un riquadro lo rimpiccioliva
+   soltanto. Lo spazio del chip va al segno: 32px + 2px di margine interno
+   danno lo stesso ingombro di prima (36px), quindi la barra non si sposta.
+   box-sizing: content-box perché il padding non schiacci il tracciato SVG. */
 .ip-brand-mark {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   flex: 0 0 auto;
   display: block;
-  padding: 5px;
-  border-radius: 10px;
-  background: transparent;
+  padding: 2px;
   box-sizing: content-box;
-  transition: background var(--ip-transition);
+  transition: filter var(--ip-transition);
 }
-.ip-topbar .ip-brand-mark {
-  background: rgba(255, 255, 255, 0.10);
-}
+/* Al passaggio il segno si schiarisce appena: è il riscontro che prima dava
+   il chip, senza ritinteggiare i colori del marchio. */
 .ip-brand:hover .ip-brand-mark,
 .ip-brand:focus .ip-brand-mark {
-  background: rgba(30, 115, 184, 0.16);
+  filter: brightness(1.12);
 }
-.ip-topbar .ip-brand:hover .ip-brand-mark,
-.ip-topbar .ip-brand:focus .ip-brand-mark {
-  background: rgba(255, 255, 255, 0.18);
-}
-/* Colori del marchio (sorgenti: public/assets/core/img/mark.svg, favicon.svg,
-   logo.svg). Sono tre esadecimali fissi, non token del tema: un marchio non
-   si ritinteggia cambiando tema, e il segno deve restare uguale nella barra
-   scura, nella colonna chiara, nella favicon e nel logo del README. */
-.ip-mark-sheet { fill: #429AE1; }
-.ip-mark-fold  { fill: #2181CE; }
-.ip-mark-badge { fill: #1E73B8; stroke: #fff; stroke-width: 1.2; }
-.ip-mark-line  { fill: #fff; opacity: .85; }
-.ip-mark-plus  { fill: #fff; }
+/* Colori del marchio (sorgenti: layout/brand_mark.php, favicon.svg,
+   logo.svg in public/assets/core/img). Sono esadecimali fissi, non token del
+   tema: un marchio non si ritinteggia cambiando tema, e il segno deve restare
+   uguale nella barra scura, nella colonna chiara, nella favicon e nel logo
+   del README. Le righe sfumano dall'alto in basso per far cadere l'occhio
+   sul "+", che è l'unico elemento in azzurro. */
+.ip-mark-tile  { fill: #1E73B8; }
+.ip-mark-line  { fill: #fff; }
+.ip-mark-line--2 { opacity: .8; }
+.ip-mark-line--3 { opacity: .6; }
+.ip-mark-plus  { fill: #9FD3FA; }
 .ip-brand-name {
-  font-family: var(--ip-display);
+  font-family: var(--ip-brand-font);
   font-size: var(--ip-text-xl);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  /* Sora è largo: stretto di un filo sta nella colonna della sidebar come
+     ci stava il serif, e le lettere fanno parola invece di restare staccate. */
+  letter-spacing: -0.03em;
   color: var(--ip-text);
   white-space: nowrap;
   overflow: hidden;
@@ -4151,7 +4168,9 @@ html[data-theme="dark"] .ip-theme-toggle__label[data-action="dark"] { display: n
   font-weight: 500;
 }
 .ip-sidebar-foot em { font-style: normal; color: var(--ip-text-muted); }
-.ip-brand-mark--foot { width: 15px; height: 15px; opacity: 0.75; }
+/* Il piè di pagina tiene il margine largo di prima (5px): lì il segno è un
+   richiamo piccolo e deve restare allineato al testo che lo segue. */
+.ip-brand-mark--foot { width: 15px; height: 15px; padding: 5px; opacity: 0.75; }
 /* Backdrop per l'off-canvas mobile */
 .ip-sidebar-backdrop {
   position: fixed;
@@ -4450,7 +4469,7 @@ select.form-select:focus-visible {
    su entrambi gli sfondi). */
 /* Stesso discorso della topbar: il logo a colori fissi si legge bene anche
    sul pannello scuro del login, niente override verso il bianco. */
-.ip-auth-brand-mark .ip-brand-mark { width: 30px; height: 30px; }
+.ip-auth-brand-mark .ip-brand-mark { width: 36px; height: 36px; }
 .ip-auth-brand-mark .ip-brand-name { color: #fff; }
 .ip-auth-brand-copy { max-width: 460px; }
 .ip-auth-brand-copy h1 {
@@ -5943,7 +5962,7 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-window-body--kpi .card-label,
 .ip-indice .card-label {
   font-family: var(--ip-mono);
-  font-size: var(--ip-text-2xs);
+  font-size: var(--ip-text-xs);
   font-weight: 600;
   letter-spacing: .08em;
 }
@@ -6517,7 +6536,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   white-space: nowrap;
   transition: color var(--ip-transition),
               background-color var(--ip-transition),
-              box-shadow var(--ip-transition);
+              box-shadow var(--ip-transition),
+              transform var(--ip-transition);
 }
 /* L'etichetta "Tutti i mesi" è più lunga di un nome di mese: un punto più
    piccola sta nella stessa larghezza fissa senza allargare la voce. */
@@ -6677,12 +6697,20 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 }
 .ip-summary-item a { color: inherit; text-decoration: none; }
 .ip-summary-item a:hover { color: var(--ip-primary); }
+/* Etichette, non badge: 11px (--ip-text-xs) e non i 10px che la scala
+   riserva a badge e timbri. A 10px in maiuscolo spaziato erano il testo più
+   piccolo dell'app proprio dove si legge cosa misura la cifra sotto; la
+   stessa correzione vale per le etichette KPI della bacheca, per "Esporta"
+   e per la legenda del calendario.
+   Il colore è il muted scurito di un quarto verso il testo: il muted pieno,
+   sul fondo tinto della piastrella (--ip-primary-soft), si fermava a 4,3:1,
+   sotto la soglia di 4,5:1 per il testo piccolo. */
 .ip-summary-label {
-  font-size: var(--ip-text-2xs);
+  font-size: var(--ip-text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .08em;
-  color: var(--ip-text-muted);
+  color: color-mix(in srgb, var(--ip-text-muted) 75%, var(--ip-text));
   line-height: 1;
 }
 .ip-summary-value {
@@ -6812,7 +6840,7 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 }
 .ip-list-export__label {
   margin-right: auto;
-  font-size: var(--ip-text-2xs);
+  font-size: var(--ip-text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -8954,6 +8982,50 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
   white-space: pre;
 }
 
+/* Blocco XML: una barra sola con i comandi che servono su un tracciato lungo
+   (copia tutto, vai a capo). Bordo e angoli stanno sul blocco, così barra e
+   codice si leggono come un oggetto solo invece di due rettangoli accostati. */
+.ip-xml-block {
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius-sm);
+  overflow: hidden;
+}
+.ip-xml-block__tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ip-space-3);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--ip-border-soft);
+  background: var(--ip-bg-card);
+}
+.ip-xml-block .ip-xml-preview,
+.ip-xml-block .ip-xml-code {
+  max-height: 480px;
+  border: 0;
+  border-radius: 0;
+}
+/* Su un tracciato la riga del namespace è più larga dello schermo: senza
+   questo si scorre in orizzontale per leggerne un pezzo alla volta. */
+.ip-xml-block.is-wrapped .ip-xml-preview,
+.ip-xml-block.is-wrapped .ip-xml-code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ip-xml-tool-btn {
+  padding: 3px 9px;
+  border: 1px solid var(--ip-border-soft);
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-bg-card);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--ip-transition);
+}
+.ip-xml-tool-btn:hover { color: var(--ip-text); border-color: var(--ip-border); }
+.ip-xml-tool-btn.is-done { color: var(--ip-success); border-color: var(--ip-success); }
+.ip-xml-tool-btn[aria-pressed="true"] { color: var(--ip-primary); border-color: var(--ip-primary); }
+
 /* -----------------------------------------------------------------------------
    37. Tab (.ip-tabs) — un solo componente per tutte le schermate a schede
    --------------------------------------------------------------------------
@@ -10071,7 +10143,7 @@ button.ip-calendar-event-more:focus-visible {
 }
 .ip-calendar-legend__label {
   font-family: var(--ip-mono);
-  font-size: var(--ip-text-2xs);
+  font-size: var(--ip-text-xs);
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -10104,7 +10176,7 @@ button.ip-calendar-event-more:focus-visible {
   margin: 0;
   padding: 10px 14px 2px;
   font-family: var(--ip-mono);
-  font-size: var(--ip-text-2xs);
+  font-size: var(--ip-text-xs);
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -10630,6 +10702,75 @@ html[data-theme="dark"] .ip-pager .pagination {
    Il discriminante è la colonna descrizione, che solo la griglia righe ha. */
 .ip-items-table:has(.ip-items-table__desc) {
   min-width: 720px;
+}
+/* Larghezze della griglia righe. Le misure generiche di .ip-items-table
+   (Codice 120, tre colonne numeriche da 110, Unità 130, Imposta 210, Totale
+   130, più il 40% della descrizione) sommano ben oltre i ~970px che la
+   scheda offre su un portatile da 1280: il browser le riduceva tutte in
+   proporzione e i campi uscivano più corti del loro contenuto — Codice a
+   48px (il segnaposto "Cod." tagliato), Prezzo a 49px, cioè meno di
+   "1.234,56". Qui ogni colonna chiede solo ciò che serve al suo valore tipico
+   e le spaziature orizzontali tra celle si dimezzano (da 12 a 6px per lato:
+   nove colonne di campi non hanno bisogno di 24px di aria tra l'una e
+   l'altra). Il totale delle colonne fisse scende a ~740px, quindi a 1280 la
+   descrizione tiene la sua minima e i campi hanno la lunghezza giusta; sugli
+   schermi più larghi lo spazio in più va tutto alla descrizione, che è
+   l'unica colonna senza larghezza dichiarata. Vale solo per la griglia righe
+   (riconosciuta dalla colonna descrizione), non per le tabelle di riepilogo
+   che riusano la classe. */
+.ip-items-table:has(.ip-items-table__desc) > thead > tr > th,
+.ip-items-table:has(.ip-items-table__desc) > tbody > tr > td {
+  padding-left: 6px;
+  padding-right: 6px;
+  /* Le misure qui sotto sono l'ingombro intero della colonna, spaziatura
+     compresa: così la somma si legge a colpo d'occhio (724px di colonne
+     fisse + 242 di descrizione minima = i 966px disponibili a 1280). */
+  box-sizing: border-box;
+}
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__desc { width: auto; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__handle { width: 56px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__code { width: 70px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num { width: 96px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num--qty { width: 70px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num--price { width: 96px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num--discount { width: 70px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__unit { width: 112px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__tax { width: 128px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__total { width: 92px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__actions { width: 30px; }
+/* Dentro la griglia i campi numerici e il codice hanno 6px di margine
+   interno invece di 10: con 10 per lato un Prezzo da 70px lasciava 50px alle
+   cifre, e "4.883,00" usciva tagliato a sinistra; lo stesso per "1,00" nella
+   Quantità. Le larghezze sopra sono calcolate su questo margine: Prezzo
+   contiene "12.345,67", Quantità e Sconto "100,00". */
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num .form-control,
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__code .form-control {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+/* Sotto i 1400px le due tendine cedono qualche pixel ai campi importo:
+   l'Unità resta leggibile ("Nessuno", "pz") e l'Imposta mostra comunque la
+   percentuale, che è la parte che si controlla a colpo d'occhio; l'etichetta
+   intera è nel menu aperto. */
+@media (max-width: 1399.98px) {
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__unit .ip-select { max-width: 100px; }
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__tax .ip-select { max-width: 116px; }
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__unit .ip-select__value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* La "x" per svuotare l'Unità qui toglierebbe 20px al testo ("Nes…"): per
+     tornare a "Nessuno" basta sceglierlo dal menu, dov'è la prima voce. */
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__unit .ip-select__clear { display: none; }
+}
+/* "Q.tà" è un'abbreviazione d'intestazione, non un termine da spiegare: via
+   la sottolineatura puntinata e il cursore d'aiuto che il browser dà a
+   <abbr title>. Il nome per esteso resta nel title. */
+.ip-items-table th abbr[title] { text-decoration: none; cursor: inherit; }
+/* Sopra i 1400px l'Imposta mostra l'etichetta per esteso (vedi sopra): lì la
+   colonna torna larga, e lo spazio c'è. */
+@media (min-width: 1400px) {
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__tax { width: 222px; }
 }
 
 /* Maniglia e frecce su/giù per riordinare le righe (vedi ip-items-reorder.js).
@@ -11346,7 +11487,9 @@ html[data-theme="dark"] #content form[action*="clients/form"] .card:has(.ip-fiel
   font-size: var(--ip-text-sm);
   color: var(--ip-text-muted);
   margin:0;
-  max-width: 36ch;
+  /* 64ch e non 36: la frase sta su una riga accanto al titolo quando lo
+     spazio c'è; a 36 andava a capo a metà con mezza scheda vuota a fianco. */
+  max-width: 64ch;
   text-align:right;
 }
 @media (max-width: 640px){
@@ -12042,9 +12185,9 @@ html[data-theme="dark"] .ip-import-outcome.is-error{ background:#2c1c19; color:#
 }
 .ip-subnav__item.is-active:focus-visible { color: var(--ip-on-primary); }
 /* Schermo stretto: una riga sola che scorre, non tre righe, con le stesse
-   misure ridotte di .ip-tabs. La barra di scorrimento è nascosta: il taglio
-   dell'ultima voce basta a dire che ce n'è ancora, e lo script in _tabs
-   centra l'attiva. */
+   misure ridotte di .ip-tabs. La barra di scorrimento è nascosta: a dire
+   che ce n'è ancora sono il taglio dell'ultima voce e l'ombra sul bordo, e
+   lo script in _tabs centra l'attiva. */
 @media (max-width: 767.98px) {
   .ip-subnav {
     flex-wrap: nowrap;
@@ -12052,6 +12195,18 @@ html[data-theme="dark"] .ip-import-outcome.is-error{ background:#2c1c19; color:#
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    /* Il taglio dell'ultima voce non basta sempre: a 375px la terza voce del
+       Controllo di gestione finisce esattamente sul bordo e le due dopo non
+       si intuiscono. Un'ombra sul lato da cui c'è ancora contenuto lo dice
+       senza script: le due ombre stanno ferme sui bordi (scroll), le due
+       coperture nel colore della barra scorrono col contenuto (local) e le
+       nascondono quando si è arrivati in fondo a quel lato. */
+    background:
+      linear-gradient(to right, var(--ip-bg-card) 40%, transparent) left center / 28px 100% no-repeat local,
+      linear-gradient(to left, var(--ip-bg-card) 40%, transparent) right center / 28px 100% no-repeat local,
+      linear-gradient(to right, color-mix(in srgb, var(--ip-text) 22%, transparent), transparent) left center / 14px 100% no-repeat scroll,
+      linear-gradient(to left, color-mix(in srgb, var(--ip-text) 22%, transparent), transparent) right center / 14px 100% no-repeat scroll,
+      var(--ip-bg-card);
   }
   .ip-subnav::-webkit-scrollbar { display: none; }
   .ip-subnav__item { flex: 0 0 auto; white-space: nowrap; padding: 6px 10px; font-size: var(--ip-text-sm); }
@@ -12557,6 +12712,114 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 }
 
 /* -----------------------------------------------------------------------------
+   Movimento: il tocco e la scelta si sentono
+   --------------------------------------------------------------------------
+   Il foglio animava gia' l'ingresso delle pagine, i grafici della bacheca e i
+   toast: quello che mancava era la risposta a un gesto. Qui stanno solo
+   micro-movimenti da 140-300ms, tutti su transform/opacity (nessun reflow),
+   che dicono "ho ricevuto il clic" senza spostare niente di permanente. La
+   guardia prefers-reduced-motion in testa al foglio li azzera.
+   -------------------------------------------------------------------------- */
+
+/* Barra dei mesi: il pulsante si alza di un pixel sotto il mouse e si
+   comprime quando lo si preme — la stessa pressione dei .btn, che da soli
+   non coprono questi link. */
+.ip-period-month:hover:not(.is-active) { transform: translateY(-1px); }
+.ip-period-month:active { transform: scale(.97); }
+@keyframes ip-chip-pick {
+  from { opacity: .4; transform: scale(.94); }
+  to   { opacity: 1;  transform: none; }
+}
+/* Il mese appena scelto si "accende": cresce dal 94% invece di comparire
+   gia' pieno. Solo quando l'arco intero e' spento: nello stato d'apertura i
+   dodici mesi sono accesi insieme e l'animazione sarebbe un'onda di rumore. */
+.ip-period-month--all:not(.is-active) ~ .ip-period-month.is-active {
+  /* Senza `both`: un'animazione conclusa con fill "forwards" continua a
+     vincere sul transform dichiarato, e il chip acceso non risponderebbe piu'
+     alla pressione (:active). Lo stato finale coincide con quello naturale,
+     quindi non c'e' niente da trattenere.
+
+     Le curve "a scatto" sono state misurate campionando il transform
+     fotogramma per fotogramma: con cubic-bezier(.22, .61, .36, 1) a 240ms il
+     59% della scala era gia' fatto nei primi 60ms e il 98% entro 180ms — si
+     vedeva un lampo, non un gesto. Con la curva standard
+     cubic-bezier(.4, 0, .2, 1) a 300ms il 22% si compie nel primo quarto e il
+     78% a meta': il mese scelto
+     si apre davanti agli occhi per tutta la durata, restando sotto la soglia
+     in cui un clic comincia a sembrare lento. */
+  animation: ip-chip-pick 300ms cubic-bezier(.4, 0, .2, 1);
+}
+
+/* Pannelli che compaiono (select con ricerca, datepicker): prima il passaggio
+   era display:none -> block, cioe' un salto secco. Il pannello e' position:
+   fixed e il JS gli assegna left/top, quindi il transform non sposta il
+   calcolo della posizione, si limita alla comparsa. */
+@keyframes ip-pop-in {
+  from { opacity: 0; transform: translateY(-2px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+.ip-select-panel.is-open,
+.ip-dp.is-open {
+  animation: ip-pop-in 140ms ease-out;
+}
+
+/* Barra delle azioni di gruppo: entra dal basso quando si seleziona la prima
+   casella (il JS alterna [hidden]) e non piu' come un blocco gia' fermo. */
+@keyframes ip-bulk-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+#ip-bulk-bar:not([hidden]) {
+  animation: ip-bulk-rise 180ms ease-out;
+}
+
+/* Righe delle liste. Quando il contenuto arriva da una navigazione parziale
+   (o dal primo caricamento) le righe entrano a scaletta invece di comparire
+   gia' ferme: e' la tabella che si riempie, non una pagina che si accende.
+   Nessuna classe dal JS: ip-pjax sostituisce #main-content, quindi le righe
+   sono nodi nuovi e l'animazione riparte da sola — anche cambiando pagina dal
+   pager, che e' un link GET come gli altri (layout/pager.php). La ricerca
+   istantanea dentro la lista non ne e' toccata: nasconde le righe con
+   display, non le ricrea.
+   Fill `backwards` e non `both`: durante l'attesa la riga e' gia' nella forma
+   iniziale (invisibile), a fine corsa non resta pero' nessun transform
+   appeso, che renderebbe la riga containing block dei discendenti fixed.
+   Solo le prime otto righe hanno uno scarto progressivo: su una lista da
+   cinquanta, una scaletta completa sarebbe un'attesa di oltre un secondo per
+   righe che nessuno sta guardando. */
+@keyframes ip-row-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+/* Le liste normali stanno in una .ip-table-card; quelle fuori (le opzioni di
+   un campo personalizzato, le tabelle dentro una card semplice) seguono la
+   stessa scaletta. Restano fuori le .ip-items-table — righe di documento e
+   prospetti: li' le righe si aggiungono mentre si compila, e una comparsa a
+   scaletta a ogni "Aggiungi riga" rallenterebbe il lavoro invece di
+   accompagnarlo. Restano fuori anche le tabelle della bacheca, che vivono in
+   .ip-window (non in .card) e hanno gia' la scaletta delle finestre. */
+:is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr:not(.empty-row) {
+  animation: ip-row-in 220ms ease-out backwards;
+  animation-delay: calc(var(--row-i, 8) * 22ms);
+}
+:is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr:nth-child(1) { --row-i: 0; }
+:is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr:nth-child(2) { --row-i: 1; }
+:is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr:nth-child(3) { --row-i: 2; }
+:is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr:nth-child(4) { --row-i: 3; }
+:is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr:nth-child(5) { --row-i: 4; }
+:is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr:nth-child(6) { --row-i: 5; }
+:is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr:nth-child(7) { --row-i: 6; }
+:is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr:nth-child(8) { --row-i: 7; }
+
+/* Stampa: su carta le righe devono esserci tutte e subito, non entrare mentre
+   il foglio esce dalla stampante. */
+@media print {
+  :is(.ip-table-card table, .card table.table:not(.ip-items-table)) > tbody > tr {
+    animation: none !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
    Allineamenti dell'ultimo giro
    --------------------------------------------------------------------------
    Tre punti dove la stessa cosa era disegnata in due modi: il caricamento
@@ -12919,6 +13182,19 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   }
   .ip-table-card table.ip-table-card-collapse > * > tr > :first-child { padding-left: 18px; }
   .ip-table-card table.ip-table-card-collapse > * > tr > :last-child  { padding-right: 18px; }
+}
+/* Fra 1280 e 1399px (un portatile da 13") le colonne secondarie tornavano
+   tutte, e la lista fatture occupava l'intera larghezza con colonne che non
+   vanno a capo: l'unica che può stringersi è il cliente, che restava a 116px
+   e spezzava su due righe anche "ICS Piero Fornara", con l'aria fra le altre
+   colonne a far sembrare l'a capo immotivato. In questa fascia esce solo la
+   colonna secondaria non numerica (data di creazione, categoria della
+   spesa): i suoi ~95px vanno al cliente. L'imponibile resta, perché è una
+   cifra che si confronta; da 1400px, dove arriva anche l'IVA, torna tutto. */
+@media (min-width: 1280px) and (max-width: 1399.98px) {
+  .ip-table-card .ip-col-secondary:not(.amount) {
+    display: none;
+  }
 }
 
 /* Piede dei totali: una riga senza la sua cifra non dice niente.
@@ -13371,3 +13647,315 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
     justify-content: center;
   }
 }
+
+/* Scheda azienda: anteprima del logo già caricato, sopra il campo per
+   sostituirlo. Fondo a scacchi tenui perché il "solo segno" è spesso bianco o
+   trasparente e su una card bianca non si vedrebbe che c'è. */
+.ip-company-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-6);
+  margin-bottom: var(--ip-space-4);
+}
+.ip-company-logo__img {
+  max-height: 56px;
+  max-width: 220px;
+  padding: 6px;
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  background: repeating-conic-gradient(#f4f4f5 0 25%, #e4e4e7 0 50%) 0 0 / 12px 12px;
+}
+
+/* -----------------------------------------------------------------------------
+   Movimento: marchio, accesso, menu e sottomenu
+   --------------------------------------------------------------------------
+   Il foglio animava gia' ingresso pagina, righe, grafici e pannelli di
+   selezione; restavano senza movimento il marchio, la pagina di accesso (il
+   primo schermo che si vede) e due aperture secche: il menu utente e i
+   sottomenu della sidebar, che passavano da hidden a visibili di colpo.
+   Come per il resto: solo transform e opacita', da 140 a 420ms, niente che
+   sposti il layout. La guardia prefers-reduced-motion in testa al foglio li
+   azzera tutti (animation-duration e transition-duration a ~0).
+   -------------------------------------------------------------------------- */
+
+/* Il "+" del marchio: al passaggio sul brand ruota di un quarto di giro e
+   cresce appena. E' la parte "plus" del nome, quella che dice "aggiungi": si
+   muove lei, il resto del segno sta fermo. transform-box: fill-box fa ruotare
+   attorno al centro del "+" e non dell'angolo dell'SVG. Rotazione di 90 gradi
+   e non 180: il "+" ruotato di un quarto e' identico a se' stesso, quindi a
+   fine corsa non c'e' uno stato "storto" da raddrizzare. */
+.ip-mark-plus {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 320ms cubic-bezier(.34, 1.4, .64, 1);
+}
+.ip-brand:hover .ip-mark-plus,
+.ip-brand:focus-visible .ip-mark-plus {
+  transform: rotate(90deg) scale(1.12);
+}
+
+/* Accesso: il pannello del brand e la scheda del modulo entrano a scaletta
+   dal basso (12px, 420ms) invece di comparire gia' fermi. Fill backwards, non
+   both: a fine corsa non resta alcun transform appeso (un antenato con
+   transform diventerebbe containing block dei discendenti position:fixed). */
+@keyframes ip-auth-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+.ip-auth-brand-mark,
+.ip-auth-brand-copy h1,
+.ip-auth-brand-copy p,
+.ip-auth-points li,
+.ip-auth-card {
+  animation: ip-auth-rise 420ms cubic-bezier(.22, .61, .36, 1) backwards;
+}
+.ip-auth-brand-mark     { animation-delay: 40ms; }
+.ip-auth-brand-copy h1  { animation-delay: 120ms; }
+.ip-auth-brand-copy p   { animation-delay: 180ms; }
+.ip-auth-points li:nth-child(1) { animation-delay: 240ms; }
+.ip-auth-points li:nth-child(2) { animation-delay: 290ms; }
+.ip-auth-points li:nth-child(3) { animation-delay: 340ms; }
+.ip-auth-card           { animation-delay: 160ms; }
+
+/* Menu a tendina (utente, azioni di riga): solo dissolvenza. Popper posiziona
+   il menu con un `transform` inline: un keyframe che tocca `transform` lo
+   sovrascrive per la durata dell'animazione e il menu fa un saltino verso
+   l'angolo e poi torna al suo posto. */
+@keyframes ip-menu-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.dropdown-menu.show {
+  animation: ip-menu-fade 120ms ease-out;
+}
+
+/* Sottomenu della sidebar: quando un gruppo si apre (il JS toglie hidden) le
+   voci scendono di 4px e compaiono, invece di spuntare di colpo e spingere
+   in giu' tutto il resto. */
+@keyframes ip-sub-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+.ip-nav-sub:not([hidden]) {
+  animation: ip-sub-in 180ms ease-out backwards;
+}
+
+/* Voci della sidebar: l'icona scivola di 2px verso il testo al passaggio, un
+   cenno di direzione che non muove il testo ne' la riga. */
+.ip-nav-link i:first-child {
+  transition: transform 160ms ease;
+}
+.ip-nav-link:hover i:first-child {
+  transform: translateX(2px);
+}
+
+@media print {
+  .ip-mark-plus,
+  .ip-auth-card { animation: none !important; transition: none !important; }
+}
+
+
+/* Istruzioni dei mesi dietro una "i" (vedi layout/period_nav.php): prima una
+   riga di testo fissa sotto la barra, che si leggeva una volta e poi restava
+   a occupare spazio. Ora un pulsante da 28px; il testo compare in un pannello
+   al passaggio, al focus da tastiera o al clic, e da chiuso resta leggibile
+   dai lettori di schermo (opacity/visibility, non display). */
+.ip-period-hint {
+  /* Subito a destra di «Dic», sulla stessa riga dei mesi e centrata in
+     altezza: sta attaccata a ciò che spiega. Sotto la striscia restava una
+     «i» isolata in mezzo alla pagina. Il margine negativo recupera parte
+     dello stacco di 20px tra le voci della barra. */
+  position: relative;
+  flex: none;
+  margin: 0 0 0 -12px;
+}
+/* Mesi in griglia (contenuto stretto): la griglia cede alla «i» lo spazio
+   che le serve invece di prendersi la riga intera e mandarla a capo. */
+@container (max-width: 999px) {
+  .ip-period-nav-months { flex: 1 1 0; width: auto; min-width: 0; }
+  .ip-period-hint { align-self: flex-start; }
+}
+.ip-period-hint__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ip-text-muted);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+.ip-period-hint__btn:hover,
+.ip-period-hint__btn:focus-visible,
+.ip-period-hint.is-open .ip-period-hint__btn { background: var(--ip-primary-soft); color: var(--ip-primary); }
+.ip-period-hint__text {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: var(--ip-z-popover);
+  width: max-content;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 8px 12px;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-md);
+  font-size: var(--ip-text-sm);
+  line-height: 1.6;
+  color: var(--ip-text);
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .14s ease, visibility 0s linear .14s;
+}
+.ip-period-hint:hover .ip-period-hint__text,
+.ip-period-hint:focus-within .ip-period-hint__text,
+.ip-period-hint.is-open .ip-period-hint__text {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+
+/* -----------------------------------------------------------------------------
+   Calendario — revisione
+   ----------------------------------------------------------------------------- */
+/* Oggi: il numero in un disco pieno. Il fondo tenue della cella e il pallino
+   accanto al numero c'erano, ma nel tema scuro il fondo quasi spariva e il
+   pallino da 4px non si trovava a colpo d'occhio: la cella di oggi è la prima
+   cosa che si cerca in un calendario. */
+.ip-calendar-cell.is-today { box-shadow: inset 0 2px 0 var(--ip-primary); }
+.ip-calendar-cell.is-today .ip-calendar-daynum,
+.ip-calendar-cell.is-today button.ip-calendar-daynum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ip-primary);
+  color: var(--ip-on-primary);
+}
+.ip-calendar-cell.is-today .ip-calendar-daynum::after { content: none; }
+/* Giorni passati senza scadenze aperte: il numero si attenua, così l'occhio
+   va da oggi in avanti. */
+.ip-calendar-cell.is-past:not(.has-events) .ip-calendar-daynum { opacity: .55; }
+/* Un giorno con scadenze reagisce al passaggio: è cliccabile per intero dal
+   numero, e la cella lo anticipa. */
+.ip-calendar-cell.has-events { transition: background-color .15s ease; }
+.ip-calendar-cell.has-events:hover { background: var(--ip-hover); }
+
+/* Barra di sottoscrizione aperta dal pulsante in testata. */
+.ip-calendar-feed-toggle { margin-right: 8px; }
+.ip-calendar-feed-toggle[aria-expanded="true"] {
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+}
+
+/* Totali del mese in testa al riepilogo laterale. */
+.ip-calendar-totals {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ip-border-soft);
+}
+.ip-calendar-totals > div { flex: 1 1 0; min-width: 0; }
+.ip-calendar-totals dt {
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+}
+.ip-calendar-totals dd {
+  margin: 2px 0 0;
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-lg, 16px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-strong);
+}
+.ip-calendar-totals .is-overdue dd { color: var(--ip-danger); }
+
+/* Lista laterale: il titolo va a capo invece di essere troncato ("Fattura 90
+   — I.P…" non diceva di chi fosse la fattura); data e importo restano in
+   alto, allineati alla prima riga. */
+.ip-calendar-list a { align-items: start; }
+.ip-calendar-list__title {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+
+/* -----------------------------------------------------------------------------
+   Importa / Esporta — pagina di smistamento ristrutturata
+   ----------------------------------------------------------------------------- */
+/* Nota di formato dentro la card a cui si riferisce (prima una riga unica in
+   fondo alla pagina, larga quanto lo schermo: oltre 200 caratteri per riga).
+   Misura da testo di lettura e un filetto a sinistra che la stacca dai punti
+   elenco senza farne un avviso. */
+.ip-ie-card__note {
+  max-width: 62ch;
+  margin: 14px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--ip-border);
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  color: var(--ip-text-muted);
+}
+/* Senza occhiello il titolo dell'introduzione parte dal bordo. */
+.ip-ie-intro { margin-top: 0; }
+/* Scorciatoie: titolo e spiegazione su due righe, non ai due capi di una riga
+   larga (la spiegazione finiva a destra, lontana da ciò che spiegava). */
+.ip-ie-shortcuts__head {
+  display: block;
+}
+.ip-ie-shortcuts__hint {
+  max-width: 70ch;
+  margin: 2px 0 0;
+  text-align: left;
+}
+
+
+/* -----------------------------------------------------------------------------
+   Campi "segreto" delle Impostazioni (chiave cron, URL del feed)
+   ----------------------------------------------------------------------------- */
+/* I due pulsanti accanto al campo erano a misura piena di Bootstrap (16px) e
+   «Genera» era un blocco nero: pesavano più del campo e più di «Salva», che è
+   l'azione vera della pagina. Ora hanno il corpo del campo e lo stile
+   secondario; il valore è in monospazio perché è una stringa da copiare, non
+   da leggere. */
+.ip-secret-group > .form-control {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  text-overflow: ellipsis;
+}
+.ip-secret-group > .form-control::placeholder {
+  font-family: var(--ip-font, inherit);
+  font-size: var(--ip-text-base);
+}
+.ip-secret-group > .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: var(--ip-text-base);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ip-secret-group > .btn .fa { font-size: var(--ip-text-sm); }
+.ip-secret-copy { min-width: 38px; justify-content: center; }
+.ip-secret-copy.is-copied { color: var(--ip-success-text); }
+.ip-secret-copy.is-copied .fa::before { content: "\f00c"; }

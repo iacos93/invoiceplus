@@ -44,6 +44,8 @@
 </head>
 <body>
 
+<?= report_pdf_brand() ?>
+
 <h1><?= trans('finance', '', 'Utile e imposte') ?> — <?= (int) $year ?></h1>
 <div class="meta">
     <?= esc($company['company_name'] ?? '') ?>

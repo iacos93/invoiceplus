@@ -168,11 +168,12 @@ $actions = '<div class="btn-group btn-group-sm">'
             $mono_source = $client['client_surname'] != ''
                 ? ($client['client_name'] . ' ' . $client['client_surname'])
                 : (string) $client['client_name'];
-            $mono_words  = preg_split('/\s+/', trim($mono_source));
-            $monogram    = '';
-            foreach (array_filter($mono_words) as $w) { $monogram .= mb_substr($w, 0, 1); }
-            $monogram    = mb_strtoupper(mb_substr($monogram, 0, 2));
-            if ($monogram === '') { $monogram = '?'; }
+            // Persona con cognome a parte: un'iniziale dal nome e una dal
+            // cognome ("Maria Angela" + "Zema" = MZ, non MA).
+            $monogram    = $client['client_surname'] != ''
+                ? mb_substr(name_monogram((string) $client['client_name']), 0, 1)
+                    . mb_substr(name_monogram((string) $client['client_surname']), 0, 1)
+                : name_monogram($mono_source);
 
             // Indirizzo in linea singola per la testata anagrafica.
             $loc_parts = array_filter([

@@ -50,11 +50,18 @@ $cityLine = static function ($city, $zip, $state): string {
 </head>
 <body>
 
+<?php /* Logo su una riga sua, sopra le due colonne: quando stava dentro la
+         colonna dell'emittente spingeva in basso i suoi dati, e il riquadro
+         del destinatario partiva più in alto, sfalsato. Ora emittente e
+         destinatario cominciano alla stessa altezza, ciascuno con la sua
+         etichetta. */ ?>
+<div class="logo"><?= invoice_logo_pdf($invoice ?? null) ?></div>
+
 <table class="layout doc-head">
     <tr>
         <td class="emitter">
-            <div class="logo"><?= invoice_logo_pdf() ?></div>
             <?= $this->include('layout/pdf_party', [
+                'label'   => trans('issued_by', '', 'Emittente'),
                 'name'    => $company_name !== '' ? $company_name : $person_name,
                 'subname' => $company_name !== '' ? $person_name : '',
                 'ids'     => [
@@ -148,6 +155,7 @@ $has_item_code = array_filter(array_map($itemCode, $items)) !== [];
         <?php if ($show_item_discounts): ?>
             <th scope="col" class="c-discount num"><?= trans('discount') ?></th>
         <?php endif; ?>
+        <th scope="col" class="c-vat num"><?= trans('vat', '', 'IVA') ?></th>
         <th scope="col" class="c-total num"><?= trans('total') ?></th>
     </tr>
     </thead>
@@ -173,6 +181,7 @@ $has_item_code = array_filter(array_map($itemCode, $items)) !== [];
             <?php if ($show_item_discounts): ?>
                 <td class="num"><?= format_currency($item->item_discount) ?></td>
             <?php endif; ?>
+            <td class="num"><?= esc(item_vat_label($item)) ?></td>
             <td class="num"><?= format_currency($item->item_total) ?></td>
         </tr>
     <?php endforeach; ?>
@@ -283,24 +292,7 @@ $has_item_code = array_filter(array_map($itemCode, $items)) !== [];
     </div>
 <?php endif; ?>
 
-<div class="doc-footer">
-    <?php $docFooter = trim((string) get_setting('pdf_invoice_footer')); ?>
-    <?php if ($docFooter !== ''): ?>
-        <div class="doc-footer-note"><?= $docFooter ?></div>
-    <?php endif; ?>
-    <table class="layout">
-        <tr>
-            <td><?= invoice_logo_footer_pdf() ?></td>
-            <?php /* Il totale delle pagine non è noto finché dompdf non ha
-                     impaginato: pdf_create() fa un primo passaggio per
-                     contarle e sostituisce il segnaposto. Il "numero /
-                     totale" lo compone il foglio (counter(page) nel CSS).
-                     Nell'anteprima a schermo il blocco è nascosto perché
-                     lì non c'è paginazione. */ ?>
-            <td class="text-end"><span class="pages">%%PAGINE%%</span></td>
-        </tr>
-    </table>
-</div>
+<?= $this->include('layout/pdf_footer', ['footerKey' => 'pdf_invoice_footer', 'document' => $invoice ?? null]) ?>
 
 </body>
 </html>

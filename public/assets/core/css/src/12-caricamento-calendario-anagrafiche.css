@@ -1,0 +1,1156 @@
+/* =============================================================================
+   Skeleton di caricamento (UI)
+   -----------------------------------------------------------------------------
+   Placeholder shimmer usati in tre punti:
+   1. #ip-page-skeleton — overlay sul contenuto mentre il browser carica la
+      pagina successiva (navigazione da link/form, vedi js/ip-skeleton.js).
+   2. .ip-skeleton-table — righe placeholder nelle tabelle durante la ricerca
+      live (filtri AJAX dei moduli elenco).
+   3. Pannello della ricerca globale durante la chiamata.
+   I blocchi usano i token --ip-skeleton-* così seguono tema e riduzione
+   del movimento dell'utente.
+   ========================================================================== */
+
+/* Blocco base: ogni barra è uno span .ip-skeleton con altezza di riga testo.
+   La larghezza si varia con la custom property --w (default 100%). */
+.ip-skeleton {
+  display: block;
+  width: var(--w, 100%);
+  height: 14px;
+  border-radius: var(--ip-radius-sm);
+  background: linear-gradient(90deg,
+    var(--ip-skeleton-bg) 25%,
+    var(--ip-skeleton-shine) 37%,
+    var(--ip-skeleton-bg) 63%);
+  background-size: 400% 100%;
+  animation: ip-skeleton-shimmer 1.4s ease infinite;
+}
+.ip-skeleton--circle { border-radius: 50%; }
+.ip-skeleton--sm { height: 10px; }
+.ip-skeleton--lg { height: 20px; }
+
+@keyframes ip-skeleton-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* Card skeleton: contorno uguale alle .ip-table-card/.modern-card della app. */
+.ip-skeleton-card {
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  overflow: hidden;
+}
+.ip-skeleton-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ip-space-7);
+  /* Stessa testata della card vera: se cambia il rientro, al momento in cui
+     il contenuto arriva i titoli di pagina si spostano di lato. */
+  padding: var(--ip-card-head-y) var(--ip-card-pad-x);
+  border-bottom: 1px solid var(--ip-border);
+}
+.ip-skeleton-card__body { padding: 4px 0; }
+
+/* Tabella skeleton: intestazione più righe, stessa griglia di una tabella. */
+.ip-skeleton-table__head,
+.ip-skeleton-table__row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--ip-space-6);
+  align-items: center;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--ip-border);
+}
+.ip-skeleton-table__head { padding: 14px 16px; }
+.ip-skeleton-table__head .ip-skeleton { height: 12px; }
+.ip-skeleton-table__row:last-child { border-bottom: 0; }
+
+/* Overlay pagina: copre il contenuto (headerbar compresa) e finge la pagina
+   in caricamento. Opaco: nasconde la pagina vecchia mentre arriva la nuova. */
+#ip-page-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: var(--ip-z-sticky);
+  padding: 0 20px 20px;
+  background: var(--ip-bg);
+  overflow: hidden;
+}
+#ip-page-skeleton[hidden] { display: none; }
+/* #main-content diventa un contenitore posizionato per ancorare l'overlay;
+   nessun effetto sul layout (è già flex item). Le regole ip-auth-shell per
+   la card centrata sono state rimosse: il skeleton non è più incluso nella
+   pagina di login (vedi layout/auth.php). */
+#main-content { position: relative; }
+
+/* Barra in stile headerbar, full-bleed come quella vera (padding ai lati). */
+.ip-page-skeleton__bar {
+  height: 56px;
+  margin: 0 -20px 12px;
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-6);
+  border-bottom: 1px solid var(--ip-border);
+}
+.ip-page-skeleton__bar .ip-skeleton { flex: 0 1 auto; }
+.ip-page-skeleton__bar .ip-skeleton:first-child { flex: 0 1 30%; }
+.ip-page-skeleton__bar .ip-skeleton:last-child { flex: 0 1 12%; margin-left: auto; }
+
+/* Skip link: fuori schermo finché non riceve il focus, poi visibile sopra
+   la topbar. Primo elemento tabulabile della pagina (base e guest). */
+.ip-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: var(--ip-z-top);
+  padding: 8px 14px;
+  background: var(--ip-bg-card);
+  color: var(--ip-primary);
+  /* Bordo in inchiostro pieno (17.7:1): il link deve staccarsi subito
+     anche da chi lo vede per la prima volta a meta' schermata. */
+  border: 1px solid var(--ip-primary);
+  border-radius: var(--ip-radius-sm);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-250%);
+  transition: transform 150ms ease;
+}
+.ip-skip-link:focus,
+.ip-skip-link:focus-visible {
+  transform: none;
+  outline: 2px solid var(--ip-primary);
+  outline-offset: 2px;
+}
+
+/* <main> riceve il focus programmatico dopo la navigazione: non è un
+   elemento interattivo, quindi niente outline di default. */
+#main-content:focus { outline: none; }
+
+/* Ricerca live: la tabella skeleton entra nel target (.table-responsive)
+   al posto della tabella vera mentre il partial AJAX è in volo. */
+.ip-skeleton-table--standalone { padding: 12px 0; background: var(--ip-bg-card); }
+
+/* Pannello ricerca globale: righe placeholder durante la chiamata. */
+.ip-skeleton--panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-5);
+  padding: 12px 14px;
+}
+
+/* Riduzione del movimento: shimmer statico, solo il colore di base. */
+@media (prefers-reduced-motion: reduce) {
+  .ip-skeleton,
+  .ip-skeleton-table,
+  #ip-page-skeleton .ip-skeleton {
+    animation: none;
+  }
+}
+
+/* Contenuto contrastato: i placeholder diventano blocchi pieni e scuri
+   (3.21:1 sulla card) e lo shimmer si ferma: leggibili come elementi anche
+   con bassa acuita', senza il disturbo del movimento. */
+@media (prefers-contrast: more) {
+  :root {
+    --ip-skeleton-bg: #8f8f96;
+    --ip-skeleton-shine: #8f8f96;
+  }
+  .ip-skeleton,
+  .ip-skeleton-table,
+  #ip-page-skeleton .ip-skeleton {
+    animation: none;
+  }
+}
+
+/* Contrasto ridotto: placeholder ancora più tenui, per chi li trova
+   invadenti. */
+@media (prefers-contrast: less) {
+  :root {
+    --ip-skeleton-bg: #e8e8ec;
+    --ip-skeleton-shine: #f2f2f5;
+  }
+}
+
+/* Windows High Contrast (forced-colors): i gradient di background vengono
+   rimossi e lo skeleton sparirebbe. Blocchi bordati con i colori di sistema,
+   così i placeholder restano visibili come forme. */
+@media (forced-colors: active) {
+  .ip-skeleton {
+    background: Canvas;
+    border: 1px solid CanvasText;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Calendario scadenze
+   -----------------------------------------------------------------------------
+   Griglia mensile: le stesse tinte di stato usate ovunque nell'app (fatture,
+   attivita', prospetto) applicate ai tre tipi di scadenza — così "rosso" vuol
+   dire la stessa cosa qui che nella lista fatture. */
+
+.ip-calendar-nav .btn { display: inline-flex; align-items: center; }
+
+.ip-calendar-feed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ip-space-6);
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  font-size: var(--ip-text-base);
+}
+.ip-calendar-feed-bar__main {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-5);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.ip-calendar-feed-bar__icon {
+  color: var(--ip-primary);
+  font-size: var(--ip-text-md);
+  flex-shrink: 0;
+}
+.ip-calendar-feed-bar__label {
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-calendar-feed-bar__url {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  background: var(--ip-bg);
+  border: 1px solid var(--ip-border);
+  padding: 2px 8px;
+  border-radius: var(--ip-radius-sm);
+  word-break: break-all;
+  color: var(--ip-text);
+}
+.ip-calendar-feed-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ip-space-3);
+}
+.ip-calendar-feed-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-2);
+  white-space: nowrap;
+  font-size: var(--ip-text-sm);
+  padding: 3px 10px;
+}
+.ip-calendar-feed-bar__link {
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.ip-calendar-feed-bar__link:hover {
+  color: var(--ip-primary);
+}
+.ip-calendar-feed-bar--missing {
+  border-color: var(--ip-warning-border);
+  background: var(--ip-warning-bg, #fcf8e3);
+}
+.ip-calendar-feed-bar--missing .ip-calendar-feed-bar__icon {
+  color: var(--ip-warning-text, #8a6d3b);
+}
+@media (max-width: 768px) {
+  .ip-calendar-feed-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--ip-space-4);
+  }
+  .ip-calendar-feed-bar__label {
+    white-space: normal;
+  }
+}
+
+.ip-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--ip-space-7);
+  align-items: start;
+}
+/* La soglia conta anche la sidebar (~250px): la griglia vuole 640px, il
+   pannello scadenze 300 più il gap. A 900px il pannello restava affiancato
+   fino a schermi da laptop, dove la colonna della griglia scendeva a ~480px e
+   sabato e domenica finivano dietro uno scroll orizzontale quasi invisibile. */
+@media (max-width: 1280px) {
+  .ip-calendar-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.ip-calendar-card { overflow: hidden; }
+
+.ip-calendar-grid {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.ip-calendar-grid thead th {
+  padding: 8px 6px;
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ip-text-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--ip-border);
+}
+.ip-calendar-cell {
+  height: 96px;
+  padding: 6px;
+  vertical-align: top;
+  border: 1px solid var(--ip-border-soft);
+}
+.ip-calendar-cell.is-empty { background: var(--ip-bg); }
+.ip-calendar-cell.is-today { background: var(--ip-primary-soft); }
+.ip-calendar-daynum {
+  display: block;
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  color: var(--ip-text-muted);
+  margin-bottom: 4px;
+}
+.ip-calendar-cell.is-today .ip-calendar-daynum { color: var(--ip-primary); }
+/* Quando il giorno ha scadenze il numero diventa un bottone (apre il popover
+   con tutte le scadenze): reset dei default da bottone, stessa resa del
+   vecchio span. */
+button.ip-calendar-daynum {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--ip-radius-sm);
+}
+button.ip-calendar-daynum:hover,
+button.ip-calendar-daynum:focus-visible {
+  color: var(--ip-primary);
+  outline: 0;
+  box-shadow: var(--ip-shadow-focus);
+}
+/* Il pallino sotto il numero indica "oggi" senza dover decodificare il fondo
+   tenue della cella: accento pieno, lo stesso tratto del numero. */
+.ip-calendar-cell.is-today .ip-calendar-daynum::after {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-left: 5px;
+  vertical-align: 1px;
+  border-radius: 999px;
+  background: var(--ip-primary);
+}
+
+.ip-calendar-event {
+  display: block;
+  font-size: var(--ip-text-xs);
+  line-height: 1.4;
+  padding: 1px 5px;
+  margin-bottom: 2px;
+  border-radius: var(--ip-radius-sm);
+  color: var(--ip-text);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 3px solid var(--ip-neutral);
+  background: var(--ip-hover);
+}
+.ip-calendar-event:hover { background: var(--ip-primary-soft); }
+/* Stesse tinte della cartoleria: verde postale per il denaro (fatture),
+   ambra per l'intermedio (F24), inchiostro per il lavoro (attivita'). */
+.ip-calendar-event--invoice { border-left-color: var(--ip-success); }
+.ip-calendar-event--f24     { border-left-color: var(--ip-warning-text); }
+.ip-calendar-event--task    { border-left-color: var(--ip-primary); }
+.ip-calendar-event.is-overdue {
+  background: var(--ip-danger-bg);
+  border-left-color: var(--ip-danger);
+  color: var(--ip-danger-text);
+  font-weight: 600;
+}
+.ip-calendar-event-more {
+  display: block;
+  font-size: var(--ip-text-xs);
+  color: var(--ip-text-muted);
+}
+/* "+N altre" ora è un bottone che apre il popover del giorno: reset e un
+   accento al hover per dire che lì c'è altro da vedere. */
+button.ip-calendar-event-more {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+button.ip-calendar-event-more:hover,
+button.ip-calendar-event-more:focus-visible {
+  color: var(--ip-primary);
+  outline: 0;
+  box-shadow: var(--ip-shadow-focus);
+}
+
+.ip-calendar-list { list-style: none; margin: 0; padding: 0; }
+.ip-calendar-list li + li { border-top: 1px solid var(--ip-border-soft); }
+.ip-calendar-list a {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: var(--ip-space-4);
+  align-items: center;
+  padding: 10px 14px;
+  text-decoration: none;
+  color: var(--ip-text);
+}
+.ip-calendar-list a:hover { background: var(--ip-hover); }
+.ip-calendar-list__date {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+.ip-calendar-list__title {
+  font-size: var(--ip-text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ip-calendar-list__amount {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-calendar-list li.is-overdue .ip-calendar-list__date,
+.ip-calendar-list li.is-overdue .ip-calendar-list__title {
+  color: var(--ip-danger-text);
+  font-weight: 600;
+}
+
+/* Weekend: il fondo leggermente diverso delle colonne Sab/Dom scandisce la
+   settimana senza obbligare a leggere le intestazioni. */
+.ip-calendar-grid thead th.is-weekend { color: var(--ip-text-muted); }
+.ip-calendar-cell.is-weekend { background: var(--ip-bg); }
+.ip-calendar-cell.is-weekend .ip-calendar-daynum { color: var(--ip-text-muted); }
+
+/* Legenda sotto la griglia: le tinte dei tre tipi e del "scaduto", che la
+   griglia usa per i bordi degli eventi. Le stesse della cartoleria. */
+.ip-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  padding: 10px 14px;
+  border-top: 1px solid var(--ip-border-soft);
+  background: var(--ip-bg);
+  font-size: var(--ip-text-xs);
+}
+.ip-calendar-legend__label {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+}
+.ip-calendar-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  color: var(--ip-text-muted);
+}
+.ip-calendar-legend__item::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--ip-hover);
+}
+.ip-calendar-legend__item--invoice::before { background: var(--ip-success); }
+.ip-calendar-legend__item--f24::before { background: var(--ip-warning-text); }
+.ip-calendar-legend__item--task::before { background: var(--ip-primary); }
+.ip-calendar-legend__item.is-overdue::before { background: var(--ip-danger); }
+
+/* Sezioni del riepilogo laterale: "Scadute / Oggi / In programma" come le
+   eyebrow delle altre pagine (mono maiuscole), con il contatore accanto. */
+.ip-calendar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  margin: 0;
+  padding: 10px 14px 2px;
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+}
+.ip-calendar-group__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ip-hover);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-2xs);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.ip-calendar-group.is-overdue-group .ip-calendar-group__count {
+  background: var(--ip-danger-bg);
+  color: var(--ip-danger-text);
+}
+
+/* Popover del giorno: pannello fisso sopra la cella con tutte le scadenze.
+   Stessa base delle finestre (card) e delle liste dei pannelli IPSelect. */
+.ip-calendar-popover {
+  position: fixed;
+  z-index: var(--ip-z-top);
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-lg);
+  overflow: hidden;
+}
+.ip-calendar-popover__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--ip-space-5);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ip-border-soft);
+  background: var(--ip-bg);
+}
+.ip-calendar-popover__day {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  color: var(--ip-text);
+}
+.ip-calendar-popover__count {
+  font-size: var(--ip-text-2xs);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+}
+.ip-calendar-popover__list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 320px;
+  overflow: auto;
+}
+.ip-calendar-popover__item + .ip-calendar-popover__item { border-top: 1px solid var(--ip-border-soft); }
+.ip-calendar-popover__item a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--ip-space-4);
+  align-items: baseline;
+  padding: 8px;
+  border-radius: var(--ip-radius-sm);
+  text-decoration: none;
+  color: var(--ip-text);
+}
+.ip-calendar-popover__item a:hover { background: var(--ip-hover); }
+.ip-calendar-popover__badge {
+  font-size: var(--ip-text-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--ip-hover);
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-calendar-popover__badge--invoice { background: var(--ip-success-bg); color: var(--ip-success-text); }
+.ip-calendar-popover__badge--f24 { background: var(--ip-warning-bg); color: var(--ip-warning-text); }
+.ip-calendar-popover__badge--task { background: var(--ip-primary-soft); color: var(--ip-primary); }
+.ip-calendar-popover__title {
+  font-size: var(--ip-text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ip-calendar-popover__amount {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-calendar-popover__item.is-overdue .ip-calendar-popover__title {
+  color: var(--ip-danger-text);
+  font-weight: 600;
+}
+.ip-calendar-popover__item.is-overdue .ip-calendar-popover__badge {
+  background: var(--ip-danger-bg);
+  color: var(--ip-danger-text);
+}
+
+@media (max-width: 480px) {
+  .ip-calendar-cell { height: 76px; }
+  .ip-calendar-event { font-size: var(--ip-text-2xs); }
+}
+
+/* -----------------------------------------------------------------------------
+   Voci contributive aggiuntive (scheda azienda)
+   -----------------------------------------------------------------------------
+   Righe ripetibili: nome, aliquota, base di calcolo, deducibilità. Su viewport
+   strette le righe si impilano invece di schiacciare i campi.
+
+   La colonna nome ha un max esplicito (non 1fr libero): su schermi larghi un
+   1fr senza limite si mangia tutto lo spazio disponibile e spinge aliquota/
+   base/deducibile in un blocco compresso lontano dal campo nome, con un vuoto
+   enorme in mezzo. La colonna finale 1fr assorbe lo spazio residuo alla fine
+   della riga invece che al centro. */
+.ip-tax-extra-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 320px) 130px 190px 150px 34px 1fr;
+  gap: var(--ip-space-6);
+  align-items: center;
+  margin-bottom: 8px;
+}
+.ip-tax-extra-row .form-control { height: 36px; }
+.ip-tax-extra-row .ip-input-suffix__mark { min-width: 20px; }
+/* Le frecce native di type=number si sovrappongono al simbolo "%": in una
+   colonna stretta il risultato è un ammasso illeggibile di icone. */
+.ip-tax-extra-row .ip-input-suffix input[type="number"] {
+  -moz-appearance: textfield;
+}
+.ip-tax-extra-row .ip-input-suffix input[type="number"]::-webkit-outer-spin-button,
+.ip-tax-extra-row .ip-input-suffix input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.ip-tax-extra-check {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  margin: 0;
+  white-space: nowrap;
+}
+.ip-tax-extra-check .form-check-input { margin: 0; }
+
+@media (max-width: 900px) {
+  .ip-tax-extra-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ip-tax-extra-check { align-self: center; }
+  /* Impilate, il comando "rimuovi" finiva da solo sotto la colonna del nome,
+     lontano dalla riga che elimina: va all'estremita' destra, dove sta anche
+     in orizzontale. */
+  .ip-tax-extra-row .tax-extra-remove {
+    grid-column: 2;
+    justify-self: end;
+  }
+}
+
+/* Riquadro che raccoglie le righe: prima le righe stavano a giro libero nella
+   sezione, senza un bordo che le distinguesse dagli altri campi del regime
+   sopra. Un contenitore proprio rende chiaro dove inizia e finisce l'elenco. */
+.ip-tax-extras-help { margin-top: 2px; }
+.ip-tax-extras-card {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  background: var(--ip-bg);
+}
+.ip-tax-extras-card .ip-tax-extra-row:last-child { margin-bottom: 0; }
+
+/* Intestazione di colonna: senza, "Base" e "Deducibile" si capiscono solo
+   guardando dentro ogni riga. Nascosta sotto i 900px insieme allo stack a due
+   colonne delle righe, dove non corrisponderebbe più ai campi sottostanti. */
+.ip-tax-extra-row--head {
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--ip-border);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+@media (max-width: 900px) {
+  .ip-tax-extra-row--head { display: none; }
+}
+
+.ip-tax-extra-add { margin-top: 8px; }
+
+/* -----------------------------------------------------------------------------
+   Regime e imposte (scheda azienda)
+   -----------------------------------------------------------------------------
+   Campo che occupa tutta la riga della griglia. Prima stava come stile inline
+   sulle singole .ip-doc-field: la stessa dichiarazione ripetuta a mano in ogni
+   view che ne aveva bisogno. */
+.ip-doc-field--full { grid-column: 1 / -1; }
+
+/* Campo largo due colonne: per i valori che una colonna non regge senza andare
+   a capo (l'IBAN, 27 caratteri monospazio) ma che a tutta riga lascerebbero un
+   input lungo il triplo del contenuto. */
+.ip-doc-field--wide { grid-column: span 2; }
+/* Sotto i 768px la griglia e' a una colonna: span 2 vi creerebbe una seconda
+   colonna implicita, e il campo uscirebbe dal riquadro. */
+@media (max-width: 767.98px) {
+  .ip-doc-field--wide { grid-column: auto; }
+}
+
+/* Input di pochi caratteri (codice SIA, sigle): la casella si ferma alla
+   misura del dato anche quando il campo occupa più colonne perché il testo
+   di aiuto ne ha bisogno. Senza, un codice di cinque caratteri finiva in una
+   casella larga come quella dell'IBAN. */
+.ip-input-short { max-width: 160px; }
+
+/* Numero che puo' andare a capo: l'IBAN a gruppi di quattro, in una scheda di
+   telefono, non ci sta su una riga sola, e .ip-num (nowrap) faceva debordare
+   la cella fuori dalla scheda. Va a capo fra un gruppo e l'altro, mai dentro. */
+.ip-num--wrap { white-space: normal; }
+
+/* Campi e intestazioni di sottogruppo non pertinenti al regime scelto.
+   display:none li toglie dal flusso della griglia senza lasciare celle vuote,
+   a differenza di visibility:hidden. */
+.ip-regime-field[hidden],
+.ip-doc-subgroup[hidden] { display: none; }
+
+/* Le tre forme aziendali stanno su una riga sola finche' c'e' spazio: sono
+   alternative da confrontare, non un elenco da scorrere. */
+#ip-company-form { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+/* -----------------------------------------------------------------------------
+   Conti di saldo e metodi di pagamento
+   -----------------------------------------------------------------------------
+   Le due anagrafiche decidono cosa viene stampato nel riquadro pagamento del
+   documento e cosa finisce nel blocco DatiPagamento dell'XML. L'elenco e il
+   form lo dicono con gli stessi elementi: una seconda riga di dettaglio nelle
+   celle, e un foglio d'anteprima che mostra il blocco come sara' stampato. */
+
+/* Seconda riga di una cella: la qualifica del dato principale (banca e
+   intestatario sotto il nome del conto, descrizione sotto il codice MP). Il
+   dato secondario così non ruba una colonna alla tabella. */
+.ip-cell-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--ip-text-sm);
+  line-height: 1.4;
+  font-style: normal;
+  color: var(--ip-text-muted);
+}
+
+/* Voce di menu spenta: l'azione esiste ma ora non e' disponibile (il record e'
+   collegato a documenti). Resta visibile — nasconderla farebbe cercare un
+   comando che c'e' sempre stato — ma non e' cliccabile, e porta con se' il
+   motivo. Forma e spaziatura arrivano dalla regola comune delle voci di menu:
+   qui cambia solo il colore e il cursore. */
+.dropdown-menu .dropdown-button.is-disabled {
+  color: var(--ip-text-muted);
+  cursor: not-allowed;
+}
+.dropdown-menu .dropdown-button.is-disabled:hover { background: none; }
+
+/* Colonna form + anteprima. L'anteprima resta a fianco finche' lo schermo lo
+   consente e sotto quando non ci sta: e' un riscontro di cio' che si sta
+   scrivendo, quindi va guardata mentre si compila, non dopo. */
+.ip-account-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--ip-space-7);
+  align-items: start;
+}
+@media (max-width: 1199.98px) {
+  .ip-account-layout { grid-template-columns: minmax(0, 1fr); }
+}
+.ip-account-layout__side { position: sticky; top: 16px; }
+@media (max-width: 1199.98px) {
+  .ip-account-layout__side { position: static; }
+}
+/* Variante a colonna singola: toglie la colonna laterale da 320px (sempre
+   vuota quando la pagina non ha un pannello affiancato) così la card si
+   prende tutta la larghezza disponibile. */
+.ip-account-layout--wide { grid-template-columns: minmax(0, 1fr); }
+
+/* Il foglio: carta bianca su un fondo scuro, la stessa messa in scena
+   dell'anteprima PDF (.ip-preview__sheet), in piccolo. Il fondo scuro serve a
+   dire "questa e' la stampa, non un altro riquadro del form". */
+.ip-paysheet {
+  padding: 14px;
+  border-radius: var(--ip-radius);
+  background: var(--ip-preview-bg);
+}
+.ip-paysheet__paper {
+  padding: 16px 18px;
+  border-radius: 2px;
+  background: #fff;
+  color: #18181b;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+.ip-paysheet__label {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.ip-paysheet__title {
+  margin: 0 0 8px;
+  font-size: var(--ip-text-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.ip-paysheet__line {
+  margin: 0 0 4px;
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  color: #3f3f46;
+}
+/* L'IBAN e' la ragione per cui il conto esiste: monospazio a gruppi di
+   quattro, come sull'estratto conto, così si ricontrolla cifra per cifra. */
+.ip-paysheet__iban {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  font-weight: 500;
+  word-break: break-all;
+  color: #18181b;
+}
+.ip-paysheet__note {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid #e4e4e7;
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  color: #52525b;
+  white-space: pre-line;
+}
+.ip-paysheet__empty {
+  margin: 0;
+  font-size: var(--ip-text-sm);
+  font-style: italic;
+  color: #71717a;
+}
+
+/* Presentazione RiBa: le fatture emesse con metodo RiBa stanno in cima e sono
+   gia' spuntate. La riga separatrice dice dove finisce quel gruppo e comincia
+   il resto delle fatture aperte, che restano presentabili. */
+.ip-riba-divider td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--ip-border);
+  background: var(--ip-bg);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-weight: 500;
+}
+.ip-item-row.is-riba .badge { margin-left: 6px; }
+
+/* ---- Integrazione MCP (app/Views/mcp/settings.php) ----
+   Snippet di configurazione client: blocco monospace in sola lettura, con
+   sfondo leggermente diverso dal card per staccarsi dal resto del form. */
+.ip-mcp-snippet {
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  background: var(--ip-bg);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  font-family: var(--bs-font-monospace, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--ip-text-sm);
+  line-height: 1.55;
+  color: var(--ip-text);
+  overflow-x: auto;
+  white-space: pre;
+}
+.ip-mcp-snippet code {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  padding: 0;
+}
+/* Badge di stato: allineato verticalmente al testo che lo accompagna. */
+.ip-mcp-status .badge {
+  font-weight: 600;
+}
+.ip-mcp-status__text {
+  font-size: var(--ip-text-base);
+}
+
+/* Pager condiviso in fondo alle tabelle elenco. Il footer del card
+   allinea a destra nav + conteggio; su schermi stretti va a capo. */
+.ip-table-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ip-space-6);
+  flex-wrap: wrap;
+}
+.ip-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ip-space-6);
+  flex-wrap: wrap;
+}
+.ip-pager-info {
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-pager .pagination {
+  margin: 0;
+  /* Bootstrap definisce l'attivo con --bs-pagination-active-bg hardcoded
+     su #0d6efd (il blu di default), non legato a --bs-primary/--ip-primary
+     come il resto dei componenti: qui lo riallineiamo al colore del tema. */
+  --bs-pagination-active-bg: var(--ip-primary);
+  --bs-pagination-active-border-color: var(--ip-primary);
+}
+/* In tema scuro --ip-primary si ribalta in quasi-bianco (#e7e7ea, pensato
+   come accento/testo su sfondo scuro, non come fondo pieno): il testo
+   dell'attivo restava #fff fisso di Bootstrap, quindi bianco su quasi-bianco,
+   contrasto illeggibile. Stesso ribaltamento gia' applicato a .btn-primary,
+   .ip-select-option.is-selected, .ip-tabs .nav-link.active. */
+html[data-theme="dark"] .ip-pager .pagination {
+  --bs-pagination-active-color: var(--ip-bg);
+}
+
+/* Campo descrizione riga fattura più ampio: la colonna guadagna una
+   larghezza minima comoda e la textarea cresce in altezza col contenuto
+   (serve per le diciture di legge dell'inversione contabile, es.
+   "Operazione in regime di inversione contabile ai sensi dell'art. 17
+   comma 6 DPR 633/72", che non starebbero mai su una riga sola). */
+.ip-items-table__desc {
+  width: 40%;
+  /* 230 e non 320: il contenitore della tabella porta ora il rientro
+     laterale (--ip-card-pad-x per lato, così le celle di bordo non si
+     schiacciano), quindi la tabella dispone di 36px in meno. Con la
+     minima a 320 su un portatile da 1280 la riga andava in scorrimento
+     orizzontale di ~70px e la colonna Opzioni restava fuori schermo.
+     Sopra i ~1350px la colonna si allarga comunque da sola (width: 40%). */
+  min-width: 230px;
+}
+/* Colonna Imposta: la tendina mostra la descrizione della natura IVA
+   ("0,00% — Non soggetta – forfettario (N2.2)"), che è nowrap e quindi
+   detta la larghezza minima della cella. Con un valore lungo la tabella
+   righe sforava il contenitore anche a 1280 (colonna Opzioni e Totale da
+   raggiungere con lo scorrimento). Sotto i 1400 il controllo viene
+   limitato e il testo si chiude con i puntini: l'etichetta intera resta
+   nella tendina aperta e nel select nativo, che è quello che viene
+   inviato. Sopra, lo spazio c'è e resta leggibile per esteso. */
+@media (max-width: 1399.98px) {
+  .ip-items-table__tax .ip-select {
+    max-width: 140px;
+  }
+}
+.ip-items-table__tax .ip-select__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ip-items-table__desc textarea.ip-item-row__desc {
+  min-height: 60px;
+  resize: vertical;
+  overflow: hidden;
+  /* i browser moderni adattano l'altezza al testo; dove non supportato
+     resta la min-height + resize manuale. */
+  field-sizing: content;
+}
+/* Nella riga "aggiungi riga" la descrizione è più larga dell'articolo.
+   Lo flex va sul wrapper (creato da ip-desc-counter.js) così il contatore
+   resta sotto il campo e non ruba spazio nella riga flessibile. */
+.ip-doc-newrow .ip-desc-wrap {
+  flex: 3 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ip-doc-newrow .ip-desc-wrap .form-control {
+  width: 100%;
+}
+
+/* Contatore caratteri della descrizione riga (vedi ip-desc-counter.js). Il
+   cap è voluto: la Descrizione della FatturaPA è un String1000Type, quindi
+   oltre 1000 caratteri l'XML verrebbe rifiutato dallo SdI — meglio segnalarlo
+   subito, mentre si compila, invece di scoprirlo al tentativo di invio. */
+.ip-desc-wrap {
+  display: block;
+}
+.ip-desc-counter {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-align: right;
+  color: var(--ip-text-muted, #6c757d);
+  font-variant-numeric: tabular-nums;
+}
+.ip-desc-counter--full {
+  color: var(--bs-danger, #dc3545);
+  font-weight: 600;
+}
+
+/* Tabella righe: scorrevole in orizzontale sugli schermi stretti, così le
+   colonne a larghezza minima non sfondano il layout della pagina. */
+.ip-doc-items {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* La minima di 720px serve alla griglia righe (nove colonne, con la
+   descrizione larga). Applicata a ogni .ip-items-table faceva scorrere anche
+   le tabelle di riepilogo a tre colonne, che nella modifica fattura stanno
+   nella colonna destra larga ~470px (Imposte, pagamenti): 247px di
+   scorrimento orizzontale per tre colonne che ci stavano senza problemi.
+   Il discriminante è la colonna descrizione, che solo la griglia righe ha. */
+.ip-items-table:has(.ip-items-table__desc) {
+  min-width: 720px;
+}
+/* Larghezze della griglia righe. Le misure generiche di .ip-items-table
+   (Codice 120, tre colonne numeriche da 110, Unità 130, Imposta 210, Totale
+   130, più il 40% della descrizione) sommano ben oltre i ~970px che la
+   scheda offre su un portatile da 1280: il browser le riduceva tutte in
+   proporzione e i campi uscivano più corti del loro contenuto — Codice a
+   48px (il segnaposto "Cod." tagliato), Prezzo a 49px, cioè meno di
+   "1.234,56". Qui ogni colonna chiede solo ciò che serve al suo valore tipico
+   e le spaziature orizzontali tra celle si dimezzano (da 12 a 6px per lato:
+   nove colonne di campi non hanno bisogno di 24px di aria tra l'una e
+   l'altra). Il totale delle colonne fisse scende a ~740px, quindi a 1280 la
+   descrizione tiene la sua minima e i campi hanno la lunghezza giusta; sugli
+   schermi più larghi lo spazio in più va tutto alla descrizione, che è
+   l'unica colonna senza larghezza dichiarata. Vale solo per la griglia righe
+   (riconosciuta dalla colonna descrizione), non per le tabelle di riepilogo
+   che riusano la classe. */
+.ip-items-table:has(.ip-items-table__desc) > thead > tr > th,
+.ip-items-table:has(.ip-items-table__desc) > tbody > tr > td {
+  padding-left: 6px;
+  padding-right: 6px;
+  /* Le misure qui sotto sono l'ingombro intero della colonna, spaziatura
+     compresa: così la somma si legge a colpo d'occhio (724px di colonne
+     fisse + 242 di descrizione minima = i 966px disponibili a 1280). */
+  box-sizing: border-box;
+}
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__desc { width: auto; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__handle { width: 56px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__code { width: 70px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num { width: 96px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num--qty { width: 70px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num--price { width: 96px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num--discount { width: 70px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__unit { width: 112px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__tax { width: 128px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__total { width: 92px; }
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__actions { width: 30px; }
+/* Dentro la griglia i campi numerici e il codice hanno 6px di margine
+   interno invece di 10: con 10 per lato un Prezzo da 70px lasciava 50px alle
+   cifre, e "4.883,00" usciva tagliato a sinistra; lo stesso per "1,00" nella
+   Quantità. Le larghezze sopra sono calcolate su questo margine: Prezzo
+   contiene "12.345,67", Quantità e Sconto "100,00". */
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__num .form-control,
+.ip-items-table:has(.ip-items-table__desc) .ip-items-table__code .form-control {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+/* Sotto i 1400px le due tendine cedono qualche pixel ai campi importo:
+   l'Unità resta leggibile ("Nessuno", "pz") e l'Imposta mostra comunque la
+   percentuale, che è la parte che si controlla a colpo d'occhio; l'etichetta
+   intera è nel menu aperto. */
+@media (max-width: 1399.98px) {
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__unit .ip-select { max-width: 100px; }
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__tax .ip-select { max-width: 116px; }
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__unit .ip-select__value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* La "x" per svuotare l'Unità qui toglierebbe 20px al testo ("Nes…"): per
+     tornare a "Nessuno" basta sceglierlo dal menu, dov'è la prima voce. */
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__unit .ip-select__clear { display: none; }
+}
+/* "Q.tà" è un'abbreviazione d'intestazione, non un termine da spiegare: via
+   la sottolineatura puntinata e il cursore d'aiuto che il browser dà a
+   <abbr title>. Il nome per esteso resta nel title. */
+.ip-items-table th abbr[title] { text-decoration: none; cursor: inherit; }
+/* Sopra i 1400px l'Imposta mostra l'etichetta per esteso (vedi sopra): lì la
+   colonna torna larga, e lo spazio c'è. */
+@media (min-width: 1400px) {
+  .ip-items-table:has(.ip-items-table__desc) .ip-items-table__tax { width: 222px; }
+}
+
+/* Maniglia e frecce su/giù per riordinare le righe (vedi ip-items-reorder.js).
+   La maniglia serve al drag da mouse, le frecce a touch e tastiera (il drag
+   nativo HTML5 non parte su dispositivi senza mouse). La colonna è stretta e
+   gli elementi non hanno sfondo a riposo, così non appesantiscono la riga. */
+.ip-items-table__handle {
+  width: 44px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.ip-item-row__grip {
+  display: block;
+  line-height: 1;
+}
+.ip-item-row__handle {
+  border: 0;
+  background: transparent;
+  color: var(--ip-text-muted, #6c757d);
+  cursor: grab;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  touch-action: none;
+}
+.ip-item-row__handle:hover,
+.ip-item-row__handle:focus-visible {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ip-text, #212529);
+  outline: none;
+}
+.ip-item-row__handle:active {
+  cursor: grabbing;
+}
+.ip-item-row__reorder {
+  display: inline-flex;
+  gap: var(--ip-space-1);
+  margin-top: 4px;
+}
+.ip-item-row__move {
+  border: 0;
+  background: transparent;
+  color: var(--ip-text-muted, #6c757d);
+  cursor: pointer;
+  padding: 1px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  font-size: var(--ip-text-2xs);
+}
+.ip-item-row__move:hover:not(:disabled),
+.ip-item-row__move:focus-visible:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ip-text, #212529);
+  outline: none;
+}
+.ip-item-row__move:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.ip-item-row.ip-dragging {
+  opacity: 0.55;
+  background: var(--ip-bg-subtle);
+}
+/* Indica che la riga è trascinabile mentre si impugna la maniglia. */
+.ip-item-row[draggable="true"] {
+  cursor: grabbing;
+}
+

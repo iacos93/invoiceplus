@@ -115,3 +115,43 @@ test('la scheda Email inviate compare nella pagina del documento', async ({ page
     await expect(scheda).toBeVisible();
     await expect(scheda.locator('.ip-preview__empty, .ip-preview__payments--tracks')).toBeVisible();
 });
+
+test('il menu utente si apre senza spostarsi', async ({ page }) => {
+    await login(page);
+
+    // Popper posiziona il menu con un transform inline: un'animazione che
+    // tocca transform lo sovrascrive per qualche decina di millisecondi e il
+    // pannello fa un saltino verso l'angolo. Si confronta la posizione appena
+    // aperto con quella a riposo: devono coincidere.
+    await page.locator('.ip-user-button').click();
+    const menu = page.locator('.ip-topbar .dropdown-menu.show');
+    await expect(menu).toBeVisible();
+
+    const subito = await menu.boundingBox();
+    await page.waitForTimeout(400);
+    const aRiposo = await menu.boundingBox();
+
+    expect(subito).not.toBeNull();
+    expect(aRiposo).not.toBeNull();
+    expect(Math.abs(subito!.x - aRiposo!.x)).toBeLessThan(1);
+    expect(Math.abs(subito!.y - aRiposo!.y)).toBeLessThan(1);
+});
+
+test('barra dei mesi: istruzioni dietro la «i» e nessuno scroll al cambio mese', async ({ page }) => {
+    await login(page);
+    await page.goto('/invoices/status/all');
+
+    // Le istruzioni restano chiuse finché non si passa sulla «i».
+    const testo = page.locator('#ip-period-hint-text');
+    await expect(testo).toBeHidden();
+    await page.locator('[data-ip-period-hint-btn]').click();
+    await expect(testo).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    // Scegliere un mese rinnova la lista ma la pagina resta dov'è: la barra
+    // deve restare sotto il puntatore per il clic successivo.
+    const prima = await page.evaluate(() => window.scrollY);
+    await page.locator('.ip-period-month[data-month="1"]').click();
+    await expect(page).toHaveURL(/month/);
+    expect(await page.evaluate(() => window.scrollY)).toBe(prima);
+});

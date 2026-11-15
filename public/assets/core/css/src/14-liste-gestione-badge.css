@@ -1,0 +1,781 @@
+/* -----------------------------------------------------------------------
+   Liste documenti: tabelle che stanno nel contenitore
+   -----------------------------------------------------------------------
+   .ip-table-card .table-responsive ha overflow: visible di proposito (i menu
+   Opzioni non devono essere tagliati e l'intestazione è sticky rispetto alla
+   pagina), quindi una tabella più larga del contenitore faceva scorrere in
+   orizzontale l'intera pagina: a 1200 px le liste fatture e costi erano
+   larghe 1.030–1.050 px in 929 px utili. Invece di riattivare lo scroll
+   interno si toglie la larghezza superflua. */
+
+/* Pulsante Opzioni: solo icona. La parola resta nel pulsante (font-size 0)
+   e quindi nel nome accessibile; la colonna passa da ~117 a ~56 px. */
+.ip-table-card .options.btn-group > .dropdown-toggle {
+  font-size: 0;
+  min-width: 40px;
+  min-height: 32px;
+  padding: 6px 10px;
+}
+.ip-table-card .options.btn-group > .dropdown-toggle > .fa {
+  font-size: var(--ip-text-md);
+}
+.ip-table-card .options.btn-group > .dropdown-toggle::after {
+  margin-left: 6px;
+  border-top-width: 5px;
+  border-right-width: 4px;
+  border-left-width: 4px;
+  vertical-align: 2px;
+}
+/* Intestazione della colonna Opzioni: visivamente nascosta ma letta dagli
+   screen reader, così non è lei a dettare la larghezza della colonna. */
+.ip-table-card table:has(td .options.btn-group) > thead > tr > th:last-child {
+  width: 1%;
+  font-size: 0;
+}
+
+/* Esito SdI nella lista: il badge può andare a capo invece di allargare la
+   colonna, e lo stato "importata" è una nota discreta (vedi invoices/index). */
+.ip-sdi-badge {
+  white-space: normal;
+  max-width: 14em;
+  text-align: left;
+}
+.ip-sdi-note {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-sdi-note .fa {
+  font-size: var(--ip-text-xs);
+  margin-right: 2px;
+}
+
+/* Tracciamento email nella lista: sotto il numero, come la nota SdI, così
+   l'icona non allarga la colonna. Il verde segnala l'apertura, che è
+   l'informazione cercata; "non aperta" resta discreto perché può voler dire
+   solo che il programma di posta ha bloccato le immagini. */
+.ip-email-note {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-email-note .fa {
+  font-size: var(--ip-text-xs);
+  margin-right: 2px;
+}
+.ip-email-note--opened {
+  color: var(--ip-success-text);
+}
+
+/* Badge accanto a un numero documento (XML nella lista costi): sotto il
+   numero, non di fianco — i numeri dei fornitori sono lunghi
+   (2026F001340825) e il badge in linea allargava la colonna. */
+.ip-num-tag {
+  display: table;
+  margin-top: 3px;
+}
+
+/* KPI positivo (IVA a credito). */
+.card-value.card-value-success {
+  color: var(--ip-success, #2e7d32);
+}
+
+/* Scheda compatta su telefono: cella azioni (lista costi, che non ha una
+   colonna Stato) al posto dello stato, accanto al fornitore; la partita IVA
+   del fornitore resta nella vista tabellare. */
+@media (max-width: 575.98px) {
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="actions"] {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: right;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="client"] small,
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="client"] br {
+    display: none;
+  }
+  /* Hover di .table-hover: Bootstrap lo disegna cella per cella con
+     un'ombra interna, che nella scheda diventava una serie di rettangoli
+     grigi a macchie. In modalità scheda lo stato vale per la riga intera. */
+  .ip-table-card table.ip-table-card-collapse.table-hover > tbody > tr > * {
+    box-shadow: none;
+  }
+  .ip-table-card table.ip-table-card-collapse.table-hover > tbody > tr:hover {
+    background: var(--ip-hover);
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="number"] .ip-num-tag {
+    display: inline-block;
+    margin: 0 0 0 6px;
+    vertical-align: 1px;
+  }
+}
+
+/* Pagine di import XML (fatture emesse e ricevute, quietanze F24): il campo
+   file è la zona su cui si trascina, quindi alto e tratteggiato, e i testi
+   stanno a misura di lettura.
+
+   Il tratteggio sta sul controllo e non su un contenitore attorno: prima un
+   .ip-import-drop avvolgeva etichetta, controllo e aiuto e disegnava un
+   secondo riquadro tratteggiato attorno a quello vero. Sembrava una zona di
+   rilascio e non lo era — il drop lo ascolta .ip-file__control — e in più
+   l'etichetta del campo finiva al centro del riquadro come un titolo. */
+.ip-file-drop {
+  /* Larghezza piena del corpo, non 640px: la zona tratteggiata è il bersaglio
+     del trascinamento, quindi più è grande più è facile centrarla, e a 640px
+     lasciava vuota la metà destra del corpo mentre l'aiuto andava a capo
+     cinque volte su una frase sola. */
+  max-width: none;
+}
+/* ...ma non nelle card dell'import CSV, dove la zona deve riempire la card:
+   questa regola, pensata per le pagine XML, la lasciava a metà larghezza. */
+.ip-import-card .ip-import-drop { max-width: none; }
+.ip-file-drop .ip-file__control {
+  min-height: 72px;
+  border-style: dashed;
+  /* Nome e pulsante restano un gruppo solo, centrato nella zona: a tutta
+     larghezza il nome stava a sinistra e "Scegli file" a un metro di
+     distanza, e il campo leggeva come una barra vuota. */
+  justify-content: center;
+}
+.ip-file-drop .ip-file__name {
+  /* flex-grow 0: altrimenti il nome si prende tutto lo spazio libero e
+     risospinge il pulsante a destra, annullando la centratura. */
+  flex: 0 1 auto;
+}
+.ip-file.is-dragover .ip-file__control {
+  border-color: var(--ip-primary);
+  background: var(--ip-primary-soft);
+}
+/* Ora che l'aiuto sta su una riga piena serve una misura di lettura: oltre
+   80ch una frase da 200 caratteri diventa una riga che attraversa tutto lo
+   schermo e si rilegge con fatica. */
+.ip-file-drop .ip-field-help { max-width: 80ch; }
+
+/* Due card affiancate: a sinistra il gesto (il campo, la categoria), a destra
+   cosa succede al caricamento. Su una riga sola le istruzioni finivano sotto
+   il campo e la card del gesto si allungava di quattro righe mentre metà
+   pagina restava vuota; di fianco leggono come il riquadro d'aiuto che sono.
+   La colonna di destra è stretta e fissa (340px): è testo da consultare, non
+   deve competere con il campo. Sotto i 992px le card tornano una sotto
+   l'altra, il gesto prima e le istruzioni dopo. */
+.ip-import-layout form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ip-space-7);
+  align-items: start;
+  /* Oltre i 1600px il campo diventerebbe una scatola vuota lunga un metro e
+     mezzo: la coppia di card si ferma lì e lo spazio che resta è margine,
+     non una zona di rilascio più larga di quanto serva. */
+  max-width: 1600px;
+}
+/* Il distacco fra le due card lo dal gap della griglia; il margine che
+   .ip-doc-section porta con sé serve quando le card sono impilate, dove
+   separa il gesto dalle istruzioni invece di sommare spazio al gap. */
+.ip-import-layout .ip-doc-section { margin-bottom: 0; }
+@media (min-width: 992px) {
+  .ip-import-layout form { grid-template-columns: minmax(0, 1fr) 340px; }
+}
+
+.ip-import-notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* 12px fra una nota e l'altra, contro i 6,5px che separano due righe della
+     stessa nota: a 8px i due ritmi si assomigliavano e le quattro voci
+     leggevano come un paragrafo unico spezzato a caso. */
+  gap: var(--ip-space-6);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-base);
+  line-height: 1.5;
+}
+/* Spunta appesa al margine sinistro e testo rientrato di 24px: nella card da
+   340px ogni nota va a capo, e con l'icona in linea col testo la seconda riga
+   riparte da sotto la spunta invece che dal testo. Il rientro vale per tutto
+   il blocco, quindi anche un <strong> o un <code> dentro la nota resta dentro
+   la stessa colonna di testo; con una griglia, invece, testo ed elemento
+   diventerebbero due celle affiancate e la riga si spezzerebbe. */
+.ip-import-notes li {
+  position: relative;
+  padding-left: 24px;
+  /* A capo più equilibrati dove il browser lo supporta: senza, l'ultima riga
+     resta di una o due parole e l'elenco sembra una scaletta. */
+  text-wrap: pretty;
+}
+.ip-import-notes .fa {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 16px;
+  /* Centrata nella colonna dell'icona, così le spunte formano una fila
+     verticale pulita invece di dipendere dalla larghezza del glifo. */
+  text-align: center;
+  color: var(--ip-success, #468847);
+}
+.ip-import-category {
+  max-width: 320px;
+  margin-top: 16px;
+}
+
+/* -----------------------------------------------------------------------------
+   37. Controllo di gestione (Bilancino)
+   -------------------------------------------------------------------------- */
+
+/* Navigazione fra le cinque schermate del modulo. Sono link a pagine, non
+   linguette: il piano dei conti e il budget si modificano, il report si legge.
+   La grafica però è quella della barra schede (.ip-tabs, sezione 37): prima
+   qui c'erano voci piatte con una sottolineatura da 2px sull'attiva e un
+   bordo solo sotto, così "Controllo di gestione" e "Impostazioni" sembravano
+   due componenti diversi pur facendo la stessa cosa. Ora il contenitore è la
+   stessa pastiglia bordata e la voce attiva è piena, quindi si vede a colpo
+   d'occhio anche dove sta il modulo. */
+.ip-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ip-space-1);
+  /* Nessun margine orizzontale: la barra sta dentro #content, che ha già il
+     suo inset. Serve solo lo stacco dai numeri sotto. */
+  margin: 0 0 18px;
+  padding: 4px;
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  background: var(--ip-bg-card);
+}
+.ip-subnav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  padding: 7px 14px;
+  border-radius: var(--ip-radius-sm);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-base);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-subnav__item .fa { font-size: var(--ip-text-sm); opacity: .8; }
+.ip-subnav__item:hover,
+.ip-subnav__item:focus-visible {
+  background: var(--ip-hover);
+  color: var(--ip-text);
+}
+/* Voce attiva piena, come la scheda selezionata. Il testo usa il token
+   "on-primary" e non il bianco fisso: in tema scuro --ip-primary si ribalta
+   in chiaro e il bianco sarebbe bianco su bianco. */
+.ip-subnav__item.is-active {
+  background: var(--ip-primary);
+  color: var(--ip-on-primary);
+}
+.ip-subnav__item.is-active .fa { opacity: 1; }
+/* Focus da tastiera: un reset globale toglie l'outline e qui non c'era altro,
+   quindi scorrendo con Tab le cinque voci non mostravano dove si era. Stesso
+   anello di .ip-tabs. */
+.ip-subnav__item:focus-visible {
+  outline: 0;
+  box-shadow: var(--ip-shadow-focus);
+  color: var(--ip-text);
+}
+.ip-subnav__item.is-active:focus-visible { color: var(--ip-on-primary); }
+/* Schermo stretto: una riga sola che scorre, non tre righe, con le stesse
+   misure ridotte di .ip-tabs. La barra di scorrimento è nascosta: a dire
+   che ce n'è ancora sono il taglio dell'ultima voce e l'ombra sul bordo, e
+   lo script in _tabs centra l'attiva. */
+@media (max-width: 767.98px) {
+  .ip-subnav {
+    flex-wrap: nowrap;
+    padding: 3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    /* Il taglio dell'ultima voce non basta sempre: a 375px la terza voce del
+       Controllo di gestione finisce esattamente sul bordo e le due dopo non
+       si intuiscono. Un'ombra sul lato da cui c'è ancora contenuto lo dice
+       senza script: le due ombre stanno ferme sui bordi (scroll), le due
+       coperture nel colore della barra scorrono col contenuto (local) e le
+       nascondono quando si è arrivati in fondo a quel lato. */
+    background:
+      linear-gradient(to right, var(--ip-bg-card) 40%, transparent) left center / 28px 100% no-repeat local,
+      linear-gradient(to left, var(--ip-bg-card) 40%, transparent) right center / 28px 100% no-repeat local,
+      linear-gradient(to right, color-mix(in srgb, var(--ip-text) 22%, transparent), transparent) left center / 14px 100% no-repeat scroll,
+      linear-gradient(to left, color-mix(in srgb, var(--ip-text) 22%, transparent), transparent) right center / 14px 100% no-repeat scroll,
+      var(--ip-bg-card);
+  }
+  .ip-subnav::-webkit-scrollbar { display: none; }
+  .ip-subnav__item { flex: 0 0 auto; white-space: nowrap; padding: 6px 10px; font-size: var(--ip-text-sm); }
+  .ip-subnav::-webkit-scrollbar-track { background: transparent; }
+  .ip-subnav::-webkit-scrollbar-thumb { background: var(--ip-border-soft); border-radius: 999px; }
+}
+
+/* Barra degli strumenti sopra una tabella (importa piano, avvisi, filtri
+   locali alla schermata): sta su una riga sola e non si confonde con la
+   testata della card. */
+.ip-management-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ip-space-5);
+  margin-bottom: 14px;
+}
+.ip-bilancino-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ip-space-5);
+}
+
+/* Quattro numeri in testa al report. Riquadri distinti e non una striscia
+   unica: margine ed EBITDA sono risultati, ricavi e cassa sono grandezze di
+   partenza, e il bordo li separa senza bisogno di dirlo a parole. */
+.ip-bilancino-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--ip-space-6);
+  margin-bottom: 18px;
+}
+.ip-bilancino-kpi__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-2);
+  padding: 14px 16px;
+  border: 1px solid var(--ip-border);
+  border-left: 3px solid var(--ip-border-strong);
+  border-radius: var(--ip-radius);
+  background: var(--ip-bg-card);
+  box-shadow: var(--ip-shadow-sm);
+}
+.ip-bilancino-kpi__card.is-revenue { border-left-color: var(--ip-success); }
+.ip-bilancino-kpi__card.is-margin  { border-left-color: var(--ip-primary); }
+.ip-bilancino-kpi__card.is-ebitda  { border-left-color: var(--ip-warning); }
+.ip-bilancino-kpi__card.is-cash    { border-left-color: var(--ip-info, #3A87AD); }
+/* La perdita è l'informazione più importante della pagina: il rosso va sul
+   bordo e sulla cifra, non su tutta la card, che diventerebbe illeggibile. */
+.ip-bilancino-kpi__card.is-negative { border-left-color: var(--ip-danger); }
+.ip-bilancino-kpi__card.is-negative .ip-bilancino-kpi__value { color: var(--ip-danger-text); }
+.ip-bilancino-kpi__label {
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--ip-text-muted);
+  line-height: 1.3;
+}
+.ip-bilancino-kpi__value {
+  font-family: var(--ip-display);
+  font-size: var(--ip-text-3xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+  line-height: 1.15;
+  color: var(--ip-text);
+}
+.ip-bilancino-kpi__note {
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+
+/* Tabella del conto economico: dodici colonne mensili più nome e totale. Il
+   contenitore .table-responsive la fa scorrere in orizzontale, ma la colonna
+   della voce resta agganciata a sinistra: senza, scorrendo verso dicembre non
+   si sa più quale riga si sta leggendo. */
+/* Il suggerimento serve finché la tabella non entra nella colonna; sopra i
+   1640px di viewport (≈1364 di contenuto) ci sta tutta. */
+@media (min-width: 1640px) {
+  .ip-bilancino-scroll-hint { display: none; }
+}
+.ip-bilancino {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--ip-text-sm);
+}
+.ip-bilancino th,
+.ip-bilancino td {
+  padding: 6px 8px;
+  vertical-align: baseline;
+  border: 0;
+}
+.ip-bilancino thead th {
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--ip-border-strong);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
+.ip-bilancino__name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 230px;
+  text-align: left;
+  font-weight: 400;
+  background: var(--ip-bg-card);
+}
+.ip-bilancino thead .ip-bilancino__name { z-index: 3; }
+.ip-bilancino__code {
+  width: 58px;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ip-bilancino__month,
+.ip-bilancino__total {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ip-bilancino__total {
+  width: 110px;
+  font-weight: 600;
+}
+/* Lo zero resta indietro, ma deve leggersi: --ip-border-strong sul fondo
+   scuro stava a 1,9:1 e la cella sembrava vuota. Una tinta di --ip-text-muted
+   tiene il passo arretrato in entrambi i temi senza scendere sotto il 3:1. */
+.ip-bilancino__month.is-zero { color: color-mix(in srgb, var(--ip-text-muted) 75%, transparent); }
+.ip-bilancino__month.is-negative,
+.ip-bilancino__total.is-negative { color: var(--ip-danger-text); }
+.ip-bilancino__month.is-good,
+.ip-bilancino__total.is-good { color: var(--ip-success-text); }
+.ip-bilancino__month.is-bad,
+.ip-bilancino__total.is-bad { color: var(--ip-danger-text); }
+
+/* Intestazione di sezione (RICAVI, COSTI VARIABILI...) in banda scura: è la
+   cesura che rende leggibile un conto economico scalare, e senza di essa le
+   venti righe sembrano un elenco unico. */
+.ip-bilancino__section > th {
+  padding: 7px 8px;
+  background: var(--ip-primary);
+  color: var(--ip-bg-card);
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  text-align: left;
+}
+/* La banda di sezione occupa tutte le colonne: da sola non può restare
+   agganciata (è più larga del contenitore, quindi sticky non ha spazio per
+   spostarla) e scorrendo verso dicembre resterebbe una striscia vuota senza
+   dire più in che sezione ci si trova. L'etichetta invece è un inline-block
+   stretto e si ferma al bordo sinistro del contenitore. */
+.ip-bilancino__band {
+  display: inline-block;
+  position: sticky;
+  left: 8px;
+}
+/* In tema scuro --ip-primary è quasi bianco: la banda "scura" diventava una
+   striscia grigio chiaro, la riga più luminosa della pagina, che strappava
+   l'occhio dai numeri. Qui la cesura la fa un fondo appena più chiaro della
+   card con il testo pieno: stessa funzione, senza abbagliare. */
+html[data-theme="dark"] .ip-bilancino__section > th {
+  background: var(--ip-hover);
+  color: var(--ip-text);
+}
+
+/* Assegna voci: voce, opzione e pulsante in una barra sopra l'elenco. Non è
+   sticky di proposito: agganciata sotto l'headerbar veniva spostata verso il
+   basso già a pagina ferma e copriva l'intestazione della tabella. Stare in
+   cima basta a risolvere il problema vero (il pulsante era sotto tutte le
+   righe), e il conteggio accanto conferma cosa si sta per assegnare. */
+.ip-assign-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--ip-space-3) var(--ip-space-5);
+  margin: 0 0 var(--ip-space-4);
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--ip-border);
+}
+.ip-assign-bar__field { flex: 1 1 240px; max-width: 340px; }
+.ip-assign-bar__field .ip-doc-label { margin-bottom: 4px; }
+.ip-assign-bar__check { margin: 0 0 8px; }
+.ip-assign-bar__count {
+  margin: 0 0 8px auto;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.ip-assign-bar .btn { margin-bottom: 2px; }
+/* Le tabelle di assegnazione riusano la tipografia del Bilancino ma hanno
+   cinque colonne, non quindici: il min-width da 1080px le allargava oltre la
+   colonna e spingeva righe e imponibile fuori vista, dietro lo scroll. */
+.ip-bilancino--assign { min-width: 0; }
+/* Tutta la riga seleziona la fattura: il cursore lo dice. */
+tr.is-selectable { cursor: pointer; }
+tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
+
+/* Completezza della classificazione, sopra i KPI: dice subito se margine ed
+   EBITDA si possono leggere o sono ancora parziali. */
+.ip-bilancino-coverage {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-5);
+  margin-bottom: var(--ip-space-5);
+  padding: 12px 16px;
+  border: 1px solid var(--ip-border);
+  border-left: 3px solid var(--ip-warning);
+  border-radius: var(--ip-radius);
+  background: var(--ip-bg-card);
+}
+.ip-bilancino-coverage__text {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+.ip-bilancino-coverage__text strong {
+  color: var(--ip-text);
+  font-size: var(--ip-text-base);
+}
+.ip-bilancino-coverage__bar {
+  display: block;
+  height: 6px;
+  margin-top: 4px;
+  max-width: 420px;
+  border-radius: 999px;
+  background: var(--ip-border-soft);
+  overflow: hidden;
+}
+.ip-bilancino-coverage__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ip-warning);
+}
+.ip-bilancino-coverage .btn { flex: 0 0 auto; }
+@media (max-width: 575.98px) {
+  .ip-bilancino-coverage { flex-direction: column; align-items: stretch; }
+}
+
+/* Rientro dei sottoconti: la profondità arriva da --ip-level impostato dalla
+   view, così aggiungere un livello non richiede una classe nuova. */
+.ip-bilancino__indent {
+  display: inline-block;
+  width: calc(var(--ip-level, 0) * 16px);
+}
+.ip-bilancino__caret {
+  margin-right: 4px;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-2xs);
+}
+.ip-bilancino tr.is-parent > .ip-bilancino__name { font-weight: 600; }
+.ip-bilancino tr.is-parent td { font-weight: 500; }
+
+.ip-bilancino tr.is-subtotal > * {
+  border-top: 1px solid var(--ip-border);
+  font-weight: 600;
+  background: var(--ip-primary-soft);
+}
+.ip-bilancino tr.is-subtotal > .ip-bilancino__name { font-weight: 700; }
+
+/* Margine ed EBITDA: doppio filo e cifra in serif, come il netto del
+   prospetto di "Utile e imposte". Sono le conclusioni del conto, non un'altra
+   voce dell'elenco. */
+.ip-bilancino tr.is-result > * {
+  border-top: 3px double var(--ip-border-strong);
+  font-weight: 700;
+  background: var(--ip-primary-soft);
+}
+.ip-bilancino tr.is-result .ip-bilancino__total b {
+  font-family: var(--ip-display);
+  font-size: var(--ip-text-lg);
+  letter-spacing: -.01em;
+}
+
+/* Non assegnati: giallo d'avviso, non rosso. Non sono un errore, sono un
+   lavoro da finire, e il colore deve dire questo. */
+.ip-bilancino tr.is-unassigned > * {
+  background: var(--ip-warning-bg);
+  color: var(--ip-warning-text);
+  font-style: italic;
+}
+.ip-bilancino tr.is-unassigned .ip-bilancino__total b { font-style: normal; }
+
+.ip-bilancino__empty {
+  padding: 14px 8px;
+  color: var(--ip-text-muted);
+  font-style: italic;
+}
+
+/* Righe senza movimenti (mese a zero) restano leggibili ma arretrano: il
+   trattino sullo zero è già nella formattazione, il grigio chiaro aggiunge
+   che quel mese non ha nulla da dire. */
+.ip-bilancino__hint,
+.ip-bilancino__break-even {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ip-space-3);
+  margin: 14px 0 0;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+}
+.ip-bilancino__hint .fa,
+.ip-bilancino__break-even .fa { margin-top: 3px; }
+.ip-bilancino__break-even {
+  padding: 10px 14px;
+  border-radius: var(--ip-radius);
+  background: var(--ip-success-bg);
+  color: var(--ip-success-text);
+  font-weight: 500;
+}
+
+/* Piano dei conti: codice in evidenza monospaziata e riga spenta per le voci
+   disattivate, che restano in elenco perché servono a capire i totali storici. */
+.ip-plan-code {
+  display: inline-block;
+  min-width: 34px;
+  margin-right: 4px;
+  color: var(--ip-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.ip-bilancino--plan tr.is-inactive > * { opacity: .6; }
+.ip-bilancino--plan tr.is-inactive .ip-bilancino__name { text-decoration: line-through; }
+/* Il piano dei conti ha quattro colonne: la min-width da dodici mesi del
+   conto economico non serve e, dentro la card, allargava la pagina (1080 px
+   su 898 disponibili). Qui la tabella sta nel contenitore. */
+.ip-bilancino--plan { min-width: 0; }
+
+/* Griglia budget: dodici caselle strette per riga. Il campo è più basso del
+   form-control standard, altrimenti quattro righe di intensità diverse
+   diventano un muro di riquadri e la lettura per colonna si perde. */
+/* Griglia budget: quattordici colonne (voce + dodici mesi + totale) non
+   stanno nei ~898 px della card. Il .table-responsive dentro .ip-table-card
+   ha overflow: visible per non tagliare i menu Opzioni delle liste; qui non
+   ci sono menu, quindi lo scroll interno si può riattivare senza effetti
+   collaterali. La colonna Voce resta agganciata a sinistra. */
+.ip-table-card .table-responsive:has(> .ip-bilancino--budget-grid) {
+  overflow-x: auto;
+}
+/* Dentro un contenitore che scorre in orizzontale l'ancoraggio verticale
+   (top: navbar + headerbar) non ha più un riferimento utile: il browser
+   spingerebbe l'intestazione 112 px più in basso, sopra le prime righe. Si
+   azzera solo il top: la colonna Voce conserva il suo left:0 e resta ferma
+   mentre si scorrono i mesi. */
+.ip-table-card .table-responsive:has(> .ip-bilancino--budget-grid) > .table > thead > tr > th {
+  top: auto;
+}
+.ip-bilancino--budget-grid .ip-bilancino__month { padding: 3px 4px; }
+.ip-budget-input {
+  width: 88px;
+  min-width: 70px;
+  padding: 4px 6px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ip-bilancino--budget-grid tfoot > tr > * {
+  border-top: 2px solid var(--ip-border-strong);
+  font-weight: 700;
+  background: var(--ip-primary-soft);
+}
+
+/* ==========================================================================
+   Badge — token condivisi
+   --------------------------------------------------------------------------
+   Qui viveva il cosiddetto "badge system unificato" a classi .ip-badge*: nessuna view
+   però le ha mai usate (0 occorrenze in app/ e in public/assets/core/js), mentre
+   la sua regola `.badge, .ip-badge` continuava a decidere l'ossatura dei badge
+   veri — due sistemi per un componente solo, e quello morto vinceva sulle
+   misure. Le classi sono state tolte; restano i token, che è l'unica parte
+   davvero letta dal resto del foglio (base .badge, timbri, badge di tabella).
+   ========================================================================== */
+
+:root {
+  /* Il corpo è 10px e non 11: la scala destina --ip-text-2xs ai badge, e un
+     corpo solo evita che due timbri affiancati abbiano altezze diverse. */
+  --ip-badge-font-size:      var(--ip-text-2xs);
+  --ip-badge-font-weight:    700;
+  --ip-badge-letter-spacing: 0.07em;
+  --ip-badge-line-height:    1.25;
+  /* Padding in px, non in em: in em dipende dal corpo e produceva i 3,08px che
+     disallineavano le etichette di un pixel. */
+  --ip-badge-padding-y:      3px;
+  --ip-badge-padding-x:      7px;
+  --ip-badge-radius:         var(--ip-radius-sm);
+  --ip-badge-transition:     var(--ip-transition);
+}
+
+/* ------------------------------------------------------------------ forme assorbite */
+/* Etichette compatte che nel markup non hanno la classe .badge: da qui prendono
+   la stessa ossatura dei timbri (corpo 10px, peso 700, maiuscoletto spaziato,
+   padding 3px/7px, raggio 4px, riga 1.25, inline-flex centrato), così un badge
+   XML, un conteggio di tab e uno stato hanno la stessa forma.
+   Prima ognuna si ridichiarava tutte le misure con valori diversi — tre raggi
+   (3px, 4px, 999px), due corpi (10 e 11px), due pesi e quattro padding: era
+   questo che faceva sembrare i badge "sbagliati" a seconda della pagina.
+   Colore e bordo restano dove vivono i componenti. */
+.ip-row-current-badge,
+.ip-tab-badge,
+.ip-aging-range-badge,
+.ip-calendar-popover__badge,
+.ip-import-badge,
+.ip-export-badge,
+.ip-xml-badge,
+.ip-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: var(--ip-badge-padding-y) var(--ip-badge-padding-x);
+  font-size: var(--ip-badge-font-size);
+  font-weight: var(--ip-badge-font-weight);
+  line-height: var(--ip-badge-line-height);
+  letter-spacing: var(--ip-badge-letter-spacing);
+  text-transform: uppercase;
+  border-radius: var(--ip-badge-radius);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+/* Le classi che non hanno un bordo proprio ne portano uno trasparente: così
+   anche i chip senza contorno hanno i 20,5px dei timbri con bordo, e una riga
+   che mescola i due ("selezionato" accanto a uno stato) resta allineata. */
+.ip-row-current-badge,
+.ip-tab-badge,
+.ip-aging-range-badge,
+.ip-calendar-popover__badge,
+.ip-xml-badge,
+.ip-count-badge {
+  border: 1px solid transparent;
+}
+
+/* Il badge della nota di consegna vive dentro il PDF (pdf_styles.php ha la sua
+   copia): qui la stessa forma, perché anche il documento deve avere lo stesso
+   timbro della schermata da cui è stato generato. */
+.doc-badge {
+  display: inline-block;
+  padding: var(--ip-badge-padding-y) var(--ip-badge-padding-x);
+  font-size: var(--ip-badge-font-size);
+  font-weight: var(--ip-badge-font-weight);
+  line-height: var(--ip-badge-line-height);
+  letter-spacing: var(--ip-badge-letter-spacing);
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: var(--ip-badge-radius);
+}
+
+/* Select della voce di ricavo dentro la riga di fattura: sta sotto
+   descrizione, a larghezza piena della cella, perché il nome della voce è
+   lungo ("100 · Vendite di prodotti") e un campo stretto lo troncherebbe
+   proprio nella parte che distingue le voci. */
+.ip-item-row__account {
+  margin-top: 6px;
+}
+
+@media (max-width: 767.98px) {
+  /* Sotto i 768px la colonna agganciata occuperebbe metà schermo: si lascia
+     scorrere tutta la tabella, che è il comportamento normale di
+     .table-responsive. */
+  .ip-bilancino__name { position: static; }
+  .ip-bilancino-kpi { grid-template-columns: 1fr 1fr; }
+  .ip-bilancino-kpi__value { font-size: var(--ip-text-2xl); }
+}
+

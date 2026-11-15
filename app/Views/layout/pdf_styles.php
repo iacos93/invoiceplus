@@ -248,6 +248,14 @@ table.layout td { border: none; padding: 0; vertical-align: top; }
     padding: 8px 10px;
 }
 
+/* Blocco senza riquadro (l'emittente) accanto a quello riquadrato: lo stesso
+   spazio in alto che il riquadro ha tra bordo e testo, così la ragione
+   sociale di chi emette e il nome del destinatario stanno sulla stessa riga. */
+.doc-head .party-plain {
+    border-top: 0.5pt solid transparent;
+    padding-top: 8px;
+}
+
 .party-name { font-weight: bold; font-size: 10pt; }
 .party-line { font-size: 8.5pt; }
 .party-ids { font-size: 8.5pt; color: #6b6b6b; }
@@ -357,19 +365,24 @@ table.items th.num, table.items td.num { text-align: right; white-space: nowrap;
 /* Oggetto e descrizione stanno nella stessa cella (oggetto in grassetto,
    descrizione sotto); la colonna codice, quando c'e', si prende la sua quota
    da quella cella. */
-.items-4 .c-desc  { width: 64%; }
+/* La colonna IVA (l'aliquota della riga) prende 7 punti dalla descrizione:
+   un documento con aliquote diverse non si leggeva senza, perché il riepilogo
+   in fondo dice quanta imposta ma non su quali righe. */
+.items-4 .c-desc  { width: 57%; }
 .items-4.has-code .c-code { width: 14%; }
-.items-4.has-code .c-desc { width: 50%; }
+.items-4.has-code .c-desc { width: 43%; }
 .items-4 .c-qty   { width: 10%; }
 .items-4 .c-price { width: 13%; }
+.items-4 .c-vat   { width: 7%; }
 .items-4 .c-total { width: 13%; }
 
-.items-5 .c-desc     { width: 55%; }
+.items-5 .c-desc     { width: 48%; }
 .items-5.has-code .c-code { width: 13%; }
-.items-5.has-code .c-desc { width: 42%; }
+.items-5.has-code .c-desc { width: 35%; }
 .items-5 .c-qty      { width: 9%; }
 .items-5 .c-price    { width: 12%; }
 .items-5 .c-discount { width: 11%; }
+.items-5 .c-vat      { width: 7%; }
 .items-5 .c-total    { width: 13%; }
 
 .item-name { font-weight: bold; }
@@ -465,7 +478,10 @@ table.sums tr.is-balance td {
     .doc-footer { margin-top: auto; }
 }
 
-.doc-footer img { max-width: 150px; max-height: 34px; }
+/* Il segno sta in una riga di testo da 7,5pt: 26px di altezza lo allineano
+   alla riga (o alle due righe) di testo senza gonfiare il piede, e il tetto in
+   larghezza protegge chi ha caricato come logo di piè di pagina quello esteso. */
+.doc-footer img { display: block; max-width: 90px; max-height: 26px; }
 
 /* Numerazione: un documento di piu' fogli, stampato e spillato, deve dire
    quanti fogli e'. Il numero corrente viene dal contatore CSS, il totale lo
@@ -490,15 +506,33 @@ html.ip-sheet-embedded .pages { display: none; }
     }
 }
 
-/* Piè di pagina configurabile (impostazione pdf_invoice_footer / pdf_quote_footer):
-   testo libero (es. dati fiscali, note legali) che l'utente vuole in calce a
-   ogni documento. Va sopra il logo/pagina e resta nello stesso tono sobrio del
-   piede, per non competere con il corpo del documento. */
-.doc-footer-note {
-    text-align: center;
-    font-size: 7.5pt;
-    color: #6b6b6b;
-    margin-bottom: 4px;
-    line-height: 1.35;
+/* Piede su tre colonne (vedi layout/pdf_footer.php). Gli selettori portano
+   "table.layout" davanti perché la regola generale delle tabelle di
+   impaginazione (padding 0, allineamento in alto) ha la stessa forza e
+   altrimenti vincerebbe per ordine. Le celle si allineano al centro in
+   verticale: il segno e il numero stanno a metà altezza del testo, quale che
+   sia il numero di righe. */
+.doc-footer { padding-top: 6px; }
+table.layout.doc-footer__row td { vertical-align: middle; }
+table.layout.doc-footer__row td.doc-footer__logo {
+    width: 1%;
+    white-space: nowrap;
+    padding-right: 10px;
 }
-.doc-footer-note p:last-child { margin-bottom: 0; }
+/* Testo libero dell'azienda (contatti, diciture di legge): a sinistra come il
+   corpo del documento, interlinea stretta perché possa fare due righe senza
+   alzare il piede più del segno accanto. */
+table.layout.doc-footer__row td.doc-footer__note {
+    text-align: left;
+    font-size: 7.5pt;
+    line-height: 1.35;
+    color: #6b6b6b;
+}
+.doc-footer__note p { margin: 0; }
+.doc-footer__note p + p { margin-top: 2px; }
+table.layout.doc-footer__row td.doc-footer__pages {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+    padding-left: 10px;
+}

@@ -43,4 +43,22 @@ final class AssetFreshnessTest extends CIUnitTestCase
             'custom.min.css non corrisponde a custom.css: esegui `php tools/minify_css.php` e versiona il risultato.'
         );
     }
+
+    /**
+     * custom.css è generato dalle sorgenti in css/src: chi modifica una
+     * sorgente senza rilanciare lo script (o ritocca custom.css a mano)
+     * lascerebbe l'app servire un foglio diverso da quello che si legge.
+     */
+    public function testCustomCssIsBuiltFromSources(): void
+    {
+        $dir   = ROOTPATH . 'public/assets/core/css';
+        $parts = \App\Libraries\CssBundle::parts($dir . '/src');
+
+        $this->assertNotEmpty($parts, 'Mancano le sorgenti in public/assets/core/css/src.');
+        $this->assertSame(
+            \App\Libraries\CssBundle::join($parts),
+            (string) file_get_contents($dir . '/custom.css'),
+            'custom.css non corrisponde a css/src: esegui `php tools/minify_css.php` e versiona il risultato.'
+        );
+    }
 }

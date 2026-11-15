@@ -30,6 +30,8 @@
 </head>
 <body>
 
+<?= report_pdf_brand() ?>
+
 <?php
 $fmt = static fn($v): string => format_currency((float) $v);
 $company = active_company();

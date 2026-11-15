@@ -100,7 +100,8 @@
         'filters' => '<div class="ip-settings-search">'
             . '<i class="fa fa-solid fa-search ip-settings-search__icon" aria-hidden="true"></i>'
             . '<input type="search" id="settings-search" class="form-control form-control-sm"'
-            . ' placeholder="' . esc(trans('search_settings', '', 'Filtra impostazioni…')) . '">'
+            . ' placeholder="' . esc(trans('search_settings', '', 'Filtra impostazioni…')) . '"'
+            . ' aria-label="' . esc(trans('search_settings', '', 'Filtra impostazioni…'), 'attr') . '">'
             . '</div>',
     ]) ?>
 
@@ -375,16 +376,17 @@
                                     <label class="ip-doc-label" for="cron_key">
                                         <?= trans('cron_key') ?>
                                     </label>
-                                    <div class="input-group">
+                                    <div class="input-group ip-secret-group">
                                         <input type="text" name="settings[cron_key]" id="cron_key" class="form-control"
                                                autocomplete="off" spellcheck="false"
                                                placeholder="<?= esc(trans('cron_key_placeholder', '', 'Lascia vuoto per non modificare la chiave attuale'), 'attr') ?>">
-                                        <button id="btn_copy_cron_key" type="button" class="btn btn-secondary"
-                                                title="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>">
+                                        <button id="btn_copy_cron_key" type="button" class="btn btn-secondary ip-secret-copy"
+                                                title="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>"
+                                                aria-label="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>">
                                             <i class="fa fa-solid fa-copy" aria-hidden="true"></i>
                                         </button>
-                                        <button id="btn_generate_cron_key" type="button" class="btn btn-primary">
-                                            <i class="fa fa-solid fa-recycle fa-margin" aria-hidden="true"></i> <?= trans('generate') ?>
+                                        <button id="btn_generate_cron_key" type="button" class="btn btn-secondary">
+                                            <i class="fa fa-solid fa-rotate" aria-hidden="true"></i> <?= trans('generate') ?>
                                         </button>
                                     </div>
                                     <p class="ip-field-help">
@@ -398,16 +400,17 @@
                                     <label class="ip-doc-label" for="calendar_feed_url">
                                         <?= trans('calendar_feed', '', 'Feed calendario scadenze') ?>
                                     </label>
-                                    <div class="input-group">
+                                    <div class="input-group ip-secret-group">
                                         <input type="text" id="calendar_feed_url" class="form-control" readonly
                                                 placeholder="<?= esc(trans('calendar_feed_generate_first', '', 'Genera l\'URL per attivare il feed'), 'attr') ?>"
                                                 value="<?= esc($calendar_feed_url) ?>">
-                                        <button id="btn_copy_calendar_feed" type="button" class="btn btn-secondary"
-                                                title="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>">
+                                        <button id="btn_copy_calendar_feed" type="button" class="btn btn-secondary ip-secret-copy"
+                                                title="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>"
+                                                aria-label="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>">
                                             <i class="fa fa-solid fa-copy" aria-hidden="true"></i>
                                         </button>
-                                        <button id="btn_generate_calendar_feed" type="button" class="btn btn-primary">
-                                            <i class="fa fa-solid fa-recycle fa-margin" aria-hidden="true"></i> <?= trans('generate') ?>
+                                        <button id="btn_generate_calendar_feed" type="button" class="btn btn-secondary">
+                                            <i class="fa fa-solid fa-rotate" aria-hidden="true"></i> <?= trans('generate') ?>
                                         </button>
                                     </div>
                                     <p class="ip-field-help">
@@ -592,7 +595,7 @@
                                     <label class="ip-doc-label" for="invoice_logo_footer"><?= trans('invoice_logo_footer', '', 'Logo (piè di pagina)') ?></label>
                                     <input type="file" name="invoice_logo_footer" id="invoice_logo_footer" class="ip-file-input"
                                            accept="image/gif,image/jpeg,image/png,image/svg+xml"
-                                           data-help="<?= esc(trans('invoice_logo_footer_help', '', 'Versione del logo stampata in fondo al documento: di solito monocromatica o estesa. Se non caricata, il piè di pagina resta senza logo.')) ?>">
+                                           data-help="<?= esc(trans('invoice_logo_footer_help', '', 'Versione del logo stampata in fondo al documento: di solito monocromatica o estesa. Se non caricata, il piè di pagina resta senza logo. Vale per le aziende che non hanno un logo proprio nella loro scheda.')) ?>">
                                 </div>
                             </div>
                         </div>
@@ -1046,6 +1049,17 @@
             });
         }
     })();
+
+    // Conferma della copia: l'icona diventa una spunta per un attimo. Senza,
+    // il pulsante non dava alcun segno e si finiva per premerlo due volte.
+    document.querySelectorAll('.ip-secret-copy').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var input = btn.parentNode.querySelector('input');
+            if (!input || !input.value) { return; }
+            btn.classList.add('is-copied');
+            setTimeout(function () { btn.classList.remove('is-copied'); }, 1500);
+        });
+    });
 
     (function () {
         // Modifiche non salvate: il form e' lungo (7 schede), un link toccato

@@ -1,0 +1,469 @@
+/* -----------------------------------------------------------------------------
+   20. Pagine "lista tabella" (invoices/quotes/clients index...) — card dock.
+   La tabella aderisce al .card-header (no .card-body). Qui la tabella è
+   lunga e l'header ospita titolo + conteggio + ricerca live. La colonna
+   Opzioni ospita dropdown BS che devono poter debordare, quindi niente
+   overflow:hidden (a differenza delle card dashboard #19).
+   -------------------------------------------------------------------------- */
+
+/* Superficie: border + shadow-sm coerenti con .panel/.modern-card per dare
+   elevazione alla lista-tabella, altrimenti la card appariva piatta. */
+.ip-table-card {
+  overflow: visible;
+  border-radius: var(--ip-radius);
+  /* #content.table-content ha padding verticale 0: la card aderisce al
+     bordo inferiore dell'headerbar. Aggiungiamo margine alto per
+     staccarla dall'headerbar/filtri, sullo stesso gradino delle altre card
+     (16px, --ip-space-7). */
+  margin: var(--ip-space-7) 0;
+  /* Ereditiamo il border/shadow di .card (BS5) ma lo rinforziamo per
+     matchesre il .panel legacy. */
+  border: 1px solid var(--ip-border);
+  background: var(--ip-bg-card);
+  box-shadow: var(--ip-shadow-sm);
+}
+/* Header card-lista: scheda con bg neutro + border-bottom leggero.
+   Altezza comoda per ospitare titolo + ricerca live senza affollamento.
+   Padding allineato a .card > .card-header (14px 18px) per coerenza. */
+.ip-table-card .card-header {
+  padding: var(--ip-card-head-y) var(--ip-card-pad-x);
+  background: var(--ip-bg-card);
+  border-bottom: 1px solid var(--ip-border-soft);
+}
+/* Layout header: titolo a sx, ricerca live a dx; mobile stack verticale. */
+.ip-table-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ip-space-6);
+  flex-wrap: wrap;
+}
+/* Titolo: icona in pill soft + label + badge conteggio.
+   Allinea il linguaggio visivo delle card lista a quello del dashboard. */
+.ip-table-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-5);
+  color: var(--ip-text);
+  min-width: 0;   /* permette ellipsis su label lunga quando search occupa spazio */
+}
+.ip-table-card-title .card-header-icon {
+  width: 30px;
+  height: 30px;
+  font-size: var(--ip-text-base);
+  margin-right: 0;
+}
+.ip-table-card-title .ip-table-card-label {
+  font-size: var(--ip-text-md);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+/* Badge conteggio righe: pill con primary-soft + primary text, più
+   scansionabile del text-bg-secondary grigio di Bootstrap.
+   Eredita lo stile di .ip-kpi-count del dashboard (#19b) per coerenza. */
+.ip-table-card-title .badge.text-bg-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 2px 8px;
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  /* !important: la utility BS5 .text-bg-secondary usa !important su fondo e
+     colore; senza, il pill primary-soft perdeva su entrambi (testo bianco). */
+  color: var(--ip-primary) !important;
+  background: var(--ip-primary-soft) !important;
+  border-radius: 999px;
+}
+/* Ricerca live dentro il card-header: niente margin-bottom, flex la
+   dimensiona secondo spazio disponibile (max 320px su desktop). */
+.ip-table-card-search.ip-live-search {
+  margin-bottom: 0;
+  max-width: 320px;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+/* Input di ricerca: stessa altezza di ogni altro controllo
+   (--ip-control-h). Era 34px, 2px meno dei campi della stessa pagina, e
+   nella testata della card stonava accanto a titolo e icona. */
+.ip-table-card-search.ip-live-search input.form-control {
+  height: var(--ip-control-h);
+  font-size: var(--ip-text-base);
+  border-color: var(--ip-border);
+  transition: border-color var(--ip-transition), box-shadow var(--ip-transition);
+}
+.ip-table-card-search.ip-live-search input.form-control:focus {
+  border-color: var(--ip-primary);
+  outline: 0;
+  box-shadow: var(--ip-shadow-focus);
+}
+@media (max-width: 575.98px) {
+  /* Header stack verticale su mobile: titolo riga, ricerca a tutta larghezza. */
+  .ip-table-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  /* flex: 1 1 240px vale sull'asse principale: con l'header in colonna quel
+     240px diventa un'altezza minima, e la ricerca apriva un vuoto di due dita
+     fra il titolo della card e la tabella (su ogni elenco dell'app). Sull'asse
+     verticale la casella deve stare alta quanto il suo contenuto. */
+  .ip-table-card-search.ip-live-search {
+    max-width: 100%;
+    flex: 0 0 auto;
+  }
+}
+/* Tabella dock: bordi puliti e — soprattutto — overflow: visible per non
+   tagliare i dropdown della colonna Opzioni. .table-responsive di BS5 ha
+   overflow-x:auto che, per la spec CSS, rende overflow-y:auto → il menu
+   "Opzioni" che deborda verticalmente restava nascosto sotto la card.
+   Lasciamo overflow: visible su tutti i breakpoint (anche mobile): se una
+   tabella davvero non sta in viewport orizzontale, attivare il pattern
+   collapse opzionale (.ip-table-card-collapse) o nascondere colonne
+   secondarie con utility d-md-none. NON riattiviamo overflow-x:auto su
+   mobile perché si ripresenta il bug dropdown-hidden. */
+.ip-table-card .table-responsive {
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+/* Anche la card stessa deve restare visibile e #filter_results, che nei
+   moduli invoices/clients/quotes/payments fa da wrapper AJAX: NON deve
+   clippare i dropdown che debordano dalla singola riga. Forziamo
+   overflow: visible a tutti gli ancestor della tabella dentro la card dock. */
+.ip-table-card > #filter_results,
+.ip-table-card > #clients-table-wrap,
+.ip-table-card > #quotes-table-wrap,
+.ip-table-card > #payments-table-wrap {
+  overflow: visible;
+}
+/* Z-index del dropdown menu: di default BS è 1000, ma l'headerbar sticky
+   è a 1020 — su liste lunghe un menu che si apre su una riga in alto
+   finiva sotto l'headerbar durante lo scroll. 1035 sta sopra headerbar
+   (1020) e sidebar (1025) e sotto i pannelli flottanti (1080) e i toast
+   (1085); la topbar (1030) non viene mai raggiunta perché i menu si
+   aprono sotto il loro trigger. Dentro una modale il menu vive nello
+   stacking context della modale (1055) e l'elevazione qui non interessa. */
+.dropdown-menu {
+  z-index: var(--ip-z-popover);
+  /* Elevazione di livello medio: i menu a tendina si staccano dalla superficie
+     con la stessa ombra dei pannelli fluttuanti, invece del default Bootstrap
+     piatto. Coerente con --ip-shadow-md. */
+  box-shadow: var(--ip-shadow-md);
+}
+/* Modali: ombra di livello superiore (overlay) invece del default Bootstrap,
+   allineata alla stessa scala di elevazione dei menu e dei pannelli. Raggio
+   morbido (--ip-radius-lg) per staccare dal raggio dei campi. */
+.modal-content {
+  box-shadow: var(--ip-shadow-lg);
+  border-radius: var(--ip-radius-lg);
+}
+/* Tooltip e popover: niente nero di default Bootstrap. Usano la superficie
+   card con bordo hairline e il testo muto, coerenti con il resto del tema. */
+.tooltip-inner {
+  background: var(--ip-bg-card);
+  color: var(--ip-text);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius-sm);
+  font-size: var(--ip-text-sm);
+  font-weight: 500;
+  box-shadow: var(--ip-shadow-sm);
+  padding: 5px 9px;
+}
+/* Freccia del tooltip: tinta come il bordo così non spunta nera su sfondo. */
+.tooltip.show { opacity: 1; }
+.tooltip .tooltip-arrow::before { border-top-color: var(--ip-border) !important; }
+.bs-tooltip-auto[data-popper-placement^="top"] .tooltip-arrow::before,
+.bs-tooltip-top .tooltip-arrow::before { border-top-color: var(--ip-border) !important; }
+.bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before,
+.bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: var(--ip-border) !important; }
+.bs-tooltip-auto[data-popper-placement^="left"] .tooltip-arrow::before,
+.bs-tooltip-left .tooltip-arrow::before { border-left-color: var(--ip-border) !important; }
+.bs-tooltip-auto[data-popper-placement^="right"] .tooltip-arrow::before,
+.bs-tooltip-right .tooltip-arrow::before { border-right-color: var(--ip-border) !important; }
+.popover {
+  background: var(--ip-bg-card);
+  color: var(--ip-text);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius-lg);
+  box-shadow: var(--ip-shadow-md);
+}
+.popover .popover-header {
+  background: var(--ip-bg-card);
+  border-bottom: 1px solid var(--ip-border-soft);
+  color: var(--ip-text);
+  font-weight: 600;
+}
+.popover .popover-body { color: var(--ip-text-muted); }
+.ip-table-card .table > thead > tr > th {
+  /* bg neutro soft per distinguere l'header di colonna dalle righe striped
+     e dare "tier" visivo dentro la card (bg-card attorno). */
+  background: var(--ip-bg, #f6f6f7);
+  box-shadow: inset 0 -1px 0 var(--ip-border);
+  /* Sticky: l'header di colonna resta visibile durante lo scroll nelle liste
+     lunghe. top calcolato sotto navbar + headerbar misurate via JS. */
+  position: sticky;
+  top: calc(var(--ip-navbar-height) + var(--ip-headerbar-height));
+  z-index: var(--ip-z-raised);
+}
+/* Padding celle: compatto dentro la card, senza gonfiare (9/12, il ritmo che
+   tiene in piedi le liste con più colonne). Solo le due colonne di bordo
+   prendono il rientro della card, così il primo testo di colonna cade sotto
+   il titolo della testata e l'ultimo chiude sulla stessa verticale del pager:
+   a 12px su tutti i lati il contenuto stava 6px fuori asse, ma portare tutte
+   le celle a 18 avrebbe rubato ~80px di larghezza alle liste più fitte. */
+.ip-table-card .table > thead > tr > th,
+.ip-table-card .table > tbody > tr > td {
+  padding: 9px 12px;
+}
+/* Le intestazioni di colonna sono etichette di una o due parole: spezzate
+   su due righe ("Data di / scadenza") alzavano l'intera testata per
+   guadagnare pochi pixel a una colonna. Il layout automatico della tabella
+   restringe le celle di dati, che possono andare a capo, e non le etichette. */
+.ip-table-card .table > thead > tr > th,
+.ip-recent-table > thead > tr > th {
+  white-space: nowrap;
+}
+.ip-table-card .table > thead > tr > :first-child,
+.ip-table-card .table > tbody > tr > :first-child,
+.ip-table-card .table > tfoot > tr > :first-child {
+  padding-left: var(--ip-card-pad-x);
+}
+.ip-table-card .table > thead > tr > :last-child,
+.ip-table-card .table > tbody > tr > :last-child,
+.ip-table-card .table > tfoot > tr > :last-child {
+  padding-right: var(--ip-card-pad-x);
+}
+/* Tabelle messe dentro un .card-body (schede riepilogo cliente): il corpo ha
+   già il rientro della card, quindi le celle non ne aggiungono un secondo.
+   Prima il testo stava a 18+12=30px dal bordo, il titolo a 18. */
+.card-body > .table > thead > tr > th,
+.card-body > .table > tbody > tr > th,
+.card-body > .table > tbody > tr > td,
+.card-body > .table-responsive > .table > thead > tr > th,
+.card-body > .table-responsive > .table > tbody > tr > th,
+.card-body > .table-responsive > .table > tbody > tr > td {
+  padding-left: 0;
+  padding-right: 0;
+}
+/* Hover righe: accento più morbido del default (primary-soft già usato
+   da .table-hover); qui lo rafforziamo leggermente per dare "tap target"
+   più evidente nelle liste con righe fitte. */
+.ip-table-card .table-hover > tbody > tr:hover > * {
+  background: var(--ip-primary-soft);
+}
+/* Empty-row dentro la card: padding più ampio per dare respiro e far
+   percepire lo spazio come "invito", non come "errore". */
+.ip-table-card .table > tbody > tr.empty-row > td,
+.ip-table-card .table > tbody > tr > td[colspan]:only-child {
+  padding: 48px var(--ip-card-pad-x);
+}
+/* -----------------------------------------------------------------------
+   Sotto i 1200px: tabelle dentro la card, che scorrono da sole
+   -----------------------------------------------------------------------
+   Sopra i 1200px la colonna contenuti è abbastanza larga per le liste più
+   fitte (fatture, costi): le colonne sono state strette perché ci stiano.
+   Sotto, la stessa lista non entra (a 992 px la colonna è 756 px, la tabella
+   ne chiede 835) e con overflow: visible allargava la pagina intera.
+   Qui si riattiva lo scorrimento interno della card. L'ancoraggio verticale
+   dell'intestazione si azzera perché dentro un contenitore che scorre il
+   browser la spingerebbe sotto di sé. Le tabelle con .ip-table-card-collapse
+   restano fuori sotto i 576px: lì diventano schede (regola più specifica,
+   più sotto nel file). */
+@media (max-width: 1199.98px) {
+  .ip-table-card .table-responsive {
+    overflow-x: auto;
+  }
+  .ip-table-card .table-responsive > .table > thead > tr > th {
+    top: auto;
+  }
+}
+
+/* -----------------------------------------------------------------------
+   Responsive <576: lista-tabella collassa in card-row verticali
+   -----------------------------------------------------------------------
+   Pattern mobile coerente col dashboard (.ip-recent-table): thead nascosto
+   e ogni <tr> diventa una mini-card con data-label::before. Richiede che
+   la vista emetta data-label sulle <td> — dove NON presente, la tabella
+   resta orizzontale-scroll (fallback sicuro via .table-responsive).
+   Disabilitato di default: si attiva aggiungendo la classe
+   .ip-table-card-collapse alla <table> o alla card. */
+@media (max-width: 575.98px) {
+  .ip-table-card .table-responsive:has(table.ip-table-card-collapse) {
+    overflow: visible;
+  }
+  .ip-table-card table.ip-table-card-collapse thead { display: none; }
+  .ip-table-card table.ip-table-card-collapse,
+  .ip-table-card table.ip-table-card-collapse tbody,
+  .ip-table-card table.ip-table-card-collapse tr,
+  .ip-table-card table.ip-table-card-collapse td {
+    display: block;
+    width: 100%;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody tr {
+    border: 1px solid var(--ip-border-soft);
+    border-radius: var(--ip-radius-sm);
+    margin-bottom: 10px;
+    padding: 4px 0;
+    background: var(--ip-bg-card);
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--ip-space-6);
+    padding: 8px 12px;
+    border-bottom: 1px dashed var(--ip-border-soft);
+    text-align: right;
+    /* Un valore lungo (email, indirizzo) non deve allargare la card oltre il
+       viewport: va a capo sotto l'etichetta e, se serve, si spezza. */
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td:last-child {
+    border-bottom: none;
+  }
+  /* Celle vuote (es. la colonna posizione nella riga Totale dei report):
+     in modalita' card diventerebbero una riga alta 33px con solo il bordo
+     tratteggiato, perché non hanno ne' etichetta ne' valore da mostrare. */
+  .ip-table-card table.ip-table-card-collapse tbody td:empty {
+    display: none;
+  }
+  /* La riga "nessun documento" non è una riga di dati: le regole card qui
+     sopra la spezzavano in tre elementi flex distribuiti ai due bordi (icona
+     a sinistra, messaggio al centro, pulsante a destra). Torna un blocco
+     unico e centrato, con la chiamata all'azione sotto il messaggio. */
+  .ip-table-card table.ip-table-card-collapse tbody tr.empty-row > td {
+    display: block;
+    text-align: center;
+    padding: 40px 16px;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: var(--ip-text-sm);
+    color: var(--ip-text-muted);
+    text-align: left;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td.amount,
+  .ip-table-card table.ip-table-card-collapse tbody td[class*="amount"] {
+    justify-content: space-between;
+  }
+  /* Colonne secondarie nascoste in modalità card mobile per ridurre l'altezza
+     della riga: preferito, creata, opzioni. */
+  .ip-table-card table.ip-table-card-collapse tbody td.ip-hide-on-mobile {
+    display: none;
+  }
+
+  /* ---- Scheda compatta delle liste documenti ----------------------------
+     Il collasso qui sopra impila fedelmente una riga per colonna: corretto
+     come regola generale, ma su fatture e preventivi dava sei righe con
+     etichetta per ogni documento, circa 250px a testa — una fattura per
+     schermata, e "Stato"/"Cliente" ripetuti venti volte pesavano quanto i
+     dati. Dove la vista dichiara il ruolo delle celle (data-cell) la riga
+     diventa invece una scheda a due colonne:
+
+         numero fattura            importo
+         cliente                   stato
+         scade il  ...             saldo ...
+
+     Il ruolo sta nel markup (data-cell) e non nella posizione (nth-child)
+     perché fatture e preventivi hanno ordini di colonna diversi, e una
+     colonna aggiunta in mezzo avrebbe spostato silenziosamente il layout. */
+  .ip-table-card table.ip-table-card-collapse tbody tr:has(td[data-cell]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 2px 12px;
+    padding: 10px 12px;
+  }
+  /* :not(.ip-hide-on-mobile) — senza, questa regola (più specifica e più in
+     basso) rimetteva in pagina proprio le colonne che il blocco qui sopra
+     nasconde: stella, data di creazione e menu opzioni. */
+  .ip-table-card table.ip-table-card-collapse tbody tr:has(td[data-cell]) td:not(.ip-hide-on-mobile) {
+    display: block;
+    /* Bootstrap dipinge ogni cella con --bs-table-bg (il canvas) e le separa
+       con un bordo superiore: sulla riga, che in modalità scheda ha il fondo
+       della card, ogni cella disegnava un rettangolo più scuro con una riga
+       sopra, e la scheda si leggeva come una griglia di caselle invece che
+       come un documento solo. */
+    background: transparent;
+    border-top: 0;
+    width: auto;
+    padding: 0;
+    border-bottom: 0;
+    text-align: left;
+  }
+  /* Le etichette sopravvivono solo dove il valore da solo sarebbe ambiguo
+     (una data, un secondo importo): lì restano in linea e minuscole. */
+  .ip-table-card table.ip-table-card-collapse tbody tr:has(td[data-cell]) td::before {
+    content: none;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="number"] {
+    grid-column: 1;
+    grid-row: 1;
+    font-weight: 600;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="amount"] {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+    font-weight: 600;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="client"] {
+    grid-column: 1;
+    grid-row: 2;
+    color: var(--ip-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="status"] {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: right;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="due"],
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="balance"] {
+    font-size: var(--ip-text-sm);
+    color: var(--ip-text-muted);
+    padding-top: 4px;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="due"] {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody td[data-cell="balance"] {
+    grid-column: 2;
+    grid-row: 3;
+    text-align: right;
+  }
+  .ip-table-card table.ip-table-card-collapse tbody tr:has(td[data-cell]) td[data-cell="due"]::before,
+  .ip-table-card table.ip-table-card-collapse tbody tr:has(td[data-cell]) td[data-cell="balance"]::before {
+    content: attr(data-label) " ";
+    display: inline;
+    font-weight: 400;
+    font-size: var(--ip-text-sm);
+    white-space: normal;
+  }
+  /* Cella che contiene solo il trattino di "dato assente" (le viste delle
+     anagrafiche e il partial della ricerca lo emettono dentro .ip-cell-empty):
+     in modalità card sarebbe una riga intera — o due, con l'etichetta — per
+     dire che non c'è niente. Nella tabella larga il trattino resta e tiene
+     la colonna; qui l'assenza si legge da sola.
+     Sta in fondo al blocco e con la stessa specificità della regola che
+     rimette in pagina le celle della scheda a due colonne
+     ("tbody tr:has(td[data-cell]) td:not(.ip-hide-on-mobile)"): più in alto,
+     o più leggera, perdeva e le celle vuote tornavano visibili. */
+  .ip-table-card table.ip-table-card-collapse tbody tr:has(td[data-cell]) td:has(> .ip-cell-empty:only-child) {
+    display: none;
+  }
+}
+/* ---- ex saas.css ---- */

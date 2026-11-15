@@ -31,6 +31,7 @@
 
 
     <link rel="icon" type="image/png" href="<?= base_url('assets/core/img/favicon.png') ?>">
+    <?= $this->include('layout/pwa_head') ?>
 
     <?= $this->include('layout/theme_head') ?>
 
@@ -82,12 +83,7 @@
     <aside class="ip-auth-brand">
         <div class="ip-auth-brand-mark">
             <svg class="ip-brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path class="ip-mark-sheet" d="M5.75 2h7.95L20 8.3v10.2A2.5 2.5 0 0 1 17.5 21H5.75A2.75 2.75 0 0 1 3 18.25V4.75A2.75 2.75 0 0 1 5.75 2Z"/>
-                <path class="ip-mark-fold" d="M13.7 2 20 8.3h-4.6a1.7 1.7 0 0 1-1.7-1.7Z"/>
-                <rect class="ip-mark-line" x="6.2" y="10.6" width="7.4" height="1.5" rx=".75"/>
-                <rect class="ip-mark-line" x="6.2" y="14" width="4.6" height="1.5" rx=".75"/>
-                <circle class="ip-mark-badge" cx="17.4" cy="17.4" r="5"/>
-                <path class="ip-mark-plus" d="M16.5 14.4h1.8v2.1h2.1v1.8h-2.1v2.1h-1.8v-2.1h-2.1v-1.8h2.1Z"/>
+                <?= $this->include('layout/brand_mark') ?>
             </svg>
             <span class="ip-brand-text">
                 <span class="ip-brand-name"><?= esc($app_title) ?></span>
@@ -109,12 +105,7 @@
 
         <div class="ip-auth-brand-foot">
             <svg class="ip-brand-mark ip-brand-mark--foot" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path class="ip-mark-sheet" d="M5.75 2h7.95L20 8.3v10.2A2.5 2.5 0 0 1 17.5 21H5.75A2.75 2.75 0 0 1 3 18.25V4.75A2.75 2.75 0 0 1 5.75 2Z"/>
-                <path class="ip-mark-fold" d="M13.7 2 20 8.3h-4.6a1.7 1.7 0 0 1-1.7-1.7Z"/>
-                <rect class="ip-mark-line" x="6.2" y="10.6" width="7.4" height="1.5" rx=".75"/>
-                <rect class="ip-mark-line" x="6.2" y="14" width="4.6" height="1.5" rx=".75"/>
-                <circle class="ip-mark-badge" cx="17.4" cy="17.4" r="5"/>
-                <path class="ip-mark-plus" d="M16.5 14.4h1.8v2.1h2.1v1.8h-2.1v2.1h-1.8v-2.1h-2.1v-1.8h2.1Z"/>
+                <?= $this->include('layout/brand_mark') ?>
             </svg>
             <?= esc(trans('auth_foot', '', 'Fatturazione per chi lavora bene.')) ?>
         </div>

@@ -31,7 +31,7 @@ $boxed    = (bool) ($_pp['boxed'] ?? ($boxed ?? false));
 <?php if ($label !== ''): ?>
     <div class="party-label"><?= htmlsc($label) ?></div>
 <?php endif; ?>
-<div class="<?= $boxed ? 'party-box' : '' ?>">
+<div class="<?= $boxed ? 'party-box' : 'party-plain' ?>">
     <div class="party-name"><?= htmlsc($name) ?></div>
     <?php if ($subname !== '' && $subname !== $name): ?>
         <div class="party-line"><?= htmlsc($subname) ?></div>

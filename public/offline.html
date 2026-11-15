@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="NOINDEX,NOFOLLOW">
+    <title>Sei offline · Invoice+</title>
+    <!-- Pagina statica mostrata dal service worker quando la rete manca. Non
+         carica nulla dall'app: stili in linea, così regge anche a cache vuota. -->
+    <style>
+        :root { color-scheme: light dark; }
+        body {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: #f6f6f7; color: #1e1e23; padding: 24px; box-sizing: border-box;
+        }
+        main { max-width: 420px; text-align: center; }
+        h1 { font-size: 22px; margin: 20px 0 8px; }
+        p { margin: 0 0 20px; line-height: 1.5; color: #5a5a66; }
+        button {
+            font: inherit; font-weight: 600; padding: 10px 18px; border: 0; border-radius: 8px;
+            background: #1E73B8; color: #fff; cursor: pointer;
+        }
+        button:focus-visible { outline: 3px solid #9FD3FA; outline-offset: 2px; }
+        @media (prefers-color-scheme: dark) {
+            body { background: #151518; color: #f1f1f4; }
+            p { color: #a9a9b6; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <!-- Segno in linea: la pagina compare a qualunque indirizzo dell'app, e un
+         percorso relativo a un'immagine punterebbe ogni volta altrove. -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64" aria-hidden="true">
+        <rect x="1" y="1" width="30" height="30" rx="8" fill="#1E73B8"/>
+        <rect x="6.5" y="7" width="19" height="4" rx="2" fill="#fff"/>
+        <rect x="6.5" y="14" width="8.5" height="4" rx="2" fill="#fff" opacity=".8"/>
+        <path fill="#C4E4FD" d="M19 14.5h4v4.5h4.5v4H23v4.5h-4V23h-4.5v-4H19Z"/>
+    </svg>
+    <h1>Sei offline</h1>
+    <p>Invoice+ lavora sui dati del server e non ne tiene copie sul dispositivo: senza rete non può mostrarli. Appena la connessione torna, riprova.</p>
+    <button type="button" onclick="location.reload()">Riprova</button>
+</main>
+</body>
+</html>

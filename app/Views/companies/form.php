@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 <?php $this->setVar('pageTitle', trans('company', '', 'Azienda')); ?>
 
-<form method="post" action="<?= site_url('companies/form/' . ($company_id ?? '')) ?>" class="ip-doc-form">
+<form method="post" action="<?= site_url('companies/form/' . ($company_id ?? '')) ?>" class="ip-doc-form" enctype="multipart/form-data">
     <?= csrf_field() ?>
     <?= $this->include('layout/headerbar', ['title' => trans('company', '', 'Azienda'), 'actions' => header_actions()]) ?>
 
@@ -368,6 +368,77 @@
             </div>
         </section>
         <?php endif; ?>
+
+        <?php /* Loghi dei documenti di QUESTA azienda. Stanno qui e non nelle
+                 Impostazioni perché sono un dato dell'azienda come la ragione
+                 sociale: con due soggetti giuridici un logo globale finiva
+                 sulle fatture di entrambi. Se un campo resta vuoto vale il
+                 logo delle Impostazioni (vedi document_logo()). */ ?>
+        <section class="ip-doc-section">
+            <div class="ip-doc-section__head">
+                <span class="ip-doc-step"><?= !empty($invoice_groups) ? 4 : 3 ?></span>
+                <h2 class="ip-doc-section__title"><?= trans('company_logos', '', 'Logo e piè di pagina dei documenti') ?></h2>
+                <span class="ip-doc-section__hint"><?= trans('company_logos_hint', '', 'Stampati su fatture, preventivi e DDT di questa azienda') ?></span>
+            </div>
+            <div class="ip-doc-section__body">
+                <div class="ip-doc-grid">
+                    <?php foreach ([
+                        'invoice_logo' => [
+                            trans('company_logo_header', '', 'Logo esteso (intestazione)'),
+                            trans('company_logo_header_help', '', 'La versione completa, con il nome: va in testa al documento. GIF, JPEG, PNG o SVG, consigliato 300x100px.'),
+                        ],
+                        'invoice_logo_footer' => [
+                            trans('company_logo_footer', '', 'Solo logo (piè di pagina)'),
+                            trans('company_logo_footer_help', '', 'Il solo segno, senza nome: va in fondo a ogni pagina. Se manca, il piè di pagina resta senza logo.'),
+                        ],
+                    ] as $name => [$label, $help]): ?>
+                        <?php $current = logo_data_uri((string) $model->formValue($name)); ?>
+                        <div class="ip-doc-field">
+                            <label class="ip-doc-label" for="<?= $name ?>"><?= esc($label) ?></label>
+                            <?php if ($current !== ''): ?>
+                                <div class="ip-company-logo">
+                                    <img src="<?= $current ?>" alt="<?= esc($label, 'attr') ?>" class="ip-company-logo__img">
+                                    <span class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="remove_<?= $name ?>" id="remove_<?= $name ?>" value="1">
+                                        <label class="form-check-label" for="remove_<?= $name ?>"><?= trans('remove', '', 'Rimuovi') ?></label>
+                                    </span>
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" name="<?= $name ?>" id="<?= $name ?>" class="ip-file-input"
+                                   accept="image/gif,image/jpeg,image/png,image/svg+xml"
+                                   data-help="<?= esc($help, 'attr') ?>">
+                            <?php if (!empty($errors[$name])): ?>
+                                <span class="ip-field-error"><?= esc($errors[$name]) ?></span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php /* Il testo del piè di pagina sta accanto ai loghi perché
+                         è l'altra metà del fondo pagina: contatti e diciture
+                         di legge di questa azienda (per una S.r.l. sede,
+                         Registro delle imprese, capitale sociale). */ ?>
+                <div class="ip-doc-grid mt-3">
+                    <?php foreach ([
+                        'pdf_invoice_footer' => trans('company_footer_invoices', '', 'Testo a piè di pagina — fatture e DDT'),
+                        'pdf_quote_footer'   => trans('company_footer_quotes', '', 'Testo a piè di pagina — preventivi'),
+                    ] as $name => $label): ?>
+                        <div class="ip-doc-field">
+                            <label class="ip-doc-label" for="<?= $name ?>"><?= esc($label) ?></label>
+                            <textarea name="<?= $name ?>" id="<?= $name ?>" class="form-control" rows="3" maxlength="5000"><?= esc(old($name, $model->formValue($name))) ?></textarea>
+                            <?php if (!empty($errors[$name])): ?>
+                                <span class="ip-field-error"><?= esc($errors[$name]) ?></span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <p class="ip-number-help">
+                    <?= trans('company_footer_help', '', 'Contatti e diciture di legge dell\'azienda, stampati in fondo a ogni pagina (è ammesso l\'HTML). Lasciato vuoto, vale il testo di Impostazioni.') ?>
+                </p>
+                <p class="ip-number-help">
+                    <?= trans('company_logos_fallback', '', 'Senza un logo proprio questa azienda usa quello caricato in Impostazioni → Fatture, comune a tutte le aziende.') ?>
+                </p>
+            </div>
+        </section>
     </div>
 </form>
 <script>

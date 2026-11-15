@@ -1041,27 +1041,142 @@ if (!function_exists('pdf_create')) {
     }
 }
 
+if (!function_exists('document_logo')) {
+    /**
+     * Nome del file del logo da stampare su un documento.
+     *
+     * $key è 'invoice_logo' (intestazione, la versione estesa) oppure
+     * 'invoice_logo_footer' (piè di pagina, di solito il solo segno).
+     *
+     * Vince il logo dell'azienda che emette il documento; se non ne ha uno si
+     * ricade su quello delle Impostazioni, che resta il logo comune a tutte.
+     * L'azienda è quella del documento ($document, riga o oggetto con
+     * company_id) e non quella attiva in sessione: il portale clienti, i link
+     * pubblici e i cron non hanno una sessione con l'azienda giusta, e una
+     * fattura di un'azienda stampata col logo di un'altra è esattamente
+     * l'errore che i loghi per azienda devono evitare. Senza documento (o con
+     * un documento d'archivio senza company_id) si usa l'azienda attiva.
+     *
+     * @param array|object|null $document
+     */
+    function document_logo(string $key, $document = null): string
+    {
+        if (!in_array($key, ['invoice_logo', 'invoice_logo_footer'], true)) {
+            return '';
+        }
+
+        return \App\Libraries\LogoUpload::pick(document_company($document), $key, (string) get_setting($key, ''));
+    }
+}
+
+if (!function_exists('document_company')) {
+    /**
+     * Riga dell'azienda che emette un documento: quella del suo company_id,
+     * oppure l'azienda attiva se il documento manca o non ne porta uno.
+     *
+     * Serve a loghi e piè di pagina, che devono seguire il documento e non la
+     * sessione (vedi document_logo()). Un dato dell'azienda che non si riesce
+     * a leggere non deve impedire di stampare: in quel caso torna una riga
+     * vuota e chi chiama ricade sul valore globale, come per un'azienda che
+     * non ha impostato nulla di suo.
+     *
+     * @param array|object|null $document
+     *
+     * @return array<string, mixed>
+     */
+    function document_company($document = null): array
+    {
+        static $companies = [];
+
+        $document  = is_object($document) ? get_object_vars($document) : (array) $document;
+        $companyId = (int) ($document['company_id'] ?? 0);
+
+        try {
+            if ($companyId > 0) {
+                return $companies[$companyId] ??= ((new \App\Models\CompanyModel())->find($companyId) ?: []);
+            }
+
+            return active_company();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+}
+
+if (!function_exists('document_footer')) {
+    /**
+     * Testo (HTML) del piè di pagina da stampare su un documento.
+     *
+     * $key è 'pdf_invoice_footer' (fatture e DDT) o 'pdf_quote_footer'
+     * (preventivi). Come per i loghi: vince il testo dell'azienda che emette
+     * il documento, altrimenti quello delle Impostazioni. I contatti e le
+     * diciture di legge di una società non devono comparire sui documenti di
+     * un'altra.
+     *
+     * @param array|object|null $document
+     */
+    function document_footer(string $key, $document = null): string
+    {
+        if (!in_array($key, ['pdf_invoice_footer', 'pdf_quote_footer'], true)) {
+            return '';
+        }
+
+        return \App\Libraries\LogoUpload::pick(document_company($document), $key, (string) get_setting($key, ''));
+    }
+}
+
 if (!function_exists('invoice_logo_pdf')) {
     /**
-     * Logo aziendale per i PDF (equivalente di invoice_logo_pdf() CI3).
-     * In anteprima ($pdf_preview true) usa un URL assoluto, altrimenti
-     * un path locale file:// valido per dompdf.
+     * Logo d'intestazione per i PDF: la versione estesa del marchio
+     * dell'azienda che emette (vedi document_logo() per la scelta).
+     *
+     * @param array|object|null $document il documento che si sta stampando
      */
-    function invoice_logo_pdf(): string
+    function invoice_logo_pdf($document = null): string
     {
-        return invoice_logo_tag(get_setting('invoice_logo'), 'invoice-logo');
+        return invoice_logo_tag(document_logo('invoice_logo', $document), 'invoice-logo');
     }
 }
 
 if (!function_exists('invoice_logo_footer_pdf')) {
     /**
      * Secondo logo, per il piè di pagina del documento: spesso serve una
-     * versione diversa da quella dell'intestazione (monocromatica, estesa,
-     * con payoff). Se non è caricato non si stampa nulla.
+     * versione diversa da quella dell'intestazione (il solo segno, o una
+     * monocromatica). Se non è caricato non si stampa nulla.
+     *
+     * @param array|object|null $document il documento che si sta stampando
      */
-    function invoice_logo_footer_pdf(): string
+    function invoice_logo_footer_pdf($document = null): string
     {
-        return invoice_logo_tag(get_setting('invoice_logo_footer'), 'invoice-logo-footer');
+        return invoice_logo_tag(document_logo('invoice_logo_footer', $document), 'invoice-logo-footer');
+    }
+}
+
+if (!function_exists('report_pdf_brand')) {
+    /**
+     * Intestazione dei PDF dei report: logo esteso dell'azienda a sinistra e,
+     * a destra, il testo di piè di pagina (contatti) in piccolo.
+     *
+     * I report non hanno un "documento" da cui ricavare l'azienda: valgono
+     * quella attiva e il logo/testo che la fattura userebbe, così la stessa
+     * azienda si presenta allo stesso modo su ogni foglio che esce. Niente
+     * logo e niente testo: nessun blocco, il report resta com'era. Tabella
+     * di impaginazione perché dompdf non ha flex.
+     */
+    function report_pdf_brand(): string
+    {
+        $logo = invoice_logo_pdf(null);
+        $note = trim(document_footer('pdf_invoice_footer', null));
+
+        if ($logo === '' && $note === '') {
+            return '';
+        }
+
+        return '<table style="width:100%;border-collapse:collapse;margin:0 0 12px;border-bottom:1px solid #ddd">'
+            . '<tr><td style="border:0;padding:0 0 6px;vertical-align:middle;width:1%;white-space:nowrap">'
+            . ($logo !== '' ? str_replace('<img ', '<img style="width:150px;height:auto" ', $logo) : '')
+            . '</td><td style="border:0;padding:0 0 6px;vertical-align:middle;text-align:right;font-size:8px;color:#777">'
+            . $note . '</td></tr></table>';
     }
 }
 
@@ -1110,7 +1225,41 @@ if (!function_exists('logo_data_uri')) {
             return '';
         }
 
+        if ($extension === 'svg') {
+            $data = svg_size_from_viewbox($data);
+        }
+
         return 'data:' . $mimes[$extension] . ';base64,' . base64_encode($data);
+    }
+}
+
+if (!function_exists('svg_size_from_viewbox')) {
+    /**
+     * Allinea width/height dell'<svg> alla sua viewBox.
+     *
+     * Gli SVG esportati dai programmi di grafica hanno spesso width/height in
+     * pixel arbitrari (qui 1000x250) con una viewBox in altre unità (264x66).
+     * I browser scalano la viewBox sulla scatola e il logo si vede intero;
+     * dompdf invece disegna il contenuto nelle unità della viewBox dentro la
+     * scatola di width/height, e sui PDF il logo usciva a un quarto della
+     * grandezza richiesta, qualunque fosse il CSS. Con width/height uguali
+     * alla viewBox la scatola e il disegno coincidono e le dimensioni le
+     * decide il CSS del documento, come per un PNG.
+     */
+    function svg_size_from_viewbox(string $svg): string
+    {
+        if (!preg_match('/<svg\b[^>]*>/i', $svg, $tag)) {
+            return $svg;
+        }
+
+        if (!preg_match('/\bviewBox\s*=\s*["\']\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)\s*["\']/i', $tag[0], $vb)) {
+            return $svg;
+        }
+
+        $new = preg_replace('/\s(width|height)\s*=\s*["\'][^"\']*["\']/i', '', $tag[0]);
+        $new = preg_replace('/<svg\b/i', '<svg width="' . $vb[1] . '" height="' . $vb[2] . '"', $new, 1);
+
+        return str_replace($tag[0], $new, $svg);
     }
 }
 
@@ -1128,6 +1277,76 @@ if (!function_exists('invoice_logo_tag')) {
         }
 
         return '<img src="' . $src . '" id="' . htmlsc($id) . '" alt="">';
+    }
+}
+
+if (!function_exists('item_vat_label')) {
+    /**
+     * Aliquota IVA di una riga, per la colonna "IVA" dei documenti: "22%",
+     * "8,5%". Senza aliquota (riga fuori campo o senza imposta) un trattino:
+     * "0%" direbbe un'aliquota zero che non è la stessa cosa.
+     *
+     * @param array|object $item
+     */
+    function item_vat_label($item): string
+    {
+        $rate = is_array($item) ? ($item['item_tax_rate_percent'] ?? null) : ($item->item_tax_rate_percent ?? null);
+
+        if ($rate === null || $rate === '') {
+            return '–';
+        }
+
+        // Niente decimali inutili: 22.00 si legge "22%", 8.50 "8,5%".
+        $text = rtrim(rtrim(number_format((float) $rate, 2, ',', ''), '0'), ',');
+
+        return $text . '%';
+    }
+}
+
+if (!function_exists('name_monogram')) {
+    /**
+     * Monogramma di un nome o di una ragione sociale: le iniziali delle prime
+     * due parole che contano.
+     *
+     * Prendere le prime due parole qualunque dava "CD" per «Comune di
+     * Carpignano Sesia»: la preposizione finiva nel monogramma al posto del
+     * nome vero. Articoli, preposizioni e congiunzioni si saltano, e di ogni
+     * parola conta la prima lettera o cifra, così virgolette e parentesi
+     * («ICS "Bottacchi"») non diventano un'iniziale. Se dopo il filtro non
+     * resta nulla (un nome fatto solo di particelle) si torna alle parole
+     * così come sono.
+     */
+    function name_monogram(string $name): string
+    {
+        $skip = ['di', 'de', 'del', 'dello', 'della', 'dei', 'degli', 'delle', 'da', 'dal', 'dalla',
+            'e', 'ed', 'il', 'lo', 'la', 'i', 'gli', 'le', 'a', 'al', 'alla', 'in', 'per', 'con', 'su',
+            'and', 'of', 'the'];
+
+        $all = [];
+        $significant = [];
+
+        foreach (preg_split('/[\s\-\/]+/u', trim($name)) ?: [] as $word) {
+            // Solo lettere e cifre: "d'Italia" resta "dItalia", «"Bottacchi"» "Bottacchi".
+            $clean = preg_replace('/[^\p{L}\p{N}]+/u', '', $word) ?? '';
+
+            if ($clean === '') {
+                continue;
+            }
+
+            $all[] = $clean;
+
+            if (!in_array(mb_strtolower($clean), $skip, true)) {
+                $significant[] = $clean;
+            }
+        }
+
+        $monogram = '';
+
+        foreach (array_slice($significant ?: $all, 0, 2) as $word) {
+            $monogram .= mb_substr($word, 0, 1);
+        }
+
+        return $monogram === '' ? '?' : mb_strtoupper($monogram);
     }
 }
 
@@ -1827,25 +2046,6 @@ if (!function_exists('pretty_print_xml')) {
         $formatted = $dom->saveXML();
 
         return $formatted !== false ? $formatted : $xml;
-    }
-}
-
-if (!function_exists('queue_push')) {
-    /**
-     * Accoda un job per l'esecuzione asincrona su Redis.
-     *
-     * Scorciatoia per non dover importare RedisQueue ovunque.
-     * Se Redis non è raggiungibile il job viene eseguito in modo sincrono,
-     * così l'app non si blocca se il servizio è temporaneamente giù.
-     */
-    function queue_push(\App\Libraries\Queue\JobInterface $job, string $queue = 'default'): void
-    {
-        try {
-            \App\Libraries\Queue\RedisQueue::instance()->push($job, $queue);
-        } catch (\Throwable $e) {
-            log_message('warning', 'Redis non raggiungibile, esecuzione sincrona del job: ' . $e->getMessage());
-            $job->handle();
-        }
     }
 }
 

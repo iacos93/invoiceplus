@@ -3,34 +3,42 @@
 
 <?php $this->setVar('pageTitle', trans('exports', '', 'Esportazioni')); ?>
 <?php
-$actions = '<a class="btn btn-secondary btn-sm" href="' . site_url('imports_exports') . '"><i class="fa fa-solid fa-arrow-left" aria-hidden="true"></i> ' . esc(trans('imports_exports', '', 'Importa / Esporta')) . '</a> '
-    . '<div class="headerbar-total">'
-    . '<span class="headerbar-total__label">' . trans('format', '', 'Formato') . '</span>'
-    . '<span class="headerbar-total__amount" id="export_summary">CSV</span>'
-    . '</div>'
-    . '<button type="submit" form="export_form" class="btn btn-sm btn-success"><i class="fa fa-solid fa-download" aria-hidden="true"></i> ' . trans('export_download', '', 'Scarica') . '</button>';
+$actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_exports') . '"><i class="fa fa-solid fa-arrow-left" aria-hidden="true"></i> ' . esc(trans('imports_exports', '', 'Importa / Esporta')) . '</a>';
 ?>
 <?= $this->include('layout/headerbar', ['title' => trans('exports', '', 'Esportazioni'), 'actions' => $actions]) ?>
 
-<div id="content" class="ip-doc-form">
+<div id="content" class="ip-import-page">
 
-    <div class="ip-export-intro">
-        <p class="ip-export-intro__eyebrow">Esportazione · CSV · ZIP</p>
-        <h2 class="ip-export-intro__title">Scegli cosa, quando e come.</h2>
-        <p class="ip-export-intro__desc">Tre scelte in ordine: il contenuto, il periodo, il formato. I prospetti annuali usano l’anno della data iniziale; PDF e XML esistono solo per le fatture.</p>
+    <div class="ip-import-intro">
+        <p class="ip-import-intro__eyebrow">Esportazione · CSV · ZIP</p>
+        <h2 class="ip-import-intro__title">Scegli cosa, quando e come.</h2>
+        <p class="ip-import-intro__desc">Tre scelte in ordine: il contenuto, il periodo, il formato. I prospetti annuali usano l’anno della data iniziale; PDF e XML esistono solo per le fatture.</p>
     </div>
 
     <form method="POST" action="<?= site_url('exports/run') ?>" id="export_form">
         <?= csrf_field() ?>
 
+        <?php /* Stessa ossatura di Importa: passi numerati su un binario, ciascuno
+                 una scheda con icona, titolo e sottotitolo, e in fondo la barra
+                 conclusiva col riepilogo e il pulsante. Prima Esporta aveva sezioni
+                 e pulsante nella testata, un'altra grammatica per la stessa
+                 famiglia di pagine. */ ?>
+        <div class="ip-import-flow" role="list">
+
         <!-- ① Cosa esportare -->
-        <section class="ip-doc-section">
-            <div class="ip-doc-section__head">
-                <span class="ip-doc-step">1</span>
-                <h2 class="ip-doc-section__title"><?= trans('export_what', '', 'Cosa esportare') ?></h2>
-                <span class="ip-doc-section__hint" id="export_types_hint"></span>
-            </div>
-            <div class="ip-doc-section__body">
+            <section role="listitem" aria-label="Passo 1: <?= esc(strip_tags(trans('export_what', '', 'Cosa esportare')), 'attr') ?>" class="ip-import-card ip-import-card--clients is-active">
+                <span class="ip-import-card__n" aria-hidden="true">1</span>
+                <div class="ip-import-card__head">
+                    <div class="ip-import-card__left">
+                        <div class="ip-import-card__icon" aria-hidden="true"><i class="fa fa-solid fa-layer-group"></i></div>
+                        <div class="ip-import-card__titles">
+                            <h3 class="ip-import-card__title"><?= trans('export_what', '', 'Cosa esportare') ?></h3>
+                            <p class="ip-import-card__hint">Fatture, anagrafiche o prospetti</p>
+                        </div>
+                    </div>
+                    <span class="ip-import-badge is-available" id="export_types_hint" aria-live="polite"></span>
+                </div>
+                <div class="ip-import-card__body">
                 <?php
                 $groups = [
                     [
@@ -98,13 +106,19 @@ $actions = '<a class="btn btn-secondary btn-sm" href="' . site_url('imports_expo
         </section>
 
         <!-- ② Periodo -->
-        <section class="ip-doc-section">
-            <div class="ip-doc-section__head">
-                <span class="ip-doc-step">2</span>
-                <h2 class="ip-doc-section__title"><?= trans('period', '', 'Periodo') ?></h2>
-                <span class="ip-doc-section__hint"><?= trans('export_period_hint', '', 'Lascia vuoto per esportare tutto.') ?></span>
-            </div>
-            <div class="ip-doc-section__body">
+            <section role="listitem" aria-label="Passo 2: <?= esc(strip_tags(trans('period', '', 'Periodo')), 'attr') ?>" class="ip-import-card ip-import-card--invoices is-active">
+                <span class="ip-import-card__n" aria-hidden="true">2</span>
+                <div class="ip-import-card__head">
+                    <div class="ip-import-card__left">
+                        <div class="ip-import-card__icon" aria-hidden="true"><i class="fa fa-regular fa-calendar"></i></div>
+                        <div class="ip-import-card__titles">
+                            <h3 class="ip-import-card__title"><?= trans('period', '', 'Periodo') ?></h3>
+                            <p class="ip-import-card__hint"><?= trans('export_period_hint', '', 'Lascia vuoto per esportare tutto.') ?></p>
+                        </div>
+                    </div>
+                    
+                </div>
+                <div class="ip-import-card__body">
                 <div class="alert small" id="export_nodate_note" hidden>
                     <i class="fa fa-solid fa-info-circle" aria-hidden="true"></i>
                     <?= trans('export_nodate_note', '', 'Le anagrafiche sono una fotografia di adesso, non un flusso di documenti: il periodo non le filtra e viene ignorato.') ?>
@@ -156,13 +170,19 @@ $actions = '<a class="btn btn-secondary btn-sm" href="' . site_url('imports_expo
         </section>
 
         <!-- ③ Formato -->
-        <section class="ip-doc-section">
-            <div class="ip-doc-section__head">
-                <span class="ip-doc-step">3</span>
-                <h2 class="ip-doc-section__title"><?= trans('format', '', 'Formato') ?></h2>
-                <span class="ip-doc-section__hint">CSV per Excel · ZIP per archivio</span>
-            </div>
-            <div class="ip-doc-section__body">
+            <section role="listitem" aria-label="Passo 3: <?= esc(strip_tags(trans('format', '', 'Formato')), 'attr') ?>" class="ip-import-card ip-import-card--items is-active">
+                <span class="ip-import-card__n" aria-hidden="true">3</span>
+                <div class="ip-import-card__head">
+                    <div class="ip-import-card__left">
+                        <div class="ip-import-card__icon" aria-hidden="true"><i class="fa fa-solid fa-file-export"></i></div>
+                        <div class="ip-import-card__titles">
+                            <h3 class="ip-import-card__title"><?= trans('format', '', 'Formato') ?></h3>
+                            <p class="ip-import-card__hint">CSV per Excel · ZIP per archivio</p>
+                        </div>
+                    </div>
+                    
+                </div>
+                <div class="ip-import-card__body">
                 <div class="ip-format-grid">
                     <label class="ip-export-type">
                         <input type="radio" name="export_format" value="csv" checked>
@@ -197,6 +217,21 @@ $actions = '<a class="btn btn-secondary btn-sm" href="' . site_url('imports_expo
                 </div>
             </div>
         </section>
+        </div>
+
+        <div class="ip-import-actions">
+            <span class="ip-import-card__n ip-import-card__n--final" aria-hidden="true"><i class="fa fa-solid fa-check"></i></span>
+            <div class="ip-import-actions__summary">
+                <p class="ip-import-actions__title"><?= esc(trans('export_download', '', 'Scarica')) ?></p>
+                <p class="ip-import-actions__hint" aria-live="polite"><?= esc(trans('format', '', 'Formato')) ?>: <strong id="export_summary">CSV</strong></p>
+            </div>
+            <div class="ip-import-actions__buttons">
+                <a href="<?= site_url('imports_exports') ?>" class="btn btn-sm btn-secondary"><?= esc(trans('cancel', '', 'Annulla')) ?></a>
+                <button type="submit" class="btn btn-sm btn-success">
+                    <i class="fa fa-solid fa-download fa-margin" aria-hidden="true"></i> <?= esc(trans('export_download', '', 'Scarica')) ?>
+                </button>
+            </div>
+        </div>
     </form>
 </div>
 

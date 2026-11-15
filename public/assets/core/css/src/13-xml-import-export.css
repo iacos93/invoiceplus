@@ -1,0 +1,1063 @@
+/* -----------------------------------------------------------------------------
+   39. Viewer XML — Anteprima fattura elettronica / spesa
+   --------------------------------------------------------------------------
+   Layout a due colonne: documento a sinistra, "cifre da registro" e scelta
+   del foglio di stile a destra — stesso principio di .ip-preview (sezione
+   31), qui con più contesto in barra (identità documento, stato, azioni).
+   Tutto il colore passa dai token --ip-*: niente tinte fisse, così il
+   viewer segue chiaro/scuro da solo senza bisogno di override per tema. */
+.ip-xml-viewer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(270px, 21vw, 320px);
+  gap: 18px;
+  align-items: start;
+  min-width: 0;
+}
+.ip-xml-viewer,
+.ip-xml-viewer * { box-sizing: border-box; }
+.ip-xml-viewer__main {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-sm);
+}
+.ip-xml-toolbar {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) auto minmax(200px, 1fr);
+  align-items: center;
+  min-height: 60px;
+  gap: var(--ip-space-7);
+  padding: 10px 18px;
+  background: var(--ip-bg-card);
+  border-bottom: 1px solid var(--ip-border-soft);
+}
+.ip-xml-document {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-5);
+  min-width: 0;
+}
+.ip-xml-document__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ip-radius);
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+  font-size: var(--ip-text-lg);
+}
+.ip-xml-document__copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-1);
+  overflow: hidden;
+}
+.ip-xml-document__copy strong {
+  font-size: var(--ip-text-md);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ip-xml-document__copy > span {
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+.ip-xml-num { font-weight: 600; color: var(--ip-text); }
+.ip-xml-dot { color: var(--ip-text-muted); }
+.ip-xml-date { color: var(--ip-text-muted); }
+.ip-xml-toolbar__center {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+.ip-xml-switch {
+  display: inline-flex;
+  padding: 3px;
+  gap: var(--ip-space-1);
+  background: var(--ip-bg);
+  border: 1px solid var(--ip-border-soft);
+  border-radius: var(--ip-radius);
+}
+.ip-xml-switch__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  padding: 6px 12px;
+  border: 0;
+  border-radius: calc(var(--ip-radius) - 2px);
+  background: transparent;
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--ip-transition);
+}
+.ip-xml-switch__btn:hover { color: var(--ip-text); }
+.ip-xml-switch__btn.is-active {
+  background: var(--ip-bg-card);
+  color: var(--ip-text);
+  box-shadow: var(--ip-shadow-sm);
+}
+.ip-xml-toolbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ip-space-4);
+}
+/* Lo stato "non pronta" non ha più una pillola dedicata in toolbar (era
+   ridondante con l'anteprima stessa): un puntino sul tab "Resa" basta, con
+   il motivo nel title del bottone. */
+.ip-xml-warn-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ip-warning);
+}
+.ip-xml-switch__btn { position: relative; }
+.ip-xml-switch__btn.has-warning { color: var(--ip-warning); }
+.ip-xml-panels {
+  position: relative;
+}
+.ip-xml-panel {
+  min-height: 400px;
+}
+.ip-xml-frame {
+  display: block;
+  width: 100%;
+  min-height: 800px;
+  border: 0;
+  background: #fff;
+}
+.ip-xml-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--ip-space-4);
+  min-height: 400px;
+  padding: 40px 20px;
+  color: var(--ip-text-muted);
+}
+.ip-xml-empty__icon {
+  font-size: 34px;
+  color: var(--ip-text-muted);
+  opacity: 0.6;
+}
+.ip-xml-empty h2 {
+  font-size: var(--ip-text-lg);
+  color: var(--ip-text);
+  margin: 0;
+}
+.ip-xml-empty p {
+  font-size: var(--ip-text-base);
+  max-width: 420px;
+  margin: 0;
+}
+.ip-xml-rawbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--ip-border-soft);
+  font-size: var(--ip-text-sm);
+}
+.ip-xml-rawbar strong { margin-right: 8px; color: var(--ip-text); }
+.ip-xml-rawbar span { color: var(--ip-text-muted); }
+.ip-xml-code {
+  margin: 0;
+  padding: 16px 18px;
+  max-height: 800px;
+  overflow: auto;
+  background: var(--ip-bg);
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  line-height: 1.6;
+  white-space: pre;
+}
+.ip-xml-code code { font-family: inherit; }
+.xml-comment { color: var(--ip-text-muted); font-style: italic; }
+.xml-prolog { color: var(--ip-text-muted); }
+.xml-tag { color: var(--ip-primary); font-weight: 600; }
+.xml-attr { color: var(--ip-warning); }
+.xml-value { color: var(--ip-success); }
+.ip-xml-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-7);
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+}
+.ip-xml-card {
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-sm);
+  overflow: hidden;
+}
+.ip-xml-card > header {
+  padding: 10px 14px;
+  font-size: var(--ip-text-sm);
+  font-weight: 650;
+  color: var(--ip-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  border-bottom: 1px solid var(--ip-border-soft);
+}
+.ip-xml-card__body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-4);
+}
+.ip-xml-field {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ip-space-5);
+  font-size: var(--ip-text-sm);
+}
+.ip-xml-field span { color: var(--ip-text-muted); }
+.ip-xml-field strong { color: var(--ip-text); font-weight: 600; text-align: right; }
+.ip-xml-field--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ip-space-1);
+}
+.ip-xml-field--stacked strong { text-align: left; }
+.ip-xml-mono { font-family: var(--ip-mono); font-size: var(--ip-text-sm); }
+
+/* Subtotali (imponibile/IVA): due righe compatte, chiaramente secondarie
+   rispetto al totale che segue. */
+.ip-xml-subtotals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-2);
+  padding: 8px 0;
+  border-top: 1px solid var(--ip-border-soft);
+}
+.ip-xml-subtotals .ip-xml-field { font-size: var(--ip-text-sm); }
+.ip-xml-subtotals .ip-xml-field strong { font-weight: 500; color: var(--ip-text-muted); }
+
+/* Il totale è l'unico numero che deve saltare all'occhio in questa card:
+   corpo grande, colore primario, riga propria — tutto il resto intorno
+   resta piccolo e muto apposta. */
+.ip-xml-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ip-space-5);
+  padding-top: 4px;
+}
+.ip-xml-total span {
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+  color: var(--ip-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+.ip-xml-total strong {
+  font-size: var(--ip-text-3xl);
+  font-weight: 700;
+  color: var(--ip-primary);
+  letter-spacing: -0.01em;
+}
+.ip-xml-card__meta {
+  padding: 8px 14px;
+  border-top: 1px solid var(--ip-border-soft);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-xs);
+}
+.ip-xml-styles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ip-space-3);
+}
+/* Riga singola per foglio di stile: nome + stato, senza sottotitolo fisso
+   (la descrizione resta nel title, a comparsa, perché è un'impostazione
+   che si tocca raramente e non merita spazio verticale permanente). */
+.ip-xml-style {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ip-space-5);
+  padding: 7px 10px;
+  border: 1px solid var(--ip-border-soft);
+  border-radius: var(--ip-radius);
+  text-decoration: none;
+  color: inherit;
+  transition: var(--ip-transition);
+}
+.ip-xml-style:hover { border-color: var(--ip-border); background: var(--ip-bg); }
+.ip-xml-style.is-active {
+  border-color: var(--ip-primary);
+  background: var(--ip-primary-soft);
+}
+.ip-xml-style.is-missing { opacity: 0.6; }
+.ip-xml-style__name {
+  display: flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  min-width: 0;
+  font-size: var(--ip-text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ip-xml-badge {
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+}
+.ip-xml-style__state {
+  flex: 0 0 auto;
+  color: var(--ip-text-muted);
+}
+.ip-xml-style.is-active .ip-xml-style__state { color: var(--ip-primary); }
+.ip-xml-help {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ip-space-3);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ip-border-soft);
+  color: var(--ip-text-muted);
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+}
+.ip-xml-help code {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  background: var(--ip-bg);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+/* Scarica è l'unica azione rimasta in toolbar (la copia è stata tolta,
+   ridondante con il download): un po' più di respiro tra icona e testo
+   così il pulsante non sembra un'icona ristretta rimasta sola. */
+.ip-xml-download {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-3);
+  padding: 6px 14px;
+}
+@media (max-width: 991.98px) {
+  .ip-xml-viewer { grid-template-columns: minmax(0, 1fr); }
+  .ip-xml-sidebar { position: static; }
+  .ip-xml-toolbar { grid-template-columns: minmax(0, 1fr); min-height: auto; }
+  .ip-xml-toolbar__center { order: 3; }
+  .ip-xml-toolbar__actions { order: 2; justify-content: flex-start; }
+}
+
+/* =============================================================================
+   Scheda cliente — refresh UI 2026
+   -----------------------------------------------------------------------------
+   Obiettivo dallo screenshot: tre card affastellate, bordi slavati sul fondo
+   scuro, label "muted" illeggibili, campi schiacciati, sezione commerciale
+   senza gerarchia. Il blocco nasceva però come una seconda scala di misura
+   per la stessa pagina (card 12/18 e 18/20/14, campi 40/8, etichette
+   maiuscole) e in tema scuro riduceva il bordo dei campi sotto il 3:1. Le
+   misure ora sono quelle di sistema: qui resta solo la presentazione del
+   contenuto — misura di riga del testo di aiuto, rientro della riga SDI,
+   spunta sulle scelte di tipologia e il riquadro delle note commerciali.
+   ========================================================================== */
+
+/* La griglia usa il gutter standard delle .row e le card il corpo dei token:
+   questa pagina non ridimensiona più né le colonne né i pannelli. */
+#content form[action*="clients/form"] .ip-doc-field:last-child { margin-bottom: 4px; }
+
+/* Etichette: canonico .ip-doc-label (12px/600, inchiostro, margine 0 perché
+   la distanza la dà il gap del campo). Qui erano maiuscole, muted, con 6px
+   di margine che si sommavano al gap: etichetta e controllo stavano a 12px
+   invece che a 6. */
+
+/* Campi: nessuna misura né colore locale. Erano 40px/8px qui contro i 36/6
+   canonici (--ip-control-h), e in tema scuro fondo #23232b con bordo
+   #3a3a46 — su quel fondo il bordo sta a 1.4:1, sotto il 3:1 richiesto per
+   il contorno di un controllo, mentre --ip-border-field lo tiene sopra.
+   Anche il focus era viola solo su questa pagina: ora è neutro come nel
+   resto dell'app. Stesso discorso per il placeholder, che qui scendeva a
+   opacità .7 e quindi sotto la soglia di lettura. */
+
+/* Testo di aiuto: l'unica scelta locale è la misura di riga (42ch). Tipo,
+   colore e distanza sono canonici: il margin-top di 6px che stava qui si
+   sommava al gap del campo e l'aiuto risultava il doppio più staccato che
+   altrove. */
+#content form[action*="clients/form"] .ip-field-help { max-width: 42ch; }
+#content form[action*="clients/form"] #ip-sdi-help:not(:empty) {
+  padding-left: 16px;
+  position: relative;
+}
+#content form[action*="clients/form"] #ip-sdi-help:not(:empty)::before {
+  content: "↳";
+  position: absolute; left: 0; top: 0;
+  color: var(--ip-text-muted);
+}
+
+/* Tipologia cliente: misure canoniche di .ip-type-choice (padding 10/12,
+   bordo 1px, raggio 6, gap 8). Le scelte locali erano 12/14, 1.5px, raggio
+   10 e gap 10, con un inset shadow che sul bordo attivo sommava un secondo
+   contorno. Resta solo la spunta a destra, che il componente non ha. */
+#content form[action*="clients/form"] .ip-type-choice__option.is-active::after {
+  content: "✓";
+  grid-area: label;
+  justify-self: end;
+  width: 20px; height: 20px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--ip-primary);
+  color: var(--ip-on-primary);
+  font-size: var(--ip-text-xs); font-weight: 700;
+}
+
+/* Rapporti commerciali: card con header staccato, griglia più ariosa */
+#content form[action*="clients/form"] .card:has(.ip-field-help.mb-3) .row { --bs-gutter-x: 16px; --bs-gutter-y: 6px; }
+#content form[action*="clients/form"] .card:has(.ip-field-help.mb-3) .ip-field-help.mb-3 {
+  font-size: var(--ip-text-sm);
+  max-width: none;
+  padding: 10px 12px;
+  margin-bottom: 16px !important;
+  background: var(--ip-bg);
+  border: 1px dashed var(--ip-border);
+  border-radius: 8px;
+}
+html[data-theme="dark"] #content form[action*="clients/form"] .card:has(.ip-field-help.mb-3) .ip-field-help.mb-3 {
+  background: rgba(255,255,255,.03);
+  border-color: var(--ip-border);
+}
+
+/* Sticky save bar su mobile: i bottoni non scompaiono sotto la piega */
+@media (max-width: 767.98px) {
+  #content form[action*="clients/form"] .row > [class*="col-"] { margin-bottom: 0; }
+}
+
+/* =============================================================================
+   IMPORTAZIONI ED ESPORTAZIONI
+   -----------------------------------------------------------------------------
+   Hub, form di import e pagina di export condividono lo stesso registro
+   (carta + inchiostro, ingresso verde / uscita inchiostro) e vivevano in tre
+   blocchi <style> dentro le rispettive view: circa 700 righe di CSS servite a
+   ogni caricamento, non minificate e non messe in cache dal browser, con le
+   stesse regole (card, drop area, pill di periodo) riscritte tre volte.
+   Qui stanno in un posto solo, come tutto il resto del foglio di stile.
+   ============================================================================= */
+
+/* --- Hub Importa / Esporta (imports_exports/index) --- */
+/* Hub Importa / Esporta — carta + inchiostro, due direzioni */
+.ip-ie-intro{
+  /* Stesse misure di .ip-import-intro e .ip-export-intro: hub e sottopagine
+     usano lo stesso schema (occhiello, titolo, descrizione) e prima ognuna
+     aveva titolo e distacco propri, 23 / 21,6 / 20 px, che passando da una
+     pagina all'altra facevano "saltare" l'intestazione. */
+  max-width: 720px;
+  margin: 2px 0 18px;
+}
+.ip-ie-intro__eyebrow{
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+  margin: 0 0 6px;
+}
+.ip-ie-intro__title{
+  font-family: var(--ip-display);
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+.ip-ie-intro__desc{
+  margin: 8px 0 0;
+  font-size: var(--ip-text-base);
+  line-height: 1.55;
+  color: var(--ip-text-muted);
+  max-width: 62ch;
+}
+.ip-ie-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+@media (max-width: 860px){
+  .ip-ie-grid{ grid-template-columns: minmax(0, 1fr); }
+}
+.ip-ie-card{
+  position: relative;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-sm);
+  padding: 20px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform var(--ip-transition), box-shadow var(--ip-transition), border-color var(--ip-transition);
+}
+/* filo superiore: verde-ingresso vs inchiostro-uscita — sottile, non decorativo */
+/* Le due vie si distinguono per semantica (ingresso = verde di stato, uscita =
+   accento neutro), non per due tinte cablate con un override per il tema:
+   --ip-success e --ip-primary si invertono già da sole. */
+.ip-ie-card--import{ border-top: 3px solid var(--ip-success); }
+.ip-ie-card--export{ border-top: 3px solid var(--ip-primary); }
+
+/* Niente sollevamento al passaggio: la card non è un link (si entra dai
+   pulsanti in fondo), e un hover da elemento cliccabile su un blocco che non
+   risponde al clic è una promessa mancata. Stesso motivo per .ip-import-card. */
+.ip-ie-card__head{
+  display:flex;
+  align-items:flex-start;
+  gap: var(--ip-space-7);
+  margin-bottom: 12px;
+}
+.ip-ie-card__icon{
+  flex: 0 0 42px;
+  width:42px; height:42px;
+  border-radius: 10px;
+  display:grid; place-items:center;
+  font-size: var(--ip-text-lg);
+  border: 1px solid var(--ip-border);
+  background: var(--ip-bg);
+}
+.ip-ie-card--import .ip-ie-card__icon{ color: var(--ip-success-text); background: var(--ip-success-bg); border-color: color-mix(in srgb, var(--ip-success) 30%, transparent); }
+.ip-ie-card--export .ip-ie-card__icon{ color: var(--ip-text); background: var(--ip-hover); }
+
+.ip-ie-card__eyebrow{
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+  margin: 1px 0 3px;
+}
+.ip-ie-card__title{
+  font-family: var(--ip-display);
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -.015em;
+  margin: 0;
+  line-height: 1.25;
+}
+.ip-ie-card__desc{
+  font-size: var(--ip-text-base);
+  line-height: 1.55;
+  color: var(--ip-text-muted);
+  margin: 6px 0 0;
+}
+.ip-ie-card__meta{
+  margin: 14px 0 0;
+  /* Senza rientro laterale: "File attesi" / "Formati" partivano 12px più a
+     destra del resto della card, un allineamento in più senza motivo. */
+  padding: 12px 0 0;
+  border-top: 1px dashed var(--ip-border-soft);
+}
+.ip-ie-card__meta-label{
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ip-text-muted);
+  margin: 0 0 8px;
+}
+.ip-ie-files{
+  display:flex;
+  flex-wrap:wrap;
+  gap: var(--ip-space-3);
+}
+.ip-ie-file{
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--ip-border);
+  background: var(--ip-bg);
+  color: var(--ip-text-muted);
+  white-space: nowrap;
+}
+.ip-ie-list{
+  list-style:none;
+  padding:0; margin:10px 0 0;
+  display:grid; gap: var(--ip-space-3);
+}
+.ip-ie-list li{
+  display:flex;
+  gap: var(--ip-space-4);
+  font-size: var(--ip-text-base);
+  line-height: 1.45;
+  color: var(--ip-text);
+}
+.ip-ie-list li i{
+  margin-top: 2px;
+  font-size: var(--ip-text-xs);
+  /* La spunta dice "incluso": è informazione, quindi il gradino di testo
+     (sopra 4.5:1 in entrambi i temi) e non il verde pieno, che in chiaro si
+     ferma a 4.3:1. Con il token "-text" non serve più la regola per lo scuro. */
+  color: var(--ip-success-text);
+}
+
+.ip-ie-card__actions{
+  margin-top: auto;
+  padding-top: 16px;
+  display:flex;
+  flex-wrap:wrap;
+  gap: var(--ip-space-4);
+  align-items:center;
+}
+
+/* Scorciatoie — secondarie, non in competizione con le due vie */
+.ip-ie-shortcuts{
+  margin-top: 18px;
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-sm);
+  overflow:hidden;
+}
+.ip-ie-shortcuts__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: var(--ip-space-6);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ip-border-soft);
+  background: linear-gradient(to bottom, var(--ip-bg-card), var(--ip-bg));
+}
+.ip-ie-shortcuts__title{
+  font-size: var(--ip-text-base);
+  font-weight: 650;
+  letter-spacing: -.01em;
+  margin:0;
+  display:flex; align-items:center; gap: var(--ip-space-4);
+}
+.ip-ie-shortcuts__title i{ color: var(--ip-text-muted); }
+.ip-ie-shortcuts__hint{
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  margin:0;
+  /* 64ch e non 36: la frase sta su una riga accanto al titolo quando lo
+     spazio c'è; a 36 andava a capo a metà con mezza scheda vuota a fianco. */
+  max-width: 64ch;
+  text-align:right;
+}
+@media (max-width: 640px){
+  .ip-ie-shortcuts__head{ flex-direction:column; align-items:flex-start; }
+  .ip-ie-shortcuts__hint{ text-align:left; max-width:none; }
+}
+.ip-ie-shortcuts__body{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:0;
+}
+@media (max-width: 640px){
+  .ip-ie-shortcuts__body{ grid-template-columns: minmax(0, 1fr); }
+}
+.ip-ie-shortcut{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: var(--ip-space-6);
+  padding: 14px 18px;
+  text-decoration:none;
+  color: inherit;
+  border-right: 1px solid var(--ip-border-soft);
+  transition: background var(--ip-transition);
+}
+.ip-ie-shortcut:last-child{ border-right: 0; }
+@media (max-width: 640px){
+  .ip-ie-shortcut{ border-right:0; border-bottom:1px solid var(--ip-border-soft); }
+  .ip-ie-shortcut:last-child{ border-bottom:0; }
+}
+.ip-ie-shortcut:hover{ background: var(--ip-hover); text-decoration:none; }
+.ip-ie-shortcut__left{
+  display:flex; gap: var(--ip-space-6); align-items:center; min-width:0;
+}
+.ip-ie-shortcut__icon{
+  flex:0 0 36px; width:36px; height:36px;
+  border-radius: 8px;
+  display:grid; place-items:center;
+  background: var(--ip-bg);
+  border:1px solid var(--ip-border);
+  font-size: var(--ip-text-base);
+  color: var(--ip-text-muted);
+}
+.ip-ie-shortcut__label{ font-size: var(--ip-text-base); font-weight:600; margin:0; line-height:1.2; }
+.ip-ie-shortcut__sub{ font-size: var(--ip-text-sm); color:var(--ip-text-muted); margin:2px 0 0; line-height:1.3; }
+.ip-ie-shortcut__arrow{ color: var(--ip-text-muted); font-size: var(--ip-text-sm); }
+.ip-ie-foot{
+  margin-top: 14px;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+  display:flex; gap: var(--ip-space-4); align-items:flex-start;
+  line-height:1.5;
+}
+.ip-ie-foot i{ margin-top:2px; }
+
+/* --- Form di importazione CSV (import/import_index) --- */
+/* Import form — banchina di carico */
+.ip-import-intro{
+  margin: 2px 0 18px;
+}
+.ip-import-intro__eyebrow{
+  font-size: var(--ip-text-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color: var(--ip-text-muted); margin:0 0 6px;
+}
+.ip-import-intro__title{
+  font-family: var(--ip-display); font-size:1.35rem; font-weight:650; letter-spacing:-.015em; margin:0; line-height:1.25;
+}
+.ip-import-intro__desc{ font-size: var(--ip-text-base); line-height:1.55; color:var(--ip-text-muted); margin:8px 0 0; max-width:80ch; }
+.ip-import-steps{
+  display:flex; gap: var(--ip-space-6); margin-top:12px; flex-wrap:wrap;
+}
+/* I passi sono una sequenza da leggere, non comandi: in pillola con bordo e
+   fondo card sembravano tre pulsanti accanto ai "Scarica il modello" veri. */
+.ip-import-step{
+  display:flex; gap: var(--ip-space-4); align-items:center; font-size: var(--ip-text-sm); color:var(--ip-text-muted);
+}
+.ip-import-step__n{
+  flex:0 0 20px; width:20px; height:20px; border-radius:50%; display:grid; place-items:center;
+  background: var(--ip-text); color: var(--ip-bg-card); font-size: var(--ip-text-xs); font-weight:700;
+}
+html[data-theme="dark"] .ip-import-step__n{ background: var(--ip-text); color: var(--ip-bg); }
+
+/* Flusso a passi: una colonna sola, numerata nell'ordine di elaborazione.
+   La griglia 2x2 si leggeva a righe (clienti, fatture / righe, pagamenti) e
+   nascondeva la dipendenza fra i file; il binario a sinistra la rende visibile. */
+.ip-import-flow{
+  list-style:none; margin:0; padding:0 0 0 44px; position:relative;
+  display:flex; flex-direction:column; gap: var(--ip-space-7);
+}
+.ip-import-flow::before{
+  content:""; position:absolute; left:15px; top:18px; bottom:-26px;
+  border-left:2px solid var(--ip-border);
+}
+.ip-import-card__n{
+  position:absolute; left:-44px; top:14px; width:32px; height:32px; border-radius:50%;
+  display:grid; place-items:center; font-size: var(--ip-text-sm); font-weight:700;
+  background:var(--ip-bg-card); color:var(--ip-text-muted); border:2px solid var(--ip-border);
+  transition: background var(--ip-transition), color var(--ip-transition), border-color var(--ip-transition);
+}
+.ip-import-card.is-active .ip-import-card__n,
+.ip-import-card__n--final{ background:var(--ip-text); color:var(--ip-bg-card); border-color:var(--ip-text); }
+.ip-import-card.is-active{ border-color:var(--ip-border-strong); }
+.ip-import-card__titles{ min-width:0; }
+.ip-import-card__title{
+  font-size: var(--ip-text-md); font-weight:650; margin:0; line-height:1.25;
+  display:flex; align-items:baseline; gap: var(--ip-space-4); flex-wrap:wrap;
+}
+.ip-import-card__needs{
+  margin:0; display:flex; gap: var(--ip-space-3); align-items:flex-start;
+  font-size: var(--ip-text-sm); line-height:1.45; color:var(--ip-text-muted);
+}
+.ip-import-card__needs i{ margin-top:3px; }
+@media (max-width: 640px){
+  .ip-import-flow{ padding-left:0; }
+  .ip-import-flow::before{ display:none; }
+  .ip-import-card__n{ position:static; width:26px; height:26px; flex:0 0 26px; margin:12px 0 -4px 14px; }
+  .ip-import-card__head{ flex-wrap:wrap; }
+}
+
+.ip-import-card{
+  position:relative; overflow:visible !important;
+  background: var(--ip-bg-card); border:1px solid var(--ip-border); border-radius:var(--ip-radius);
+  box-shadow: var(--ip-shadow-sm); overflow:hidden; display:flex; flex-direction:column;
+  transition: box-shadow var(--ip-transition), border-color var(--ip-transition), transform var(--ip-transition);
+}
+.ip-import-card__head{
+  display:flex; align-items:center; justify-content:space-between; gap: var(--ip-space-5);
+  padding:12px 14px; border-bottom:1px solid var(--ip-border-soft);
+  background: linear-gradient(to bottom, var(--ip-bg-card), var(--ip-bg));
+  border-radius: var(--ip-radius) var(--ip-radius) 0 0;
+}
+.ip-import-card__left{ display:flex; align-items:center; gap: var(--ip-space-5); min-width:0; }
+.ip-import-card__icon{
+  flex:0 0 36px; width:36px; height:36px; border-radius:8px; display:grid; place-items:center;
+  background:var(--ip-bg); border:1px solid var(--ip-border); font-size: var(--ip-text-md); color:var(--ip-text-muted);
+}
+.ip-import-card--clients .ip-import-card__icon{ color:#3d7a3e; background:#eef5ee; border-color:#d6e8d6; }
+.ip-import-card--invoices .ip-import-card__icon{ color:#31708f; background:#edf3f7; border-color:#d4e4ed; }
+.ip-import-card--items .ip-import-card__icon{ color:#5b4bc2; background:#f1eefe; border-color:#ddd6f5; }
+.ip-import-card--payments .ip-import-card__icon{ color:#b65a1f; background:#fdf4e6; border-color:#f5dec2; }
+html[data-theme="dark"] .ip-import-card--clients .ip-import-card__icon{ color:#7ec780; background:#1c271d; border-color:#2a3a2b; }
+html[data-theme="dark"] .ip-import-card--invoices .ip-import-card__icon{ color:#7ab4d4; background:#192430; border-color:#233548; }
+html[data-theme="dark"] .ip-import-card--items .ip-import-card__icon{ color:#b3a6ef; background:#211d33; border-color:#302a4a; }
+html[data-theme="dark"] .ip-import-card--payments .ip-import-card__icon{ color:#e8a13d; background:#2e2414; border-color:#4a3518; }
+
+.ip-import-card__file{
+  font-family:var(--ip-mono); font-size: var(--ip-text-sm); font-weight:500; letter-spacing:-.01em; line-height:1.2;
+  color:var(--ip-text-muted);
+}
+.ip-import-card__hint{ font-size: var(--ip-text-sm); color:var(--ip-text-muted); margin:2px 0 0; line-height:1.3;
+}
+.ip-import-badge{
+  flex:0 0 auto;
+  border:1px solid var(--ip-border);
+}
+.ip-import-badge.is-available{ background:#eef5ee; color:#3d7a3e; border-color:#cfe6cf; }
+.ip-import-badge.is-missing{ background:var(--ip-bg); color:var(--ip-text-muted); }
+html[data-theme="dark"] .ip-import-badge.is-available{ background:#1c271d; color:#7ec780; border-color:#2a3a2b; }
+
+.ip-import-card__body{ padding:14px; display:flex; flex-direction:column; gap: var(--ip-space-5); flex:1; }
+.ip-import-drop{
+  position:relative; border:1.5px dashed var(--ip-border-strong); border-radius:8px; background:var(--ip-bg);
+  padding:16px 14px; display:flex; align-items:center; gap: var(--ip-space-6); cursor:pointer;
+  transition: border-color var(--ip-transition), background var(--ip-transition), box-shadow var(--ip-transition);
+}
+.ip-import-drop:hover{ border-color:var(--ip-border-hover); background:var(--ip-hover); }
+.ip-import-drop.is-dragover{ border-color:var(--ip-text); background:var(--ip-primary-soft); border-style:solid; box-shadow:var(--ip-shadow-sm); }
+.ip-import-drop__icon{
+  flex:0 0 38px; width:38px; height:38px; border-radius:8px; display:grid; place-items:center;
+  background:var(--ip-bg-card); border:1px solid var(--ip-border); font-size: var(--ip-text-md); color:var(--ip-text-muted);
+}
+.ip-import-drop__text{ min-width:0; flex:1; }
+.ip-import-drop__title{ font-size: var(--ip-text-base); font-weight:600; margin:0; line-height:1.25; }
+.ip-import-drop__title span{ font-family:var(--ip-mono); font-size: var(--ip-text-sm); font-weight:600; }
+.ip-import-drop__sub{ font-size: var(--ip-text-sm); color:var(--ip-text-muted); margin:3px 0 0; line-height:1.35; }
+.ip-import-drop input[type="file"]{
+  position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+}
+.ip-import-chosen{
+  display:none; align-items:center; gap: var(--ip-space-4); font-size: var(--ip-text-sm); line-height:1.3; padding:8px 10px;
+  background:var(--ip-bg-card); border:1px solid var(--ip-border); border-radius:8px;
+}
+.ip-import-chosen.is-visible{ display:flex; }
+.ip-import-chosen__name{ font-family:var(--ip-mono); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ip-import-chosen__meta{ color:var(--ip-text-muted); white-space:nowrap; }
+.ip-import-chosen__clear{
+  margin-left:auto; flex:0 0 auto; border:0; background:transparent; color:var(--ip-text-muted);
+  width:28px; height:28px; border-radius:50%; display:grid; place-items:center; cursor:pointer;
+}
+.ip-import-chosen__clear:hover{ background:var(--ip-hover); color:var(--ip-text); }
+
+.ip-import-card__foot{
+  display:flex; align-items:center; gap: var(--ip-space-4); padding:10px 14px; background:var(--ip-bg);
+  border-top:1px dashed var(--ip-border-soft); border-radius:0 0 var(--ip-radius) var(--ip-radius);
+  min-height:44px;
+}
+.ip-import-card__foot.is-empty{ justify-content:center; color:var(--ip-text-muted); font-size: var(--ip-text-sm); }
+.ip-import-check{ display:flex; align-items:center; gap: var(--ip-space-4); font-size: var(--ip-text-base); margin:0; cursor:pointer; user-select:none; }
+.ip-import-check input{ accent-color: var(--ip-text); }
+
+.ip-import-actions{
+  position:relative; margin:var(--ip-space-7) 0 0 44px; display:flex; flex-wrap:wrap; gap: var(--ip-space-5); align-items:center;
+  background:var(--ip-bg-card); border:1px solid var(--ip-border); border-radius:var(--ip-radius);
+  padding:14px 16px; box-shadow:var(--ip-shadow-sm);
+}
+.ip-import-actions .ip-import-card__n{ top:50%; margin-top:-16px; }
+.ip-import-actions__summary{ flex:1 1 260px; min-width:0; }
+.ip-import-actions__title{ margin:0; font-weight:650; font-size: var(--ip-text-md); }
+.ip-import-actions__hint{ font-size: var(--ip-text-sm); color:var(--ip-text-muted); margin:2px 0 0; line-height:1.45; }
+.ip-import-actions__buttons{ display:flex; gap: var(--ip-space-4); margin-left:auto; }
+.ip-import-chosen__icon{ color: var(--ip-text-muted); }
+@media (max-width:640px){
+  .ip-import-actions{ margin-left:0; }
+  .ip-import-actions .ip-import-card__n{ display:none; }
+  .ip-import-actions__buttons{ width:100%; }
+  .ip-import-actions__buttons .btn{ flex:1; }
+}
+
+/* --- Esportazione in tre passi (exports/index) --- */
+/* Esportazione — tre passi, aria intorno alle scelte (polish) */
+.ip-export-intro{
+  max-width: 720px; margin: 2px 0 18px;
+}
+.ip-export-intro__eyebrow{
+  font-size: var(--ip-text-xs); font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ip-text-muted); margin:0 0 6px;
+}
+.ip-export-intro__title{
+  font-family:var(--ip-display); font-size:1.35rem; font-weight:650; letter-spacing:-.02em; margin:0; line-height:1.2;
+}
+.ip-export-intro__desc{ font-size: var(--ip-text-base); line-height:1.6; color:var(--ip-text-muted); margin:8px 0 0; max-width:58ch; }
+
+/* — gruppi — sottrazione: niente cornici annidate, solo titolo + griglia ariosa */
+.ip-export-groups{ display:grid; gap: var(--ip-space-9); }
+.ip-export-group__title{
+  font-size: var(--ip-text-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ip-text-muted); margin:0 0 10px; display:flex; align-items:center; gap: var(--ip-space-3);
+}
+.ip-export-group__title i{ font-size: var(--ip-text-xs); opacity:.9; }
+/* Colonne = numero di card nel gruppo (fino a 4): una riga da 2 card non deve
+   lasciare meta' griglia vuota come faceva con 4 colonne fisse per tutti i
+   gruppi. --cols-N e' scelto in PHP da count($g['types']), non per gruppo. */
+.ip-export-group__grid{
+  display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: var(--ip-space-5);
+}
+.ip-export-group__grid--cols-1{ grid-template-columns: minmax(0,1fr); }
+.ip-export-group__grid--cols-2{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+.ip-export-group__grid--cols-3{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+@media (max-width: 1100px){
+  .ip-export-group__grid, .ip-export-group__grid--cols-3{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .ip-export-group__grid--cols-1{ grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 580px){
+  .ip-export-group__grid, .ip-export-group__grid--cols-1, .ip-export-group__grid--cols-2, .ip-export-group__grid--cols-3{ grid-template-columns: minmax(0, 1fr); }
+}
+
+/* card tipo — singolo bordo, mai doppio */
+.ip-export-group, .ip-export-group__grid{ border:0; background:transparent; }
+.ip-export-type{
+  position:relative; display:flex; cursor:pointer; margin:0;
+  border:1px solid var(--ip-border); border-radius:8px; background:var(--ip-bg-card);
+  padding:13px 13px 12px; min-height:110px; outline:none; box-shadow:none;
+  transition: border-color var(--ip-transition), background var(--ip-transition);
+}
+.ip-export-type:hover{ border-color:var(--ip-border-strong); background:var(--ip-hover); }
+/* Selezionata: bordo nell'accento dell'app e fondo hover, come la voce attiva
+   della subnav. Prima erano grigi cablati per tema, e in scuro un blu-ardesia
+   (#2a2e3a) che non compariva in nessun'altra parte dell'interfaccia. */
+.ip-export-type:has(input:checked){
+  border-color: var(--ip-primary); background: var(--ip-hover); color: var(--ip-text);
+  box-shadow:none; outline:none;
+}
+/* La radio vera è nascosta: il focus da tastiera va mostrato sulla card.
+   Prima :focus-within azzerava ogni anello e con Tab non si vedeva dove si
+   era. */
+.ip-export-type:has(input:focus-visible){ box-shadow: var(--ip-shadow-focus); }
+.ip-export-type:has(input:checked) .ip-export-type__title{ color: var(--ip-text); }
+.ip-export-type:has(input:checked) .ip-export-type__title i{ opacity:.85; }
+.ip-export-type:has(input:checked) .ip-export-type__hint{ color: var(--ip-text-muted); opacity:1; }
+html[data-theme="dark"] .ip-export-type:has(input:checked) .ip-export-type__hint{ color: #a8adb8; }
+.ip-export-type:has(input:checked) .ip-export-badge{ background: var(--ip-bg-card); color: var(--ip-text-muted); border-color: var(--ip-border); }
+html[data-theme="dark"] .ip-export-type:has(input:checked) .ip-export-badge{ background: #1e1e23; color: #9b9ba5; border-color: #33333b; }
+.ip-export-type:has(input:checked) .ip-export-badge--annual{ background:#fdf4e6; color:#8a5a00; border-color:#f5dec2; }
+html[data-theme="dark"] .ip-export-type:has(input:checked) .ip-export-badge--annual{ background:#2e2414; color:#e8a13d; border-color:#4a3518; }
+.ip-export-type:has(input:checked)::before, .ip-export-type:has(input:checked)::after{
+  box-shadow:none; outline:none;
+}
+.ip-export-type:has(input:checked)::after{
+  content:"\f00c"; font-family: FontAwesome; position:absolute; top:10px; right:10px;
+  width:18px; height:18px; border-radius:50%; display:grid; place-items:center;
+  background:var(--ip-text); color:var(--ip-bg-card); font-size: var(--ip-text-2xs); line-height:1; border:0; box-shadow: 0 1px 3px rgba(0,0,0,.18);
+}
+html[data-theme="dark"] .ip-export-type:has(input:checked)::after{ background:var(--ip-text); color:var(--ip-bg); }
+.ip-export-type input{ position:absolute; opacity:0; pointer-events:none; }
+.ip-export-type__body{ display:flex; flex-direction:column; gap: var(--ip-space-3); width:100%; padding-right:16px; border:0; outline:0; box-shadow:none; background:transparent; }
+.ip-export-type__title{ font-size: var(--ip-text-base); font-weight:650; line-height:1.25; display:flex; align-items:center; gap: var(--ip-space-3); }
+.ip-export-type__title i{ font-size: var(--ip-text-base); color:var(--ip-text-muted); flex:0 0 auto; }
+.ip-export-type:has(input:checked) .ip-export-type__title i{ color:var(--ip-text); }
+.ip-export-type__hint{ font-size: var(--ip-text-sm); line-height:1.5; color:var(--ip-text-muted); }
+.ip-export-type.is-disabled{ opacity:.48; cursor:not-allowed; }
+.ip-export-type.is-disabled:hover{ border-color:var(--ip-border); background:var(--ip-bg-card); }
+/* Ossatura (corpo, peso, spaziatura, padding, raggio) dalla regola condivisa
+   dei badge in fondo al foglio: qui solo colore e bordo, altrimenti questa
+   regola ridichiarava misure proprie — raggio 999px compreso — e il badge
+   della stessa famiglia diventava una pillola dentro una card ad angoli 8px. */
+.ip-export-badge{
+  margin-top:8px;
+  border:1px solid var(--ip-border); background:var(--ip-bg); color:var(--ip-text-muted);
+  width:fit-content;
+}
+.ip-export-badge--annual{ background:#fdf4e6; color:#8a5a00; border-color:#f5dec2; }
+html[data-theme="dark"] .ip-export-badge--annual{ background:#2e2414; color:#e8a13d; border-color:#4a3518; }
+/* Controlli del flusso: un'icona + due etichette in una riga, il timbro dello
+   stato come elemento flessibile che descrive l'azione. */
+.ip-flow-control { display: flex; align-items: center; gap: var(--ip-space-6); }
+
+/* Periodo.
+   Qui c'erano le regole scritte per questa pagina che però non erano limitate
+   al suo contenitore: `.ip-doc-grid` con 2 colonne, gap 14px e max-width 720px,
+   più .ip-doc-field/.ip-doc-label/.form-control ridisegnati. Vincevano su tutto
+   il resto del foglio (stessa specificità, più avanti nel file), quindi ogni
+   griglia di campi dell'app era larga al massimo 720px e non collassava a una
+   colonna sotto i 580px: la media query della regola generale stava 4000 righe
+   prima e veniva sovrascritta. Le misure ora stanno una volta sola nella
+   sezione dei campi; qui resta solo la larghezza di lettura di questa pagina. */
+.ip-doc-grid--narrow{ max-width:720px; }
+.ip-doc-field.is-disabled{ opacity:.5; }
+.ip-doc-field.is-disabled .form-control{ background:var(--ip-bg); cursor:not-allowed; }
+.ip-export-shortcuts{
+  margin-top:16px; display:flex; flex-wrap:wrap; gap: var(--ip-space-4); align-items:center;
+  padding:11px 12px; background:var(--ip-bg); border:1px dashed var(--ip-border); border-radius:8px;
+}
+.ip-export-shortcuts .ip-doc-label{ margin-right:2px; white-space:nowrap; font-size: var(--ip-text-xs); letter-spacing:.06em; text-transform:uppercase; color:var(--ip-text-muted); }
+.ip-tag-button{
+  font-size: var(--ip-text-sm); font-weight:600; padding:6px 11px; border-radius:999px;
+  border:1px solid var(--ip-border); background:var(--ip-bg-card); color:var(--ip-text);
+  transition: background var(--ip-transition), border-color var(--ip-transition), color var(--ip-transition);
+}
+.ip-tag-button:hover{ background:var(--ip-hover); border-color:var(--ip-border-strong); }
+.ip-tag-button.is-active{ background:var(--ip-text); color:var(--ip-bg-card); border-color:var(--ip-text); }
+html[data-theme="dark"] .ip-tag-button.is-active{ background:var(--ip-text); color:var(--ip-bg); }
+#export_annual_note{
+  border-radius:8px; border:1px solid #cfe6cf; background:#eef5ee; color:#2f5e30;
+  padding:10px 12px; font-size: var(--ip-text-sm); line-height:1.45; margin-bottom:12px;
+}
+html[data-theme="dark"] #export_annual_note{ background:#1c271d; border-color:#2a3a2b; color:#7ec780; }
+#export_annual_note[hidden]{ display:none !important; }
+
+/* Formato — stessa card, meno alta */
+.ip-format-grid{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: var(--ip-space-5); }
+@media (max-width:860px){ .ip-format-grid{ grid-template-columns: minmax(0, 1fr); } }
+.ip-format-grid .ip-export-type{ min-height:104px; }
+
+/* --- Import: modello CSV, tracciato atteso e storico --- */
+.ip-mono-inline{ font-family: var(--ip-mono); font-size: .92em; }
+
+.ip-import-intro__order{
+  display:flex; gap: var(--ip-space-4); align-items:flex-start;
+  margin:12px 0 0; padding:9px 11px; max-width:72ch;
+  font-size: var(--ip-text-sm); line-height:1.5; color:var(--ip-text-muted);
+  background:var(--ip-bg); border:1px dashed var(--ip-border); border-radius:8px;
+}
+.ip-import-intro__order i{ margin-top:2px; opacity:.8; }
+
+/* Riga "tracciato": il modello da scaricare e le intestazioni attese, cioe' le
+   due informazioni che prima esistevano solo nel codice sorgente. */
+.ip-import-card__tracciato{
+  display:flex; align-items:center; gap: var(--ip-space-5); flex-wrap:wrap;
+}
+.ip-import-template{
+  display:inline-flex; align-items:center; gap: var(--ip-space-3);
+  font-size: var(--ip-text-sm); font-weight:600; text-decoration:none;
+  padding:4px 9px; border-radius:999px;
+  color:var(--ip-text); background:var(--ip-bg-card);
+  border:1px solid var(--ip-border);
+  transition: border-color var(--ip-transition), background var(--ip-transition);
+}
+.ip-import-template:hover{ border-color:var(--ip-border-strong); background:var(--ip-hover); color:var(--ip-text); }
+.ip-import-headers{ font-size: var(--ip-text-sm); color:var(--ip-text-muted); min-width:0; }
+.ip-import-headers summary{ cursor:pointer; user-select:none; }
+.ip-import-headers summary::marker{ color:var(--ip-text-muted); }
+.ip-import-headers p{
+  margin:6px 0 0; font-family:var(--ip-mono); font-size: var(--ip-text-sm); line-height:1.6;
+  word-break:break-word; color:var(--ip-text-muted);
+}
+.ip-import-card__filemeta{
+  margin-left: var(--ip-space-3); font-size: var(--ip-text-sm); color:var(--ip-text-muted); font-family:var(--ip-mono);
+}
+
+.ip-import-filetag{
+  display:inline-block; margin:0 4px 3px 0; padding:2px 7px;
+  font-family:var(--ip-mono); font-size: var(--ip-text-sm); line-height:1.5;
+  background:var(--ip-bg); border:1px solid var(--ip-border); border-radius:5px;
+  color:var(--ip-text-muted);
+}
+.ip-import-outcome{
+  display:inline-flex; align-items:center; gap: var(--ip-space-2);
+  font-size: var(--ip-text-sm); font-weight:600; padding:3px 8px; border-radius:999px;
+  border:1px solid var(--ip-border);
+}
+.ip-import-outcome.is-ok{ background:#eef5ee; color:#3d7a3e; border-color:#cfe6cf; }
+.ip-import-outcome.is-error{ background:#fdf0ee; color:#a8442c; border-color:#f2d5cd; }
+html[data-theme="dark"] .ip-import-outcome.is-ok{ background:#1c271d; color:#7ec780; border-color:#2a3a2b; }
+html[data-theme="dark"] .ip-import-outcome.is-error{ background:#2c1c19; color:#e08a6d; border-color:#452822; }
+
+/* Avviso dentro una griglia di campi (es. CIG senza numero d'ordine in
+   invoices/partial_einvoice_fields.php): occupa tutta la riga invece di
+   stringersi in una colonna fra due campi. */
+.ip-doc-grid > .ip-doc-alert {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
