@@ -166,6 +166,11 @@ le colonne dei loghi e del piè di pagina dei documenti).
   una pagina 404 dopo la conferma (era un link, e l'eliminazione accetta solo
   richieste POST). Ora è un modulo, come nella scheda cliente; un test
   impedisce che altre viste ripetano l'errore.
+- **README e guida di installazione.** Il logo nuovo in testata (con variante
+  per il tema scuro di GitHub) e nella copertina; elenco delle funzioni, passi
+  di installazione e comandi di sviluppo aggiornati; nuova guida
+  [Installazione su un sottodominio](docs/installazione-su-un-sottodominio.md)
+  con configurazione nginx e Apache, `.env`, cron e verifiche.
 - **Pulsanti delle conferme**: «Annulla» e «Esci senza salvare» (e le altre
   conferme di eliminazione) erano a 16px, più grandi dei pulsanti del resto
   dell'app; ora hanno la misura dei pulsanti piccoli.

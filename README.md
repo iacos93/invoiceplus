@@ -1,6 +1,9 @@
 <p align="center">
   <a href="https://github.com/iacos93/invoiceplus">
-    <img src="public/assets/core/img/logo_400x200.png" alt="Invoice+" width="360">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="public/assets/core/img/logo_400x200-dark.png">
+      <img src="public/assets/core/img/logo_400x200.png" alt="Invoice+" width="360">
+    </picture>
   </a>
 
   <p align="center">
@@ -73,11 +76,21 @@ cassa previdenziale. L'interfaccia è in italiano e in inglese.
 - **Fatturazione italiana**: F24, RiBa, scadenzario, invio dei documenti via
   PEC e canale SDI.
 - **Riconciliazione bancaria** con importazione degli estratti conto.
-- **PDF** dei documenti con modelli sovrascrivibili e nomi file configurabili.
+- **PDF** dei documenti con modelli sovrascrivibili e nomi file configurabili,
+  con l'aliquota IVA di ogni riga.
+- **Più aziende** sulla stessa installazione, ciascuna con il proprio logo
+  (esteso nell'intestazione, solo segno nel piè di pagina) e il proprio testo di
+  piè di pagina su fatture, preventivi, DDT e report.
 - **Area guest**: link temporanei per far vedere a un cliente i propri
   documenti senza creargli un account.
 - **Accesso**: sessioni, modulo MFA e passkey (WebAuthn).
 - **Calendario** delle scadenze, esportabile in formato iCalendar.
+- **Installabile come app** (PWA) da Chrome, Edge o Safari, con scorciatoie per
+  nuova fattura, nuovo preventivo e scadenzario. Il service worker tiene in cache
+  solo i file statici: pagine e dati non restano mai sul dispositivo.
+- **Primo avvio guidato**: l'installazione si controlla da sola (PHP, database,
+  schema, cartelle) e, dopo l'account, una lista di «Primi passi» porta a
+  completare dati dell'azienda, logo, SdI, automazioni e backup.
 - **Coda di lavoro** per l'invio dei documenti, con worker da riga di comando.
 - **Endpoint MCP** per far pilotare i dati a un assistente, con chiave dedicata.
 
@@ -118,6 +131,7 @@ di usarla.
 - [Fisco e analisi](docs/funzioni/fisco-e-analisi.md)
 - [Accesso e integrazioni](docs/funzioni/accesso-e-integrazioni.md)
 - [Impostazioni](docs/funzioni/impostazioni.md)
+- [Installazione su un sottodominio](docs/installazione-su-un-sottodominio.md): DNS, HTTPS, nginx/Apache, cron
 - [Installazione, aggiornamento e ripristino](docs/installazione-e-aggiornamento.md)
 
 ## Requisiti software
@@ -263,9 +277,21 @@ avvia l'applicazione su <http://localhost:8080>. Credenziali:
    php spark users:create
    ```
 
-7. Apri `https://tuo-dominio.example/` e accedi con quell'account. Dalla
-   schermata delle impostazioni puoi creare l'azienda e completare i dati
-   fiscali.
+7. Apri `https://tuo-dominio.example/` e accedi con quell'account. Dopo
+   l'accesso la pagina **Primi passi** elenca cosa resta da sistemare: dati
+   fiscali e logo dell'azienda, piè di pagina dei documenti, invio allo SdI,
+   chiave per le automazioni, backup, verifica in due passaggi.
+
+   Se non vuoi usare `php spark users:create`, salta il punto 6: su
+   un'installazione senza utenti la pagina iniziale controlla l'ambiente e poi
+   chiede di creare l'amministratore. Il database non si configura da quella
+   pagina, di proposito: è pubblica finché non esiste un utente, e le
+   credenziali devono restare nel `.env`.
+
+   Il dominio va scelto una volta: le passkey sono legate al nome del sito e
+   cambiarlo dopo le invalida. Si consiglia un sottodominio dedicato
+   (`https://invoice.tuo-dominio.example/`) a una sottocartella condivisa con
+   altre applicazioni.
 
 Per lo sviluppo, in alternativa al server web:
 
@@ -330,6 +356,12 @@ Comandi utili:
 | `composer serve` | Avvia il server di sviluppo sulla porta 8080 |
 | `vendor/bin/phpunit tests/unit/NavItemStateTest.php` | Esegue un solo file di test |
 | `php spark migrate` | Applica le migrazioni |
+| `php tools/minify_css.php` | Unisce `public/assets/core/css/src/*.css` in `custom.css` e ne ricava `custom.min.css` |
+| `php tools/subset_fontawesome.php` | Rigenera il sottoinsieme di Font Awesome dalle icone usate |
+| `php tools/bundle_js.php` | Rigenera i bundle JavaScript (richiede Node.js) |
+
+Il foglio di stile si modifica nei file di `public/assets/core/css/src/`, mai in
+`custom.css`, che è generato: i test falliscono se non coincidono.
 
 In `development` l'applicazione mostra la debug bar di CodeIgniter; in
 `production` resta spenta. I log finiscono in `writable/logs/`.
