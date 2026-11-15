@@ -34,9 +34,6 @@
 
     <?= $this->include('layout/theme_head') ?>
 
-    <!-- Caratteri del design system (vedi layout/fonts.php) -->
-    <?= $this->include('layout/fonts') ?>
-
     <!-- Bootstrap 5 + vendor -->
     <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.subset.min.css'); ?>">
     <?php
@@ -62,8 +59,8 @@
          modifiche si vedono senza ricompilare. -->
     <?php $ip_css = (defined('ENVIRONMENT') && ENVIRONMENT === 'production') ? 'css/custom.min.css' : 'css/custom.css'; ?>
     <link rel="stylesheet" href="<?php _core_asset($ip_css); ?>">
-    <!-- Report -->
-    <link rel="stylesheet" href="<?php _theme_asset('css/reports.css'); ?>">
+    <!-- Gli stili dei report (css/reports.css) non stanno qui: li carica
+         reports/partial_style.php, solo nelle cinque pagine che li usano. -->
 
     <?php if (get_setting('monospace_amounts') == 1) { ?>
         <link rel="stylesheet" href="<?php _theme_asset('css/monospace.css'); ?>">
@@ -86,50 +83,8 @@
         window.IP_DATE_FORMAT = '<?= date_format_datepicker() ?>';
         window.IP_WEEK_START  = <?= (int) get_setting('first_day_of_week', 1) ?>;
 
-        document.addEventListener('DOMContentLoaded', function () {
-            // Tooltip BS5 (inizializza tutti gli elementi .tip e [data-bs-toggle="tooltip"])
-            document.querySelectorAll('.tip, [data-bs-toggle="tooltip"]').forEach(function (el) {
-                if (window.bootstrap) { new bootstrap.Tooltip(el); }
-            });
-
-            // Cambio scheda: riporta la lettura all'inizio del pannello. Senza,
-            // cambiando scheda da fondo pagina si atterrava in mezzo al nuovo
-            // pannello, senza intro né contesto. Due insidie, entrambe gestite:
-            // Bootstrap 5.3 imposta html { scroll-behavior: smooth } (scroll
-            // animati) e il plugin Tab aggiorna l'hash della URL dopo ogni cambio
-            // scheda — il browser fa uno scroll di frammento verso l'ancora
-            // #pannello, che per un pannello più alto del viewport finisce
-            // allineato al bordo basso: l'intro sparisce sotto lo stack sticky
-            // (navbar + headerbar + barra schede). Il metodo del plugin che
-            // imposta l'hash è inlined nel bundle minificato, quindi non si può
-            // togliere alla radice: si lascia partire lo scroll e lo si azzera
-            // non appena si muove dal bersaglio esplicito (posizione del pannello
-            // meno l'altezza dello stack) con uno scrollTo istantaneo.
-            document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (tab) {
-                tab.addEventListener('shown.bs.tab', function () {
-                    var pane = document.querySelector(this.getAttribute('href'));
-                    if (!pane) { return; }
-                    var y = pane.getBoundingClientRect().top + window.scrollY;
-                    var stack = 0;
-                    var headerbar = document.getElementById('headerbar');
-                    if (headerbar) { stack += headerbar.offsetHeight; }
-                    var tabs = document.querySelector('.ip-tabs');
-                    if (tabs) { stack += tabs.offsetHeight + 10; }
-                    var navbar = parseInt(document.documentElement.style.getPropertyValue('--ip-navbar-height'), 10) || 56;
-                    var target = y - navbar - stack - 12;
-                    var cancel = function () {
-                        if (Math.abs(window.scrollY - target) < 4) { return; }
-                        window.scrollTo({ top: target, behavior: 'instant' });
-                    };
-                    window.scrollTo({ top: target, behavior: 'instant' });
-                    document.addEventListener('scroll', cancel);
-                    setTimeout(function () {
-                        document.removeEventListener('scroll', cancel);
-                        cancel();
-                    }, 600);
-                });
-            });
-        });
+        // Tooltip e rientro delle schede stanno in ip-app.min.js (ip-layout.js).
+        // Qui resta solo la configurazione che dipende dal server.
     </script>
     <!-- Componenti di input propri (select con ricerca + calendario) -->
     <script src="<?php _core_asset('js/ip-components.min.js'); ?>"></script>
@@ -640,32 +595,6 @@
         }
     })();
 
-    // Sidebar off-canvas su mobile: toggle con aria-expanded, backdrop,
-    // chiusura su Escape o click sul backdrop.
-    (function () {
-        var toggle = document.getElementById('ip-sidebar-toggle');
-        var sidebar = document.getElementById('ip-sidebar');
-        var backdrop = document.getElementById('ip-sidebar-backdrop');
-        if (!toggle || !sidebar || !backdrop) { return; }
-
-        function setOpen(open) {
-            document.body.classList.toggle('ip-sidebar-open', open);
-            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-            backdrop.hidden = !open;
-            if (open) { toggle.blur(); }
-        }
-
-        toggle.addEventListener('click', function () {
-            setOpen(!document.body.classList.contains('ip-sidebar-open'));
-        });
-        backdrop.addEventListener('click', function () { setOpen(false); });
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && document.body.classList.contains('ip-sidebar-open')) {
-                setOpen(false);
-            }
-        });
-    })();
-
     // Sezioni della sidebar: la freccia apre e chiude, il link resta un link.
     (function () {
         var sidebar = document.getElementById('ip-sidebar');
@@ -761,31 +690,6 @@
     })();
 </script>
 
-<script>
-    // Toggle tema chiaro/scuro — vedi layout/theme_head.php per l'applicazione
-    // anticipata e il fallback su prefers-color-scheme.
-    (function () {
-        var btn = document.getElementById('ip-theme-toggle');
-        if (!btn) { return; }
-        btn.addEventListener('click', function () {
-            var root = document.documentElement;
-            var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
-            root.dataset.theme = next;
-            root.setAttribute('data-bs-theme', next);
-            try { localStorage.setItem('ip-theme', next); } catch (e) {}
-            // Transizione morbida: abilita le transizioni solo per la durata
-            // del cambio, poi leva la classe cosi' il resto dell'app resta
-            // senza transizioni (il caricamento iniziale resta istantaneo).
-            // La guardia prefers-reduced-motion in custom.css la neutralizza.
-            root.classList.add('ip-theme-animating');
-            if (window.__ipThemeAnim) { clearTimeout(window.__ipThemeAnim); }
-            window.__ipThemeAnim = setTimeout(function () {
-                root.classList.remove('ip-theme-animating');
-            }, 300);
-        });
-    })();
-</script>
-
 <div id="main-area">
     <!-- <main>: landmark "main" per screen reader; tabindex=-1 per ricevere
          il focus programmatico dopo la navigazione (vedi ip-skeleton.js) -->
@@ -799,98 +703,6 @@
 <div id="modal-placeholder"></div>
 
 <?= $this->include('layout/confirm_modal') ?>
-
-<script>
-    // Delegato conferma — sostituisce data-bs-toggle="confirm" data-confirm-title="<?= esc(trans('confirm', '', 'Conferma')) ?>" data-confirm-body="..." data-confirm-ok="<?= esc(trans('delete', '', 'Elimina')) ?>" data-confirm-danger="1"
-    (function () {
-        var modalEl = document.getElementById('ip-confirm-modal');
-        var modal = null;
-        var pendingEl = null;
-
-        function ensureModal() {
-            if (modal || !modalEl) return modal;
-            if (typeof bootstrap === 'undefined' || !bootstrap.Modal) return null;
-            modal = new bootstrap.Modal(modalEl);
-            document.getElementById('ip-confirm-ok').addEventListener('click', onOk);
-            return modal;
-        }
-
-        function show(el) {
-            pendingEl = el;
-            var m = ensureModal();
-            if (!m) { return; }
-
-            var title = (el.dataset.confirmTitle || 'Conferma');
-            var body  = (el.dataset.confirmBody  || '');
-            var ok    = (el.dataset.confirmOk     || 'Conferma');
-            var danger = (el.dataset.confirmDanger === '1' || el.dataset.confirmDanger === 'true');
-
-            document.getElementById('ip-confirm-modal-title').textContent = title;
-            document.getElementById('ip-confirm-modal-body').textContent = body;
-            var okBtn = document.getElementById('ip-confirm-ok');
-            okBtn.querySelector('.ip-confirm-ok-label').textContent = ok;
-            okBtn.className = danger ? 'btn btn-danger' : 'btn btn-primary';
-            okBtn.querySelector('i').className = danger ? 'fa fa-exclamation-triangle' : 'fa fa-check';
-            var modalIcon = document.querySelector('#ip-confirm-modal .confirm-modal-icon');
-            if (modalIcon) {
-                modalIcon.className = 'fa ' + (danger ? 'fa-exclamation-triangle confirm-modal-icon confirm-modal-icon-danger'
-                                                        : 'fa-question-circle confirm-modal-icon');
-            }
-            m.show();
-        }
-
-        // Un submitter valido per requestSubmit() e' solo un input
-        // type=submit/image o un <button> il cui type e' "submit" (default se
-        // l'attributo manca). Ogni bottone "Elimina" dell'app e' invece
-        // type="button" apposta, per non inviare il form al primo click e
-        // lasciare il tempo alla conferma: passato come submitter, il
-        // browser lo rifiuta e requestSubmit lancia un TypeError, mai
-        // catturato. Il form quindi non partiva mai: nessuna conferma di
-        // eliminazione, in nessuna schermata dell'app, arrivava a effetto.
-        function isSubmitButton(el) {
-            if (!el) { return false; }
-            if (el.tagName === 'BUTTON') { return (el.getAttribute('type') || 'submit').toLowerCase() === 'submit'; }
-            if (el.tagName === 'INPUT') {
-                var t = (el.getAttribute('type') || '').toLowerCase();
-                return t === 'submit' || t === 'image';
-            }
-            return false;
-        }
-
-        function onOk() {
-            if (!pendingEl) return;
-            var el = pendingEl;
-            pendingEl = null;
-            var cb = el.dataset.confirmCallback;
-            if (cb && typeof window[cb] === 'function') { window[cb](el); return; }
-            if (el.tagName === 'A' && el.getAttribute('href') && el.getAttribute('href') !== '#') {
-                window.location.href = el.getAttribute('href'); return;
-            }
-            // el.form (non solo el.closest('form')): un bottone puo' puntare
-            // con l'attributo HTML5 form="..." a un <form> altrove nel DOM, non
-            // a un antenato — closest('form') non lo troverebbe mai, quindi il
-            // click su "conferma" non invierebbe nulla. .form risolve anche
-            // quel caso.
-            var form = el.form || el.closest('form');
-            if (!form) { return; }
-            if (!form.requestSubmit) { form.submit(); return; }
-            // requestSubmit(el) solo se el e' un submitter valido: rispetta
-            // l'eventuale formaction diversa dall'action del form (i bottoni
-            // "Elimina riga", type=submit). Per tutti gli altri (type=button)
-            // si invia senza submitter — niente eccezione, e formaction non
-            // c'e' comunque su quei bottoni.
-            if (isSubmitButton(el)) { form.requestSubmit(el); } else { form.requestSubmit(); }
-        }
-
-        document.addEventListener('click', function (e) {
-            var el = e.target.closest('[data-bs-toggle="confirm"]');
-            if (!el) return;
-            e.preventDefault();
-            e.stopPropagation();
-            show(el);
-        });
-    })();
-</script>
 
 <script defer src="<?php _core_asset('js/ip-app.min.js'); ?>"></script>
 </body>

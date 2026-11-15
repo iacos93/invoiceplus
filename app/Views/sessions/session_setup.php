@@ -3,7 +3,7 @@
 <?= $this->section('content') ?>
 
 <div class="ip-auth-head">
-    <h2><?= trans('setup_first_user', '', 'Benvenuto') ?></h2>
+    <h2><?= trans('setup_first_user', '', 'Primo avvio') ?></h2>
     <p><?= trans('setup_first_user_help', '', 'Questa installazione non ha ancora utenti: crea il primo account amministratore per iniziare.') ?></p>
 </div>
 
@@ -35,7 +35,9 @@
     <div class="ip-doc-field">
         <label for="user_password" class="form-badge"><?= trans('password') ?></label>
         <input type="password" name="user_password" id="user_password" class="form-control"
-               autocomplete="new-password" required minlength="8">
+               autocomplete="new-password" required minlength="8"
+               aria-describedby="user_password_hint">
+        <span class="ip-field-hint" id="user_password_hint"><?= trans('setup_password_hint', '', 'Almeno 8 caratteri.') ?></span>
         <?php if (!empty($errors['user_password'])): ?>
             <span class="ip-field-error"><?= esc($errors['user_password']) ?></span>
         <?php endif; ?>
@@ -78,7 +80,7 @@
     </details>
 <?php endif; ?>
 
-<p class="ip-webauthn-status">
+<p class="ip-auth-note">
     <?= trans('setup_only_first_run', '', 'Questa pagina è disponibile solo finché non esiste nessun utente.') ?>
 </p>
 

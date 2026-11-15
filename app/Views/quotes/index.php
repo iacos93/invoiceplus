@@ -214,7 +214,9 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
             <?php foreach ($quotes as $quote): ?>
                 <?php
                 $statusInfo  = $quote_statuses[(string) $quote['quote_status_id']] ?? ['label' => '', 'class' => 'draft'];
-                $isFavourite = !empty($quote['quote_is_favourite']);
+                // Come per le fatture: Postgre restituisce "t"/"f", quindi
+                // !empty("f") è true e la stella era sempre accesa.
+                $isFavourite = db_bool($quote['quote_is_favourite'] ?? false);
                 // Nome accessibile esplicito: il solo title non è affidabile
                 // come etichetta per i lettori di schermo.
                 $favAction = $isFavourite
@@ -230,16 +232,16 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                         </label>
                     </td>
                     <td class="ip-fav-col ip-hide-on-mobile" data-label="<?= esc(trans('favourite', '', 'Preferito')) ?>">
-                        <form method="POST" action="<?= site_url('quotes/toggle_favourite/' . (int) $quote['quote_id']) ?>">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="back" value="<?= esc(current_url(true), 'attr') ?>">
-                            <button type="submit" class="ip-fav-toggle <?= $isFavourite ? 'is-on' : '' ?>"
-                                    title="<?= esc($favAction, 'attr') ?>"
-                                    aria-label="<?= esc($favAction, 'attr') ?>"
-                                    aria-pressed="<?= $isFavourite ? 'true' : 'false' ?>">
-                                <i class="fa <?= $isFavourite ? 'fa-solid fa-star' : 'fa-regular fa-star' ?>" aria-hidden="true"></i>
-                            </button>
-                        </form>
+                        <?php /* Nessuna <form> qui: il bottone invia quella della riga
+                                 (ip-row-form-<id>, nella colonna delle azioni), che
+                                 porta già il token e l'indirizzo di ritorno. */ ?>
+                        <button type="submit" form="ip-row-form-<?= (int) $quote['quote_id'] ?>"
+                                class="ip-fav-toggle <?= $isFavourite ? 'is-on' : '' ?>"
+                                title="<?= esc($favAction, 'attr') ?>"
+                                aria-label="<?= esc($favAction, 'attr') ?>"
+                                aria-pressed="<?= $isFavourite ? 'true' : 'false' ?>">
+                            <i class="fa <?= $isFavourite ? 'fa-solid fa-star' : 'fa-regular fa-star' ?>" aria-hidden="true"></i>
+                        </button>
                     </td>
                     <td data-cell="status" data-label="<?= esc(trans('status')) ?>">
                         <span class="badge ip-status <?= $status_label_class[$statusInfo['class']] ?? 'text-bg-secondary' ?>">
@@ -275,6 +277,14 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                     </td>
                     <td class="amount" data-cell="amount" data-label="<?= esc(trans('total')) ?>"><?= format_currency($quote['quote_total']) ?></td>
                     <td class="ip-hide-on-mobile" data-label="<?= esc(trans('options')) ?>">
+                        <?php /* L'unica form della riga: la usano il preferito (nella
+                                 sua colonna) ed «Elimina» (qui sotto, con
+                                 data-confirm-action). Senza campi visibili. */ ?>
+                        <form method="POST" id="ip-row-form-<?= (int) $quote['quote_id'] ?>"
+                              action="<?= site_url('quotes/toggle_favourite/' . (int) $quote['quote_id']) ?>">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="back" value="<?= esc(current_url(true), 'attr') ?>">
+                        </form>
                         <div class="options btn-group">
                             <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
                                 <i class="fa fa-solid fa-cog" aria-hidden="true"></i> <?= trans('options') ?>
@@ -312,13 +322,12 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                                 </li>
                                 <?php endif; ?>
                                 <li>
-                                    <form action="<?= site_url('quotes/delete/' . $quote['quote_id']) ?>" method="POST">
-                                        <?= csrf_field() ?>
-                                        <button type="button" class="dropdown-button"
-                                                data-bs-toggle="confirm" data-confirm-title="<?= esc(trans('confirm', '', 'Conferma')) ?>" data-confirm-body="<?= esc(trans('delete_quote_warning')) ?>" data-confirm-ok="<?= esc(trans('delete', '', 'Elimina')) ?>" data-confirm-danger="1">
-                                            <i class="fa fa-solid fa-trash-can fa-margin" aria-hidden="true"></i> <?= trans('delete') ?>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="dropdown-button"
+                                            form="ip-row-form-<?= (int) $quote['quote_id'] ?>"
+                                            data-confirm-action="<?= site_url('quotes/delete/' . (int) $quote['quote_id']) ?>"
+                                            data-bs-toggle="confirm" data-confirm-title="<?= esc(trans('confirm', '', 'Conferma')) ?>" data-confirm-body="<?= esc(trans('delete_quote_warning')) ?>" data-confirm-ok="<?= esc(trans('delete', '', 'Elimina')) ?>" data-confirm-danger="1">
+                                        <i class="fa fa-solid fa-trash-can fa-margin" aria-hidden="true"></i> <?= trans('delete') ?>
+                                    </button>
                                 </li>
                             </ul>
                         </div>

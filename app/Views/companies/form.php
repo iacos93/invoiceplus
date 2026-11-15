@@ -145,7 +145,10 @@
                     </div>
                     <div class="ip-doc-field ip-regime-field" data-forms="forfettario">
                         <label class="ip-doc-label" for="company_forfettario_startup"><?= trans('forfettario_startup', '', 'Forfettario agevolato') ?></label>
-                        <?php $startup = (int) ($model->formValue('company_forfettario_startup') ?: 0); ?>
+                        <?php // db_bool e non (int): su PostgreSQL il flag arriva come
+                              // stringa "t"/"f" e (int) "t" vale 0, quindi il regime
+                              // agevolato risultava sempre spento.
+                              $startup = db_bool($model->formValue('company_forfettario_startup')) ? 1 : 0; ?>
                         <select name="company_forfettario_startup" id="company_forfettario_startup" class="form-control simple-select">
                             <option value="0" <?= $startup === 0 ? 'selected' : '' ?>>
                                 <?= trans('forfettario_ordinary', '', 'No — aliquota ordinaria 15%') ?>

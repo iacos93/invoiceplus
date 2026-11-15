@@ -24,6 +24,16 @@
 (function () {
     'use strict';
 
+    // Radice dell'app ricavata dal percorso di questo script (servito sotto
+    // /assets/, da solo o nel bundle): le view non pubblicano la base URL e
+    // l'app può vivere in una sottocartella.
+    var appBase = (function () {
+        var src = document.currentScript && document.currentScript.src;
+        var at = src ? new URL(src).pathname.indexOf('/assets/') : -1;
+
+        return at >= 0 ? new URL(src).pathname.slice(0, at + 1) : '/';
+    })();
+
     if (!window.fetch || !window.history || !window.history.pushState || !window.DOMParser) {
         return;
     }
@@ -451,9 +461,25 @@
             return 'keep';
         }
 
-        return link.closest('.ip-pager, .ip-filter-bar, .ip-filter-panel')
+        if (!link.closest('.ip-pager, .ip-filter-bar, .ip-filter-panel')) {
+            return undefined;
+        }
+
+        // Un pulsante della barra filtri che porta in un'altra sezione (il
+        // commutatore Clienti/Fornitori) non rinnova la stessa lista: cambia
+        // pagina, e allinearla alla tabella la faceva scendere a ogni clic.
+        return sectionOf(link.pathname) === sectionOf(window.location.pathname)
             ? 'list'
             : undefined;
+    }
+
+    // Primo segmento del percorso dopo la base dell'app: "clients" per
+    // /clients/status/all, anche con l'app installata in una sottocartella.
+    function sectionOf(path) {
+        var base = appBase;
+        var rest = path.indexOf(base) === 0 ? path.slice(base.length) : path;
+
+        return rest.replace(/^\/+/, '').replace(/^index\.php\/?/, '').split('/')[0];
     }
 
     function scrollAfterRender(saved) {

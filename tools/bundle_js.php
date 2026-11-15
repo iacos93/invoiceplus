@@ -23,6 +23,7 @@ $jsDir  = $root . '/public/assets/core/js';
 
 /** Ordine = ordine di caricamento nel layout (base.php / guest.php). */
 $bundle = [
+    'ip-layout.js',
     'ip-skeleton.js',
     'ip-pjax.js',
     'ip-table-rows.js',

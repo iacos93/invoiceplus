@@ -33,9 +33,13 @@ class Suppliers extends BaseController
 
     public function status(string $status = 'active')
     {
+        $perPage = list_per_page();
+
         return view('suppliers/index', [
             'status'    => $status,
-            'suppliers' => $this->supplierModel->getAllWithTotals($status),
+            'suppliers' => $this->supplierModel->getPage($status, $perPage, list_page('ip_suppliers')),
+            'pager'     => $this->supplierModel->pager,
+            'group'     => 'ip_suppliers',
         ]);
     }
 

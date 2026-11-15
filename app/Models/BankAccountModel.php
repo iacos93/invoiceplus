@@ -214,9 +214,26 @@ class BankAccountModel extends IpBaseModel
      *
      * Una query aggregata per tabella (non una per conto) così l'elenco resta
      * a costo fisso al crescere dei conti.
+     *
+     * Con $accountIds si aggregano solo quei conti: l'elenco paginato ne
+     * mostra pochi, e senza filtro ogni pagina faceva quattro scansioni
+     * complete di tabella (le stesse che la cancellazione rifà per un solo
+     * conto). Il filtro lascia lavorare gli indici su bank_account_id.
+     *
+     * @param list<int>|null $accountIds
+     *
+     * @return array<int, array<string, int>>
      */
-    public function usageCounts(): array
+    public function usageCounts(?array $accountIds = null): array
     {
+        if ($accountIds !== null) {
+            $accountIds = array_values(array_unique(array_map('intval', $accountIds)));
+
+            if ($accountIds === []) {
+                return [];
+            }
+        }
+
         $usage  = [];
         $tables = [
             'ip_invoices'          => 'invoices',
@@ -230,11 +247,15 @@ class BankAccountModel extends IpBaseModel
                 continue;
             }
 
-            $rows = $this->db->table($table)
-                             ->select('bank_account_id, COUNT(*) AS total')
-                             ->where('bank_account_id >', 0)
-                             ->groupBy('bank_account_id')
-                             ->get()->getResultArray();
+            $builder = $this->db->table($table)
+                                ->select('bank_account_id, COUNT(*) AS total')
+                                ->where('bank_account_id >', 0);
+
+            if ($accountIds !== null) {
+                $builder->whereIn('bank_account_id', $accountIds);
+            }
+
+            $rows = $builder->groupBy('bank_account_id')->get()->getResultArray();
 
             foreach ($rows as $row) {
                 $usage[(int) $row['bank_account_id']][$key] = (int) $row['total'];
@@ -247,7 +268,7 @@ class BankAccountModel extends IpBaseModel
     /** Totale dei riferimenti al conto: zero significa cancellabile. */
     public function usageFor(int $id): int
     {
-        return array_sum($this->usageCounts()[$id] ?? []);
+        return array_sum($this->usageCounts([$id])[$id] ?? []);
     }
 
     /**
@@ -267,14 +288,33 @@ class BankAccountModel extends IpBaseModel
      * precedente al multi-azienda) restano visibili come nel resto dell'app:
      * escluderle farebbe sparire dal saldo soldi che ci sono.
      *
+     * Con $accountIds si calcolano solo quei conti: la lista è paginata, e
+     * senza filtro si rileggeva l'intera tabella già caricata dal controller.
+     *
+     * @param list<int>|null $accountIds
+     *
      * @return array<int, array{opening: float, date: ?string, in: float, out: float, balance: float, declared: bool}>
      */
-    public function balances(): array
+    public function balances(?array $accountIds = null): array
     {
+        if ($accountIds !== null) {
+            $accountIds = array_values(array_unique(array_map('intval', $accountIds)));
+
+            if ($accountIds === []) {
+                return [];
+            }
+        }
+
         $companyId = active_company_id();
         $saldo     = [];
 
-        foreach ($this->scopeToCompany()->orderBy('bank_account_id', 'ASC')->findAll() as $account) {
+        $accounts = $this->scopeToCompany()->orderBy('bank_account_id', 'ASC');
+
+        if ($accountIds !== null) {
+            $accounts->whereIn('bank_account_id', $accountIds);
+        }
+
+        foreach ($accounts->findAll() as $account) {
             $id = (int) $account['bank_account_id'];
 
             $saldo[$id] = [
@@ -310,12 +350,18 @@ class BankAccountModel extends IpBaseModel
         // iniziale — è quello che si legge dall'estratto conto quel giorno — e
         // sommarli di nuovo li conterebbe due volte. Un conto senza data li
         // conta tutti, che è il comportamento di prima.
+        $incassiQuery = $this->db->table('ip_payments p')
+                                 ->select('p.bank_account_id AS conto, SUM(p.payment_amount) AS totale')
+                                 ->join('ip_invoices i', 'i.invoice_id = p.invoice_id', 'inner')
+                                 ->join('ip_bank_accounts a', 'a.bank_account_id = p.bank_account_id', 'inner')
+                                 ->where('p.bank_account_id >', 0);
+
+        if ($accountIds !== null) {
+            $incassiQuery->whereIn('p.bank_account_id', $accountIds);
+        }
+
         $incassi = $perimetro(
-            $this->db->table('ip_payments p')
-                     ->select('p.bank_account_id AS conto, SUM(p.payment_amount) AS totale')
-                     ->join('ip_invoices i', 'i.invoice_id = p.invoice_id', 'inner')
-                     ->join('ip_bank_accounts a', 'a.bank_account_id = p.bank_account_id', 'inner')
-                     ->where('p.bank_account_id >', 0)
+            $incassiQuery
                      ->groupStart()
                      ->where('a.bank_account_opening_date', null)
                      ->orWhere('p.payment_date >=', 'a.bank_account_opening_date', false)
@@ -332,11 +378,17 @@ class BankAccountModel extends IpBaseModel
             }
         }
 
+        $speseQuery = $this->db->table('ip_expenses e')
+                               ->select('e.bank_account_id AS conto, SUM(e.expense_amount) AS totale')
+                               ->join('ip_bank_accounts a', 'a.bank_account_id = e.bank_account_id', 'inner')
+                               ->where('e.bank_account_id >', 0);
+
+        if ($accountIds !== null) {
+            $speseQuery->whereIn('e.bank_account_id', $accountIds);
+        }
+
         $spese = $perimetro(
-            $this->db->table('ip_expenses e')
-                     ->select('e.bank_account_id AS conto, SUM(e.expense_amount) AS totale')
-                     ->join('ip_bank_accounts a', 'a.bank_account_id = e.bank_account_id', 'inner')
-                     ->where('e.bank_account_id >', 0)
+            $speseQuery
                      ->groupStart()
                      ->where('a.bank_account_opening_date', null)
                      ->orWhere('e.expense_date >=', 'a.bank_account_opening_date', false)

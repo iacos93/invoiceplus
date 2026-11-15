@@ -26,8 +26,10 @@ class Projects extends BaseController
     public function index()
     {
         $data = [
-            'projects' => $this->projectModel->getAllWithClient(),
+            'projects' => $this->projectModel->getAllWithClient(list_per_page(), list_page('ip_projects')),
             'summary'  => $this->projectModel->getSummary(),
+            'pager'    => $this->projectModel->pager,
+            'group'    => 'ip_projects',
         ];
 
         return view('projects/index', $data);

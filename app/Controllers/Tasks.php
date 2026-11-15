@@ -32,10 +32,13 @@ class Tasks extends BaseController
     public function status(string $status = 'all')
     {
         $data = [
-            'tasks'         => $this->taskModel->getAllWithProject($status),
+            'tasks'         => $this->taskModel->getAllWithProject($status, list_per_page(), list_page('ip_tasks')),
             'status'        => $status,
             'task_statuses' => $this->taskModel->statuses(),
+            // Aggregato globale voluto: serve ai pulsanti di filtro, non alla pagina.
             'summary'       => $this->taskModel->getStatusCounts(),
+            'pager'         => $this->taskModel->pager,
+            'group'         => 'ip_tasks',
         ];
 
         return view('tasks/index', $data);

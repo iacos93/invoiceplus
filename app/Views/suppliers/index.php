@@ -12,7 +12,7 @@
             <div class="ip-table-card-title">
                 <span class="card-header-icon"><i class="fa fa-solid fa-shopping-basket" aria-hidden="true"></i></span>
                 <h2 class="ip-table-card-label"><?= esc(trans('suppliers', '', 'Fornitori')) ?></h2>
-                <span class="badge text-bg-secondary"><?= count($suppliers) ?></span>
+                <span class="badge text-bg-secondary"><?= (int) $pager->getTotal('ip_suppliers') ?></span>
             </div>
             <div class="ip-live-search ip-table-card-search" data-target="#suppliers-list-table">
                 <i class="fa fa-solid fa-search" aria-hidden="true"></i>
@@ -123,6 +123,8 @@
                 </tbody>
             </table>
         </div>
+
+        <?= $this->include('layout/pager_footer', ['group' => 'ip_suppliers']) ?>
     </div>
 </div>
 

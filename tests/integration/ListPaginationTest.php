@@ -1,8 +1,13 @@
 <?php
 
+use App\Models\PaymentMethodModel;
 use App\Models\PaymentModel;
+use App\Models\ProductModel;
+use App\Models\ProjectModel;
 use App\Models\QuoteModel;
 use App\Models\SettingModel;
+use App\Models\SupplierModel;
+use App\Models\TaskModel;
 use CodeIgniter\Test\CIUnitTestCase;
 
 /**
@@ -96,6 +101,127 @@ final class ListPaginationTest extends CIUnitTestCase
             array_slice(array_column($tutti, 'payment_id'), 0, 2),
             array_column($prima, 'payment_id')
         );
+    }
+
+    /**
+     * La pagina chiede i conteggi solo per i metodi che mostra. Il filtro deve
+     * dare gli stessi numeri del conteggio completo su quegli id: un nome di
+     * colonna sbagliato nel whereIn (payment_method contro payment_method_id)
+     * non lo vedrebbe né PHPStan né un test sul percorso senza filtro.
+     */
+    public function testIConteggiFiltratiDeiMetodiCoincidonoConQuelliCompleti(): void
+    {
+        $model = new PaymentMethodModel();
+        $tutti = $model->usageCounts();
+        $pagina = array_slice(array_keys($tutti), 0, 3);
+
+        $filtrati = $model->usageCounts($pagina);
+
+        foreach ($pagina as $id) {
+            $this->assertSame($tutti[$id], $filtrati[$id] ?? null, "Conteggio del metodo {$id}");
+        }
+
+        $this->assertSame(
+            [],
+            array_diff(array_keys($filtrati), $pagina),
+            'Il filtro non deve aggregare metodi che la pagina non mostra'
+        );
+
+        $this->assertSame([], $model->usageCounts([]), 'Nessun metodo da mostrare, nessuna query da fare');
+    }
+
+    /**
+     * Le quattro liste che paginavano tutto (fornitori, attività, progetti,
+     * prodotti): una pagina non supera la dimensione chiesta, il totale del
+     * pager è quello dell'intero elenco e la seconda pagina non ripete la
+     * prima. I totali accessori (spese per fornitore, attività per progetto)
+     * devono restare quelli dell'elenco completo.
+     */
+    public function testLeListeFornitoriAttivitaProgettiProdottiArrivanoUnaPaginaAllaVolta(): void
+    {
+        // Fornitori: pagina + totali per fornitore uguali alla lista completa.
+        $fornitori = new SupplierModel();
+        $tutti     = $fornitori->getAllOrdered();
+        $prima     = $fornitori->getPage('all', 2, 1);
+
+        $this->assertLessThanOrEqual(2, count($prima));
+        $this->assertSame(count($tutti), $fornitori->pager->getTotal('ip_suppliers'));
+
+        if ($tutti !== []) {
+            $idPrimo = (int) $tutti[0]['supplier_id'];
+            $nomePrimo = $tutti[0]['supplier_name'];
+
+            $this->assertSame($nomePrimo, $prima[0]['supplier_name'], 'Stesso ordine dell\'elenco completo');
+            $this->assertSame(
+                (int) ($fornitori->getByIdWithTotals($idPrimo)['expense_count'] ?? 0),
+                (int) $prima[0]['expense_count'],
+                "Spese del fornitore {$idPrimo} invariate dopo la due passate"
+            );
+        }
+    }
+
+    public function testLeAttivitaArrivanoUnaPaginaAllaVolta(): void
+    {
+        $tutti = (new TaskModel())->getAllWithProject('all');
+        $model = new TaskModel();
+        $prima = $model->getAllWithProject('all', 2, 1);
+
+        $this->assertLessThanOrEqual(2, count($prima));
+        $this->assertSame(count($tutti), $model->pager->getTotal('ip_tasks'));
+
+        if ($tutti !== []) {
+            $this->assertSame(
+                array_slice(array_column($tutti, 'task_id'), 0, 2),
+                array_column($prima, 'task_id'),
+                'Stesso ordine dell\'elenco completo'
+            );
+        }
+    }
+
+    public function testIProgettiArrivanoUnaPaginaAllaVolta(): void
+    {
+        $model = new ProjectModel();
+        $tutti = $model->getAllWithClient(); // senza per-page: elenco completo
+        $prima = $model->getAllWithClient(2, 1);
+
+        $this->assertLessThanOrEqual(2, count($prima));
+        $this->assertSame(count($tutti), $model->pager->getTotal('ip_projects'));
+
+        // Le attività aggregate per progetto (e le 5 strisce di stato) devono
+        // restare quelle dell'elenco completo.
+        $tuttiPerId = [];
+
+        foreach ($tutti as $riga) {
+            $tuttiPerId[(int) $riga['project_id']] = $riga;
+        }
+
+        foreach ($prima as $progetto) {
+            $id   = (int) $progetto['project_id'];
+            $altro = $tuttiPerId[$id] ?? null;
+
+            $this->assertNotNull($altro, "Il progetto {$id} della pagina è anche nell'elenco completo");
+            $this->assertSame((int) ($altro['task_count'] ?? 0), (int) ($progetto['task_count'] ?? 0), "Attività del progetto {$id}");
+            $this->assertSame($altro['project_last_task_date'] ?? null, $progetto['project_last_task_date'] ?? null, "Ultima attività del progetto {$id}");
+            $this->assertSame((int) ($altro['task_overdue_count'] ?? 0), (int) ($progetto['task_overdue_count'] ?? 0), "Scadute del progetto {$id}");
+        }
+    }
+
+    public function testIProdottiArrivanoUnaPaginaAllaVolta(): void
+    {
+        $tutti = (new ProductModel())->getAllWithJoins();
+        $model = new ProductModel();
+        $prima = $model->getAllWithJoins(2, 1);
+
+        $this->assertLessThanOrEqual(2, count($prima));
+        $this->assertSame(count($tutti), $model->pager->getTotal('ip_products'));
+
+        if ($tutti !== []) {
+            $this->assertSame(
+                array_slice(array_column($tutti, 'product_id'), 0, 2),
+                array_column($prima, 'product_id'),
+                'Stesso ordine dell\'elenco completo'
+            );
+        }
     }
 
     /**

@@ -33,7 +33,7 @@ $summary = $summary ?? ['projects' => 0, 'open_tasks' => 0, 'completed_tasks' =>
             <div class="ip-table-card-title">
                 <span class="card-header-icon"><i class="fa fa-solid fa-briefcase" aria-hidden="true"></i></span>
                 <span class="ip-table-card-label"><?= esc(trans('projects')) ?></span>
-                <span class="badge text-bg-secondary"><?= count($projects) ?></span>
+                <span class="badge text-bg-secondary"><?= (int) $pager->getTotal('ip_projects') ?></span>
             </div>
             <div class="ip-live-search ip-table-card-search" data-target="#projects-list-table">
                 <i class="fa fa-solid fa-search" aria-hidden="true"></i>
@@ -169,6 +169,8 @@ $summary = $summary ?? ['projects' => 0, 'open_tasks' => 0, 'completed_tasks' =>
             </tbody>
 
         </table>
+
+        <?= $this->include('layout/pager_footer', ['group' => 'ip_projects']) ?>
     </div>
 
     </div>

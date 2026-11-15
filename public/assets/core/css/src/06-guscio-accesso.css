@@ -817,6 +817,9 @@ select.form-select:focus-visible {
   letter-spacing: -0.015em;
   color: #fff;
   margin: 0 0 18px;
+  /* Bilanciato: a 460px il titolo andava a capo lasciando "ordine." da solo
+     sulla seconda riga, una parola orfana proprio nella frase più grande. */
+  text-wrap: balance;
 }
 .ip-auth-brand-copy p {
   color: rgba(244, 244, 245, 0.72);

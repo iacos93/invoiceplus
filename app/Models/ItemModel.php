@@ -267,4 +267,28 @@ class ItemModel extends IpBaseModel
 
         return $dbArray;
     }
+
+    /**
+     * Fra gli id passati, quelli che appartengono davvero al fattura: il
+     * riordino arriva dal browser e non deve poter spostare righe altrui.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<int>
+     */
+    public function idsOfInvoice(int $invoiceId, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $rows = $this->builder()
+            ->select('item_id')
+            ->where('invoice_id', $invoiceId)
+            ->whereIn('item_id', $ids)
+            ->get()
+            ->getResultArray();
+
+        return array_map('intval', array_column($rows, 'item_id'));
+    }
 }

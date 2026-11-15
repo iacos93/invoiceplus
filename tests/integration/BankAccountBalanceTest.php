@@ -132,6 +132,35 @@ final class BankAccountBalanceTest extends CIUnitTestCase
     }
 
     /**
+     * La lista è paginata: saldi e conteggi si chiedono solo per i conti
+     * mostrati, e il filtro non deve far comparire gli altri.
+     */
+    public function testIlFiltroCalcolaSoloIContiRichiesti(): void
+    {
+        $uno = $this->conto('Conto filtro uno', 100.0, '2026-01-01');
+        $due = $this->conto('Conto filtro due', 200.0, '2026-01-01');
+
+        $model = new BankAccountModel();
+
+        $saldi = $model->balances([$uno]);
+
+        $this->assertArrayHasKey($uno, $saldi);
+        $this->assertArrayNotHasKey($due, $saldi, 'Il conto non richiesto non va calcolato');
+        $this->assertSame([], $model->balances([]), 'Nessun conto da mostrare, nessuna query da fare');
+
+        $this->testDb->query(
+            'UPDATE ip_invoices SET bank_account_id = ? WHERE invoice_id = (SELECT invoice_id FROM ip_invoices WHERE company_id = 1 ORDER BY invoice_id LIMIT 1)',
+            [$uno]
+        );
+
+        $conteggi = $model->usageCounts([$uno]);
+
+        $this->assertGreaterThan(0, $conteggi[$uno]['invoices'] ?? 0);
+        $this->assertArrayNotHasKey($due, $conteggi, 'I conteggi non richiesti non vanno aggregati');
+        $this->assertSame([], $model->usageCounts([]));
+    }
+
+    /**
      * Il form manda il saldo nel formato locale e la data all'italiana: quello
      * che finisce nel database deve essere il numero e la data del motore.
      */

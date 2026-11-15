@@ -24,7 +24,9 @@ final class PwaTest extends CIUnitTestCase
 
         $sizes = [];
         foreach ($manifest['icons'] as $icon) {
-            $this->assertFileExists(ROOTPATH . 'public/' . $icon['src']);
+            // Il ?v= serve a far rileggere l'icona a chi ha già installato
+            // l'app: il file su disco è lo stesso senza la query.
+            $this->assertFileExists(ROOTPATH . 'public/' . strtok($icon['src'], '?'));
             $sizes[] = $icon['sizes'];
         }
 

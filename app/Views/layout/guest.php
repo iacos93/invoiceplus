@@ -34,9 +34,6 @@ $is_public_view = !empty($public_view);
 
     <?= $this->include('layout/theme_head') ?>
 
-    <!-- Caratteri del design system (vedi layout/fonts.php) -->
-    <?= $this->include('layout/fonts') ?>
-
     <!-- Bootstrap 5 + vendor -->
     <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.subset.min.css'); ?>">
     <!-- Font Awesome ridotto alle icone in uso (tools/subset_fontawesome.php) -->

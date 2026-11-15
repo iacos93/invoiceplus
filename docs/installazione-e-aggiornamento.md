@@ -309,9 +309,9 @@ su un'altra porta quando la 8080 è occupata. Il predefinito segue
 diversa da quella di `app.baseURL` le pagine perdono stile e JavaScript. In quel
 caso libera la porta oppure imposta `app.cspMode = report`.
 
-La policy ammette soltanto lo stesso sito più i due host di Google Fonts
-(`fonts.googleapis.com`, `fonts.gstatic.com`) e le immagini `data:` (i QR
-code). Chiude plugin, form verso altri siti, richieste verso altri host e
+La policy ammette soltanto lo stesso sito e le immagini `data:` (i QR code):
+non c'è nessuna origine esterna da autorizzare, perché i caratteri sono file
+dell'app (`assets/core/fonts`, dichiarati in `css/src/01-token.css`). Chiude plugin, form verso altri siti, richieste verso altri host e
 incorporamento in pagine esterne. Gli script e gli stili in linea sono ancora
 ammessi: le pagine ne usano molti e la navigazione parziale riesegue gli script
 di un'altra risposta, quindi una policy a nonce richiede un lavoro a parte. La

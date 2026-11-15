@@ -64,6 +64,7 @@ class AddConnectionIndexes extends Migration
             // Un indice che comincia con la colonna la copre già: la tabella
             // può averne uno dalla versione precedente o da una mano esterna.
             $coperte = $this->colonneConIndice($tabella);
+            $testo   = $this->colonneDiTesto($tabella);
 
             foreach ($colonne as $colonna) {
                 if (isset($coperte[$colonna]) || ! $this->db->fieldExists($colonna, $tabella)) {
@@ -72,7 +73,7 @@ class AddConnectionIndexes extends Migration
 
                 $this->db->query(
                     'CREATE INDEX ' . $this->nomeIndice($tabella, $colonna)
-                    . ' ON ' . $tabella . ' (' . $colonna . ')'
+                    . ' ON ' . $tabella . ' (' . $colonna . (isset($testo[$colonna]) ? '(64)' : '') . ')'
                 );
             }
         }
@@ -135,5 +136,30 @@ class AddConnectionIndexes extends Migration
         }
 
         return $coperte;
+    }
+
+    /**
+     * Colonne TEXT/BLOB della tabella, solo fuori da PostgreSQL: MySQL non
+     * indicizza un TEXT senza lunghezza di prefisso e l'installazione pulita
+     * si fermava qui (client_vat_id). 64 caratteri bastano a distinguere una
+     * partita IVA o un codice fiscale; PostgreSQL indicizza il TEXT intero.
+     *
+     * @return array<string, true>
+     */
+    private function colonneDiTesto(string $tabella): array
+    {
+        if ($this->db->DBDriver === 'Postgre') {
+            return [];
+        }
+
+        $testo = [];
+
+        foreach ($this->db->getFieldData($tabella) as $campo) {
+            if (preg_match('/text|blob/i', (string) $campo->type) === 1) {
+                $testo[$campo->name] = true;
+            }
+        }
+
+        return $testo;
     }
 }

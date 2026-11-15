@@ -122,7 +122,11 @@ class FinanceReport
                         'coefficient'         => $coefficient,
                         'contributions'       => $contributions,
                         'inps_scheme'         => $scheme,
-                        'forfettario_startup' => !empty($company['company_forfettario_startup']),
+                        // db_bool e non !empty: da Postgre il flag arriva come
+                        // stringa "t"/"f", e !empty("f") è true — un'azienda
+                        // fuori dal regime agevolato veniva tassata al 5%
+                        // invece che al 15%.
+                        'forfettario_startup' => db_bool($company['company_forfettario_startup'] ?? false),
                         // Solo se valorizzate: NULL vuol dire "usa la media
                         // nazionale dell'anno", non "zero".
                         'add_regionale'       => $this->nullableRate($company['company_add_regionale'] ?? null),

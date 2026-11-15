@@ -64,8 +64,9 @@ class ContentSecurityPolicy extends BaseConfig
     //
     // La policy chiude cio' che nessuna pagina usa: plugin, base URI diversi,
     // form verso altri siti, incorporazione in siti esterni, script, font e
-    // immagini da origini non elencate. Le sole origini esterne sono i due
-    // host di Google Fonts (layout/fonts.php).
+    // immagini da origini non elencate. Non c'e' nessuna origine esterna: i
+    // caratteri sono file dell'app (css/src/01-token.css), non piu' i due host
+    // di Google Fonts.
     //
     // 'unsafe-inline' resta su script e stili, e va detto: 53 viste hanno
     // <script> inline e la navigazione parziale (ip-pjax.js) riesegue gli
@@ -84,9 +85,9 @@ class ContentSecurityPolicy extends BaseConfig
 
     public array|string $scriptSrcAttr = ['unsafe-inline'];
 
-    public $styleSrc = ['self', 'unsafe-inline', 'https://fonts.googleapis.com'];
+    public $styleSrc = ['self', 'unsafe-inline'];
 
-    public array|string $styleSrcElem = ['self', 'unsafe-inline', 'https://fonts.googleapis.com'];
+    public array|string $styleSrcElem = ['self', 'unsafe-inline'];
 
     public array|string $styleSrcAttr = ['unsafe-inline'];
 
@@ -99,7 +100,7 @@ class ContentSecurityPolicy extends BaseConfig
 
     public $connectSrc = 'self';
 
-    public $fontSrc = ['self', 'https://fonts.gstatic.com'];
+    public $fontSrc = ['self'];
 
     public $formAction = 'self';
 

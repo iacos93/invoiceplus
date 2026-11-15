@@ -1485,6 +1485,7 @@ return array (
   'settings_taxes_intro' => 'Rates proposed on new documents and rows, and the order in which they apply.',
   'setup_create_account' => 'Create account',
   'setup_first_user' => 'First run',
+  'setup_password_hint' => 'At least 8 characters.',
   'setup_first_user_help' => 'This installation has no users yet: create the first administrator account to start.',
   'setup_only_first_run' => 'This page is available only until a user exists.',
   'setup_user_created' => 'Account created. Here are the first steps to set up the installation.',

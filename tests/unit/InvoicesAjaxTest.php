@@ -95,7 +95,10 @@ final class InvoicesAjaxTest extends CIUnitTestCase
         // all'argomento: l'asserzione su cosa è stato toccato resta in fondo,
         // dove si vede l'effetto del riordino.
         $item = $this->createStub(ItemModel::class);
-        $item->method('find')->willReturnCallback(static fn (int $id) => $righe[$id] ?? null);
+        $item->method('idsOfInvoice')->willReturnCallback(static fn (int $invoiceId, array $ids): array => array_values(array_filter(
+            $ids,
+            static fn (int $id): bool => ($righe[$id]['invoice_id'] ?? null) === $invoiceId
+        )));
 
         $aggiornati = [];
         $item->method('update')->willReturnCallback(static function (int $id, array $data) use (&$aggiornati): bool {

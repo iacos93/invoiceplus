@@ -25,7 +25,9 @@ class Products extends BaseController
     public function index()
     {
         $data = [
-            'products' => $this->productModel->getAllWithJoins(),
+            'products' => $this->productModel->getAllWithJoins(list_per_page(), list_page('ip_products')),
+            'pager'    => $this->productModel->pager,
+            'group'    => 'ip_products',
         ];
 
         return view('products/index', $data);

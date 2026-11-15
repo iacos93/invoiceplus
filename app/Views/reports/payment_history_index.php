@@ -1,5 +1,6 @@
 <?= $this->extend('layout/base') ?>
 <?= $this->section('content') ?>
+<?= $this->include('reports/partial_style') ?>
 <?php $this->setVar('pageTitle', trans('payment_history')); ?>
 <?= $this->include('layout/headerbar', [
     'title' => trans('payment_history'),

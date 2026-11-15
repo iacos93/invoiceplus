@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32" role="img" aria-label="Invoice+">
   <title>Invoice+</title>
-  <!-- Favicon: lo stesso identico disegno di pwa-icon.svg — piastrella a filo
-       del bordo, righe e croce ricentrate di (-1.8, -2) sul proprio ingombro —
+  <!-- Favicon: lo stesso segno di pwa-icon.svg ma a filo del bordo (l'icona
+       installata porta il margine delle icone di sistema), righe e croce ricentrate di (-1.8, -2) sul proprio ingombro —
        solo dichiarato a 32px. Prima era un disegno a parte (due righe e croce
        più grande per reggere i 16px), quindi la scheda del browser mostrava un
        marchio diverso da quello della barra e dell'app installata.

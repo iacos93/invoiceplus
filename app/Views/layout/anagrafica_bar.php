@@ -61,36 +61,56 @@ $status = array_key_exists($status, $statusLabels) ? $status : '';
 
 $statusUrl = static fn (string $key): string => site_url($base . '/status/' . $key);
 
-$typeSwitch = '<div class="btn-group btn-group-sm me-2" role="group" aria-label="'
-    . esc(trans('anagrafiche', '', 'Anagrafiche'), 'attr') . '">'
-    . '<a href="' . site_url('clients') . '" class="btn ' . ($isSupplier ? 'btn-secondary' : 'btn-primary') . '">'
-    . '<i class="fa fa-solid fa-users me-1" aria-hidden="true"></i> ' . esc(trans('clients')) . '</a>'
-    . '<a href="' . site_url('suppliers') . '" class="btn ' . ($isSupplier ? 'btn-primary' : 'btn-secondary') . '">'
-    . '<i class="fa fa-solid fa-shopping-basket me-1" aria-hidden="true"></i> '
-    . esc(trans('suppliers', '', 'Fornitori')) . '</a>'
-    . '</div>';
+// I filtri escono come descrittori e li disegna layout/list_filters, lo stesso
+// componente di fatture, preventivi e spese. Prima la barra componeva il
+// markup a mano, due volte (headerbar e sottomenu mobile), e il commutatore
+// Clienti/Fornitori usava i pulsanti "grossi" di Bootstrap invece dei segmenti
+// index-options che usano tutte le altre liste: nella stessa riga convivevano
+// due stili di pulsante.
+$anagraficaButtons = [
+    [
+        'url'    => site_url('clients'),
+        'label'  => trans('clients'),
+        'icon'   => 'fa-solid fa-users',
+        'active' => !$isSupplier,
+    ],
+    [
+        'url'    => site_url('suppliers'),
+        'label'  => trans('suppliers', '', 'Fornitori'),
+        'icon'   => 'fa-solid fa-shopping-basket',
+        'active' => $isSupplier,
+    ],
+];
 
-$statusButtons = '';
+$statusButtons = [];
+
 foreach ($statusLabels as $key => $label) {
-    $statusButtons .= '<a href="' . $statusUrl($key) . '" class="btn '
-        . ($status === $key ? 'btn-primary' : 'btn-secondary') . '"'
-        . ($status === $key ? ' aria-current="page"' : '') . '>' . esc($label) . '</a>';
+    $statusButtons[] = [
+        'url'    => $statusUrl($key),
+        'label'  => $label,
+        'active' => $status === $key,
+    ];
 }
 
-$filters = '<div class="d-flex align-items-center flex-wrap gap-2">'
-    . $typeSwitch
-    . '<div class="btn-group btn-group-sm index-options" role="group" aria-label="'
-    . esc(trans('status', '', 'Stato'), 'attr') . '">' . $statusButtons . '</div>'
-    . '</div>';
+$filterGroups = [
+    [
+        'label'   => trans('anagrafiche', '', 'Anagrafiche'),
+        'buttons' => $anagraficaButtons,
+    ],
+    [
+        'label'   => trans('status', '', 'Stato'),
+        'buttons' => $statusButtons,
+    ],
+];
 
 $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle d-lg-none"'
     . ' data-bs-toggle="collapse" data-bs-target="#ip-submenu-collapse"'
     . ' aria-controls="ip-submenu-collapse" aria-expanded="false">'
     . '<i class="fa fa-solid fa-filter" aria-hidden="true"></i> ' . esc(trans('filter', '', 'Filtra')) . '</button>'
     . '<div class="btn-group btn-group-sm me-1">'
-    . '<a class="btn btn-secondary" href="' . site_url($base . '/export') . '" title="' . esc($exportLabel, 'attr') . '">'
+    . '<a class="btn btn-sm btn-secondary" href="' . site_url($base . '/export') . '" title="' . esc($exportLabel, 'attr') . '">'
     . '<i class="fa fa-solid fa-download" aria-hidden="true"></i> ' . esc(trans('export', '', 'Esporta')) . '</a>'
-    . '<button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">'
+    . '<button type="button" class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">'
     . '<span class="visually-hidden">' . esc(trans('options', '', 'Opzioni')) . '</span></button>'
     . '<ul class="dropdown-menu dropdown-menu-end">'
     . '<li><a class="dropdown-item" href="' . site_url($base . '/export') . '">'
@@ -103,9 +123,9 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
     . '</ul>'
     . '</div>'
     . '<div class="btn-group btn-group-sm">'
-    . '<a class="btn btn-primary" href="' . site_url($base . '/form') . '">'
+    . '<a class="btn btn-sm btn-primary" href="' . site_url($base . '/form') . '">'
     . '<i class="fa fa-solid fa-plus" aria-hidden="true"></i> ' . esc($addLabel) . '</a>'
-    . '<button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">'
+    . '<button type="button" class="btn btn-sm btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">'
     . '<span class="visually-hidden">' . esc(trans('options', '', 'Opzioni')) . '</span></button>'
     . '<ul class="dropdown-menu dropdown-menu-end">'
     . '<li><a class="dropdown-item" href="' . site_url($base . '/form') . '">'
@@ -117,30 +137,15 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
 ?>
 <?= $this->include('layout/headerbar', [
     'title'   => $labelSelf,
-    'filters' => $filters,
     'actions' => $actions,
 ]) ?>
 
-<div id="submenu">
+<?php /* Un solo esemplare dei filtri, come in fatture/preventivi/spese: su
+         desktop la regola CSS (#submenu.ip-filter-panel) tiene il pannello
+         aperto senza pulsante, su telefono lo apre "Filtra" nell'headerbar. */
+?>
+<div id="submenu" class="ip-filter-panel">
     <div class="collapse clearfix" id="ip-submenu-collapse">
-
-        <div class="submenu-row">
-            <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="<?= esc(trans('anagrafiche', '', 'Anagrafiche'), 'attr') ?>">
-                <a href="<?= site_url('clients') ?>" class="btn <?= $isSupplier ? 'btn-secondary' : 'btn-primary' ?>">
-                    <i class="fa fa-solid fa-users me-1" aria-hidden="true"></i> <?= trans('clients') ?></a>
-                <a href="<?= site_url('suppliers') ?>" class="btn <?= $isSupplier ? 'btn-primary' : 'btn-secondary' ?>">
-                    <i class="fa fa-solid fa-shopping-basket me-1" aria-hidden="true"></i> <?= trans('suppliers', '', 'Fornitori') ?></a>
-            </div>
-            <div class="btn-group btn-group-sm index-options w-100" role="group" aria-label="<?= esc(trans('status', '', 'Stato'), 'attr') ?>">
-                <?php foreach ($statusLabels as $key => $label): ?>
-                    <a href="<?= $statusUrl($key) ?>"
-                       class="btn <?= $status === $key ? 'btn-primary' : 'btn-secondary' ?>"
-                       <?= $status === $key ? 'aria-current="page"' : '' ?>>
-                        <?= esc($label) ?>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
+        <?= view('layout/list_filters', ['groups' => $filterGroups]) ?>
     </div>
 </div>

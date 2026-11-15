@@ -1373,8 +1373,56 @@
 .ip-first-steps-banner > i { color: var(--ip-primary); }
 .ip-first-steps-banner > span { flex: 1 1 260px; }
 
-.ip-setup-checks { margin: 18px 0 0; font-size: var(--ip-text-sm); }
-.ip-setup-checks summary { cursor: pointer; font-weight: 600; }
+/* Esito dei controlli del primo avvio: era il triangolo nativo del browser
+   in grassetto, l'unico elemento della card con quell'aspetto. Ora è una
+   riga muta con chevron, separata dal form da un filetto, come i piedi delle
+   altre card di accesso. */
+.ip-setup-checks {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--ip-border);
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+.ip-setup-checks summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  list-style: none;
+}
+.ip-setup-checks summary::-webkit-details-marker { display: none; }
+.ip-setup-checks summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--ip-transition);
+}
+.ip-setup-checks[open] summary::before { transform: rotate(45deg); }
+.ip-setup-checks summary:hover { color: var(--ip-text); }
+.ip-setup-checks li { color: var(--ip-text); }
+.ip-setup-checks li .fa-circle-check { color: var(--ip-success); }
+.ip-setup-checks li .fa-triangle-exclamation { color: var(--ip-warning); }
+/* Nota di piede del primo avvio e suggerimento sotto la password: testo
+   corrente muto. La nota usava .ip-webauthn-status, la riga di stato mono
+   dei pulsanti passkey, e così sembrava un messaggio di sistema. */
+.ip-auth-note {
+  margin: 14px 0 0;
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  color: var(--ip-text-muted);
+  text-align: center;
+}
+.ip-field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--ip-text-xs);
+  color: var(--ip-text-muted);
+}
 .ip-setup-checks ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .ip-setup-checks li i { margin-right: 6px; }
 

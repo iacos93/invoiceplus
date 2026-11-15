@@ -1494,6 +1494,7 @@ return array (
   'settings_taxes_intro' => 'Aliquote proposte sui nuovi documenti e sulle righe, e ordine con cui si applicano.',
   'setup_create_account' => 'Crea account',
   'setup_first_user' => 'Primo avvio',
+  'setup_password_hint' => 'Almeno 8 caratteri.',
   'setup_first_user_help' => 'Questa installazione non ha ancora utenti: crea il primo account amministratore per iniziare.',
   'setup_only_first_run' => 'Questa pagina è disponibile solo finché non esiste nessun utente.',
   'setup_user_created' => 'Account creato. Ecco i primi passi per mettere a punto l\'installazione.',

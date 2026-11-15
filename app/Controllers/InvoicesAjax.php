@@ -496,23 +496,27 @@ class InvoicesAjax extends BaseController
 
         $itemModel = $this->model(ItemModel::class);
         $order     = 1;
+        $ids       = array_values(array_filter(array_map('intval', (array) $itemIds)));
 
-        foreach ($itemIds as $rawId) {
-            $id = (int) $rawId;
+        // Una sola lettura per sapere quali righe appartengono al documento,
+        // invece di un find() per riga: il riordino di una fattura lunga
+        // costava due query per riga. Gli aggiornamenti vanno in una sola
+        // transazione, così PostgreSQL non fa un commit (e un fsync) per riga.
+        $owned = array_flip($itemModel->idsOfInvoice($invoiceId, $ids));
 
-            if (!$id) {
-                continue;
-            }
+        $db = \Config\Database::connect();
+        $db->transStart();
 
-            $item = $itemModel->find($id);
-
-            if (!$item || (int) $item['invoice_id'] !== $invoiceId) {
+        foreach ($ids as $id) {
+            if (!isset($owned[$id])) {
                 continue;
             }
 
             $itemModel->update($id, ['item_order' => $order]);
             $order++;
         }
+
+        $db->transComplete();
 
         return $this->response->setJSON(['success' => 1]);
     }

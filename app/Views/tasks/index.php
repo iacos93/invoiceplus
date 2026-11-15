@@ -15,6 +15,15 @@ $btn    = function ($key, $label, $count = null) use ($status) {
 
 $summary = $summary ?? ['counts' => [], 'total' => 0, 'overdue' => 0];
 
+// Il badge conta le attività del filtro corrente, non della pagina: con la
+// paginazione count($tasks) sarebbe la dimensione della pagina, non il
+// totale del filtro che i pulsanti sotto mostrano già.
+$badge = $status === 'all'
+    ? $summary['total']
+    : ($status === 'overdue'
+        ? $summary['overdue']
+        : ($summary['counts'][(int) $status] ?? 0));
+
 $filters = '<div class="btn-group btn-group-sm index-options">'
     . $btn('all',     trans('all', '', 'Tutte'), $summary['total'])
     . $btn('1',       trans('not_started'),      $summary['counts'][1] ?? 0)
@@ -49,7 +58,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
             <div class="ip-table-card-title">
                 <span class="card-header-icon"><i class="fa fa-regular fa-check-square" aria-hidden="true"></i></span>
                 <span class="ip-table-card-label"><?= esc(trans('tasks')) ?></span>
-                <span class="badge text-bg-secondary"><?= count($tasks) ?></span>
+                <span class="badge text-bg-secondary"><?= (int) $badge ?></span>
             </div>
             <div class="ip-live-search ip-table-card-search" data-target="#tasks-list-table">
                 <i class="fa fa-solid fa-search" aria-hidden="true"></i>
@@ -177,6 +186,8 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
             </tbody>
 
         </table>
+
+        <?= $this->include('layout/pager_footer', ['group' => 'ip_tasks']) ?>
 
     </div>
 

@@ -59,7 +59,15 @@ class TaskModel extends IpBaseModel
         return $row ? (array) $row : null;
     }
 
-    public function getAllWithProject(string $status = 'all'): array
+    /**
+     * Elenco con progetto e flag is_overdue.
+     *
+     * La lista è paginata: limitarsi alla pagina è il punto, perché il join
+     * con ip_projects/ip_clients letto per intero cresceva con l'archivio.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getAllWithProject(string $status = 'all', ?int $perPage = null, int $page = 1): array
     {
         $this->select('ip_tasks.*, ip_projects.project_name, (CASE WHEN ip_tasks.task_status != 4 AND ' . days_since_sql('ip_tasks.task_finish_date') . ' > 0 THEN 1 ELSE 0 END) AS is_overdue', false)
             ->join('ip_projects', 'ip_projects.project_id = ip_tasks.project_id', 'left')
@@ -76,7 +84,7 @@ class TaskModel extends IpBaseModel
 
         return $this->orderBy('ip_projects.project_name', 'ASC')
             ->orderBy('ip_tasks.task_name', 'ASC')
-            ->findAll();
+            ->listFetch($perPage, $page, 'ip_tasks');
     }
 
     /**

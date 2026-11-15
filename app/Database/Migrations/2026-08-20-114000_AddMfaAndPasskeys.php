@@ -71,7 +71,11 @@ class AddMfaAndPasskeys extends Migration
             if ($this->db->DBDriver === 'Postgre') {
                 $this->db->query('CREATE INDEX idx_ip_passkeys_credential ON ip_passkeys (LEFT(passkey_credential_id, 64))');
             } else {
-                $this->db->query('CREATE INDEX idx_ip_passkeys_credential ON ip_passkeys (passkey_credential_id)');
+                // Prefisso esplicito: senza, MySQL rifiuta l'indice su TEXT
+                // ("used in key specification without a key length") e
+                // l'installazione si ferma a metà migrazioni. MariaDB lo
+                // accettava anche senza, per questo la CI non se n'era accorta.
+                $this->db->query('CREATE INDEX idx_ip_passkeys_credential ON ip_passkeys (passkey_credential_id(64))');
             }
         }
     }

@@ -95,8 +95,12 @@ class Quotes extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
+        // Postgre restituisce il booleano come stringa "t"/"f": empty("f") è
+        // false, quindi il flag non si invertiva mai.
+        $isFavourite = db_bool($quote['quote_is_favourite'] ?? false);
+
         $this->quoteModel->update($quoteId, [
-            'quote_is_favourite' => empty($quote['quote_is_favourite']),
+            'quote_is_favourite' => !$isFavourite,
         ]);
 
         $back = $this->request->getPost('back');
@@ -416,9 +420,17 @@ class Quotes extends BaseController
         $quoteIds = scope_builder_to_company(\Config\Database::connect()->table('ip_quotes'), 'ip_quotes')
             ->select('quote_id')->get()->getResultArray();
 
+        // Stesso ragionamento del ricalcolo delle fatture: un solo model e una
+        // sola transazione invece di un commit per ogni preventivo.
+        $amountModel = new QuoteAmountModel();
+        $db          = \Config\Database::connect();
+        $db->transStart();
+
         foreach ($quoteIds as $quoteId) {
-            (new QuoteAmountModel())->calculate((int) $quoteId['quote_id']);
+            $amountModel->calculate((int) $quoteId['quote_id']);
         }
+
+        $db->transComplete();
 
         session()->setFlashdata('alert_success', 'Importi dei preventivi ricalcolati correttamente');
 

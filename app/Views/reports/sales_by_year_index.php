@@ -1,5 +1,6 @@
 <?= $this->extend('layout/base') ?>
 <?= $this->section('content') ?>
+<?= $this->include('reports/partial_style') ?>
 <?php $this->setVar('pageTitle', trans('sales_by_date')); ?>
 <?= $this->include('layout/headerbar', [
     'title' => trans('sales_by_date'),

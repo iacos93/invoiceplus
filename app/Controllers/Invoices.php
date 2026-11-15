@@ -219,11 +219,13 @@ class Invoices extends BaseController
             throw PageNotFoundException::forPageNotFound();
         }
 
-        // empty() e non !empty(): il valore va invertito, non riscritto
-        // uguale -- con !empty() l'update salvava lo stesso stato gia'
-        // presente e il pulsante "preferita" non commutava mai.
+        // Il driver Postgre restituisce il booleano come stringa "t"/"f", e
+        // empty("f") è false: l'inversione non avveniva mai e la stella
+        // riscriveva sempre false. db_bool legge lo stato, poi si inverte.
+        $isFavourite = db_bool($invoice['invoice_is_favourite'] ?? false);
+
         $this->invoiceModel->update($invoiceId, [
-            'invoice_is_favourite' => empty($invoice['invoice_is_favourite']),
+            'invoice_is_favourite' => !$isFavourite,
         ]);
 
         $back = service('request')->getPost('back');
@@ -1183,9 +1185,16 @@ class Invoices extends BaseController
 
         $amountModel = new InvoiceAmountModel();
 
+        // Una transazione per tutto il giro: senza, ogni calculate() fa i suoi
+        // commit e su qualche centinaio di fatture il tempo se ne va in fsync.
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         foreach ($invoiceIds as $invoiceId) {
             $amountModel->calculate((int) $invoiceId['invoice_id']);
         }
+
+        $db->transComplete();
 
         session()->setFlashdata('alert_success', 'Importi ricalcolati per ' . count($invoiceIds) . ' fatture');
 

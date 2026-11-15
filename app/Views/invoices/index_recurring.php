@@ -79,6 +79,13 @@ $recur_frequencies = [
                         </td>
                         <td data-label="<?= esc(trans('next_date', '', 'Prossima data')) ?>"><?= date_from_mysql($invoice['recur_next_date']) ?></td>
                         <td data-label="<?= esc(trans('options', '', 'Opzioni')) ?>">
+                            <?php /* Una sola form per riga: «Interrompi» la invia
+                                     cambiando indirizzo (formaction), «Elimina»
+                                     passa da data-confirm-action. */ ?>
+                            <form method="POST" id="ip-row-form-<?= (int) $invoice['invoice_id'] ?>"
+                                  action="<?= site_url('invoices/recurring/stop/' . (int) $invoice['invoice_id']) ?>">
+                                <?= csrf_field() ?>
+                            </form>
                             <div class="options btn-group">
                                 <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
                                     <i class="fa fa-solid fa-cog" aria-hidden="true"></i> <?= trans('options', '', 'Opzioni') ?>
@@ -86,24 +93,19 @@ $recur_frequencies = [
                                 <ul class="dropdown-menu">
                                     <?php if ($is_active): ?>
                                         <li>
-                                            <form action="<?= site_url('invoices/recurring/stop/' . (int) $invoice['invoice_id']) ?>"
-                                                  method="POST">
-                                                <?= csrf_field() ?>
-                                                <button type="submit" class="dropdown-button">
-                                                    <i class="fa fa-solid fa-ban fa-margin" aria-hidden="true"></i> <?= trans('stop', '', 'Interrompi') ?>
-                                                </button>
-                                            </form>
+                                            <button type="submit" class="dropdown-button"
+                                                    form="ip-row-form-<?= (int) $invoice['invoice_id'] ?>">
+                                                <i class="fa fa-solid fa-ban fa-margin" aria-hidden="true"></i> <?= trans('stop', '', 'Interrompi') ?>
+                                            </button>
                                         </li>
                                     <?php endif; ?>
                                     <li>
-                                        <form action="<?= site_url('invoices/recurring/delete/' . (int) $invoice['invoice_id']) ?>"
-                                              method="POST">
-                                            <?= csrf_field() ?>
-                                            <button type="button" class="dropdown-button"
-                                                    data-bs-toggle="confirm" data-confirm-title="<?= esc(trans('confirm', '', 'Conferma')) ?>" data-confirm-body="<?= esc(trans('delete_invoice_warning', '', 'Eliminare la ricorrenza?')) ?>" data-confirm-ok="<?= esc(trans('delete', '', 'Elimina')) ?>" data-confirm-danger="1">
-                                                <i class="fa fa-solid fa-trash-can fa-margin" aria-hidden="true"></i> <?= trans('delete', '', 'Elimina') ?>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="dropdown-button"
+                                                form="ip-row-form-<?= (int) $invoice['invoice_id'] ?>"
+                                                data-confirm-action="<?= site_url('invoices/recurring/delete/' . (int) $invoice['invoice_id']) ?>"
+                                                data-bs-toggle="confirm" data-confirm-title="<?= esc(trans('confirm', '', 'Conferma')) ?>" data-confirm-body="<?= esc(trans('delete_invoice_warning', '', 'Eliminare la ricorrenza?')) ?>" data-confirm-ok="<?= esc(trans('delete', '', 'Elimina')) ?>" data-confirm-danger="1">
+                                            <i class="fa fa-solid fa-trash-can fa-margin" aria-hidden="true"></i> <?= trans('delete', '', 'Elimina') ?>
+                                        </button>
                                     </li>
                                 </ul>
                             </div>

@@ -172,28 +172,42 @@ class PaymentMethodModel extends IpBaseModel
      * Due query aggregate invece di un conteggio per riga: l'elenco mostra il
      * dato su ogni metodo e con una query per riga la pagina cresceva a ogni
      * metodo aggiunto. Il risultato e' [id => ['invoices' => n, 'payments' => n]].
+     *
+     * Con $methodIds si aggregano solo quei metodi: l'elenco è paginato e
+     * altrimenti ogni pagina contava anche i metodi non visualizzati.
+     *
+     * @param list<int>|null $methodIds
      */
-    public function usageCounts(): array
+    public function usageCounts(?array $methodIds = null): array
     {
+        if ($methodIds !== null) {
+            $methodIds = array_values(array_unique(array_map('intval', $methodIds)));
+
+            if ($methodIds === []) {
+                return [];
+            }
+        }
+
         $usage = [];
 
-        $invoices = $this->db->table('ip_invoices')
+        $invoicesQuery = $this->db->table('ip_invoices')
                              ->select('payment_method, COUNT(*) AS total')
-                             ->where('payment_method >', 0)
-                             ->groupBy('payment_method')
-                             ->get()->getResultArray();
+                             ->where('payment_method >', 0);
 
-        foreach ($invoices as $row) {
+        $paymentsQuery = $this->db->table('ip_payments')
+                             ->select('payment_method_id, COUNT(*) AS total')
+                             ->where('payment_method_id >', 0);
+
+        if ($methodIds !== null) {
+            $invoicesQuery->whereIn('payment_method', $methodIds);
+            $paymentsQuery->whereIn('payment_method_id', $methodIds);
+        }
+
+        foreach ($invoicesQuery->groupBy('payment_method')->get()->getResultArray() as $row) {
             $usage[(int) $row['payment_method']]['invoices'] = (int) $row['total'];
         }
 
-        $payments = $this->db->table('ip_payments')
-                             ->select('payment_method_id, COUNT(*) AS total')
-                             ->where('payment_method_id >', 0)
-                             ->groupBy('payment_method_id')
-                             ->get()->getResultArray();
-
-        foreach ($payments as $row) {
+        foreach ($paymentsQuery->groupBy('payment_method_id')->get()->getResultArray() as $row) {
             $usage[(int) $row['payment_method_id']]['payments'] = (int) $row['total'];
         }
 
@@ -207,7 +221,7 @@ class PaymentMethodModel extends IpBaseModel
      */
     public function usageFor(int $id): int
     {
-        $usage = $this->usageCounts()[$id] ?? [];
+        $usage = $this->usageCounts([$id])[$id] ?? [];
 
         return (int) ($usage['invoices'] ?? 0) + (int) ($usage['payments'] ?? 0);
     }

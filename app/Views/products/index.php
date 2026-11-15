@@ -14,7 +14,7 @@ $actions = '<a class="btn btn-sm btn-primary" href="' . site_url('products/form'
             <div class="ip-table-card-title">
                 <span class="card-header-icon"><i class="fa fa-solid fa-database" aria-hidden="true"></i></span>
                 <span class="ip-table-card-label"><?= esc(trans('products')) ?></span>
-                <span class="badge text-bg-secondary"><?= count($products) ?></span>
+                <span class="badge text-bg-secondary"><?= (int) $pager->getTotal('ip_products') ?></span>
             </div>
             <div class="ip-live-search ip-table-card-search" data-target="#products-list-table">
                 <i class="fa fa-solid fa-search" aria-hidden="true"></i>
@@ -89,6 +89,8 @@ $actions = '<a class="btn btn-sm btn-primary" href="' . site_url('products/form'
             </tbody>
 
         </table>
+
+        <?= $this->include('layout/pager_footer', ['group' => 'ip_products']) ?>
     </div>
 
     </div>

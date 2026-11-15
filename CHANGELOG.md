@@ -21,6 +21,74 @@ Le regole per scrivere le voci e preparare una release sono in
 - **Guida al sottodominio:** la configurazione nginx dichiara compressione e
   cache lunga degli asset (sotto nginx `public/.htaccess` non viene letto) e
   la verifica finale controlla le intestazioni e opcache.
+- **Conti di saldo e metodi di pagamento: conteggi e saldi solo per le righe
+  visibili.** Gli elenchi sono paginati, ma i conteggi d'uso aggregavano tutte
+  le fatture, spese, movimenti e F24 e i saldi rileggevano l'intera tabella dei
+  conti a ogni pagina; la cancellazione ripeteva le stesse aggregazioni per un
+  solo id. Ora i metodi ricevono gli id già caricati dal controller, così il
+  filtro usa gli indici e non si conta ciò che non è a schermo. I numeri
+  mostrati restano gli stessi.
+- **Fornitori, attività, progetti e prodotti: elenchi paginati e totali solo
+  per le righe visibili.** Le quattro liste caricavano tutto l'archivio a ogni
+  apertura (per i fornitori, una scansione completa di `ip_expenses` con
+  GROUP BY; per i progetti, tutta `ip_tasks` aggregata) e non avevano pager.
+  Ora leggono una pagina con i collegamenti di paginazione come le altre
+  liste, e i totali accessori (spese per fornitore, attività per progetto)
+  arrivano da un aggregato filtrato sui soli id della pagina. I numeri
+  mostrati restano gli stessi.
+- **Barra anagrafiche coi filtri come nelle altre liste.** La barra di
+  clienti e fornitori componeva i gruppi a mano, due volte (headerbar e
+  sottomenu mobile), e il commutatore Clienti/Fornitori usava i pulsanti
+  «grossi» di Bootstrap accanto ai segmenti piatti che usano fatture,
+  preventivi e spese: nella stessa riga convivevano due stili. Ora i filtri
+  escono da `layout/list_filters`, lo stesso componente delle altre liste
+  (gruppi etichettati, segmenti `index-options`), e il pannello si comporta
+  come sulle altre liste: aperto su desktop, aperto da «Filtra» su telefono.
+
+- Il riordino delle righe di fatture e preventivi legge l'appartenenza delle
+  righe con una sola query invece di una per riga, e salva il nuovo ordine in
+  un'unica transazione; anche "Ricalcola tutti gli importi" di fatture e
+  preventivi lavora in un'unica transazione, più rapido sugli archivi grandi.
+
+- Su Clienti e Fornitori, il commutatore fra le due anagrafiche non fa più
+  scendere la pagina fino alla tabella: cambiare sezione riparte dall'alto,
+  mentre filtri di stato e pager continuano ad allineare la lista.
+
+- L'icona dell'app installata (PWA) porta il margine delle icone di sistema
+  invece di andare a filo del bordo, così nel Dock, nel menu Start e nel
+  launcher ha la stessa misura delle altre app; aggiunta l'icona maskable a
+  192 px e versionati gli URL, perché chi ha già installato l'app riceva
+  quella nuova.
+
+- Pagina «Primo avvio» rifinita: il titolo del pannello sinistro va a capo
+  bilanciato invece di lasciare «ordine.» da solo, la password indica il
+  minimo di 8 caratteri, «Esito dei controlli» ha un chevron e un filetto al
+  posto del triangolo nativo, e la nota finale è testo normale invece del
+  carattere monospazio della riga di stato passkey.
+
+### Corretto
+
+- Su MySQL l'installazione pulita si fermava a metà migrazioni: gli indici su
+  `passkey_credential_id` e `client_vat_id` (colonne TEXT) ora usano una
+  lunghezza di prefisso, che MySQL richiede e MariaDB tollerava.
+
+- **`migrate:rollback` della migrazione del codice SIA falliva su
+  PostgreSQL.** Il ramo di ritorno scriveva `bank_account_is_default = 1`, e
+  su PostgreSQL i booleani rifiutano il confronto con l'intero (42883): la
+  discesa si fermava a metà. Ora usa `IS TRUE`, valido su entrambi i motori.
+- **Import CSV dei fornitori: cella «attivo» vuota spegneva il fornitore.**
+  `db_bool('')` è false, quindi una colonna presente senza valore importava i
+  fornitori come inattivi invece di usare il valore predefinito (attivo).
+- **Conti di saldo: il badge «Predefinito» era su tutti.** La lista leggeva
+  `bank_account_is_default` con `!empty()`, ma PostgreSQL restituisce i
+  booleani come stringa `"t"`/`"f"` e `!empty("f")` è true: anche i conti non
+  predefiniti mostravano il badge. Ora il flag passa da `db_bool()`.
+- **Booleani letti come stringhe nei form.** Altri due campi arrivavano da
+  PostgreSQL come `"t"`/`"f"` e finivano in un controllo di verità: in modifica
+  il conto non predefinito mostrava la spunta «Usa come conto predefinito» (e
+  un salvataggio senza toccarla lo rendeva davvero predefinito), e il regime
+  forfettario agevolato risultava sempre spento perché `(int) "t"` vale 0. Ora
+  entrambi passano da `db_bool()`.
 
 ## [v0.11.0] — 2026-11-15
 
@@ -141,6 +209,78 @@ d'accesso di preventivi e allegati).
 
 ### Cambiato
 
+- **Una sola `<form>` per riga nelle liste, invece di due o tre.** In fatture,
+  preventivi e ricorrenti ogni riga ne aveva una per il preferito (nella sua
+  colonna) e una per ciascuna azione del menu (elimina, invia a SdI). Nella
+  lista fatture erano 15 × 3 = 45 form più quelle di pagina, ora **15 × 1**;
+  nei preventivi da 15 × 2 a 15 × 1. La form della riga sta nella colonna delle
+  azioni, contiene una volta sola il token CSRF e il campo «back», e i bottoni
+  la raggiungono con `form="ip-row-form-<id>"`: il preferito la invia così
+  com'è, «Elimina» e «Invia a SdI» indicano la propria destinazione con
+  `data-confirm-action`, che la conferma applica come `formaction` di un
+  submitter creato al volo — l'`action` della form resta quella di partenza,
+  così un «Elimina» annullato non lascia l'indirizzo sbagliato appiccicato al
+  click successivo sul preferito. Nessun comportamento visibile cambia.
+- **La stella dei preferiti ora funziona.** Due bug opposti sullo stesso
+  campo, invisibili finché si guardava il risultato invece del database: il
+  driver Postgre restituisce i booleani come stringa `"t"`/`"f"`, quindi in
+  lista `!empty("f")` era sempre vero e **la stella risultava accesa su ogni
+  riga** anche con nessun preferito salvato; nel controller `empty("f")` era
+  sempre falso, quindi **il click riscriveva sempre `false`** e nessuna riga
+  diventava preferita. Ora lo stato si legge con un confronto esplicito e si
+  inverte: click sulla stella → preferita, secondo click → no, con l'elenco
+  dei preferiti che torna coerente. Corretto per fatture e preventivi.
+- **Il codice del guscio viaggia nel bundle, non dentro l'HTML.** Controlli del
+  tema chiaro/scuro, sidebar a scomparsa su mobile, tooltip, rientro delle
+  schede e conferme delegate occupavano **9,7 KB di `<script>` inline in ogni
+  pagina**: identici, mai in cache, riscaricati a ogni navigazione completa.
+  Ora sono `js/ip-layout.js`, dentro `ip-app.min.js` (39.961 → 42.690 byte, che
+  il browser tiene in cache e il service worker conserva): **−9,7 KB di HTML per
+  pagina** dopo il primo caricamento.
+  Restano inline le tre cose che devono girare mentre la pagina si costruisce,
+  altrimenti si vedono: il ripristino dello scroll della colonna (subito dopo il
+  markup, prima del primo disegno), la misura dell'altezza reale della topbar e
+  lo stato chiuso/aperto delle sezioni. Spostarle nel bundle vorrebbe dire
+  disegnare con i valori sbagliati e correggere dopo, con uno scatto visibile.
+  Verificato nel browser: tema chiaro → scuro con la scelta salvata, sidebar a
+  scomparsa che si apre e chiude con `aria-expanded` e backdrop, finestra di
+  conferma che si apre su «Elimina» con titolo, corpo e bottone rosso, cambio
+  scheda nelle impostazioni senza errori in console.
+- **Gli stili dei report si caricano solo nei report.** `reports.css` era nel
+  `layout/base.php`, quindi **34 KB (9 KB compressi)** su ogni pagina — bacheca,
+  fatture, impostazioni — per un foglio che serve a cinque schermate. Ora lo
+  carica `reports/partial_style.php`, incluso dai cinque report. Non è però
+  nell'`<head>`: la navigazione parziale sostituisce solo `#main-content`,
+  quindi un foglio linkato nella testa non arriverebbe aprendo un report dalla
+  sidebar e la pagina resterebbe senza stile fino al primo ricaricamento. Viaggia
+  col contenuto, che è l'unica parte che il pjax scambia (e `link` dentro il
+  body è HTML valido).
+  Verificato nel browser: la bacheca non chiede più `reports.css`; aprendo
+  «Report» dalla sidebar senza ricaricare la pagina il foglio viene chiesto
+  (34 KB) e si applica — la griglia dell'hub, il filtro e la rampa di gravità
+  dello scaduto (`--ip-aging-3`), che è definita solo lì, si risolvono.
+- **I caratteri dell'interfaccia sono file dell'app, non di Google.** Ogni
+  pagina chiedeva un foglio a `fonts.googleapis.com` che ne apriva un altro
+  verso `fonts.gstatic.com`: **quattro richieste su due domini esterni**, prima
+  di qualsiasi contenuto e fuori da ogni cache dell'applicazione. Ora Figtree,
+  Fraunces e IBM Plex Mono sono quattro woff2 in `assets/core/fonts` (**107,7
+  KB**: Figtree 20,2 variabile 400-700, Fraunces 67,4 variabile, IBM Plex Mono
+  500 e 600 da 10,1), dichiarati con `@font-face` in testa a
+  `css/src/01-token.css`. Sono gli stessi sottoinsiemi latini che il browser
+  scaricava da Google — italiano e inglese completo, euro e punteggiatura
+  tipografica — quindi nessun glifo in meno. Due vantaggi oltre alle richieste
+  in meno: il service worker li mette in cache come gli altri asset, così
+  l'app installata resta tipografata anche offline, e la policy CSP non deve
+  più ammettere due origini esterne (`font-src` ora è solo `self`). Lo `?v=`
+  dell'indirizzo lo aggiunge `CssBundle` con l'impronta del file: un font
+  sostituito non resta in cache per un anno. Anche le pagine d'errore hanno
+  smesso di chiedere i caratteri a Google.
+  Un carattere fuori dal sottoinsieme latino (latino esteso, greco, cirillico)
+  cade sul fallback di sistema dichiarato nei token, come quando Google non
+  rispondeva.
+  Verificato nel browser: nessuna richiesta verso altri domini, i tre file
+  serviti da `/assets/core/fonts/`, i font calcolati corretti su `body`
+  (Figtree) e `h1` (Fraunces), `document.fonts.check` vero per entrambi.
 - **L'interfaccia non carica più jQuery.** Erano **85,5 KB (29,6 KB compressi)**
   chiesti in `<head>`, cioè prima di qualsiasi contenuto, su ogni pagina dell'area
   amministrativa e del portale, per il solo `scripts.js`. Le sue trentasette

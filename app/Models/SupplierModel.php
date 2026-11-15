@@ -61,17 +61,17 @@ class SupplierModel extends IpBaseModel
 
     /**
      * Elenco con totale speso e numero documenti, come la lista clienti mostra
-     * fatturato e saldo. LEFT JOIN: un fornitore appena creato, senza spese,
-     * deve comunque comparire.
+     * fatturato e saldo.
+     *
+     * Due passate invece di un JOIN aggregato con GROUP BY: la lista è
+     * paginata, e con il join ogni apertura aggregava tutta ip_expenses
+     * (che cresce con i dati utente) per un dato che serve solo alle righe
+     * visibili. La seconda passata filtra su supplier_id con whereIn e
+     * lascia lavorare l'indice. I numeri per fornitore restano identici.
      */
-    public function getAllWithTotals(string $status = 'all'): array
+    public function getPage(string $status, ?int $perPage = null, int $page = 1): array
     {
-        $this->select("
-                ip_suppliers.*,
-                COALESCE(SUM(ip_expenses.expense_total), 0) AS expense_total,
-                COALESCE(SUM(ip_expenses.expense_total - ip_expenses.expense_paid), 0) AS expense_balance,
-                COUNT(ip_expenses.expense_id) AS expense_count", false)
-            ->join('ip_expenses', 'ip_expenses.supplier_id = ip_suppliers.supplier_id', 'left');
+        $this->scopeToCompany();
 
         if ($status === 'active') {
             $this->where('ip_suppliers.supplier_active', true);
@@ -79,11 +79,59 @@ class SupplierModel extends IpBaseModel
             $this->where('ip_suppliers.supplier_active', false);
         }
 
-        $this->scopeToCompany();
+        $suppliers = $this->orderBy('supplier_name', 'ASC')->listFetch($perPage, $page);
 
-        return $this->groupBy('ip_suppliers.supplier_id')
-                    ->orderBy('ip_suppliers.supplier_name', 'ASC')
-                    ->findAll();
+        if ($suppliers === []) {
+            return [];
+        }
+
+        $totals = $this->totalsFor(array_map(
+            static fn (array $supplier): int => (int) $supplier['supplier_id'],
+            $suppliers
+        ));
+
+        foreach ($suppliers as &$supplier) {
+            $supplier += $totals[(int) $supplier['supplier_id']]
+                ?? ['expense_total' => 0.0, 'expense_balance' => 0.0, 'expense_count' => 0];
+        }
+
+        return $suppliers;
+    }
+
+    /**
+     * Totale speso, residuo e numero documenti per i soli fornitori indicati.
+     *
+     * @param list<int> $supplierIds
+     *
+     * @return array<int, array{expense_total: float, expense_balance: float, expense_count: int}>
+     */
+    public function totalsFor(array $supplierIds): array
+    {
+        $supplierIds = array_values(array_unique(array_map('intval', $supplierIds)));
+
+        if ($supplierIds === []) {
+            return [];
+        }
+
+        $rows = $this->db->table('ip_expenses')
+            ->select('supplier_id, COALESCE(SUM(expense_total), 0) AS expense_total, '
+                . 'COALESCE(SUM(expense_total - expense_paid), 0) AS expense_balance, '
+                . 'COUNT(*) AS expense_count')
+            ->whereIn('supplier_id', $supplierIds)
+            ->groupBy('supplier_id')
+            ->get()->getResultArray();
+
+        $totals = [];
+
+        foreach ($rows as $row) {
+            $totals[(int) $row['supplier_id']] = [
+                'expense_total'   => (float) $row['expense_total'],
+                'expense_balance' => (float) $row['expense_balance'],
+                'expense_count'   => (int) $row['expense_count'],
+            ];
+        }
+
+        return $totals;
     }
 
     public function getByIdWithTotals(int $id): ?array

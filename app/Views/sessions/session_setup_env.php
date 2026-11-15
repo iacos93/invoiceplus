@@ -23,7 +23,6 @@ $stati = [
     <title><?= esc(trans('setup_env_title', '', 'Prima di cominciare')) ?> · Invoice+</title>
     <link rel="icon" type="image/svg+xml" href="<?php _core_asset('img/favicon.svg'); ?>">
     <?= view('layout/theme_head') ?>
-    <?= view('layout/fonts') ?>
     <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.subset.min.css'); ?>">
     <link rel="stylesheet" href="<?php _core_asset('vendor/fontawesome6/css/app.min.css'); ?>">
     <link rel="stylesheet" href="<?php _core_asset('css/custom.min.css'); ?>">

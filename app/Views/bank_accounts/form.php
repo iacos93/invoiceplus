@@ -126,7 +126,7 @@ $v = static fn (string $key) => (string) old($key, $model->formValue($key));
                                 <input type="hidden" name="bank_account_is_default" value="0">
                                 <input type="checkbox" class="form-check-input" name="bank_account_is_default"
                                        id="bank_account_is_default" value="1"
-                                       <?= $v('bank_account_is_default') ? 'checked' : '' ?>>
+                                       <?= db_bool($v('bank_account_is_default')) ? 'checked' : '' ?>>
                                 <label class="form-check-label" for="bank_account_is_default">
                                     <?= trans('bank_account_is_default', '', 'Usa come conto predefinito sui documenti') ?>
                                 </label>

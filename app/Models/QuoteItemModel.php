@@ -138,4 +138,28 @@ class QuoteItemModel extends IpBaseModel
 
         return $name;
     }
+
+    /**
+     * Fra gli id passati, quelli che appartengono davvero al preventivo: il
+     * riordino arriva dal browser e non deve poter spostare righe altrui.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<int>
+     */
+    public function idsOfQuote(int $quoteId, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $rows = $this->builder()
+            ->select('item_id')
+            ->where('quote_id', $quoteId)
+            ->whereIn('item_id', $ids)
+            ->get()
+            ->getResultArray();
+
+        return array_map('intval', array_column($rows, 'item_id'));
+    }
 }

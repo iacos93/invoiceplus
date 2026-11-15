@@ -72,6 +72,23 @@ final class ContactCsvRoundTripTest extends CIUnitTestCase
     }
 
     /**
+     * La cella "attivo" vuota o assente non spegne il fornitore: db_bool('')
+     * è false e l'import usava quello come valore, invece di ricadere sul
+     * predefinito.
+     */
+    public function testLaCellaAttivoVuotaRicadeSulPredefinito(): void
+    {
+        $importer = new ContactImporter();
+
+        $this->assertTrue($importer->supplierActiveFromCell(null), 'Colonna assente: fornitore attivo');
+        $this->assertTrue($importer->supplierActiveFromCell(''), 'Cella vuota: fornitore attivo');
+        $this->assertTrue($importer->supplierActiveFromCell('1'));
+        $this->assertTrue($importer->supplierActiveFromCell('t'));
+        $this->assertFalse($importer->supplierActiveFromCell('0'));
+        $this->assertFalse($importer->supplierActiveFromCell('f'));
+    }
+
+    /**
      * La mappa delle intestazioni è privata di proposito — è un dettaglio
      * dell'importatore — ma è anche l'unica cosa da verificare senza database.
      *

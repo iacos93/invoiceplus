@@ -133,15 +133,12 @@ final class ContentSecurityPolicyConfigTest extends CIUnitTestCase
         $this->assertSame('self', $csp->connectSrc, 'Nessun invio di dati verso altri host');
         $this->assertSame('self', $csp->baseURI);
 
-        // L'unica origine esterna ammessa per gli script e' nessuna; per
-        // stili e font sono i due host di Google Fonts, e basta.
-        foreach (['scriptSrc', 'scriptSrcElem'] as $direttiva) {
+        // Nessuna origine esterna, per nessun tipo di risorsa: i caratteri sono
+        // file dell'app da css/src/01-token.css, non piu' Google Fonts.
+        foreach (['scriptSrc', 'scriptSrcElem', 'styleSrc', 'styleSrcElem', 'fontSrc', 'imageSrc'] as $direttiva) {
             $esterne = array_filter((array) $csp->{$direttiva}, static fn ($v) => str_starts_with($v, 'http'));
             $this->assertSame([], array_values($esterne), "$direttiva non deve ammettere origini esterne");
         }
-
-        $this->assertSame(['https://fonts.googleapis.com'], array_values(array_filter((array) $csp->styleSrc, static fn ($v) => str_starts_with($v, 'http'))));
-        $this->assertSame(['https://fonts.gstatic.com'], array_values(array_filter((array) $csp->fontSrc, static fn ($v) => str_starts_with($v, 'http'))));
     }
 
     public function testIlNonceAutomaticoNonCancellaGliScriptInLinea(): void

@@ -279,7 +279,10 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                 <?php foreach ($invoices as $invoice): ?>
                     <?php
                     $invoice_status_class = $invoice_statuses[$invoice['invoice_status_id']]['class'] ?? 'draft';
-                    $isFavourite          = !empty($invoice['invoice_is_favourite']);
+                    // db_bool e non !empty: il driver Postgre restituisce i
+                    // booleani come stringa "t"/"f", e !empty("f") è true —
+                    // la stella risultava accesa su ogni riga.
+                    $isFavourite          = db_bool($invoice['invoice_is_favourite'] ?? false);
                     // Nome accessibile esplicito: il solo title non è affidabile
                     // come etichetta per i lettori di schermo.
                     $favAction = $isFavourite
@@ -295,16 +298,17 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                             </label>
                         </td>
                         <td class="ip-fav-col ip-hide-on-mobile" data-label="<?= esc(trans('favourite', '', 'Preferito')) ?>">
-                            <form method="POST" action="<?= site_url('invoices/toggle_favourite/' . (int) $invoice['invoice_id']) ?>">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="back" value="<?= esc(current_url(true), 'attr') ?>">
-                                <button type="submit" class="ip-fav-toggle <?= $isFavourite ? 'is-on' : '' ?>"
-                                        title="<?= esc($favAction, 'attr') ?>"
-                                        aria-label="<?= esc($favAction, 'attr') ?>"
-                                        aria-pressed="<?= $isFavourite ? 'true' : 'false' ?>">
-                                    <i class="fa <?= $isFavourite ? 'fa-solid fa-star' : 'fa-regular fa-star' ?>" aria-hidden="true"></i>
-                                </button>
-                            </form>
+                            <?php /* Nessuna <form> qui: il bottone invia quella della riga
+                                     (ip-row-form-<id>, nella colonna delle azioni), che
+                                     porta già il token e l'indirizzo di ritorno. Una
+                                     sola form per riga invece di tre. */ ?>
+                            <button type="submit" form="ip-row-form-<?= (int) $invoice['invoice_id'] ?>"
+                                    class="ip-fav-toggle <?= $isFavourite ? 'is-on' : '' ?>"
+                                    title="<?= esc($favAction, 'attr') ?>"
+                                    aria-label="<?= esc($favAction, 'attr') ?>"
+                                    aria-pressed="<?= $isFavourite ? 'true' : 'false' ?>">
+                                <i class="fa <?= $isFavourite ? 'fa-solid fa-star' : 'fa-regular fa-star' ?>" aria-hidden="true"></i>
+                            </button>
                         </td>
                         <td data-cell="status" data-label="<?= esc(trans('status', '', 'Stato')) ?>">
                             <span class="badge ip-status <?= $status_label_class[$invoice_status_class] ?? 'text-bg-secondary' ?>">
@@ -388,6 +392,15 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                         </td>
 
                         <td class="ip-hide-on-mobile" data-label="<?= esc(trans('options', '', 'Opzioni')) ?>">
+                            <?php /* L'unica form della riga: la usano il preferito
+                                     (nella sua colonna), «Elimina» e «Invia a SdI»
+                                     (qui sotto, con data-confirm-action). Senza
+                                     campi visibili, quindi non occupa spazio. */ ?>
+                            <form method="POST" id="ip-row-form-<?= (int) $invoice['invoice_id'] ?>"
+                                  action="<?= site_url('invoices/toggle_favourite/' . (int) $invoice['invoice_id']) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="back" value="<?= esc(current_url(true), 'attr') ?>">
+                            </form>
                             <div class="options btn-group">
                                 <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
                                     <i class="fa fa-solid fa-cog" aria-hidden="true"></i> <?= trans('options', '', 'Opzioni') ?>
@@ -427,27 +440,23 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                                     </li>
                                     <?php if ((int) $invoice['invoice_status_id'] === 1): ?>
                                         <li>
-                                            <form action="<?= site_url('invoices/delete/' . (int) $invoice['invoice_id']) ?>"
-                                                  method="POST">
-                                                <?= csrf_field() ?>
-                                                <button type="button" class="dropdown-button"
-                                                        data-bs-toggle="confirm" data-confirm-title="<?= esc(trans('confirm', '', 'Conferma')) ?>" data-confirm-body="<?= esc(trans('delete_invoice_warning', '', 'Eliminare la fattura?')) ?>" data-confirm-ok="<?= esc(trans('delete', '', 'Elimina')) ?>" data-confirm-danger="1">
-                                                    <i class="fa fa-solid fa-trash-can fa-margin" aria-hidden="true"></i> <?= trans('delete', '', 'Elimina') ?>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="dropdown-button"
+                                                    form="ip-row-form-<?= (int) $invoice['invoice_id'] ?>"
+                                                    data-confirm-action="<?= site_url('invoices/delete/' . (int) $invoice['invoice_id']) ?>"
+                                                    data-bs-toggle="confirm" data-confirm-title="<?= esc(trans('confirm', '', 'Conferma')) ?>" data-confirm-body="<?= esc(trans('delete_invoice_warning', '', 'Eliminare la fattura?')) ?>" data-confirm-ok="<?= esc(trans('delete', '', 'Elimina')) ?>" data-confirm-danger="1">
+                                                <i class="fa fa-solid fa-trash-can fa-margin" aria-hidden="true"></i> <?= trans('delete', '', 'Elimina') ?>
+                                            </button>
                                         </li>
                                     <?php endif; ?>
                                     <li>
-                                        <form action="<?= site_url('invoices/send_sdi/' . (int) $invoice['invoice_id']) ?>"
-                                              method="POST">
-                                            <?= csrf_field() ?>
-                                            <button type="button" class="dropdown-button"
-                                                    data-bs-toggle="confirm" data-confirm-title="<?= esc(trans('confirm', '', 'Conferma')) ?>"
-                                                    data-confirm-body="<?= esc(trans('send_to_sdi_confirm', '', 'Inviare la fattura allo SdI (Sistema di Interscambio) tramite il canale configurato?')) ?>"
-                                                    data-confirm-ok="<?= esc(trans('send_to_sdi', '', 'Invia a SdI')) ?>">
-                                                <i class="fa fa-regular fa-paper-plane fa-margin" aria-hidden="true"></i> <?= trans('send_to_sdi', '', 'Invia a SdI') ?>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="dropdown-button"
+                                                form="ip-row-form-<?= (int) $invoice['invoice_id'] ?>"
+                                                data-confirm-action="<?= site_url('invoices/send_sdi/' . (int) $invoice['invoice_id']) ?>"
+                                                data-bs-toggle="confirm" data-confirm-title="<?= esc(trans('confirm', '', 'Conferma')) ?>"
+                                                data-confirm-body="<?= esc(trans('send_to_sdi_confirm', '', 'Inviare la fattura allo SdI (Sistema di Interscambio) tramite il canale configurato?')) ?>"
+                                                data-confirm-ok="<?= esc(trans('send_to_sdi', '', 'Invia a SdI')) ?>">
+                                            <i class="fa fa-regular fa-paper-plane fa-margin" aria-hidden="true"></i> <?= trans('send_to_sdi', '', 'Invia a SdI') ?>
+                                        </button>
                                     </li>
                                 </ul>
                             </div>

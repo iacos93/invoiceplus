@@ -85,7 +85,10 @@ $usageText = static function (array $counts): string {
                 <?php foreach ($bank_accounts as $account): ?>
                     <?php
                     $accountId = (int) $account['bank_account_id'];
-                    $isDefault = !empty($account['bank_account_is_default']);
+                    // db_bool e non !empty: PostgreSQL restituisce il booleano
+                    // come stringa "t"/"f", e !empty("f") è true — ogni conto
+                    // risultava predefinito.
+                    $isDefault = db_bool($account['bank_account_is_default'] ?? false);
                     $used      = $usageText($usage[$accountId] ?? []);
                     ?>
                     <tr>

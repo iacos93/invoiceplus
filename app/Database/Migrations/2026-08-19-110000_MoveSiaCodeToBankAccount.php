@@ -68,7 +68,7 @@ class MoveSiaCodeToBankAccount extends Migration
                 SET company_sia_code = (
                     SELECT a.bank_account_sia_code FROM ip_bank_accounts a
                      WHERE a.company_id = ip_companies.company_id
-                       AND a.bank_account_is_default = 1
+                       AND a.bank_account_is_default IS TRUE
                      ORDER BY a.bank_account_id LIMIT 1)'
         );
 

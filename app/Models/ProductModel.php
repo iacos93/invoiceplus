@@ -66,8 +66,11 @@ class ProductModel extends IpBaseModel
      * Lista con join su families/units/tax_rates (equivalente a
      * default_join() + default_order_by() in CI3), per mostrare i nomi
      * anziche' i soli id nella tabella prodotti.
+     *
+     * La lista è paginata: il catalogo cresce con i dati utente e il resto
+     * dell'app legge una pagina alla volta.
      */
-    public function getAllWithJoins(): array
+    public function getAllWithJoins(?int $perPage = null, int $page = 1): array
     {
         $this->scopeToCompany();
 
@@ -77,7 +80,7 @@ class ProductModel extends IpBaseModel
             ->join('ip_tax_rates', 'ip_tax_rates.tax_rate_id = ip_products.tax_rate_id', 'left')
             ->orderBy('ip_families.family_name', 'ASC')
             ->orderBy('ip_products.product_name', 'ASC')
-            ->findAll();
+            ->listFetch($perPage, $page, 'ip_products');
     }
 
     /**

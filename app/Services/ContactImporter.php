@@ -184,7 +184,10 @@ class ContactImporter
             }
 
             $now = date('Y-m-d H:i:s');
-            $data['supplier_active']        = isset($data['supplier_active']) ? db_bool($data['supplier_active']) : true;
+            // Cella presente ma vuota conta come assente: db_bool('') è false,
+            // quindi un CSV con la colonna "attivo" senza valore importava i
+            // fornitori come inattivi invece di usare il valore predefinito.
+            $data['supplier_active']        = $this->supplierActiveFromCell($data['supplier_active'] ?? null);
             $data['company_id']             = $companyId;
             $data['supplier_date_modified'] = $now;
 
@@ -243,6 +246,17 @@ class ContactImporter
      * due strade leggevano lo stesso file in modo diverso — questa riconosceva
      * delimitatore, BOM e codifica, l'altra no.
      */
+    /**
+     * La cella "attivo" del CSV dei fornitori: presente e piena usa il valore
+     * della cella, assente o vuota ricade sul predefinito (attivo). db_bool('')
+     * è false, quindi senza questo controllo un CSV con la colonna senza
+     * valore importava i fornitori come inattivi.
+     */
+    public function supplierActiveFromCell(mixed $cell): bool
+    {
+        return $cell === null || $cell === '' ? true : db_bool($cell);
+    }
+
     private function parseCsv(string $filePath): array
     {
         return CsvReader::rows($filePath);

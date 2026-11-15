@@ -20,11 +20,20 @@ class BankAccounts extends BaseController
 
     public function index()
     {
+        $bankAccounts = $this->bankAccountModel->getAllOrdered(list_per_page(), list_page('ip_bank_accounts'));
+
+        // Conteggi e saldi servono solo ai conti della pagina: passarli evita
+        // di rileggere l'elenco e di aggregare tutta la tabella due volte.
+        $accountIds = array_map(
+            static fn (array $account): int => (int) $account['bank_account_id'],
+            $bankAccounts
+        );
+
         return view('bank_accounts/index', [
-            'bank_accounts' => $this->bankAccountModel->getAllOrdered(list_per_page(), list_page('ip_bank_accounts')),
-            'usage'         => $this->bankAccountModel->usageCounts(),
+            'bank_accounts' => $bankAccounts,
+            'usage'         => $this->bankAccountModel->usageCounts($accountIds),
             // Saldo corrente: saldo iniziale + incassi - spese, per conto.
-            'balances'      => $this->bankAccountModel->balances(),
+            'balances'      => $this->bankAccountModel->balances($accountIds),
             'pager'         => $this->bankAccountModel->pager,
             'group'         => 'ip_bank_accounts',
         ]);

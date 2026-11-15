@@ -39,31 +39,64 @@ class ProjectModel extends IpBaseModel
     }
 
     /**
-     * Lista progetti con nome cliente (join left, come default_join() CI3),
-     * data dell'ultima attività e conteggi per la striscia di composizione
-     * (attività per stato, completate e scadute).
+     * Lista progetti con nome cliente, data dell'ultima attività e conteggi
+     * per la striscia di composizione (attività per stato, completate e
+     * scadute).
+     *
+     * Due passate invece del join aggregato con GROUP BY: la lista è
+     * paginata, e con il join ogni apertura aggregava tutta ip_tasks per un
+     * dato che serve solo alle righe visibili. La seconda passata filtra su
+     * project_id con whereIn e lascia lavorare l'indice. I numeri per
+     * progetto restano identici.
      */
-    public function getAllWithClient(): array
+    public function getAllWithClient(?int $perPage = null, int $page = 1): array
     {
-        return $this->select("ip_projects.*, ip_clients.client_name, MAX(ip_tasks.task_finish_date) AS project_last_task_date, "
-                . 'COUNT(ip_tasks.task_id) AS task_count, '
-                . "SUM(CASE WHEN ip_tasks.task_status = 1 THEN 1 ELSE 0 END) AS task_not_started_count, "
-                . "SUM(CASE WHEN ip_tasks.task_status = 2 THEN 1 ELSE 0 END) AS task_in_progress_count, "
-                . "SUM(CASE WHEN ip_tasks.task_status = 3 THEN 1 ELSE 0 END) AS task_completed_count, "
-                . "SUM(CASE WHEN ip_tasks.task_status = 4 THEN 1 ELSE 0 END) AS task_invoiced_count, "
-                . "SUM(CASE WHEN ip_tasks.task_finish_date < CURRENT_DATE AND ip_tasks.task_status NOT IN (3, 4) THEN 1 ELSE 0 END) AS task_overdue_count", false)
+        $projects = $this->select('ip_projects.*, ip_clients.client_name', false)
             ->join('ip_clients', 'ip_clients.client_id = ip_projects.client_id', 'left')
-            ->join('ip_tasks', 'ip_tasks.project_id = ip_projects.project_id', 'left')
             // ip_projects non ha company_id: il progetto appartiene
-            // all'azienda del cliente a cui e' intestato.
+            // all'azienda del cliente a cui è intestato.
             ->scopeToCompany(null, 'ip_clients')
-            // PostgreSQL esige nel GROUP BY ogni colonna non aggregata:
-            // ip_projects.project_id basta per le colonne di ip_projects (è
-            // chiave primaria), ma client_name arriva da un'altra tabella e
-            // va elencato, altrimenti la lista progetti va in errore 500.
-            ->groupBy(['ip_projects.project_id', 'ip_clients.client_name'])
             ->orderBy('ip_projects.project_name', 'ASC')
-            ->findAll();
+            ->listFetch($perPage, $page);
+
+        if ($projects === []) {
+            return [];
+        }
+
+        $ids = array_map(static fn (array $project): int => (int) $project['project_id'], $projects);
+
+        $rows = $this->db->table('ip_tasks')
+            ->select("project_id, MAX(task_finish_date) AS project_last_task_date, COUNT(*) AS task_count, "
+                . "SUM(CASE WHEN task_status = 1 THEN 1 ELSE 0 END) AS task_not_started_count, "
+                . "SUM(CASE WHEN task_status = 2 THEN 1 ELSE 0 END) AS task_in_progress_count, "
+                . "SUM(CASE WHEN task_status = 3 THEN 1 ELSE 0 END) AS task_completed_count, "
+                . "SUM(CASE WHEN task_status = 4 THEN 1 ELSE 0 END) AS task_invoiced_count, "
+                . "SUM(CASE WHEN task_finish_date < CURRENT_DATE AND task_status NOT IN (3, 4) THEN 1 ELSE 0 END) AS task_overdue_count", false)
+            ->whereIn('project_id', $ids)
+            ->groupBy('project_id')
+            ->get()->getResultArray();
+
+        $perProgetto = [];
+
+        foreach ($rows as $row) {
+            $perProgetto[(int) $row['project_id']] = $row;
+        }
+
+        $vuoto = [
+            'project_last_task_date' => null,
+            'task_count'             => 0,
+            'task_not_started_count' => 0,
+            'task_in_progress_count' => 0,
+            'task_completed_count'   => 0,
+            'task_invoiced_count'    => 0,
+            'task_overdue_count'     => 0,
+        ];
+
+        foreach ($projects as &$project) {
+            $project += $perProgetto[(int) $project['project_id']] ?? $vuoto;
+        }
+
+        return $projects;
     }
 
     /**

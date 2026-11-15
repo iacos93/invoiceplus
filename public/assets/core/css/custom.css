@@ -9,6 +9,56 @@
    ========================================================================== */
 
 /* -----------------------------------------------------------------------------
+   I caratteri del design system, serviti da qui
+   -----------------------------------------------------------------------------
+   Prima arrivavano da fonts.googleapis.com, con i file su un secondo dominio
+   (fonts.gstatic.com): due connessioni esterne nel percorso critico di ogni
+   pagina, un foglio CSS bloccante che nessuna cache dell'app poteva coprire, e
+   due origini da dichiarare nella CSP. Questi sono gli stessi file "latin" che
+   il browser scaricava da li', ora sotto assets/core/fonts: il service worker
+   li mette in cache insieme agli altri asset, e il ?v= lo aggiunge CssBundle
+   con l'impronta del file (sostituire un font non lascia in giro la copia
+   vecchia, che l'Expires di un anno terrebbe per mesi).
+
+   Il sottoinsieme e' quello latino di Google — U+0000-00FF piu' punteggiatura
+   tipografica ed euro, cioe' tutto l'italiano e l'inglese: esattamente cio' che
+   il browser scaricava prima. Un carattere fuori da li' (greco, cirillico,
+   latino esteso: una ragione sociale polacca, per esempio) cade sul fallback di
+   sistema dichiarato nei token.
+   -------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../fonts/figtree-latin.woff2?v=392aed3e") format("woff2");
+}
+
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
+  src: url("../fonts/fraunces-latin.woff2?v=5d283517") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-mono-500-latin.woff2?v=094fe534") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-mono-600-latin.woff2?v=a6b3444c") format("woff2");
+}
+
+/* -----------------------------------------------------------------------------
    Base del documento (ex layer "modern-theme")
    -----------------------------------------------------------------------------
    Questo tratto teneva un secondo set di token --bg-main, --primary,
@@ -4480,6 +4530,9 @@ select.form-select:focus-visible {
   letter-spacing: -0.015em;
   color: #fff;
   margin: 0 0 18px;
+  /* Bilanciato: a 460px il titolo andava a capo lasciando "ordine." da solo
+     sulla seconda riga, una parola orfana proprio nella frase più grande. */
+  text-wrap: balance;
 }
 .ip-auth-brand-copy p {
   color: rgba(244, 244, 245, 0.72);
@@ -14181,8 +14234,56 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 .ip-first-steps-banner > i { color: var(--ip-primary); }
 .ip-first-steps-banner > span { flex: 1 1 260px; }
 
-.ip-setup-checks { margin: 18px 0 0; font-size: var(--ip-text-sm); }
-.ip-setup-checks summary { cursor: pointer; font-weight: 600; }
+/* Esito dei controlli del primo avvio: era il triangolo nativo del browser
+   in grassetto, l'unico elemento della card con quell'aspetto. Ora è una
+   riga muta con chevron, separata dal form da un filetto, come i piedi delle
+   altre card di accesso. */
+.ip-setup-checks {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--ip-border);
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text-muted);
+}
+.ip-setup-checks summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  list-style: none;
+}
+.ip-setup-checks summary::-webkit-details-marker { display: none; }
+.ip-setup-checks summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--ip-transition);
+}
+.ip-setup-checks[open] summary::before { transform: rotate(45deg); }
+.ip-setup-checks summary:hover { color: var(--ip-text); }
+.ip-setup-checks li { color: var(--ip-text); }
+.ip-setup-checks li .fa-circle-check { color: var(--ip-success); }
+.ip-setup-checks li .fa-triangle-exclamation { color: var(--ip-warning); }
+/* Nota di piede del primo avvio e suggerimento sotto la password: testo
+   corrente muto. La nota usava .ip-webauthn-status, la riga di stato mono
+   dei pulsanti passkey, e così sembrava un messaggio di sistema. */
+.ip-auth-note {
+  margin: 14px 0 0;
+  font-size: var(--ip-text-sm);
+  line-height: 1.5;
+  color: var(--ip-text-muted);
+  text-align: center;
+}
+.ip-field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--ip-text-xs);
+  color: var(--ip-text-muted);
+}
 .ip-setup-checks ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .ip-setup-checks li i { margin-right: 6px; }
 

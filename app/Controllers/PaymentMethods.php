@@ -21,9 +21,18 @@ class PaymentMethods extends BaseController
 
     public function index()
     {
+        $paymentMethods = $this->paymentMethodModel->getAllOrdered(list_per_page(), list_page('ip_payment_methods'));
+
+        // I conteggi servono solo ai metodi della pagina: filtrarli evita di
+        // aggregare anche quelli che l'utente non sta guardando.
+        $methodIds = array_map(
+            static fn (array $method): int => (int) $method['payment_method_id'],
+            $paymentMethods
+        );
+
         $data = [
-            'payment_methods' => $this->paymentMethodModel->getAllOrdered(list_per_page(), list_page('ip_payment_methods')),
-            'usage'           => $this->paymentMethodModel->usageCounts(),
+            'payment_methods' => $paymentMethods,
+            'usage'           => $this->paymentMethodModel->usageCounts($methodIds),
             'pager'           => $this->paymentMethodModel->pager,
             'group'           => 'ip_payment_methods',
         ];
