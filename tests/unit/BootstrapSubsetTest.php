@@ -63,6 +63,12 @@ final class BootstrapSubsetTest extends CIUnitTestCase
         $this->assertStringContainsString('.bs-tooltip-top', $subset);
         $this->assertStringContainsString('.bs-popover-auto', $subset);
 
+        // Le regole che uniscono i pulsanti di un .btn-group nominano
+        // .btn-check solo dentro :not(): l'app non la usa, ma la regola serve
+        // proprio per questo. Senza, i pulsanti divisi restavano staccati.
+        $this->assertStringContainsString(':not(.btn-check:first-child)+.btn{margin-left', $subset);
+        $this->assertStringContainsString(':not(.btn-check)+.btn{border-top-left-radius:0', $subset);
+
         // La licenza di Bootstrap viaggia con il foglio ridotto.
         $this->assertStringContainsString('Bootstrap', substr($subset, 0, 400));
     }

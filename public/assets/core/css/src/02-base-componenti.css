@@ -1223,3 +1223,13 @@ input[type="radio"]:disabled {
   border-top: 1px solid var(--ip-border-soft);
   list-style: none;
 }
+
+/* Pulsanti divisi (azione + freccia del menu): con le regole di unione di
+   Bootstrap le due metà si toccano, ma sul primario pieno la freccia non si
+   distingue più dall'azione. Un filetto interno nel colore del testo segna la
+   divisione su ogni variante e in entrambi i temi, senza un colore in più. */
+.btn-group > .btn + .dropdown-toggle-split {
+  box-shadow: inset 1px 0 0 color-mix(in srgb, currentColor 22%, transparent);
+  padding-left: 7px;
+  padding-right: 7px;
+}

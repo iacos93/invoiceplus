@@ -314,6 +314,13 @@ final class BootstrapSubset
      */
     private static function selectorUsed(string $selector, array $used, array $prefixes): bool
     {
+        // Le classi dentro :not() non vanno richieste: `:not(.btn-check)+.btn`
+        // scatta proprio quando .btn-check manca. Contarle scartava le regole
+        // che uniscono i pulsanti di un .btn-group (margine -1px e angoli
+        // interni a zero), e i pulsanti divisi Esporta/Nuovo si mostravano
+        // come due pezzi staccati con un doppio bordo nel mezzo.
+        $selector = (string) preg_replace('/:not\((?:[^()]|\([^()]*\))*\)/', '', $selector);
+
         preg_match_all('/\.(-?[_a-zA-Z][_a-zA-Z0-9-]*)/', $selector, $matches);
 
         foreach ($matches[1] as $classe) {

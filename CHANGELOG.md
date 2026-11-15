@@ -68,6 +68,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- I pulsanti divisi (Esporta, Nuovo cliente/fornitore e gli altri con la
+  freccia del menu) si mostravano come due pezzi staccati con un doppio bordo:
+  il Bootstrap ridotto scartava le regole di unione del gruppo perché nominano
+  `.btn-check` dentro `:not()`. Le classi dentro `:not()` non contano più come
+  richieste, e un filetto interno separa la freccia anche sul pulsante
+  primario.
+
 - Su MySQL la Bacheca dava errore 500 e il cron delle fatture ricorrenti
   falliva a ogni giro: le serie mensili usavano TO_CHAR e il lock del cron
   l'advisory lock, entrambi solo PostgreSQL. Ora le serie passano da
