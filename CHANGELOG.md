@@ -68,6 +68,12 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- L'import degli XML di fatture emesse scartava come doppione una nota di
+  credito con lo stesso numero di una fattura dello stesso anno (le note di
+  credito hanno di solito una serie propria): il fatturato restava gonfiato
+  del suo importo. Il controllo dei doppioni ora distingue note di credito e
+  fatture.
+
 - I pulsanti divisi (Esporta, Nuovo cliente/fornitore e gli altri con la
   freccia del menu) si mostravano come due pezzi staccati con un doppio bordo:
   il Bootstrap ridotto scartava le regole di unione del gruppo perché nominano

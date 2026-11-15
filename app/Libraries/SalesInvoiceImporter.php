@@ -155,10 +155,27 @@ class SalesInvoiceImporter
         // Stesso numero nello stesso anno, nell'azienda attiva: è la stessa
         // fattura (la numerazione riparte ogni anno). Reimportare lo stesso
         // ZIP non deve raddoppiare il fatturato.
-        $existing = $invoiceModel->scopeToCompany()
+        //
+        // Le note di credito hanno di solito una serie propria: la NC n. 1
+        // e la fattura n. 1 dello stesso anno sono documenti diversi. Senza
+        // distinguere il tipo, la nota di credito veniva scartata come
+        // doppione della fattura e il fatturato restava gonfiato del suo
+        // importo.
+        $creditTypes = FatturaXml::CREDIT_NOTE_TYPES;
+        $query       = $invoiceModel->scopeToCompany()
             ->where('invoice_number', $doc['number'])
-            ->where('EXTRACT(YEAR FROM invoice_date_created)', (int) substr($doc['date'], 0, 4))
-            ->first();
+            ->where('EXTRACT(YEAR FROM invoice_date_created)', (int) substr($doc['date'], 0, 4));
+
+        if ($this->isCreditNote($doc)) {
+            $query->whereIn('invoice_doc_type', $creditTypes);
+        } else {
+            $query->groupStart()
+                ->whereNotIn('invoice_doc_type', $creditTypes)
+                ->orWhere('invoice_doc_type', null)
+                ->groupEnd();
+        }
+
+        $existing = $query->first();
 
         if ($existing) {
             return ['skipped' => true, 'created_client' => false, 'invoice_id' => (int) $existing['invoice_id'], 'number' => $doc['number']];
