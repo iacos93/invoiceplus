@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.11.0] — 2026-11-15
+
 **Da fare prima di aggiornare:** `php spark migrate` (aggiunge a ogni azienda
 le colonne dei loghi, del piè di pagina dei documenti e del codice destinatario
 SdI, il conto di saldo sugli incassi e sui metodi di pagamento, il saldo di

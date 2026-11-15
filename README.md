@@ -303,7 +303,12 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.10.0`, che
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.11.0`, che rinnova
+il marchio e il carattere del nome, aggiunge loghi e piè di pagina per azienda
+sui documenti, la colonna IVA nelle righe, l'installazione come app (PWA), il
+primo avvio guidato con la pagina «Primi passi», nuovi controlli sulla fattura
+elettronica e un'interfaccia più leggera (sottoinsiemi di Bootstrap e delle
+icone, cache dei PDF e degli asset). La `v0.10.0`
 rafforza la sicurezza (Content-Security-Policy applicata in produzione, tetto
 ai tentativi su accessi ed endpoint pubblici, controllo reale degli upload),
 blocca davvero le fatture in sola lettura e quelle trasmesse allo SdI, chiude

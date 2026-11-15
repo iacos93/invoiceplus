@@ -111,8 +111,8 @@ final class SdiInvoiceCheckTest extends CIUnitTestCase
     public function testNomeDelClienteSecondoIlTipo(): void
     {
         $this->assertSame('Maria Angela Zema', SdiInvoiceCheck::clientLabel($this->invoice()));
-        $this->assertSame('ICS Piero Fornara', SdiInvoiceCheck::clientLabel($this->invoice([
-            'client_name'    => 'ICS Piero Fornara',
+        $this->assertSame('Istituto Mario Rossi', SdiInvoiceCheck::clientLabel($this->invoice([
+            'client_name'    => 'Istituto Mario Rossi',
             'client_surname' => '',
             'client_type'    => 'company',
         ])));
