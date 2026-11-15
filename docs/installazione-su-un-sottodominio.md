@@ -56,6 +56,20 @@ server {
     # Allegati e importazioni: il predefinito di nginx (1 MB) è troppo basso.
     client_max_body_size 20m;
 
+    # Compressione: una pagina pesa 100-200 KB e compressa ne viaggia un
+    # settimo. Sotto nginx il file public/.htaccess non viene letto, quindi
+    # compressione e cache degli asset vanno dichiarate qui.
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml text/plain;
+    gzip_min_length 1024;
+
+    # Asset statici: portano ?v= nell'indirizzo, quindi una cache lunga è
+    # sicura. sw.js è escluso più sotto.
+    location ~* ^/assets/.+\.(css|js|woff2?|png|jpe?g|gif|webp|svg|ico)$ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
@@ -164,6 +178,11 @@ certificato lato server e la mutua autenticazione, è in [sdicoop.md](sdicoop.md
 - Il sito risponde in HTTPS e il lucchetto non segnala avvisi.
 - **Stato del sistema** non mostra controlli guasti (database, migrazioni,
   cartelle, backup, cron).
+- Gli asset arrivano compressi e con cache lunga:
+  `curl -sI -H 'Accept-Encoding: gzip' https://invoice.tuo-dominio.example/assets/core/css/custom.min.css`
+  deve mostrare `content-encoding: gzip` e `cache-control: … immutable`.
+- **opcache** è attivo per PHP-FPM (`opcache.enable=1`): senza, ogni richiesta
+  ricompila il codice e le pagine impiegano diverse volte tanto.
 - Il pulsante **Installa app** in barra apre la finestra di installazione di
   Chrome o Edge.
 - Una fattura di prova si scarica in PDF con logo e piè di pagina.

@@ -80,7 +80,7 @@ class Search extends BaseController
         $builder   = db_connect()->table($table);
         $companyId = active_company_id();
 
-        if ($companyId && db_connect()->fieldExists('company_id', $table)) {
+        if ($companyId && \App\Models\IpBaseModel::tableHasCompany(db_connect(), $table)) {
             $builder->where($table . '.company_id', $companyId);
         }
 

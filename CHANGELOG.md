@@ -9,6 +9,19 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Modificato
+
+- **Meno query a ogni pagina.** Per applicare il perimetro dell'azienda
+  l'applicazione chiedeva al database, a ogni richiesta e per ogni tabella
+  toccata, se esistesse la colonna `company_id` (fino a quattro interrogazioni
+  dello schema sulla Bacheca, le più lente della pagina su PostgreSQL). La
+  risposta positiva ora si ricorda fra una richiesta e l'altra; quella negativa
+  si ricontrolla sempre, così una migrazione che aggiunge la colonna non può
+  lasciare una tabella fuori dal perimetro.
+- **Guida al sottodominio:** la configurazione nginx dichiara compressione e
+  cache lunga degli asset (sotto nginx `public/.htaccess` non viene letto) e
+  la verifica finale controlla le intestazioni e opcache.
+
 ## [v0.11.0] — 2026-11-15
 
 **Da fare prima di aggiornare:** `php spark migrate` (aggiunge a ogni azienda

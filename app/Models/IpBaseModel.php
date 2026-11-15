@@ -45,7 +45,7 @@ class IpBaseModel extends Model
         $companyId ??= active_company_id();
         $table     ??= $this->table;
 
-        if (!$companyId || !$this->db->fieldExists('company_id', $table)) {
+        if (!$companyId || !self::tableHasCompany($this->db, $table)) {
             return $this;
         }
 
@@ -207,9 +207,66 @@ class IpBaseModel extends Model
         return $row;
     }
 
+    /** @var array<string, true> tabelle con company_id, per questa richiesta */
+    private static array $companyTables = [];
+
+    /**
+     * La tabella ha la colonna company_id?
+     *
+     * `fieldExists()` interroga `information_schema` una volta per tabella a
+     * ogni richiesta: la Bacheca ne tocca quattro, e su PostgreSQL sono le
+     * query più lente della pagina (da pochi millisecondi a oltre cento a
+     * freddo) per una risposta che cambia solo con una migrazione.
+     *
+     * Si ricorda fra una richiesta e l'altra **solo il sì**. Il no si
+     * ricontrolla sempre: se una migrazione aggiunge company_id a una tabella,
+     * un "no" rimasto in cache farebbe saltare il perimetro in silenzio, cioè
+     * mostrerebbe i dati di un'azienda dentro un'altra. Un "sì" rimasto dopo
+     * la rimozione della colonna dà invece un errore SQL subito, che è il
+     * guasto che si vede. Nei test la cache condivisa non si usa: le tabelle
+     * vengono create e rifatte da un test all'altro.
+     */
+    public static function tableHasCompany(\CodeIgniter\Database\BaseConnection $db, string $table): bool
+    {
+        $chiave = $db->getDatabase() . '.' . $table;
+
+        if (isset(self::$companyTables[$chiave])) {
+            return true;
+        }
+
+        // Stessa lettura di PublicEndpointThrottle: la costante ENVIRONMENT è
+        // nota all'analisi statica come valore fisso.
+        $condivisa = (string) ($_SERVER['CI_ENVIRONMENT'] ?? 'production') !== 'testing';
+        $nomeCache = 'ip_company_tables_' . preg_replace('/[^A-Za-z0-9_.-]/', '_', $db->getDatabase());
+
+        if ($condivisa && self::$companyTables === []) {
+            $note = cache()->get($nomeCache);
+
+            if (is_array($note)) {
+                self::$companyTables = $note;
+
+                if (isset(self::$companyTables[$chiave])) {
+                    return true;
+                }
+            }
+        }
+
+        if (! $db->fieldExists('company_id', $table)) {
+            return false;
+        }
+
+        self::$companyTables[$chiave] = true;
+
+        if ($condivisa) {
+            cache()->save($nomeCache, self::$companyTables, DAY);
+        }
+
+        return true;
+    }
+
     public function withCompany(array $dbArray): array
     {
-        if ($this->db->fieldExists('company_id', $this->table) && empty($dbArray['company_id'])) {
+        if (self::tableHasCompany($this->db, $this->table) && empty($dbArray['company_id'])) {
             $dbArray['company_id'] = active_company_id();
         }
 
