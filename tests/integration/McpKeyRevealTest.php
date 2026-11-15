@@ -141,6 +141,17 @@ final class McpKeyRevealTest extends CIUnitTestCase
     {
         $this->testDb->query("DELETE FROM ip_settings WHERE setting_key = 'mcp_key'");
 
+        // Le impostazioni si tengono in memoria per tutta la richiesta, e i test
+        // girano nello stesso processo: dopo la cancellazione la cache statica
+        // conserva ancora la chiave scritta dal test precedente. Con un ordine
+        // di esecuzione diverso da quello locale (la CI) la pagina la ritrovava
+        // e il test falliva, pur essendo corretto il codice.
+        \App\Models\SettingModel::resetCache();
+        // E la copia condivisa (file o Redis, 5 minuti): scritta quando il test
+        // precedente ha letto le impostazioni con la chiave dentro, sopravvive
+        // al rollback della transazione.
+        cache()->clean();
+
         $rivelata = $this->inviaPost('/mcp/ajax/reveal_key');
 
         // Con la chiave in .env l'integrazione è comunque configurata: si copia

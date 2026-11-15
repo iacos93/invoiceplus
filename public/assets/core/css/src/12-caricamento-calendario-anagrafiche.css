@@ -1054,7 +1054,7 @@ html[data-theme="dark"] .ip-pager .pagination {
 .ip-items-table:has(.ip-items-table__desc) .ip-items-table__actions { width: 30px; }
 /* Dentro la griglia i campi numerici e il codice hanno 6px di margine
    interno invece di 10: con 10 per lato un Prezzo da 70px lasciava 50px alle
-   cifre, e "4.883,00" usciva tagliato a sinistra; lo stesso per "1,00" nella
+   cifre, e "1.234,00" usciva tagliato a sinistra; lo stesso per "1,00" nella
    Quantità. Le larghezze sopra sono calcolate su questo margine: Prezzo
    contiene "12.345,67", Quantità e Sconto "100,00". */
 .ip-items-table:has(.ip-items-table__desc) .ip-items-table__num .form-control,

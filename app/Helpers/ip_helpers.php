@@ -1549,10 +1549,10 @@ if (!function_exists('name_monogram')) {
      * parole che contano, due o tre secondo quante ne ha ($max).
      *
      * Prendere le prime due parole qualunque dava "CD" per «Comune di
-     * Carpignano Sesia»: la preposizione finiva nel monogramma al posto del
+     * Monte Alto»: la preposizione finiva nel monogramma al posto del
      * nome vero. Articoli, preposizioni e congiunzioni si saltano, e di ogni
      * parola conta la prima lettera o cifra, così virgolette e parentesi
-     * («ICS "Bottacchi"») non diventano un'iniziale. Se dopo il filtro non
+     * («Scuola "Verdi"») non diventano un'iniziale. Se dopo il filtro non
      * resta nulla (un nome fatto solo di particelle) si torna alle parole
      * così come sono.
      */
@@ -1570,7 +1570,7 @@ if (!function_exists('name_monogram')) {
             // lettera non è un'iniziale, e prenderla dava "IDD" per «ICS Duca
             // d'Aosta». Si toglie prima, così conta la lettera che si legge.
             $word  = preg_replace("/^[\p{L}]'/u", '', $word) ?? $word;
-            // Solo lettere e cifre: "d'Italia" resta "Italia", «"Bottacchi"» "Bottacchi".
+            // Solo lettere e cifre: "d'Italia" resta "Italia", «"Verdi"» "Verdi".
             $clean = preg_replace('/[^\p{L}\p{N}]+/u', '', $word) ?? '';
 
             if ($clean === '') {

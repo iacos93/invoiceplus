@@ -448,7 +448,7 @@
 
 /* Select del cliente nella scheda documento. Ereditava i 120px pensati per
    l'aliquota nella riga di aggiunta (.ip-doc-newrow .ip-select) e troncava il
-   nome a "ICS Piero For…" con mezza card libera accanto. */
+   nome a "Istituto Mario Ros…" con mezza card libera accanto. */
 .ip-doc-client .ip-doc-newrow .ip-select {
   flex: 1 1 240px;
   width: auto;
@@ -500,7 +500,7 @@
 /* Fra 1280 e 1399px (un portatile da 13") le colonne secondarie tornavano
    tutte, e la lista fatture occupava l'intera larghezza con colonne che non
    vanno a capo: l'unica che può stringersi è il cliente, che restava a 116px
-   e spezzava su due righe anche "ICS Piero Fornara", con l'aria fra le altre
+   e spezzava su due righe anche "Istituto Mario Rossi", con l'aria fra le altre
    colonne a far sembrare l'a capo immotivato. In questa fascia esce solo la
    colonna secondaria non numerica (data di creazione, categoria della
    spesa): i suoi ~95px vanno al cliente. L'imponibile resta, perché è una

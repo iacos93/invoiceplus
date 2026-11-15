@@ -427,9 +427,9 @@ d'accesso di preventivi e allegati).
 - **Pulsanti delle conferme**: «Annulla» e «Esci senza salvare» (e le altre
   conferme di eliminazione) erano a 16px, più grandi dei pulsanti del resto
   dell'app; ora hanno la misura dei pulsanti piccoli.
-- **Iniziali nella scheda cliente**: «Comune di Carpignano Sesia» mostrava
+- **Iniziali nella scheda cliente**: «Comune di Monte Alto» mostrava
   «CD», con la preposizione al posto del nome. Articoli e preposizioni ora si
-  saltano («CC»), le virgolette non contano come iniziale e per le persone si
+  saltano, le virgolette non contano come iniziale e per le persone si
   prende un'iniziale dal nome e una dal cognome.
 - **Saltino del menu utente**: aprendo il menu dell'utente (e i menu di riga)
   nella barra in alto il pannello faceva un piccolo salto. L'animazione di
@@ -467,7 +467,7 @@ d'accesso di preventivi e allegati).
 - **Telefono**: la barra delle sezioni del Controllo di gestione mostra
   un'ombra sul lato da cui ci sono altre voci da scorrere.
 - **Righe di fatture e preventivi**: su schermi da 1280 px i campi Codice,
-  Quantità, Prezzo e Sconto erano più corti del loro contenuto ("4.883,00"
+  Quantità, Prezzo e Sconto erano più corti del loro contenuto ("1.234,00"
   usciva tagliato). Le colonne sono state ribilanciate: ogni campo contiene il
   suo valore tipico e lo spazio in più va alla descrizione. L'intestazione
   Quantità è abbreviata in "Q.tà".
