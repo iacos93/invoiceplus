@@ -38,7 +38,7 @@
     <?= $this->include('layout/fonts') ?>
 
     <!-- Bootstrap 5 + vendor -->
-    <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.min.css'); ?>">
+    <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.subset.min.css'); ?>">
     <?php
     /* Font Awesome ridotto alle icone che l'app usa davvero: all.min.css sono
        100 KB, di cui 86 KB di regole di code point per 2.477 nomi, mentre il
@@ -69,8 +69,6 @@
         <link rel="stylesheet" href="<?php _theme_asset('css/monospace.css'); ?>">
     <?php } ?>
 
-    <!-- jQuery (usato dal codice legacy delle view) -->
-    <script src="<?php _core_asset('vendor/jquery.min.js'); ?>"></script>
     <!-- Bootstrap 5 bundle (include Popper) -->
     <script src="<?php _core_asset('vendor/bootstrap.bundle.min.js'); ?>"></script>
 
@@ -88,7 +86,7 @@
         window.IP_DATE_FORMAT = '<?= date_format_datepicker() ?>';
         window.IP_WEEK_START  = <?= (int) get_setting('first_day_of_week', 1) ?>;
 
-        $(function () {
+        document.addEventListener('DOMContentLoaded', function () {
             // Tooltip BS5 (inizializza tutti gli elementi .tip e [data-bs-toggle="tooltip"])
             document.querySelectorAll('.tip, [data-bs-toggle="tooltip"]').forEach(function (el) {
                 if (window.bootstrap) { new bootstrap.Tooltip(el); }
@@ -163,9 +161,10 @@
         /* Avvio di uno script di pagina. `DOMContentLoaded` scatta una volta
            sola, al primo caricamento: con la navigazione parziale gli script del
            contenuto nuovo girano a documento già pronto e il listener non
-           verrebbe mai chiamato. Qui si esegue subito se il documento è pronto,
-           e si aspetta l'evento solo se è ancora in caricamento: la forma di
-           `$(function () {…})` di jQuery. */
+           verrebbe mai chiamato (i pulsanti della pagina non rispondono finché
+           non si ricarica). Qui si esegue subito se il documento è pronto, e si
+           aspetta l'evento solo se è ancora in caricamento. È la forma di
+           `$(function () {…})` di jQuery, che gli script avevano prima. */
         window.ipReady = function (fn) {
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', fn, { once: true });
@@ -433,10 +432,13 @@
             // un comando con una sola scelta possibile.
             $ip_companies = available_companies();
             $currentYear  = selected_year();
+            // Codice destinatario SdI dell'azienda attiva. Sta sotto il
+            // selettore perché è un dato dell'azienda e non un filtro: serve
+            // a farsi mandare le fatture, e averlo sempre in vista evita di
+            // riaprirlo ogni volta nella scheda azienda.
+            $ip_company_sdi = trim((string) (active_company()['company_sdi_code'] ?? ''));
             ?>
             <div class="ip-sidebar-context">
-                <p class="ip-nav-eyebrow"><?= esc(trans('context', '', 'Contesto')) ?></p>
-
                 <?php if (count($ip_companies) > 1): ?>
                     <form method="POST" action="<?= site_url('companies/switch') ?>" class="ip-company-switch">
                         <?= csrf_field() ?>
@@ -452,6 +454,18 @@
                             <?php endforeach; ?>
                         </select>
                     </form>
+                <?php endif; ?>
+
+                <?php if ($ip_company_sdi !== ''): ?>
+                    <?php /* «SDI» e non «codice destinatario»: nella colonna larga
+                             236px l'etichetta estesa non ci sta accanto al
+                             codice, e l'acronimo è lo stesso in entrambe le
+                             lingue. Il lettore di schermo sente comunque il
+                             nome completo in aria-label. */ ?>
+                    <p class="ip-sidebar-sdi" aria-label="<?= esc(trans('sdi_code', '', 'Codice destinatario SdI'), 'attr') ?>">
+                        <span class="ip-sidebar-sdi__label">SDI</span>
+                        <span class="ip-sidebar-sdi__value"><?= esc($ip_company_sdi) ?></span>
+                    </p>
                 <?php endif; ?>
 
                 <?php /* Filtro anno globale: persiste in sessione e in un cookie

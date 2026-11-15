@@ -22,7 +22,7 @@
     <?= $this->include('layout/theme_head') ?>
 
     <link rel="stylesheet" href="<?php _theme_asset('css/welcome.css'); ?>">
-    <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.min.css'); ?>">
+    <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.subset.min.css'); ?>">
     <link rel="stylesheet" href="<?php _core_asset('vendor/fontawesome6/css/app.min.css'); ?>">
     <link rel="stylesheet" href="<?php _core_asset('css/custom.css'); ?>"></head>
 <body>

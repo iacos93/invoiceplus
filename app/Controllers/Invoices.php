@@ -153,7 +153,6 @@ class Invoices extends BaseController
         // Selezione multipla: month[]=1&month[]=2. Con un mese solo resta il
         // vecchio "month=1", così i link già in giro continuano a valere.
         $months   = request_months();
-        $month    = count($months) === 1 ? $months[0] : 0;
 
         // Preferiti: '' tutte, '1' solo preferite, '0' solo non preferite.
         $favourite = (string) ($request->getGet('fav') ?? '');
@@ -189,7 +188,6 @@ class Invoices extends BaseController
             'invoice_statuses' => $this->invoiceModel->statuses(),
             'years'            => $this->invoiceModel->getAvailableYears(),
             'year'             => $year,
-            'month'            => $month,
             'months'           => $months,
             'favourite'        => $favourite,
             'sign'             => $sign,
@@ -733,6 +731,30 @@ class Invoices extends BaseController
             return redirect()->to('/invoices/view/' . $invoiceId);
         }
 
+        // Prima della XSD: il messaggio dello schema parla di un elemento "non
+        // atteso" e non dice che manca l'indirizzo di una delle due parti, che
+        // è l'unica cosa da fare per sbloccare l'invio.
+        $incomplete = \App\Libraries\Sdi\SdiInvoiceCheck::missingSede($invoice);
+
+        if ($incomplete !== []) {
+            $details = [];
+
+            foreach ($incomplete as $problem) {
+                $party = $problem['party'] === 'company'
+                    ? trans('company', '', 'Azienda')
+                    : trans('client', '', 'Cliente');
+
+                $details[] = $party . ' «' . $problem['name'] . '»: ' . implode(', ', $problem['fields']);
+            }
+
+            session()->setFlashdata(
+                'alert_error',
+                trans('sdi_send_blocked_missing', '', 'Invio bloccato: indirizzo, CAP o comune mancanti.') . ' ' . implode('; ', $details)
+            );
+
+            return redirect()->to('/invoices/view/' . $invoiceId);
+        }
+
         // stream=false: l'XML è una stringa e non consuma il progressivo
         // di trasmissione, che avanza solo a trasmissione riuscita.
         $xml = (string) $this->generateXml($invoiceId, false);
@@ -866,7 +888,10 @@ class Invoices extends BaseController
             throw PageNotFoundException::forPageNotFound();
         }
 
-        $html     = $this->buildInvoiceHtml($invoiceId, $template);
+        // La riga già letta passa al compositore: rileggerla dentro
+        // buildInvoiceHtml() erano due volte la query più pesante della pagina
+        // (5 join, due sottoquery) per lo stesso documento.
+        $html     = $this->buildInvoiceHtml($invoiceId, $template, $invoice);
         $filename = (new DocumentPdfBuilder())->invoiceFilename($invoice);
 
         return pdf_create($html, $filename, $stream);
@@ -877,9 +902,13 @@ class Invoices extends BaseController
      * Usato sia dal PDF sia dall'anteprima a schermo, cosi' le due non possono
      * mostrare cose diverse.
      */
-    private function buildInvoiceHtml(int $invoiceId, ?string $template = null): string
+    /**
+     * @param array<string, mixed>|null $invoice riga già letta dal chiamante,
+     *        per non rileggerla: null = la legge qui
+     */
+    private function buildInvoiceHtml(int $invoiceId, ?string $template = null, ?array $invoice = null): string
     {
-        $invoice = $this->invoiceModel->getByIdScoped($invoiceId);
+        $invoice ??= $this->invoiceModel->getByIdScoped($invoiceId);
 
         if (!$invoice) {
             throw PageNotFoundException::forPageNotFound();
@@ -961,15 +990,24 @@ class Invoices extends BaseController
 
         // stream=false: qui l'XML serve come stringa e non deve consumare il
         // progressivo di trasmissione, che spetta all'invio vero.
-        $xml    = (string) $this->generateXml($invoiceId, false);
-        $result = (new \App\Libraries\FatturaXml())->validate($xml);
+        $xml = (string) $this->generateXml($invoiceId, false);
+
+        // La validazione gira sulla stessa stringa che si legge in pagina: il
+        // numero di riga dell'errore deve poter essere cercato nello <pre>.
+        // Validando il file compatto il messaggio diceva "Riga 44" mentre a
+        // schermo le righe erano già tre volte tante, e la riga citata non
+        // corrispondeva a nulla di visibile. Il tracciato è lo stesso: la
+        // formattazione cambia solo gli spazi fra gli elementi.
+        $pretty = pretty_print_xml($xml);
+        $result = (new \App\Libraries\FatturaXml())->validate($pretty);
 
         return view('invoices/validate_xml', [
-            'invoice' => $invoice,
-            'result'  => $result,
-            // pretty_print_xml() reindenta solo la copia mostrata in pagina:
-            // $xml (quello validato sopra) resta la stringa compatta originale.
-            'xml'     => pretty_print_xml($xml),
+            'invoice'   => $invoice,
+            'result'    => $result,
+            // Dati anagrafici obbligatori: quasi sempre è questo il motivo per
+            // cui la XSD rifiuta, e lo dice in un modo che non aiuta.
+            'preflight' => \App\Libraries\Sdi\SdiInvoiceCheck::missingSede($invoice),
+            'xml'       => $pretty,
         ]);
     }
 

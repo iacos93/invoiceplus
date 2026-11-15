@@ -35,7 +35,6 @@ class Expenses extends BaseController
         $yearGet = $request->getGet('year');
         $year    = $yearGet !== null ? (int) $yearGet : selected_year();
         $months  = request_months();
-        $month   = count($months) === 1 ? $months[0] : 0;
         $paid    = (string) ($request->getGet('paid') ?? '');
         $paid    = in_array($paid, ['open', 'paid'], true) ? $paid : '';
 
@@ -62,7 +61,6 @@ class Expenses extends BaseController
             'pager'         => $this->expenseModel->pager,
             'group'         => 'ip_expenses',
             'year'          => $year,
-            'month'         => $month,
             'months'        => $months,
             'paid'          => $paid,
             'sign'          => $sign,

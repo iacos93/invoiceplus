@@ -10,6 +10,13 @@ use CodeIgniter\Model;
  * Porting CI4 di Mdl_settings (CI3): accesso alla tabella ip_settings
  * con doppia cache — Redis cross-request (5 min) + statica per request,
  * come load_settings() + setting() in CI3.
+ *
+ * La cache cross-request è legata al database (ip_settings_all_<database>),
+ * non all'installazione: i test girano sulla copia e leggevano le impostazioni
+ * del database di lavoro, quindi una pagina provata sulla copia mostrava valori
+ * di un altro archivio e una modifica scritta in transazione restava invisibile.
+ * Con la chiave legata al database ogni connessione ha la sua, e la copia la
+ * sua: nessun test poteva accorgersene finché l'installazione ne aveva una sola.
  */
 class SettingModel extends Model
 {
@@ -19,6 +26,7 @@ class SettingModel extends Model
     protected $useTimestamps = false;
     protected $allowedFields = ['setting_key', 'setting_value'];
 
+    /** @var array<string, mixed>|null impostazioni per request, null = da caricare */
     private static ?array $settingsCache = null;
 
     private const REDIS_KEY = 'ip_settings_all';
@@ -32,7 +40,7 @@ class SettingModel extends Model
     public function loadSettings(): array
     {
         if (self::$settingsCache === null) {
-            $cached = cache()->get(self::REDIS_KEY);
+            $cached = cache()->get($this->cacheKey());
 
             if (is_array($cached)) {
                 self::$settingsCache = $cached;
@@ -58,11 +66,37 @@ class SettingModel extends Model
                     self::$settingsCache[$row['setting_key']] = $row['setting_value'];
                 }
 
-                cache()->save(self::REDIS_KEY, self::$settingsCache, self::REDIS_TTL);
+                cache()->save($this->cacheKey(), self::$settingsCache, self::REDIS_TTL);
             }
         }
 
         return self::$settingsCache;
+    }
+
+    /**
+     * Chiave della cache condivisa: una per database, non una per installazione.
+     *
+     * Due connessioni diverse (il database di lavoro e la copia su cui girano i
+     * test) non devono leggersi le impostazioni a vicenda: era il motivo per cui
+     * una pagina provata sulla copia mostrava valori dell'altro archivio.
+     */
+    private function cacheKey(): string
+    {
+        return self::cacheKeyFor($this->db->getDatabase());
+    }
+
+    /**
+     * Chiave di cache per un database, ripulita dai caratteri che i gestori di
+     * cache rifiutano: il nome può essere un percorso (`/var/db/x.sqlite`) o
+     * `:memory:` nei test, e la chiave di Redis non li accetta.
+     */
+    private static function cacheKeyFor(string $database): string
+    {
+        if ($database === '') {
+            $database = 'predefinito';
+        }
+
+        return self::REDIS_KEY . '_' . preg_replace('/[^A-Za-z0-9_.-]/', '_', $database);
     }
 
     /**
@@ -144,12 +178,26 @@ class SettingModel extends Model
             self::$settingsCache = array_merge(self::$settingsCache, $values);
         }
 
-        cache()->delete(self::REDIS_KEY);
+        cache()->delete($this->cacheKey());
     }
 
+    /**
+     * Butta via la cache statica e quella condivisa del database in uso.
+     *
+     * Chiamato dalle migrazioni e dopo modifiche fatte fuori dal modello. La
+     * cache condivisa si cancella per la connessione corrente: un test non deve
+     * poter svuotare la cache del database di lavoro.
+     */
     public static function resetCache(): void
     {
         self::$settingsCache = null;
-        cache()->delete(self::REDIS_KEY);
+
+        try {
+            $database = \Config\Database::connect()->getDatabase();
+        } catch (\Throwable) {
+            return;
+        }
+
+        cache()->delete(self::cacheKeyFor($database));
     }
 }

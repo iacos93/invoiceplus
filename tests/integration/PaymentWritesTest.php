@@ -178,9 +178,80 @@ final class PaymentWritesTest extends CIUnitTestCase
         $this->assertSame($prima, $this->conta('ip_payments'), 'Fattura inesistente: nessun pagamento deve essere scritto');
     }
 
+    /**
+     * L'incasso finisce sul conto del metodo di pagamento anche quando il
+     * modulo non lo manda (modal rapida, import, MCP): senza conto non
+     * esisterebbe nessun saldo di banca o di cassa.
+     */
+    public function testIlContoDiSaldoArrivaDalMetodoDiPagamento(): void
+    {
+        $conto  = $this->conto();
+        $metodo = $this->id('SELECT payment_method_id FROM ip_payment_methods ORDER BY payment_method_id LIMIT 1');
+
+        $this->testDb->query(
+            'UPDATE ip_payment_methods SET payment_method_bank_account_id = ? WHERE payment_method_id = ?',
+            [$conto, $metodo]
+        );
+
+        $fattura = $this->fatturaDaIncassare(200.0);
+        $this->paga($fattura, '50,00');
+
+        $letto = $this->id(
+            'SELECT bank_account_id FROM ip_payments WHERE invoice_id = ' . $fattura . ' ORDER BY payment_id DESC LIMIT 1'
+        );
+
+        $this->assertSame($conto, $letto, 'Il conto dell\'incasso deve essere quello del metodo di pagamento');
+    }
+
+    /**
+     * «Nessun conto» scelto nel modulo resta nessun conto: il salvataggio non
+     * deve rimettere il conto proposto sopra la scelta dell'utente.
+     */
+    public function testNessunContoSceltoNelFormRestaVuoto(): void
+    {
+        $fattura = $this->fatturaDaIncassare(200.0);
+        $conto   = $this->conto();
+        $metodo  = $this->id('SELECT payment_method_id FROM ip_payment_methods ORDER BY payment_method_id LIMIT 1');
+
+        $this->testDb->query(
+            'UPDATE ip_payment_methods SET payment_method_bank_account_id = ? WHERE payment_method_id = ?',
+            [$conto, $metodo]
+        );
+
+        $risposta = $this->inviaConToken('/payments/form', [
+            'invoice_id'        => $fattura,
+            'payment_date'      => date('Y-m-d'),
+            'payment_amount'    => '50,00',
+            'payment_method_id' => $metodo,
+            'bank_account_id'   => '0',
+        ], '/payments/form?invoice_id=' . $fattura);
+
+        $this->assertSame(302, $risposta->response()->getStatusCode(), 'Incasso non salvato');
+
+        // getRowArray e non id(): id() converte in intero, e un NULL diventerebbe
+        // 0 — il test passerebbe per il motivo sbagliato.
+        $letto = $this->testDb->query(
+            'SELECT bank_account_id FROM ip_payments WHERE invoice_id = ' . $fattura . ' ORDER BY payment_id DESC LIMIT 1'
+        )->getRowArray();
+
+        $this->assertNull($letto['bank_account_id'] ?? null, 'La scelta «nessun conto» deve restare vuota');
+    }
+
     // -----------------------------------------------------------------
     // Aiuti
     // -----------------------------------------------------------------
+
+    /**
+     * Un conto di saldo dell'azienda attiva.
+     */
+    private function conto(): int
+    {
+        $id = $this->id('SELECT bank_account_id FROM ip_bank_accounts ORDER BY bank_account_id LIMIT 1');
+
+        $this->assertNotNull($id, 'Serve un conto di saldo per provare il collegamento con gli incassi');
+
+        return $id;
+    }
 
     /**
      * Fattura emessa con una riga senza aliquota: il totale è quello della

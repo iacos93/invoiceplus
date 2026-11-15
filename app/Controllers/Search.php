@@ -21,8 +21,12 @@ class Search extends BaseController
     {
         $query = trim((string) service('request')->getGet('q'));
 
-        // Sotto i due caratteri ogni ricerca restituirebbe mezzo archivio.
-        if (mb_strlen($query) < 2) {
+        // Sotto i tre caratteri ogni ricerca restituirebbe mezzo archivio: con
+        // due, una query su sei tabelle fra join e LIKE non filtrati, per un
+        // risultato che l'utente non stava ancora cercando. La soglia è la
+        // stessa del campo (scripts.js), altrimenti il pannello si apriva
+        // vuoto.
+        if (mb_strlen($query) < 3) {
             return $this->response->setJSON(['query' => $query, 'groups' => []]);
         }
 

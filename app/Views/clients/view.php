@@ -194,10 +194,16 @@ $actions = '<div class="btn-group btn-group-sm">'
             <!-- MASTHEAD ANAGRAFICO: il biglietto da visita del cliente. I codici
                  fiscali (P.IVA / C.F.) sono i veri identificativi di un cliente
                  italiano, quindi stanno in primo piano in carattere mono, non
-                 sepolti in una tabella. -->
+                 sepolti in una tabella. Accanto a loro il codice destinatario
+                 SdI e il codice cliente: sono i due dati che si copiano di
+                 continuo per mandarli al cliente o a un commercialista, e
+                 prima andavano aperti in modifica per leggerli. -->
             <div class="card ip-client-masthead mb-3">
                 <div class="ip-client-masthead__body">
-                    <div class="ip-client-mono" aria-hidden="true"><?= esc($monogram) ?></div>
+                    <?php /* La piastrella è 62px: tre iniziali ci stanno solo
+                             stringendo il carattere, e il modificatore dice al
+                             CSS quante ne sono arrivate. */ ?>
+                    <div class="ip-client-mono ip-client-mono--<?= mb_strlen($monogram) ?>" aria-hidden="true"><?= esc($monogram) ?></div>
 
                     <div class="ip-client-id">
                         <h2 class="ip-client-name"><?= esc(format_client($client)) ?></h2>
@@ -217,28 +223,40 @@ $actions = '<div class="btn-group btn-group-sm">'
                         <?php endif; ?>
                     </div>
 
-                    <?php if ($client['client_vat_id'] || $client['client_tax_code']): ?>
-                        <div class="ip-client-codes">
-                            <?php if ($client['client_vat_id']): ?>
-                                <div class="ip-fisc-code">
-                                    <span class="ip-fisc-code__label"><?= trans('vat_id', '', 'Partita IVA') ?></span>
-                                    <span class="ip-fisc-code__value"><?= esc($client['client_vat_id']) ?></span>
-                                    <button type="button" class="ip-fisc-code__copy" data-copy-code="<?= esc($client['client_vat_id'], 'attr') ?>" title="<?= esc(trans('copy', '', 'Copia')) ?>" aria-label="<?= esc(trans('copy', '', 'Copia')) ?>">
-                                        <i class="fa fa-solid fa-copy" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($client['client_tax_code']): ?>
-                                <div class="ip-fisc-code">
-                                    <span class="ip-fisc-code__label"><?= trans('tax_code', '', 'Codice fiscale') ?></span>
-                                    <span class="ip-fisc-code__value"><?= esc($client['client_tax_code']) ?></span>
-                                    <button type="button" class="ip-fisc-code__copy" data-copy-code="<?= esc($client['client_tax_code'], 'attr') ?>" title="<?= esc(trans('copy', '', 'Copia')) ?>" aria-label="<?= esc(trans('copy', '', 'Copia')) ?>">
-                                        <i class="fa fa-solid fa-copy" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
+                    <div class="ip-client-codes">
+                        <?php
+                        // Un blocco per codice, tutti con lo stesso aspetto e lo
+                        // stesso pulsante di copia: il listener in fondo alla
+                        // pagina legge data-copy-code, quindi un codice nuovo
+                        // non richiede JS nuovo.
+                        $fiscCode = static function (string $label, string $value): string {
+                            $copia = esc(trans('copy', '', 'Copia'), 'attr');
+
+                            return '<div class="ip-fisc-code">'
+                                . '<span class="ip-fisc-code__label">' . esc($label) . '</span>'
+                                . '<span class="ip-fisc-code__value">' . esc($value) . '</span>'
+                                . '<button type="button" class="ip-fisc-code__copy" data-copy-code="' . esc($value, 'attr')
+                                . '" title="' . $copia . '" aria-label="' . $copia . '">'
+                                . '<i class="fa fa-solid fa-copy" aria-hidden="true"></i>'
+                                . '</button>'
+                                . '</div>';
+                        };
+
+                        if (!empty($client['client_vat_id'])) {
+                            echo $fiscCode(trans('vat_id', '', 'Partita IVA'), (string) $client['client_vat_id']);
+                        }
+                        if (!empty($client['client_tax_code'])) {
+                            echo $fiscCode(trans('tax_code', '', 'Codice fiscale'), (string) $client['client_tax_code']);
+                        }
+                        if (!empty($client['client_sdi_code'])) {
+                            echo $fiscCode(trans('sdi_code', '', 'Codice destinatario'), (string) $client['client_sdi_code']);
+                        }
+                        // Il codice cliente è il numero con cui ci si riferisce a
+                        // lui al telefono o in contabilità: è l'id della scheda,
+                        // lo stesso che compare nell'indirizzo della pagina.
+                        echo $fiscCode(trans('client_code', '', 'Codice cliente'), (string) (int) $client['client_id']);
+                        ?>
+                    </div>
                 </div>
             </div>
 

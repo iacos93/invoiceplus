@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Invoice+">
+  <title>Invoice+</title>
+  <!-- Icona dell'app installata: il segno del marchio (layout/brand_mark.php,
+       favicon.svg, logo.svg) a piena tela.
+
+       Il gruppo delle righe e della croce è spostato di (-1.8, -2) in unità del
+       segno. -1 porta la piastrella da 1..23 a 0..22 (a filo del bordo), il
+       resto è la correzione ottica: nel marchio la croce sborda in basso a
+       destra, e nella barra accanto al nome nessuno se ne accorge, mentre in
+       una piastrella da sola si vede che tutto il disegno sta spostato a
+       destra. Così i margini misurati sui lati opposti vengono uguali (83,8 px
+       a 512) invece di 102 a sinistra e 65 a destra.
+
+       I PNG si rigenerano da qui, non si disegnano a mano:
+         rsvg-convert -w 512 -h 512 pwa-icon.svg -o pwa-512.png
+         rsvg-convert -w 192 -h 192 pwa-icon.svg -o pwa-192.png
+         rsvg-convert -w 512 -h 512 pwa-icon-maskable.svg -o pwa-maskable-512.png
+         rsvg-convert -w 180 -h 180 pwa-icon-maskable.svg -o apple-touch-icon.png
+       (l'icona Apple usa il disegno maskable: iOS applica già il suo angolo
+       arrotondato, quindi la piastrella non ne porta uno suo, altrimenti se ne
+       vedrebbero due). -->
+  <g transform="scale(23.2727)">
+    <rect x="0" y="0" width="22" height="22" rx="6" fill="#1E73B8"/>
+    <g transform="translate(-1.8 -2)">
+      <rect x="5.4" y="5.6" width="13.2" height="2.5" rx="1.25" fill="#fff"/>
+      <rect x="5.4" y="10.2" width="7.4" height="2.5" rx="1.25" fill="#fff" opacity=".8"/>
+      <rect x="5.4" y="14.8" width="4.2" height="2.5" rx="1.25" fill="#fff" opacity=".6"/>
+      <path fill="#9FD3FA" d="M14.5 11.6h2.6v3.1h3.1v2.6h-3.1v3.1h-2.6v-3.1h-3.1v-2.6h3.1Z"/>
+    </g>
+  </g>
+</svg>

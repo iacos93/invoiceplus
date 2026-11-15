@@ -1,10 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Invoice+">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32" role="img" aria-label="Invoice+">
   <title>Invoice+</title>
-  <!-- Favicon: versione ridotta del segno. A 16px tre righe più la croce
-       diventano fango, quindi qui le righe sono due e più spesse, e la croce
-       è più grande e più chiara: restano le forme che si riconoscono. -->
-  <rect x="1" y="1" width="30" height="30" rx="8" fill="#1E73B8"/>
-  <rect x="6.5" y="7" width="19" height="4" rx="2" fill="#fff"/>
-  <rect x="6.5" y="14" width="8.5" height="4" rx="2" fill="#fff" opacity=".8"/>
-  <path fill="#C4E4FD" d="M19 14.5h4v4.5h4.5v4H23v4.5h-4V23h-4.5v-4H19Z"/>
+  <!-- Favicon: lo stesso identico disegno di pwa-icon.svg — piastrella a filo
+       del bordo, righe e croce ricentrate di (-1.8, -2) sul proprio ingombro —
+       solo dichiarato a 32px. Prima era un disegno a parte (due righe e croce
+       più grande per reggere i 16px), quindi la scheda del browser mostrava un
+       marchio diverso da quello della barra e dell'app installata.
+
+       Il PNG accanto si rigenera da qui, non si disegna a mano:
+         rsvg-convert -w 32 -h 32 favicon.svg -o favicon.png -->
+  <g transform="scale(23.2727)">
+    <rect x="0" y="0" width="22" height="22" rx="6" fill="#1E73B8"/>
+    <g transform="translate(-1.8 -2)">
+      <rect x="5.4" y="5.6" width="13.2" height="2.5" rx="1.25" fill="#fff"/>
+      <rect x="5.4" y="10.2" width="7.4" height="2.5" rx="1.25" fill="#fff" opacity=".8"/>
+      <rect x="5.4" y="14.8" width="4.2" height="2.5" rx="1.25" fill="#fff" opacity=".6"/>
+      <path fill="#9FD3FA" d="M14.5 11.6h2.6v3.1h3.1v2.6h-3.1v3.1h-2.6v-3.1h-3.1v-2.6h3.1Z"/>
+    </g>
+  </g>
 </svg>

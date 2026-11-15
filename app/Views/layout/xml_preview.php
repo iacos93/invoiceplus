@@ -79,7 +79,16 @@ $progressivo = $summary['progressivo'] ?? '';
                     <div class="ip-xml-rawbar">
                         <div><strong><?= trans('xml_preview_raw', '', 'XML grezzo') ?></strong><span><?= number_format($xmlSize) ?> byte · <?= $xmlLines ?> <?= trans('xml_preview_lines', '', 'righe') ?></span></div>
                     </div>
-                    <pre class="ip-xml-code" tabindex="0"><code><?= esc($rawXml) ?></code></pre>
+                    <div class="ip-xml-block" data-ip-xml-block>
+                        <div class="ip-xml-block__tools">
+                            <button type="button" class="ip-xml-tool-btn"
+                                    data-ip-xml-copy
+                                    data-copied-label="<?= esc(trans('xml_copied', '', 'Copiato'), 'attr') ?>"><?= trans('xml_copy', '', 'Copia') ?></button>
+                            <button type="button" class="ip-xml-tool-btn"
+                                    data-ip-xml-wrap aria-pressed="false"><?= trans('xml_wrap', '', 'A capo') ?></button>
+                        </div>
+                        <pre class="ip-xml-code" tabindex="0"><code><?= esc($rawXml) ?></code></pre>
+                    </div>
                 </section>
             <?php endif; ?>
         </div>
@@ -155,6 +164,8 @@ $progressivo = $summary['progressivo'] ?? '';
     </aside>
 </div>
 
+<?= $this->include('layout/xml_highlight') ?>
+
 <script>
 (function () {
     const root = document.querySelector('[data-xml-viewer]');
@@ -163,18 +174,6 @@ $progressivo = $summary['progressivo'] ?? '';
     const switchEl = root.querySelector('.ip-xml-switch');
     const iframe = root.querySelector('.ip-xml-frame');
     let current = 'rendered';
-
-    function highlight() {
-        const code = root.querySelector('.ip-xml-code code');
-        if (!code || code.dataset.highlighted) return;
-        const escaped = code.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        code.innerHTML = escaped
-            .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="xml-comment">$1</span>')
-            .replace(/(&lt;\?xml[\s\S]*?\?&gt;)/gi, '<span class="xml-prolog">$1</span>')
-            .replace(/(&lt;\/?[A-Za-z_:][^&]*?)(\s+[A-Za-z_:][\w:.-]*)(=)(&quot;[^&]*?&quot;)/g, '<span class="xml-tag">$1</span><span class="xml-attr">$2</span>$3<span class="xml-value">$4</span>')
-            .replace(/(&lt;\/?[A-Za-z_:][\w:.-]*)(?=[\s&gt;])/g, '<span class="xml-tag">$1</span>');
-        code.dataset.highlighted = '1';
-    }
 
     function show(view) {
         current = view;
@@ -188,7 +187,9 @@ $progressivo = $summary['progressivo'] ?? '';
                 btn.setAttribute('tabindex', active ? '0' : '-1');
             });
         }
-        if (view === 'raw') highlight();
+        // L'evidenziatore e i comandi stanno in layout/xml_highlight: la
+        // stessa resa serve anche alla pagina di verifica dello schema.
+        if (view === 'raw') window.ipHighlightXml(root);
     }
 
     if (switchEl) {

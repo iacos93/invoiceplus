@@ -1154,3 +1154,63 @@ html[data-theme="dark"] .ip-pager .pagination {
   cursor: grabbing;
 }
 
+/* -----------------------------------------------------------------------------
+   Calendario — vista a elenco
+   ----------------------------------------------------------------------------- */
+/* La griglia risponde a "dove cade una scadenza", l'elenco a "cosa scade e in
+   che ordine". L'elenco sta su una colonna sola: il pannello laterale
+   ripeterebbe le stesse righe accanto a se stesso. */
+.ip-calendar-layout--single { grid-template-columns: minmax(0, 1fr); }
+.ip-calendar-view { margin-right: 8px; }
+.ip-calendar-agenda .ip-calendar-totals { border-bottom: 1px solid var(--ip-border); }
+
+.ip-agenda-day + .ip-agenda-day { border-top: 1px solid var(--ip-border); }
+.ip-agenda-day__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ip-space-4);
+  margin: 0;
+  padding: 12px 14px 4px;
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+}
+/* La data in cifre è quello che si cerca scorrendo: monospaziata e in primo
+   piano, il giorno della settimana resta un contorno. */
+.ip-agenda-day__weekday { color: var(--ip-text-muted); font-weight: 500; }
+.ip-agenda-day__date { font-family: var(--ip-mono); font-size: var(--ip-text-base); letter-spacing: .01em; }
+.ip-agenda-day__count {
+  margin-left: auto;
+  color: var(--ip-text-muted);
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+}
+.ip-agenda-day.is-today .ip-agenda-day__weekday,
+.ip-agenda-day.is-today .ip-agenda-day__date { color: var(--ip-primary); }
+.ip-agenda-today {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+/* Qui la data sta nell'intestazione del giorno, quindi al posto della colonna
+   da 40px c'è la targhetta del tipo di scadenza. */
+.ip-agenda-day__list a { grid-template-columns: auto 1fr auto; }
+.ip-agenda-event__badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ip-hover);
+  color: var(--ip-text-muted);
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.ip-agenda-event__badge--invoice { background: var(--ip-primary-soft); color: var(--ip-primary); }
+.ip-agenda-event__badge--f24 { background: var(--ip-warning-bg); color: var(--ip-warning-text); }
+.ip-agenda-event__badge--task { background: var(--ip-success-bg); color: var(--ip-success-text); }

@@ -66,13 +66,14 @@ $usageText = static function (array $counts): string {
                     <th scope="col"><?= trans('bank_details', '', 'Coordinate') ?></th>
                     <th scope="col"><?= trans('on_documents', '', 'Sui documenti') ?></th>
                     <th scope="col"><?= trans('usage', '', 'Uso') ?></th>
+                    <th scope="col" class="amount"><?= trans('balance', '', 'Saldo') ?></th>
                     <th scope="col"><?= trans('options', '', 'Opzioni') ?></th>
                 </tr>
                 </thead>
                 <tbody>
                 <?php if (empty($bank_accounts)): ?>
                     <tr class="empty-row">
-                        <td colspan="5">
+                        <td colspan="6">
                             <i class="fa fa-solid fa-university empty-icon" aria-hidden="true"></i>
                             <?= trans('no_bank_accounts', '', 'Nessun conto di saldo.') ?>
                             <a href="<?= site_url('bank_accounts/form') ?>" class="empty-cta">
@@ -127,6 +128,23 @@ $usageText = static function (array $counts): string {
                                 <span class="ip-cell-sub"><?= esc($used) ?></span>
                             <?php else: ?>
                                 <span class="text-muted"><?= trans('never_used', '', 'Mai usato') ?></span>
+                            <?php endif; ?>
+                        </td>
+
+                        <td data-label="<?= esc(trans('balance', '', 'Saldo')) ?>" class="amount">
+                            <?php $saldo_conto = $balances[$accountId] ?? null; ?>
+                            <?php if ($saldo_conto === null): ?>
+                                <span class="text-muted"><?= trans('not_set', '', 'Non indicato') ?></span>
+                            <?php else: ?>
+                                <?php /* Il totale si mostra sempre, anche senza saldo iniziale: è
+                                         quello che l'app sa, e la riga sotto dice perché può essere
+                                         diverso dall'estratto conto. */ ?>
+                                <span class="ip-num"><?= esc(format_currency($saldo_conto['balance'])) ?></span>
+                                <?php if (! $saldo_conto['declared']): ?>
+                                    <div class="ip-cell-sub"><?= trans('balance_without_opening', '', 'Solo i movimenti registrati') ?></div>
+                                <?php elseif (! empty($saldo_conto['date'])): ?>
+                                    <div class="ip-cell-sub"><?= trans('opening_balance_short', '', 'Apertura') ?> <?= esc(date_from_mysql($saldo_conto['date'])) ?></div>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </td>
 

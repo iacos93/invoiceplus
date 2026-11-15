@@ -16,14 +16,34 @@ $typeInfo = [
 // Sottoscrizione: si configura una volta e poi non serve più, quindi non sta
 // aperta sopra la griglia a ogni visita. Un pulsante in testata apre la
 // barra; se il feed non è ancora stato generato il pulsante lo segnala.
-$actions = '<button type="button" class="btn btn-secondary btn-sm ip-calendar-feed-toggle" data-ip-feed-toggle'
+// Cambio vista: due letture dello stesso mese, la griglia (dove cade una
+// scadenza) e l'elenco (cosa scade, in ordine di data). Sono due collegamenti
+// e non un interruttore da script: la pagina che si ottiene è la stessa, e
+// ricaricarla non perde il mese aperto.
+$view_switch = '<div class="btn-group btn-group-sm ip-calendar-view" role="group" aria-label="' . esc(trans('calendar_view', '', 'Vista'), 'attr') . '">'
+    . '<a class="btn btn-sm ' . ($view_mode === 'mese' ? 'btn-primary' : 'btn-secondary') . '"'
+    . ' href="' . site_url('calendar/' . $year . '/' . $month) . '"'
+    . ($view_mode === 'mese' ? ' aria-current="page"' : '') . '>'
+    . '<i class="fa fa-solid fa-calendar" aria-hidden="true"></i> ' . trans('calendar_view_month', '', 'Mese') . '</a>'
+    . '<a class="btn btn-sm ' . ($view_mode === 'elenco' ? 'btn-primary' : 'btn-secondary') . '"'
+    . ' href="' . site_url('calendar/' . $year . '/' . $month . '?vista=elenco') . '"'
+    . ($view_mode === 'elenco' ? ' aria-current="page"' : '') . '>'
+    . '<i class="fa fa-solid fa-list" aria-hidden="true"></i> ' . trans('calendar_view_list', '', 'Elenco') . '</a>'
+    . '</div>';
+
+// Cambiando mese la vista scelta deve restare: senza questo parametro i tre
+// pulsanti in testata riportavano alla griglia, e chi leggeva l'elenco se lo
+// vedeva sparire a ogni freccia.
+$keep_view = $view_mode === 'elenco' ? '?vista=elenco' : '';
+
+$actions = $view_switch . '<button type="button" class="btn btn-secondary btn-sm ip-calendar-feed-toggle" data-ip-feed-toggle'
     . ' aria-expanded="false" aria-controls="ip-calendar-feed">'
     . '<i class="fa fa-solid fa-rss" aria-hidden="true"></i> ' . trans('calendar_subscribe', '', 'Sottoscrivi')
     . '</button>'
     . '<div class="btn-group btn-group-sm ip-calendar-nav">'
-    . '<a class="btn btn-secondary" href="' . site_url('calendar/' . $prev_year . '/' . $prev_month) . '" aria-label="' . esc(trans('previous', '', 'Precedente'), 'attr') . '"><i class="fa fa-solid fa-chevron-left" aria-hidden="true"></i></a>'
-    . '<a class="btn btn-secondary" href="' . site_url('calendar/' . (int) $today->format('Y') . '/' . (int) $today->format('n')) . '">' . trans('today', '', 'Oggi') . '</a>'
-    . '<a class="btn btn-secondary" href="' . site_url('calendar/' . $next_year . '/' . $next_month) . '" aria-label="' . esc(trans('next', '', 'Successivo'), 'attr') . '"><i class="fa fa-solid fa-chevron-right" aria-hidden="true"></i></a>'
+    . '<a class="btn btn-secondary" href="' . site_url('calendar/' . $prev_year . '/' . $prev_month . $keep_view) . '" aria-label="' . esc(trans('previous', '', 'Precedente'), 'attr') . '"><i class="fa fa-solid fa-chevron-left" aria-hidden="true"></i></a>'
+    . '<a class="btn btn-secondary" href="' . site_url('calendar/' . (int) $today->format('Y') . '/' . (int) $today->format('n') . $keep_view) . '">' . trans('today', '', 'Oggi') . '</a>'
+    . '<a class="btn btn-secondary" href="' . site_url('calendar/' . $next_year . '/' . $next_month . $keep_view) . '" aria-label="' . esc(trans('next', '', 'Successivo'), 'attr') . '"><i class="fa fa-solid fa-chevron-right" aria-hidden="true"></i></a>'
     . '</div>';
 
 // Il riepilogo laterale raggruppa le scadenze del mese per stato, non in una
@@ -106,8 +126,61 @@ foreach ($upcoming as $event) {
     <?php endif; ?>
     </div>
 
-    <div class="ip-calendar-layout">
+    <div class="ip-calendar-layout<?= $view_mode === 'elenco' ? ' ip-calendar-layout--single' : '' ?>">
 
+<?php if ($view_mode === 'elenco'): ?>
+        <?php /* Elenco del mese: stesse scadenze della griglia, un giorno per
+                 riga e la data all'italiana (giorno/mese/anno). I totali in
+                 testa sono quelli del pannello laterale: qui il pannello non
+                 c'è, perché ripeterebbe le stesse righe accanto a se stesso. */ ?>
+        <div class="card ip-calendar-card ip-calendar-agenda">
+            <div class="card-body no-padding">
+                <dl class="ip-calendar-totals">
+                    <div>
+                        <dt><?= trans('calendar_month_amount', '', 'In scadenza nel mese') ?></dt>
+                        <dd><?= format_currency($month_amount) ?></dd>
+                    </div>
+                    <?php if ($overdue_amount > 0): ?>
+                        <div class="is-overdue">
+                            <dt><?= trans('calendar_overdue_amount', '', 'Di cui scaduto') ?></dt>
+                            <dd><?= format_currency($overdue_amount) ?></dd>
+                        </div>
+                    <?php endif; ?>
+                </dl>
+                <?php if (empty($month_days)): ?>
+                    <p class="ip-number-help" style="padding:16px">
+                        <?= trans('calendar_no_upcoming', '', 'Nessuna scadenza in questo mese.') ?>
+                    </p>
+                <?php else: ?>
+                    <?php foreach ($month_days as $day): ?>
+                        <section class="ip-agenda-day <?= $day['is_today'] ? 'is-today' : '' ?>">
+                            <h2 class="ip-agenda-day__head">
+                                <span class="ip-agenda-day__weekday"><?= esc($day['weekday']) ?></span>
+                                <span class="ip-agenda-day__date"><?= esc($day['label']) ?></span>
+                                <?php if ($day['is_today']): ?>
+                                    <span class="ip-agenda-today"><?= trans('today', '', 'Oggi') ?></span>
+                                <?php endif; ?>
+                                <span class="ip-agenda-day__count"><?= count($day['events']) ?></span>
+                            </h2>
+                            <ul class="ip-calendar-list ip-agenda-day__list">
+                                <?php foreach ($day['events'] as $event): ?>
+                                    <li class="<?= $event['overdue'] ? 'is-overdue' : '' ?>">
+                                        <a href="<?= esc($event['url']) ?>">
+                                            <span class="ip-agenda-event__badge ip-agenda-event__badge--<?= esc($event['type']) ?>"><?= esc($typeInfo[$event['type']]['label'] ?? $event['type']) ?></span>
+                                            <span class="ip-calendar-list__title"><?= esc($event['title']) ?></span>
+                                            <?php if ($event['amount'] !== null): ?>
+                                                <span class="ip-calendar-list__amount"><?= format_currency($event['amount']) ?></span>
+                                            <?php endif; ?>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </section>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+<?php else: ?>
         <div class="card ip-calendar-card">
             <div class="table-responsive">
                 <table class="ip-calendar-grid">
@@ -263,6 +336,7 @@ foreach ($upcoming as $event) {
                 </div>
             </div>
         </aside>
+<?php endif; ?>
 
     </div>
 </div>

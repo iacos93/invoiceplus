@@ -25,6 +25,7 @@ class PaymentModel extends IpBaseModel
         'payment_date',
         'payment_amount',
         'payment_method_id',
+        'bank_account_id',
         'payment_note',
         'payment_metadate',
         'payment_metaoriginal',
@@ -41,6 +42,7 @@ class PaymentModel extends IpBaseModel
             // chiavi presenti qui, e senza queste metodo e nota del pagamento
             // si perdevano a ogni salvataggio dal form.
             'payment_method_id' => 'permit_empty',
+            'bank_account_id'   => 'permit_empty|is_natural',
             'payment_note'      => 'permit_empty',
         ];
     }
@@ -190,6 +192,18 @@ class PaymentModel extends IpBaseModel
 
         if (!empty($dbArray['payment_amount'])) {
             $dbArray['payment_amount'] = standardize_amount($dbArray['payment_amount']);
+        }
+
+        // Conto di saldo. Se il modulo non manda il campo (import, chiamate
+        // MCP, vecchi form) si prende quello del metodo di pagamento: un
+        // incasso senza conto non entra in nessun saldo e non compare in prima
+        // nota. Se invece lo manda vuoto, «nessun conto» è una scelta dell'
+        // utente e resta — riempirlo lo stesso renderebbe quella voce del
+        // menu' un pulsante che non fa niente.
+        if (! array_key_exists('bank_account_id', $post)) {
+            $dbArray['bank_account_id'] = default_bank_account_for_payment((int) ($dbArray['payment_method_id'] ?? 0)) ?: null;
+        } elseif ((int) ($dbArray['bank_account_id'] ?? 0) <= 0) {
+            $dbArray['bank_account_id'] = null;
         }
 
         return $dbArray;

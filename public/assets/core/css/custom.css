@@ -3905,7 +3905,7 @@ html[data-theme="dark"] .ip-theme-toggle__label[data-action="dark"] { display: n
   font-style: normal;
   font-weight: 400 800;
   font-display: swap;
-  src: url("../fonts/sora-latin.woff2") format("woff2");
+  src: url("../fonts/sora-latin.woff2?v=f544d77b") format("woff2");
 }
 .ip-brand {
   display: flex;
@@ -5294,6 +5294,13 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   background: linear-gradient(140deg, var(--ip-primary), var(--ip-primary-dark));
   box-shadow: var(--ip-shadow-sm);
 }
+/* Tre iniziali ("ICS Duca d'Aosta" → IDA) nella stessa piastrella: a 26px la
+   terza lettera uscirebbe dal quadrato, quindi il carattere scende e il
+   tracking si stringe finché le tre lettere tornano centrate. */
+.ip-client-mono--3 {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
 .ip-client-id {
   flex: 1 1 auto;
   min-width: 0;
@@ -5348,6 +5355,15 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   display: grid;
   gap: var(--ip-space-5);
   min-width: 240px;
+}
+/* Da tre codici in su (P.IVA, C.F., destinatario SdI, codice cliente) la
+   colonna singola farebbe crescere la tessera fino a sembrare un modulo. Due
+   colonne tengono la piastra bassa e fanno leggere i codici a coppie, che è
+   anche il modo in cui si confrontano a colpo d'occhio. Sotto i due codici
+   resta una colonna sola, come prima. */
+.ip-client-codes:has(.ip-fisc-code:nth-child(3)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 360px;
 }
 .ip-fisc-code {
   display: grid;
@@ -7130,9 +7146,46 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
    un'unica etichetta, con lo stesso trattamento visivo delle voci di menu.
    Su mobile la sidebar è off-canvas, quindi restano entrambi raggiungibili —
    il filtro anno in topbar spariva del tutto sotto i 576px. */
-.ip-sidebar-context { margin-bottom: 4px; }
-.ip-sidebar-context > .ip-nav-eyebrow { margin-bottom: 6px; }
+/* Azienda e anno restano in cima alla colonna mentre il menu scorre: sono i
+   due comandi che riscrivono ogni cifra della pagina, e prima sparivano
+   appena si scorreva fino in fondo alle sezioni. `top` negativo compensa il
+   padding del contenitore che scorre, così la piastra si appoggia al bordo
+   invece di lasciare una striscia da cui si vedono passare le voci. */
+.ip-sidebar-context {
+  position: sticky;
+  top: -14px;
+  z-index: 3;
+  margin: -14px -12px 4px;
+  padding: 14px 12px 10px;
+  background: var(--ip-bg-card);
+  box-shadow: 0 1px 0 var(--ip-border-soft);
+}
 .ip-sidebar-context form + form { margin-top: 6px; }
+/* Codice destinatario dell'azienda: riga sola, il codice in mono come i
+   codici fiscali della scheda cliente. */
+.ip-sidebar-sdi {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 8px 2px 0;
+  color: var(--ip-text-muted);
+}
+.ip-sidebar-sdi__label {
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+.ip-sidebar-sdi__value {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  letter-spacing: .02em;
+  color: var(--ip-text-strong);
+}
+/* In visione off-canvas il contesto non deve incollarsi: la colonna non
+   scorre sotto di sé, e sticky lascerebbe uno stacco dal bordo. */
+@media (max-width: 991.98px) {
+  .ip-sidebar-context { position: static; margin: 0 0 4px; padding: 0; box-shadow: none; }
+}
 .ip-sidebar .ip-company-switch,
 .ip-sidebar .ip-year-filter { display: block; }
 .ip-sidebar .ip-company-switch .ip-select,
@@ -10841,6 +10894,66 @@ html[data-theme="dark"] .ip-pager .pagination {
 }
 
 /* -----------------------------------------------------------------------------
+   Calendario — vista a elenco
+   ----------------------------------------------------------------------------- */
+/* La griglia risponde a "dove cade una scadenza", l'elenco a "cosa scade e in
+   che ordine". L'elenco sta su una colonna sola: il pannello laterale
+   ripeterebbe le stesse righe accanto a se stesso. */
+.ip-calendar-layout--single { grid-template-columns: minmax(0, 1fr); }
+.ip-calendar-view { margin-right: 8px; }
+.ip-calendar-agenda .ip-calendar-totals { border-bottom: 1px solid var(--ip-border); }
+
+.ip-agenda-day + .ip-agenda-day { border-top: 1px solid var(--ip-border); }
+.ip-agenda-day__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ip-space-4);
+  margin: 0;
+  padding: 12px 14px 4px;
+  font-size: var(--ip-text-sm);
+  font-weight: 600;
+}
+/* La data in cifre è quello che si cerca scorrendo: monospaziata e in primo
+   piano, il giorno della settimana resta un contorno. */
+.ip-agenda-day__weekday { color: var(--ip-text-muted); font-weight: 500; }
+.ip-agenda-day__date { font-family: var(--ip-mono); font-size: var(--ip-text-base); letter-spacing: .01em; }
+.ip-agenda-day__count {
+  margin-left: auto;
+  color: var(--ip-text-muted);
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+}
+.ip-agenda-day.is-today .ip-agenda-day__weekday,
+.ip-agenda-day.is-today .ip-agenda-day__date { color: var(--ip-primary); }
+.ip-agenda-today {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ip-primary-soft);
+  color: var(--ip-primary);
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+/* Qui la data sta nell'intestazione del giorno, quindi al posto della colonna
+   da 40px c'è la targhetta del tipo di scadenza. */
+.ip-agenda-day__list a { grid-template-columns: auto 1fr auto; }
+.ip-agenda-event__badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ip-hover);
+  color: var(--ip-text-muted);
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.ip-agenda-event__badge--invoice { background: var(--ip-primary-soft); color: var(--ip-primary); }
+.ip-agenda-event__badge--f24 { background: var(--ip-warning-bg); color: var(--ip-warning-text); }
+.ip-agenda-event__badge--task { background: var(--ip-success-bg); color: var(--ip-success-text); }
+/* -----------------------------------------------------------------------------
    39. Viewer XML — Anteprima fattura elettronica / spesa
    --------------------------------------------------------------------------
    Layout a due colonne: documento a sinistra, "cifre da registro" e scelta
@@ -12549,7 +12662,15 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 /* Il piano dei conti ha quattro colonne: la min-width da dodici mesi del
    conto economico non serve e, dentro la card, allargava la pagina (1080 px
    su 898 disponibili). Qui la tabella sta nel contenitore. */
-.ip-bilancino--plan { min-width: 0; }
+/* Non serve altro: la colonna Opzioni contiene il menu `.options.btn-group`
+   delle altre liste, quindi eredita la regola che la stringe sul pulsante
+   (width: 1%, etichetta nascosta agli occhi e letta dagli screen reader).
+
+   Le due strade provate prima e scartate: lo scorrimento interno alla card
+   rendeva `.table-responsive` un contenitore di scorrimento anche per
+   `position: sticky`, e l'intestazione fissata a --ip-navbar-height compariva
+   dentro le righe; il `table-layout: fixed` invece sovrascriveva quel 1% con
+   una misura fissa e lasciava comunque il pulsante fuori dalla cella. */
 
 /* Griglia budget: dodici caselle strette per riga. Il campo è più basso del
    form-control standard, altrimenti quattro righe di intensità diverse
@@ -12562,6 +12683,7 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 .ip-table-card .table-responsive:has(> .ip-bilancino--budget-grid) {
   overflow-x: auto;
 }
+
 /* Dentro un contenitore che scorre in orizzontale l'ancoraggio verticale
    (top: navbar + headerbar) non ha più un riferimento utile: il browser
    spingerebbe l'intestazione 112 px più in basso, sopra le prime righe. Si

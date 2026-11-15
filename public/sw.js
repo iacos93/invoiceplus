@@ -16,7 +16,7 @@
  *
  * Cambiare VERSIONE butta via le cache precedenti alla prossima attivazione.
  */
-const VERSIONE = 'v1';
+const VERSIONE = 'v2';
 const CACHE_STATICI = 'invoiceplus-statici-' + VERSIONE;
 const BASE = new URL('./', self.location).pathname;   // l'app può stare in una sottocartella
 const OFFLINE = BASE + 'offline.html';

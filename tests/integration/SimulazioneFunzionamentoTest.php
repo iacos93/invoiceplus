@@ -87,7 +87,7 @@ final class SimulazioneFunzionamentoTest extends CIUnitTestCase
             'reports/sales_by_client', 'reports/sales_by_year',
             'finance', 'management', 'management/accounts', 'management/assign',
             'management/budget', 'management/cashflow', 'f24', 'f24/form', 'f24/import',
-            'riba', 'reconciliation', 'calendar', 'schedule',
+            'riba', 'reconciliation', 'calendar', 'calendar?vista=elenco', 'schedule',
             'companies', 'companies/form', 'users', 'users/form', 'user_clients/create',
             'settings', 'sdi/settings', 'mcp/settings', 'security',
             'custom_fields', 'custom_fields/form', 'custom_values',
@@ -160,6 +160,9 @@ final class SimulazioneFunzionamentoTest extends CIUnitTestCase
             'users/form/' . $this->utente,
             'user_clients/user/' . $this->utente,
             'calendar/' . date('Y') . '/' . date('n'),
+            // La vista a elenco è la stessa pagina con un parametro: si apre
+            // come le altre, non ha una rotta sua.
+            'calendar/' . date('Y') . '/' . date('n') . '?vista=elenco',
         ]);
 
         $this->assertNotSame([], $url, 'La copia non contiene documenti da aprire');
@@ -167,6 +170,66 @@ final class SimulazioneFunzionamentoTest extends CIUnitTestCase
         foreach ($url as $u) {
             $this->apri('/' . $u);
         }
+    }
+
+    /**
+     * La vista a elenco è una pagina vera, non un ritorno silenzioso alla
+     * griglia: se il parametro smettesse di essere letto, qui si vedrebbe.
+     */
+    public function testIlCalendarioSiApreAElenco(): void
+    {
+        try {
+            $corpo = (string) $this->withSession($this->sessione())
+                ->get('calendar/' . date('Y') . '/' . date('n') . '?vista=elenco')
+                ->response()->getBody();
+        } catch (\Throwable $e) {
+            $this->fail('GET calendar?vista=elenco: ' . get_class($e) . ' — ' . $e->getMessage());
+        }
+
+        $this->assertStringContainsString('ip-calendar-agenda', $corpo);
+        $this->assertStringNotContainsString('ip-calendar-grid', $corpo);
+
+        // Le frecce del mese devono restare in elenco: senza il parametro la
+        // vista scelta spariva a ogni cambio mese.
+        $this->assertMatchesRegularExpression(
+            '/href="[^"]*\?vista=elenco"[^>]*aria-label="Precedente"/',
+            $corpo,
+            'La freccia del mese precedente non conserva la vista a elenco'
+        );
+        $this->assertMatchesRegularExpression(
+            '/href="[^"]*\?vista=elenco"[^>]*aria-label="Prossimo"/',
+            $corpo,
+            'La freccia del mese successivo non conserva la vista a elenco'
+        );
+    }
+
+    /**
+     * Settimana all'italiana: lunedì in prima colonna, domenica in ultima.
+     *
+     * La griglia ruota le intestazioni sull'impostazione first_day_of_week,
+     * quindi qui si verifica la rotazione e non un elenco fisso: è lo stesso
+     * valore che governa i selettori di data.
+     */
+    public function testLaGrigliaDelCalendarioCominciaDiLunedi(): void
+    {
+        try {
+            $corpo = (string) $this->withSession($this->sessione())
+                ->get('calendar/' . date('Y') . '/' . date('n'))
+                ->response()->getBody();
+        } catch (\Throwable $e) {
+            $this->fail('GET calendar: ' . get_class($e) . ' — ' . $e->getMessage());
+        }
+
+        $this->assertMatchesRegularExpression(
+            '/<th scope="col"[^>]*>\s*Lun\s*<\/th>\s*<th scope="col"[^>]*>\s*Mar\s*<\/th>/',
+            $corpo,
+            'La griglia del mese non comincia di lunedì'
+        );
+        $this->assertMatchesRegularExpression(
+            '/<th scope="col"[^>]*>\s*Dom\s*<\/th>/',
+            $corpo,
+            'Manca la colonna della domenica'
+        );
     }
 
     public function testIDocumentiEsconoValidi(): void

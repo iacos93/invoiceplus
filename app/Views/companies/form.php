@@ -19,6 +19,11 @@
                         'company_name'      => trans('company', '', 'Ragione sociale'),
                         'company_vat_id'    => trans('vat_id', '', 'P. IVA'),
                         'company_tax_code'  => trans('tax_code', '', 'Codice fiscale'),
+                        // Il codice destinatario con cui l'azienda riceve le
+                        // fatture elettroniche: prima si poteva scrivere solo
+                        // per i clienti, e il proprio si finiva per cercarlo
+                        // ogni volta nel cassetto fiscale.
+                        'company_sdi_code'  => trans('sdi_code', '', 'Codice destinatario SdI'),
                         'company_address_1' => trans('address', '', 'Indirizzo'),
                         'company_city'      => trans('city', '', 'Città'),
                         'company_state'     => trans('state', '', 'Provincia'),

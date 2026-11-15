@@ -35,7 +35,8 @@ class Calendar extends BaseController
         $weekStart = (int) get_setting('first_day_of_week', '1');
         $leadingBlanks = (($first->format('w') - $weekStart) % 7 + 7) % 7;
 
-        $byDay = (new CalendarService())->byDay();
+        $calendar = new CalendarService();
+        $byDay    = $calendar->byDay();
 
         $weeks = [];
         $week  = array_fill(0, $leadingBlanks, null);
@@ -60,6 +61,40 @@ class Calendar extends BaseController
         $prev = $first->modify('-1 month');
         $next = $first->modify('+1 month');
 
+        // Due letture dello stesso mese: la griglia dice dove cade una
+        // scadenza, l'elenco dice cosa scade e in che ordine. La scelta viaggia
+        // come parametro dell'indirizzo — una seconda rotta sarebbe una seconda
+        // pagina da tenere allineata a questa.
+        $viewMode = $this->request->getGet('vista') === 'elenco' ? 'elenco' : 'mese';
+        $monthDays = [];
+
+        if ($viewMode === 'elenco') {
+            // Giorno della settimana nella lingua dell'interfaccia, data sempre
+            // giorno/mese/anno: è l'ordine in cui una scadenza si legge qui. Il
+            // formato data delle Impostazioni resta com'è — serve a compilare i
+            // campi, non a leggere un elenco.
+            $weekday = new \IntlDateFormatter(
+                service('request')->getLocale() ?? 'it',
+                \IntlDateFormatter::NONE,
+                \IntlDateFormatter::NONE,
+                null,
+                null,
+                'EEEE'
+            );
+
+            foreach ($calendar->daysOfMonth($calendar->events(), sprintf('%04d-%02d', $year, $month)) as $day) {
+                $stamp = new \DateTimeImmutable($day['date']);
+
+                $monthDays[] = [
+                    'date'     => $day['date'],
+                    'weekday'  => ucfirst((string) $weekday->format($stamp)),
+                    'label'    => $stamp->format('d/m/Y'),
+                    'is_today' => $day['date'] === $today->format('Y-m-d'),
+                    'events'   => $day['events'],
+                ];
+            }
+        }
+
         $feedToken = decrypt_secret((string) get_setting('calendar_feed_token', ''));
 
         return view('calendar/index', [
@@ -78,6 +113,8 @@ class Calendar extends BaseController
                 array_slice(['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'], $weekStart),
                 array_slice(['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'], 0, $weekStart)
             )),
+            'view_mode'   => $viewMode,
+            'month_days'  => $monthDays,
             'feed_url'    => $feedToken ? site_url('calendar/feed/' . $feedToken) : null,
             // Link "aggiungi con un click" per i client di calendario più
             // diffusi. Nessuno di questi fa nulla di diverso dal copiare
@@ -101,7 +138,7 @@ class Calendar extends BaseController
             })() : null,
             // Riepilogo del mese aperto, per chi vuole solo la lista.
             'upcoming'    => array_values(array_filter(
-                (new CalendarService())->events(),
+                $calendar->events(),
                 static fn(array $e): bool => substr($e['date'], 0, 7) === sprintf('%04d-%02d', $year, $month)
             )),
         ]);

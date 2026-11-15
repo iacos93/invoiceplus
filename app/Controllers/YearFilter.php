@@ -5,10 +5,11 @@ namespace App\Controllers;
 /**
  * Filtro anno globale (selettore in sidebar).
  *
- * Un solo endpoint: salva l'anno scelto in sessione e in un cookie di lungo
- * periodo, poi riporta l'utente sulla pagina da cui è partito (referrer), così
- * il selettore funziona da qualunque schermata senza che ogni pagina debba
- * conoscere la propria URL di ritorno.
+ * Un solo endpoint: salva l'anno scelto per l'azienda attiva, in sessione e nel
+ * cookie di lungo periodo, poi riporta l'utente sulla pagina da cui è partito
+ * (referrer), così il selettore funziona da qualunque schermata senza che ogni
+ * pagina debba conoscere la propria URL di ritorno. Ogni azienda ha il suo
+ * anno: cambiare azienda non riporta a "Tutti gli anni".
  */
 class YearFilter extends BaseController
 {
@@ -22,7 +23,7 @@ class YearFilter extends BaseController
             $year = 0;
         }
 
-        session()->set('selected_year', $year);
+        set_selected_year($year);
 
         $back = $this->request->getPost('back') ?: site_url('dashboard');
 

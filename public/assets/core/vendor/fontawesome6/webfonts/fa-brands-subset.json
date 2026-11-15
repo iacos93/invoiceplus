@@ -1,0 +1,13 @@
+{
+    "generato_da": "php tools/subset_icons.php",
+    "famiglia": "brands",
+    "font": "fa-brands-subset.woff2",
+    "sorgente": "fa-brands-400.ttf",
+    "byte": 716,
+    "sha256": "8c776498713046fe0259eff294d2e9bd210b534f414188e7c91b1a79cdd4a2d2",
+    "code_point": [
+        "f179",
+        "f1a0",
+        "f3ca"
+    ]
+}

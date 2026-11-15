@@ -4,19 +4,18 @@
 <?php $this->setVar('pageTitle', trans('assign_client')); ?>
 
 <script>
-    $(function () {
-        $('#user_all_clients').click(function () {
-            all_client_check();
-        });
-
-        function all_client_check() {
-            if ($('#user_all_clients').is(':checked')) {
-                $('#list_client').hide();
-            } else {
-                $('#list_client').show();
-            }
+    ipReady(function () {
+        var allClients = document.getElementById('user_all_clients');
+        var list = document.getElementById('list_client');
+        if (!allClients || !list) {
+            return;
         }
 
+        function all_client_check() {
+            list.hidden = allClients.checked;
+        }
+
+        allClients.addEventListener('click', all_client_check);
         all_client_check();
     });
 </script>

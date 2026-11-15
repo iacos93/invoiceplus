@@ -44,6 +44,57 @@ Options -Indexes
 	ErrorDocument 404 index.php
 </IfModule>
 
+# ----------------------------------------------------------------------
+# Compressione e cache degli asset
+# ----------------------------------------------------------------------
+# Gli asset dell'applicazione portano già ?v=filemtime (asset_version() in
+# ip_helpers.php): quando il file cambia cambia l'URL, quindi una cache lunga
+# e "immutable" è sicura per costruzione. Il testo HTML resta fuori dalla
+# cache: è la pagina, la decide il server a ogni richiesta.
+<IfModule mod_deflate.c>
+	AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css \
+		text/javascript application/javascript application/json \
+		application/xml image/svg+xml
+	# File già compressi: riderli gonfia soltanto.
+	SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|webp|zip|gz|woff2?|ttf|otf|ico)$ no-gzip
+</IfModule>
+
+<IfModule mod_expires.c>
+	ExpiresActive On
+
+	# Gli URL con ?v= cambiano quando cambia il file.
+	<FilesMatch "\.(css|js|woff2?|ttf|otf|png|jpe?g|gif|webp|svg|ico)$">
+		ExpiresDefault "access plus 1 year"
+		Header set Cache-Control "public, max-age=31536000, immutable"
+	</FilesMatch>
+
+	# Le pagine no: cambiano a ogni richiesta e possono contenere dati di un
+	# altro utente.
+	ExpiresDefault "access plus 0 seconds"
+
+	# sw.js: niente scadenza lunga (vedi il blocco mod_headers sotto).
+	<Files "sw.js">
+		ExpiresActive Off
+	</Files>
+</IfModule>
+
+<IfModule mod_headers.c>
+	# Se mod_expires non c'è, almeno gli asset non vengono ricontrollati a ogni
+	# visita.
+	<FilesMatch "\.(css|js|woff2?|ttf|otf|png|jpe?g|gif|webp|svg|ico)$">
+		Header set Cache-Control "public, max-age=31536000, immutable"
+	</FilesMatch>
+
+	# Il service worker fa eccezione, e deve essere dopo i blocchi sopra perché
+	# l'ultimo vince: l'estensione .js lo farebbe finire nella cache di un anno,
+	# e un aggiornamento dell'app non gli arriverebbe finché quella non scade
+	# (o, dietro un proxy, mai). Non ha ?v= perché il browser lo chiede da sé
+	# a indirizzo fisso: deve poter essere ricontrollato a ogni visita.
+	<Files "sw.js">
+		Header set Cache-Control "no-cache"
+	</Files>
+</IfModule>
+
 # Disable server signature start
 ServerSignature Off
 # Disable server signature end

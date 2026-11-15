@@ -6,25 +6,29 @@
 <script>
     // Salva l'hash originale prima che Bootstrap lo sovrascriva col tab attivo.
     var _originalHash = location.hash;
-    $(function () {
+    ipReady(function () {
+        var channelSelect = document.querySelector('select[name="settings[sdi_channel]"]');
+
         // Mostra solo i gruppi di campi coerenti col canale SdI scelto:
         // evita di mostrare inutilmente le credenziali PEC, API o IMAP.
-        toggle_sdi_settings();
-
-        $('select[name="settings[sdi_channel]"]').change(function () {
-            toggle_sdi_settings();
-        });
-
         function toggle_sdi_settings() {
-            var channel = $('select[name="settings[sdi_channel]"]').val();
+            var channel = channelSelect ? channelSelect.value : '';
 
-            $('.sdi-group').each(function () {
-                var matched = String($(this).data('channels')).split(',').indexOf(channel) !== -1;
-                $(this).toggle(matched);
+            document.querySelectorAll('.sdi-group').forEach(function (group) {
+                var matched = String(group.getAttribute('data-channels') || '').split(',').indexOf(channel) !== -1;
+                group.hidden = !matched;
                 // I controlli nascosti vanno disabilitati: cosi' il salvataggio
                 // non ne azzera i valori gia' memorizzati (es. password).
-                $(this).find('input, select, textarea').prop('disabled', !matched);
+                group.querySelectorAll('input, select, textarea').forEach(function (field) {
+                    field.disabled = !matched;
+                });
             });
+        }
+
+        toggle_sdi_settings();
+
+        if (channelSelect) {
+            channelSelect.addEventListener('change', toggle_sdi_settings);
         }
 
         // Filtro live delle impostazioni: nasconde i campi il cui testo
@@ -33,17 +37,24 @@
         // pagina sembrava vuota, e i risultati restavano in una scheda che
         // l'utente non stava guardando. Ora il filtro apre la prima scheda con
         // un risultato e, se non ce n'è nessuno, lo dice.
-        var $search   = $('#settings-search');
-        var $empty    = $('#settings-search-empty');
-        var $fields   = $('.ip-doc-field');
+        var search    = document.getElementById('settings-search');
+        var empty     = document.getElementById('settings-search-empty');
+        var fields    = document.querySelectorAll('.ip-doc-field');
+        var sections  = document.querySelectorAll('.ip-doc-section');
         var startPane = null;
 
-        // Pannello con almeno un campo corrispondente. Non si usa :visible:
-        // i campi dei pannelli chiusi sono display:none anche quando contano.
+        // Pannello con almeno un campo corrispondente. Non si guarda la
+        // visibilità: i campi dei pannelli chiusi sono display:none anche
+        // quando contano.
         function paneWithHits() {
-            return $('.tab-pane').filter(function () {
-                return $(this).find('.ip-doc-field.ip-search-hit').length > 0;
-            }).first();
+            var panes = document.querySelectorAll('.tab-pane');
+            for (var i = 0; i < panes.length; i++) {
+                if (panes[i].querySelector('.ip-doc-field.ip-search-hit')) {
+                    return panes[i];
+                }
+            }
+
+            return null;
         }
 
         function showPane(id) {
@@ -52,18 +63,27 @@
             bootstrap.Tab.getOrCreateInstance(button).show();
         }
 
-        $search.on('keydown', function (e) {
+        if (!search) {
+            return;
+        }
+
+        search.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
             }
         });
-        $search.on('input', function () {
-            var q = $.trim($(this).val()).toLowerCase();
+        search.addEventListener('input', function () {
+            var q = search.value.trim().toLowerCase();
 
             if (q === '') {
-                $fields.removeClass('ip-search-hit').show();
-                $('.ip-doc-section').show();
-                $empty.prop('hidden', true);
+                fields.forEach(function (field) {
+                    field.classList.remove('ip-search-hit');
+                    field.hidden = false;
+                });
+                sections.forEach(function (section) {
+                    section.hidden = false;
+                });
+                if (empty) { empty.hidden = true; }
                 toggle_sdi_settings();
                 // Si torna alla scheda da cui si era partiti con la ricerca.
                 if (startPane) { showPane(startPane); startPane = null; }
@@ -75,17 +95,18 @@
                 if (activePane) { startPane = activePane.id; }
             }
 
-            $fields.each(function () {
-                var hit = $(this).text().toLowerCase().indexOf(q) !== -1;
-                $(this).toggleClass('ip-search-hit', hit).toggle(hit);
+            fields.forEach(function (field) {
+                var hit = field.textContent.toLowerCase().indexOf(q) !== -1;
+                field.classList.toggle('ip-search-hit', hit);
+                field.hidden = !hit;
             });
-            $('.ip-doc-section').each(function () {
-                $(this).toggle($(this).find('.ip-doc-field.ip-search-hit').length > 0);
+            sections.forEach(function (section) {
+                section.hidden = !section.querySelector('.ip-doc-field.ip-search-hit');
             });
 
-            var $pane = paneWithHits();
-            $empty.prop('hidden', $pane.length > 0);
-            if ($pane.length) { showPane($pane[0].id); }
+            var pane = paneWithHits();
+            if (empty) { empty.hidden = pane !== null; }
+            if (pane) { showPane(pane.id); }
         });
     });
 </script>

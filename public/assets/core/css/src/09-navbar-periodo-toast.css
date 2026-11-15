@@ -802,9 +802,46 @@
    un'unica etichetta, con lo stesso trattamento visivo delle voci di menu.
    Su mobile la sidebar è off-canvas, quindi restano entrambi raggiungibili —
    il filtro anno in topbar spariva del tutto sotto i 576px. */
-.ip-sidebar-context { margin-bottom: 4px; }
-.ip-sidebar-context > .ip-nav-eyebrow { margin-bottom: 6px; }
+/* Azienda e anno restano in cima alla colonna mentre il menu scorre: sono i
+   due comandi che riscrivono ogni cifra della pagina, e prima sparivano
+   appena si scorreva fino in fondo alle sezioni. `top` negativo compensa il
+   padding del contenitore che scorre, così la piastra si appoggia al bordo
+   invece di lasciare una striscia da cui si vedono passare le voci. */
+.ip-sidebar-context {
+  position: sticky;
+  top: -14px;
+  z-index: 3;
+  margin: -14px -12px 4px;
+  padding: 14px 12px 10px;
+  background: var(--ip-bg-card);
+  box-shadow: 0 1px 0 var(--ip-border-soft);
+}
 .ip-sidebar-context form + form { margin-top: 6px; }
+/* Codice destinatario dell'azienda: riga sola, il codice in mono come i
+   codici fiscali della scheda cliente. */
+.ip-sidebar-sdi {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 8px 2px 0;
+  color: var(--ip-text-muted);
+}
+.ip-sidebar-sdi__label {
+  font-size: var(--ip-text-xs);
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+.ip-sidebar-sdi__value {
+  font-family: var(--ip-mono);
+  font-size: var(--ip-text-sm);
+  letter-spacing: .02em;
+  color: var(--ip-text-strong);
+}
+/* In visione off-canvas il contesto non deve incollarsi: la colonna non
+   scorre sotto di sé, e sticky lascerebbe uno stacco dal bordo. */
+@media (max-width: 991.98px) {
+  .ip-sidebar-context { position: static; margin: 0 0 4px; padding: 0; box-shadow: none; }
+}
 .ip-sidebar .ip-company-switch,
 .ip-sidebar .ip-year-filter { display: block; }
 .ip-sidebar .ip-company-switch .ip-select,

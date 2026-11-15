@@ -107,7 +107,6 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
     'base_url'          => 'expenses',
     'year'              => $year ?? 0,
     'months'            => $months,
-    'month'             => $month ?? 0,
     'totals'            => $period_totals ?? [],
     'month_totals'      => $month_totals ?? [],
     'month_total_label' => trans('expenses', '', 'Spese'),

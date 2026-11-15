@@ -23,6 +23,8 @@ class BankAccounts extends BaseController
         return view('bank_accounts/index', [
             'bank_accounts' => $this->bankAccountModel->getAllOrdered(list_per_page(), list_page('ip_bank_accounts')),
             'usage'         => $this->bankAccountModel->usageCounts(),
+            // Saldo corrente: saldo iniziale + incassi - spese, per conto.
+            'balances'      => $this->bankAccountModel->balances(),
             'pager'         => $this->bankAccountModel->pager,
             'group'         => 'ip_bank_accounts',
         ]);

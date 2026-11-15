@@ -44,6 +44,22 @@ class CssBundle
             $css .= (string) file_get_contents($file);
         }
 
-        return $css;
+        // I font si richiamano per percorso relativo, senza il ?v= che gli
+        // helper degli asset aggiungono alle pagine, e hanno la cache di un
+        // anno (public/.htaccess): sostituendo un file, chi aveva quello vecchio
+        // lo terrebbe. L'impronta del file nell'indirizzo lo rende nuovo.
+        $fonts = $files === [] ? '' : dirname($files[0], 3) . '/fonts';
+
+        return preg_replace_callback(
+            '#url\("\.\./fonts/([A-Za-z0-9._-]+)"\)#',
+            static function (array $m) use ($fonts): string {
+                $path = $fonts . '/' . $m[1];
+
+                return is_file($path)
+                    ? 'url("../fonts/' . $m[1] . '?v=' . substr((string) md5_file($path), 0, 8) . '")'
+                    : $m[0];
+            },
+            $css
+        ) ?? $css;
     }
 }

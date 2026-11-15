@@ -644,7 +644,15 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 /* Il piano dei conti ha quattro colonne: la min-width da dodici mesi del
    conto economico non serve e, dentro la card, allargava la pagina (1080 px
    su 898 disponibili). Qui la tabella sta nel contenitore. */
-.ip-bilancino--plan { min-width: 0; }
+/* Non serve altro: la colonna Opzioni contiene il menu `.options.btn-group`
+   delle altre liste, quindi eredita la regola che la stringe sul pulsante
+   (width: 1%, etichetta nascosta agli occhi e letta dagli screen reader).
+
+   Le due strade provate prima e scartate: lo scorrimento interno alla card
+   rendeva `.table-responsive` un contenitore di scorrimento anche per
+   `position: sticky`, e l'intestazione fissata a --ip-navbar-height compariva
+   dentro le righe; il `table-layout: fixed` invece sovrascriveva quel 1% con
+   una misura fissa e lasciava comunque il pulsante fuori dalla cella. */
 
 /* Griglia budget: dodici caselle strette per riga. Il campo è più basso del
    form-control standard, altrimenti quattro righe di intensità diverse
@@ -657,6 +665,7 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 .ip-table-card .table-responsive:has(> .ip-bilancino--budget-grid) {
   overflow-x: auto;
 }
+
 /* Dentro un contenitore che scorre in orizzontale l'ancoraggio verticale
    (top: navbar + headerbar) non ha più un riferimento utile: il browser
    spingerebbe l'intestazione 112 px più in basso, sopra le prime righe. Si

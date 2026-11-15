@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\BankAccountModel;
 use App\Models\InvoiceModel;
 use App\Models\PaymentMethodModel;
 use App\Models\PaymentModel;
@@ -75,8 +76,18 @@ class PaymentsAjax extends BaseController
      */
     public function modalAddPayment()
     {
+        $paymentMethods = (new PaymentMethodModel())->getAllOrdered();
+        $methodAccounts = [];
+
+        foreach ($paymentMethods as $paymentMethod) {
+            $methodAccounts[(string) $paymentMethod['payment_method_id']]
+                = default_bank_account_for_payment((int) $paymentMethod['payment_method_id']);
+        }
+
         $data = [
-            'payment_methods'        => (new PaymentMethodModel())->getAllOrdered(),
+            'payment_methods'        => $paymentMethods,
+            'bank_accounts'          => (new BankAccountModel())->getAllOrdered(),
+            'method_accounts'        => json_encode($methodAccounts),
             'invoice_id'             => $this->request->getPost('invoice_id'),
             'invoice_balance'        => $this->request->getPost('invoice_balance'),
             'invoice_payment_method' => $this->request->getPost('invoice_payment_method'),

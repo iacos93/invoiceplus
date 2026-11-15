@@ -116,10 +116,65 @@ class FatturaXml
             $message = trim($error->message);
             $message = preg_replace('/\{[^}]*\}/', '', $message);
 
-            $errors[] = ($error->line ? 'Riga ' . $error->line . ': ' : '') . $message;
+            $errors[] = ($error->line ? 'Riga ' . $error->line . ': ' : '') . self::italianMessage($message);
         }
 
         return array_values(array_unique($errors));
+    }
+
+    /**
+     * Traduce le formule ricorrenti di libxml.
+     *
+     * Le piu' frequenti su un tracciato FatturaPA sono tre — elemento non
+     * atteso, elemento obbligatorio mancante, valore fuori formato — e in
+     * inglese dicono il contrario di cio' che serve sapere: "Element 'Nazione':
+     * This element is not expected" non fa capire che manca l'indirizzo. La
+     * forma non riconosciuta resta com'è: meglio l'originale che una
+     * traduzione inventata.
+     */
+    private static function italianMessage(string $message): string
+    {
+        // libxml antepone la sfaccettatura che ha fallito: [facet 'pattern].
+        $message = (string) preg_replace("/^\[facet '[^']*'\]\s*/", '', $message);
+
+        // Doppi apici perché i modelli sono pieni di apici singoli: cosi' il
+        // backslash serve solo a preg_replace, non a PHP.
+        $rules = [
+            // "Element 'Nazione': This element is not expected. Expected is ( Indirizzo )."
+            "/^Element '([^']+)': This element is not expected\. Expected is \( (.+?) \)\.$/",
+            "/^Element '([^']+)': This element is not expected\.$/",
+            "/^Missing child element\(s\)\. Expected is \( (.+?) \)\.$/",
+            "/^Element '([^']+)': Missing child element\(s\)\. Expected is \( (.+?) \)\.$/",
+            "/^Element '([^']+)': The attribute '([^']+)' is required but missing\.$/",
+            "/^The value '([^']*)' is not accepted by the pattern '([^']+)'[*+?]?\.$/",
+            "/^The value '([^']*)' is not an element of the set \{.*\}\.$/",
+            "/^The value '([^']*)' is not a valid value of the (?:atomic type|union type) '([^']+)'?\.$/",
+            '/^The document has no root element\.$/',
+            "/^Start tag expected, '<' not found$/",
+            "/^Premature end of data in tag (\S+) line (\d+)$/",
+        ];
+
+        $italian = [
+            "Elemento '$1' non atteso: qui è previsto $2.",
+            "Elemento '$1' non atteso.",
+            'Manca un elemento obbligatorio: $1.',
+            "All'elemento '$1' manca $2.",
+            "All'elemento '$1' manca l'attributo '$2'.",
+            "Il valore '$1' non rispetta il formato di $2.",
+            "Il valore '$1' non è tra quelli ammessi.",
+            "Il valore '$1' non è valido per $2.",
+            'Il documento non ha un elemento radice.',
+            'Atteso un tag di apertura: il file non comincia come un XML.',
+            "Il tag '$1' (riga $2) non è mai stato chiuso.",
+        ];
+
+        foreach ($rules as $i => $pattern) {
+            if (preg_match($pattern, $message)) {
+                return (string) preg_replace($pattern, $italian[$i], $message);
+            }
+        }
+
+        return $message;
     }
 
     /**

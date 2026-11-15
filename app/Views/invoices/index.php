@@ -160,7 +160,6 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
     'base_url'          => 'invoices/status/' . $status,
     'year'              => $year ?? 0,
     'months'            => $months,
-    'month'             => $month ?? 0,
     'totals'            => $period_totals ?? [],
     'month_totals'      => $month_totals ?? [],
     'month_total_label' => trans('invoiced', '', 'Fatturato'),

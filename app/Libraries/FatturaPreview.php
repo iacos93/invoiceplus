@@ -229,14 +229,72 @@ class FatturaPreview
             . '#fattura-elettronica h1{color:#1a1a1a;font-family:Arial,Helvetica,sans-serif;text-align:left;padding:15px 0 10px 0;margin:0;font-size:26px;font-weight:bold;}'
             . '#fattura-elettronica div.page{background-color:#ffffff !important;border:1px solid #cccccc !important;border-radius:3px !important;box-shadow:0 2px 12px rgba(0,0,0,0.12) !important;margin:16px 0 32px 0 !important;padding:36px 40px !important;box-sizing:border-box !important;}'
             . '#fattura-elettronica table{max-width:100%;border-collapse:collapse;}'
-            . '/* AssoSoftware */'
-            . 'body:not(:has(#fattura-container)) #fattura-elettronica div.page,'
-            . 'body:not(:has(#fattura-container)) > #fattura-elettronica{background-color:#ffffff !important;border:1px solid #cccccc !important;border-radius:3px !important;box-shadow:0 2px 12px rgba(0,0,0,0.12) !important;margin:16px auto 32px auto !important;padding:32px 36px !important;box-sizing:border-box !important;max-width:1000px !important;width:100% !important;}'
-            . 'body:not(:has(#fattura-container)) .tbHeader,'
-            . 'body:not(:has(#fattura-container)) .tableHead,'
-            . 'body:not(:has(#fattura-container)) table{max-width:100% !important;width:100% !important;}'
-            . '@media (max-width:768px){body{padding:10px 6px;}#fattura-elettronica div.page{padding:20px 14px !important;margin:10px 0 20px 0 !important;}#fattura-elettronica h1{font-size:20px;}}'
-            . '@media print{body{background:#fff;padding:0;}#fattura-elettronica div.page{box-shadow:none !important;border:none !important;margin:0 !important;padding:20px 0 !important;}}'
+            // AssoSoftware. Ha lo stesso scheletro dell'AdE (#fattura-elettronica,
+            // .page, #fattura-container), quindi si riconosce dalle classi che
+            // solo lui usa: #tbHeader, .tbFoglio, .tdHead, .tableHead. Le regole
+            // che stavano qui erano legate a body:not(:has(#fattura-container)),
+            // condizione mai vera perché anche AssoSoftware ha #fattura-container:
+            // non si sono mai applicate, e l'anteprima usciva senza margine in
+            // cima (l'etichetta "Cedente/prestatore" toccava il bordo).
+            . '#fattura-elettronica.page{background-color:#fff !important;border:1px solid #cccccc !important;'
+            . 'border-radius:3px !important;box-shadow:0 2px 12px rgba(0,0,0,0.12) !important;'
+            . 'margin:16px auto 32px !important;padding:28px 32px !important;box-sizing:border-box !important;'
+            . 'max-width:1000px !important;width:100% !important;min-width:0 !important;}'
+            // Il foglio dichiara 800px fissi per ogni tabella: su una pagina da
+            // 1000 il resto restava bianco a destra e le colonne dei totali,
+            // larghe 50–100px, mandavano le intestazioni a capo su tre righe.
+            . '#fattura-elettronica #tbHeader,'
+            . '#fattura-elettronica table.tbFoglio,'
+            . '#fattura-elettronica table.tbTitolo{width:100% !important;max-width:100% !important;}'
+            // Le due celle dell'intestazione avevano altezza fissa: un blocco
+            // con più righe (indirizzo, regime, codice fiscale) usciva dal bordo.
+            . '#fattura-elettronica .tdHead{height:auto !important;padding:7px 9px !important;}'
+            . '#fattura-elettronica .headContent{margin-left:0 !important;}'
+            . '#fattura-elettronica .headerLabel{display:block;margin-bottom:2px;}'
+            . '#fattura-elettronica table.tbFoglio th{font-size:11.5px !important;line-height:1.3;'
+            . 'padding:5px 6px !important;vertical-align:bottom;}'
+            . '#fattura-elettronica table.tbFoglio td{font-size:12px !important;padding:4px 6px !important;}'
+            // Righe di una tabella lunga senza alcun separatore: il bordo stava
+            // solo sul tbody, quindi due articoli si leggevano come una riga sola.
+            . '#fattura-elettronica table.tbFoglio tr + tr > td{border-top:1px solid #000000 !important;}'
+            // Le cifre sono allineate a destra e le loro intestazioni no.
+            . '#fattura-elettronica th.perc,#fattura-elettronica th.perc2,'
+            . '#fattura-elettronica th.import,#fattura-elettronica th.import2,'
+            . '#fattura-elettronica th.ximport{text-align:right !important;}'
+            // Colonne da 80px per date e prezzi: "Data documento" e "Prezzo
+            // unitario" finivano su due righe mentre accanto restava spazio.
+            . '#fattura-elettronica th.data{width:96px !important;}'
+            . '#fattura-elettronica th.import2{width:96px !important;}'
+            . '#fattura-elettronica th.import{width:108px !important;}'
+            // Design del foglio. La griglia nera piena su ogni cella pesava più
+            // delle cifre: linee interne in un neutro freddo, contorno un filo
+            // più fermo, intestazioni su una tinta sola invece di grigio e
+            // ciano. In stampa le linee tornano nere, perché il foglio può
+            // finire su carta.
+            . '#fattura-elettronica table.tbFoglio th,'
+            . '#fattura-elettronica table.tbTitolo th,'
+            . '#fattura-elettronica table.tbFoglio td,'
+            . '#fattura-elettronica .tdHead{border-color:#c9ced6 !important;}'
+            . '#fattura-elettronica #tbHeader,'
+            . '#fattura-elettronica table.tbHeader{border-color:#9aa2ac !important;border-width:1px !important;}'
+            . '#fattura-elettronica table.tbFoglio tbody{border-color:#9aa2ac !important;}'
+            . '#fattura-elettronica table.tbFoglio th,'
+            . '#fattura-elettronica table.tbTitolo th{background:#eef1f5 !important;'
+            . 'color:#2b3038 !important;font-weight:600 !important;}'
+            // Cifre a larghezza fissa: gli importi in colonna restano incolonnati
+            // anche quando cambiano le dimensioni dei numeri.
+            . '#fattura-elettronica table.tbFoglio td{font-variant-numeric:tabular-nums;}'
+            . '#fattura-elettronica .headerLabel{display:block;color:#5b6472 !important;'
+            . 'font-size:11px;text-transform:uppercase;letter-spacing:.06em;}'
+            . '#fattura-elettronica .separa{height:14px !important;}'
+            . '@media print{#fattura-elettronica table.tbFoglio th,'
+            . '#fattura-elettronica table.tbTitolo th,'
+            . '#fattura-elettronica table.tbFoglio td,'
+            . '#fattura-elettronica .tdHead,'
+            . '#fattura-elettronica #tbHeader,'
+            . '#fattura-elettronica table.tbFoglio tbody{border-color:#000 !important;}}'
+            . '@media (max-width:768px){body{padding:10px 6px;}#fattura-elettronica div.page{padding:20px 14px !important;margin:10px 0 20px 0 !important;}#fattura-elettronica.page{padding:18px 14px !important;}#fattura-elettronica h1{font-size:20px;}}'
+            . '@media print{body{background:#fff;padding:0;}#fattura-elettronica div.page{box-shadow:none !important;border:none !important;margin:0 !important;padding:20px 0 !important;}#fattura-elettronica.page{box-shadow:none !important;border:none !important;margin:0 !important;padding:0 !important;}}'
             . '</style>';
 
         if (preg_match('/<\\/head\\s*>/i', $html)) {

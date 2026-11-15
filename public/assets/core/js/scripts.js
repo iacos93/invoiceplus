@@ -40,24 +40,42 @@ function insert_at_caret(areaId, text) {
 
 // takes mdl_email_template row as JSON, array with names to use in form fields.
 function inject_email_template(template_fields, email_template) {
-    $.each(email_template, function (key, val) {
+    Object.keys(email_template).forEach(function (rawKey) {
+        var val = email_template[rawKey];
         // remove prefix from key
-        key = key.replace("email_template_", "");
+        var key = rawKey.replace("email_template_", "");
         // if key is in template_fields, apply value to form field
-        if (val && template_fields.indexOf(key) > -1) {
-            if (key === 'body') {
-                $("#" + key).html(val);
-            } else if (key === 'pdf_template') {
-                $("#" + key).val(val).trigger('change');
-            } else {
-                $("#" + key).val(val);
-            }
+        if (!val || template_fields.indexOf(key) === -1) {
+            return;
+        }
+        var field = document.getElementById(key);
+        if (!field) {
+            return;
+        }
+        if (key === 'body') {
+            field.innerHTML = val;
+        } else if (key === 'pdf_template') {
+            field.value = val;
+            // Le liste con ricerca e i calendari (ip-components.js) ascoltano
+            // change: senza l'evento l'etichetta mostrata resta quella vecchia.
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+            field.value = val;
         }
     });
 }
 
 function update_email_template_preview() {
-    $('#email-template-preview').contents().find("body").html($('.email-template-body').val());
+    var frame = document.getElementById('email-template-preview');
+    var body = document.querySelector('.email-template-body');
+    if (!frame || !body) {
+        return;
+    }
+    var doc = frame.contentDocument || (frame.contentWindow && frame.contentWindow.document);
+    var target = doc && doc.querySelector('body');
+    if (target) {
+        target.innerHTML = body.value;
+    }
 }
 
 // Insert HTML tags into textarea
@@ -117,7 +135,7 @@ function insert_html_tag(tag_type, destination_id) {
     // Check if <style> should be added
     if (tag_type === 'text-css') {
         replace = text[0] + '\n\r' + text_area.value;
-        $(text_area).val(replace);
+        text_area.value = replace;
         update_email_template_preview();
         return true;
     }
@@ -138,72 +156,120 @@ function insert_html_tag(tag_type, destination_id) {
         replaceText = text[0] + selectedText + text[1];
         len = text_area.value.length;
         replace = text_area.value.substring(0, startPos) + replaceText + text_area.value.substring(endPos, len);
-        $(text_area).val(replace);
+        text_area.value = replace;
         update_email_template_preview();
     }
 }
 
-// Prefiltro CSRF e loader fullpage: agiscono sull'intera document, una volta
-// sola. La navigazione parziale non li riesegue.
-$(document).ready(function () {
-
-    // Automatical CSRF protection for all jQuery POST/PUT/PATCH/DELETE requests.
-    //
-    // CI4 cookie-mode protection (see app/Config/Security.php): the token equals
-    // the raw value of the "csrf_cookie_name" cookie (tokenRandomize=false) and
-    // the framework accepts it either as a POST field named "csrf_test_name" or
-    // via the "X-CSRF-TOKEN" header. Set the header rather than mutating the
-    // body, so FormData/JSON payloads are not corrupted. With regenerate=true
-    // the server rotates the cookie on every successful POST and document.cookie
-    // always reflects the latest value, so reading it here on every request is
-    // correct. No external JS cookie library (js-cookie) is loaded on the page,
-    // so parse document.cookie directly.
-    function ipGetCsrfToken() {
-        var m = document.cookie.match('(^|; )csrf_cookie_name=([^;]*)');
-        return m ? decodeURIComponent(m[2]) : '';
+// Token CSRF corrente. Il cookie è httponly (app/Config/Cookie.php), quindi
+// document.cookie non lo vede: il valore leggibile è il campo nascosto che
+// csrf_field() stampa nei form, e quello si legge. L'header "X-CSRF-TOKEN" è
+// accettato da CI4 quanto il campo POST (Security::getPostedToken), quindi
+// basta metterlo lì per non toccare i dati inviati. Con regenerate=true il
+// token ruota a ogni POST riuscito: si legge a ogni richiesta, non una volta.
+function ipGetCsrfToken() {
+    var field = document.querySelector('input[name="csrf_test_name"]');
+    if (field && field.value) {
+        return field.value;
     }
 
-    $.ajaxPrefilter(function (options) {
-        var t = (options.type || '').toUpperCase();
-        if (t !== 'POST' && t !== 'PUT' && t !== 'PATCH' && t !== 'DELETE') {
-            return;
-        }
-        options.headers = options.headers || {};
-        if (!options.headers['X-CSRF-TOKEN']) {
-            options.headers['X-CSRF-TOKEN'] = ipGetCsrfToken();
+    var m = document.cookie.match('(^|; )csrf_cookie_name=([^;]*)');
+    return m ? decodeURIComponent(m[2]) : '';
+}
+
+// POST da JavaScript (l'equivalente di $.post). Il token va nell'header e non
+// nel corpo, così i campi inviati restano esattamente quelli attesi dal
+// controller. Gli array diventano campi ripetuti con [] finale, come faceva
+// jQuery, e la risposta è testo (i controller rispondono in JSON da decodificare).
+function ipPost(url, data) {
+    var body = new URLSearchParams();
+    Object.keys(data || {}).forEach(function (key) {
+        var value = data[key];
+        if (Array.isArray(value)) {
+            value.forEach(function (item) { body.append(key + '[]', item); });
+        } else {
+            body.append(key, value);
         }
     });
 
-    // Correct the height of the content area
-    var $content = $('#content'),
-        $html = $('html');
+    return fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-CSRF-TOKEN': ipGetCsrfToken()
+        },
+        body: body.toString()
+    }).then(function (response) { return response.text(); });
+}
 
-    var documentHeight = $html.outerHeight(),
-        navbarHeight = $('.navbar').outerHeight(),
-        headerbarHeight = $('#headerbar').outerHeight(),
-        submenuHeight = $('#submenu').outerHeight(),
-        contentHeight = documentHeight - navbarHeight - headerbarHeight - submenuHeight;
-    if ($content.outerHeight() < contentHeight) {
-        $content.outerHeight(contentHeight);
+// Dissolvenza di 200 ms: mostra o nasconde con l'attributo hidden, che è anche
+// lo stato giusto per la tecnologia assistiva (l'elemento esce dall'albero).
+function ipFade(el, show) {
+    if (!el) {
+        return;
+    }
+    el.style.transition = 'opacity 200ms';
+    if (show) {
+        el.hidden = false;
+        el.style.opacity = '0';
+        window.requestAnimationFrame(function () { el.style.opacity = '1'; });
+    } else {
+        el.style.opacity = '0';
+        window.setTimeout(function () {
+            el.hidden = true;
+            el.style.opacity = '';
+        }, 200);
+    }
+}
+
+// Altezza contenuti e loader fullpage: agiscono sull'intera document, una volta
+// sola. La navigazione parziale non li riesegue.
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Correct the height of the content area. offsetHeight è l'equivalente di
+    // outerHeight() di jQuery: padding e bordo compresi, margine escluso.
+    function height(el) { return el ? el.offsetHeight : 0; }
+
+    var content = document.getElementById('content');
+    if (content) {
+        var contentHeight = height(document.documentElement)
+            - height(document.querySelector('.navbar'))
+            - height(document.getElementById('headerbar'))
+            - height(document.getElementById('submenu'));
+        if (content.offsetHeight < contentHeight) {
+            content.style.height = contentHeight + 'px';
+        }
     }
 
-    // Tooltips
-    $('[data-toggle="tooltip"]').tooltip();
+    // I tooltip li inizializza layout/base.php con l'API di Bootstrap 5:
+    // qui c'era la chiamata a $(...).tooltip(), che in Bootstrap 5 senza
+    // jQuery non esiste e faceva fallire il resto di questo blocco.
 
     // Fullpage loader
-    $(document).on('click', '.ajax-loader', function () {
-        $('#fullpage-loader').fadeIn(200);
-        window.fullpageloaderTimeout = window.setTimeout(function () {
-            $('#loader-error').fadeIn(200);
-            $('#loader-icon').removeClass('fa-spin').addClass('text-danger');
-        }, 10000);
-    });
+    document.addEventListener('click', function (event) {
+        if (event.target.closest('.ajax-loader')) {
+            ipFade(document.getElementById('fullpage-loader'), true);
+            window.fullpageloaderTimeout = window.setTimeout(function () {
+                ipFade(document.getElementById('loader-error'), true);
+                var icon = document.getElementById('loader-icon');
+                if (icon) {
+                    icon.classList.remove('fa-spin');
+                    icon.classList.add('text-danger');
+                }
+            }, 10000);
+        }
 
-    $(document).on('click', '.fullpage-loader-close', function () {
-        $('#fullpage-loader').fadeOut(200);
-        $('#loader-error').hide();
-        $('#loader-icon').addClass('fa-spin').removeClass('text-danger');
-        clearTimeout(window.fullpageloaderTimeout);
+        if (event.target.closest('.fullpage-loader-close')) {
+            ipFade(document.getElementById('fullpage-loader'), false);
+            ipFade(document.getElementById('loader-error'), false);
+            var icon = document.getElementById('loader-icon');
+            if (icon) {
+                icon.classList.add('fa-spin');
+                icon.classList.remove('text-danger');
+            }
+            clearTimeout(window.fullpageloaderTimeout);
+        }
     });
 });
 
@@ -226,64 +292,94 @@ function initPageWidgets() {
         window.__ipClipboard = new ClipboardJS('.to-clipboard');
     }
 
-    // Keep track of the last "taggable" input/textarea
-    $('.taggable').off('focus.ipPage').on('focus.ipPage', function () {
-        window.lastTaggableClicked = this;
+    // Keep track of the last "taggable" input/textarea. I nodi rimontati dalla
+    // navigazione parziale sono nuovi e non hanno il segno, quindi si legano al
+    // primo giro in cui compaiono.
+    document.querySelectorAll('.taggable').forEach(function (field) {
+        if (field.dataset.ipTaggableBound) {
+            return;
+        }
+        field.dataset.ipTaggableBound = '1';
+        field.addEventListener('focus', function () {
+            window.lastTaggableClicked = field;
+        });
     });
 
     // Template Tag handling
-    $('.tag-select').off('change.ipPage').on('change.ipPage', function (event) {
-        var select = $(event.currentTarget);
-        // Add the tag to the field
-        if (typeof window.lastTaggableClicked !== 'undefined') {
-            insert_at_caret(window.lastTaggableClicked.id, select.val());
+    document.querySelectorAll('.tag-select').forEach(function (select) {
+        if (select.dataset.ipTagSelectBound) {
+            return;
         }
+        select.dataset.ipTagSelectBound = '1';
+        select.addEventListener('change', function () {
+            // Add the tag to the field
+            if (typeof window.lastTaggableClicked !== 'undefined' && window.lastTaggableClicked) {
+                insert_at_caret(window.lastTaggableClicked.id, select.value);
+            }
 
-        // Reset the select and exit
-        select.val([]);
-        return false;
+            // Reset the select and exit
+            select.value = '';
+        });
     });
 
     // HTML tags to email templates textarea
-    $('.html-tag').off('click.ipPage').on('click.ipPage', function () {
-        var tag_type = $(this).data('tagType');
-        var body_id = $('.email-template-body').attr('id');
-        insert_html_tag(tag_type, body_id);
+    document.querySelectorAll('.html-tag').forEach(function (button) {
+        if (button.dataset.ipHtmlTagBound) {
+            return;
+        }
+        button.dataset.ipHtmlTagBound = '1';
+        button.addEventListener('click', function () {
+            var tag_type = button.getAttribute('data-tag-type') || button.getAttribute('data-tagType');
+            var body = document.querySelector('.email-template-body');
+            if (body) {
+                insert_html_tag(tag_type, body.id);
+            }
+        });
     });
 
     // Email Template Preview handling
-    var email_template_body_id = $('.email-template-body').attr('id');
-    if (email_template_body_id) {
-        var bodySelector = email_template_body_id.charAt(0) === '#'
-            ? email_template_body_id
-            : '#' + email_template_body_id;
-        $(bodySelector).off('input.ipPage propertychange.ipPage')
-            .on('input.ipPage propertychange.ipPage', update_email_template_preview);
+    var emailBody = document.querySelector('.email-template-body');
+    if (emailBody && !emailBody.dataset.ipPreviewBound) {
+        emailBody.dataset.ipPreviewBound = '1';
+        emailBody.addEventListener('input', update_email_template_preview);
     }
 
-    $('#email-template-preview-reload').off('click.ipPage')
-        .on('click.ipPage', update_email_template_preview);
+    var previewReload = document.getElementById('email-template-preview-reload');
+    if (previewReload && !previewReload.dataset.ipPreviewBound) {
+        previewReload.dataset.ipPreviewBound = '1';
+        previewReload.addEventListener('click', update_email_template_preview);
+    }
 
     update_email_template_preview();
 
     // Password strength meter
-    $('.passwordmeter-input').off('input.ipPage').on('input.ipPage', function () {
-        if (typeof zxcvbn !== 'function') {
+    document.querySelectorAll('.passwordmeter-input').forEach(function (input) {
+        if (input.dataset.ipPasswordMeterBound) {
             return;
         }
-        var strength = zxcvbn($(this).val());
+        input.dataset.ipPasswordMeterBound = '1';
+        input.addEventListener('input', function () {
+            if (typeof window.zxcvbn !== 'function') {
+                return;
+            }
+            var score = window.zxcvbn(input.value).score;
 
-        $('.passmeter-2, .passmeter-3').hide();
-        if (strength.score === 4) {
-            $('.passmeter-2, .passmeter-3').show();
-        } else if (strength.score === 3) {
-            $('.passmeter-2').show();
-        }
+            // Le tre barre sono cumulative: la terza compare solo con un
+            // punteggio pieno, la seconda da "buona" in su.
+            document.querySelectorAll('.passmeter-2, .passmeter-3').forEach(function (bar) {
+                var wanted = score === 4 || (score === 3 && bar.classList.contains('passmeter-2'));
+                bar.hidden = !wanted;
+            });
+        });
     });
 }
 
 window.ipInitPageWidgets = initPageWidgets;
-$(document).ready(initPageWidgets);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPageWidgets);
+} else {
+    initPageWidgets();
+}
 document.addEventListener('ip:page-ready', initPageWidgets);
 
 
@@ -466,7 +562,12 @@ document.addEventListener('ip:page-ready', initPageWidgets);
         box.classList.toggle('is-filled', q !== '');
         clearTimeout(timer);
 
-        if (q.length < 2) { close(); return; }
+        // Tre caratteri, non due: con due ogni ricerca faceva partire una
+        // query su sei tabelle (~150 ms lato server) per parole che non
+        // filtrano ancora niente. Il minimo è lo stesso del server, vedi
+        // Search::globalSearch(): due soglie diverse si vedevano come un
+        // pannello che si apriva vuoto.
+        if (q.length < 3) { close(); return; }
 
         timer = setTimeout(function () {
             // La risposta piu' lenta di una richiesta precedente non deve
@@ -476,7 +577,9 @@ document.addEventListener('ip:page-ready', initPageWidgets);
                 .then(function (r) { return r.json(); })
                 .then(function (data) { if (mine === seq) { render(data); } })
                 .catch(function () { if (mine === seq) { close(); } });
-        }, 220);
+            // 300 ms come lo scheletro: la pausa di 220 ms lasciava partire una
+            // richiesta ogni due parole in chi scrive veloce.
+        }, 300);
     });
 
     input.addEventListener('keydown', function (e) {

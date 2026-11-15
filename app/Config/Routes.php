@@ -6,6 +6,10 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', 'Home::index');
 
 // --- Pubbliche: sessioni (login, logout, reset password) ---
+// Loghi dell'accesso: pubblici per forza (la pagina di login è senza sessione),
+// ma il file non si sceglie dall'URL — si legge dalle impostazioni, vedi Media.
+$routes->get('logo/(:segment)', 'Media::logo/$1');
+
 $routes->get('sessions', 'Sessions::index');
 $routes->get('sessions/login', 'Sessions::login');
 $routes->post('sessions/login', 'Sessions::login');
@@ -318,6 +322,7 @@ $routes->group('', ['filter' => 'auth'], static function ($routes) {
     $routes->get('mcp/settings', 'McpSettings::index');
     $routes->post('mcp/settings', 'McpSettings::index');
     $routes->post('mcp/ajax/get_key', 'McpSettings::getKey');
+    $routes->post('mcp/ajax/reveal_key', 'McpSettings::revealKey');
 
     // --- Modulo: projects (porting da CI3) ---
     $routes->get('projects', 'Projects::index');

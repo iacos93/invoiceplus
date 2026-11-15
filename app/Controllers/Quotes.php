@@ -44,7 +44,6 @@ class Quotes extends BaseController
         $yearGet = $request->getGet('year');
         $year    = $yearGet !== null ? (int) $yearGet : selected_year();
         $months  = request_months();
-        $month   = count($months) === 1 ? $months[0] : 0;
 
         // Preferiti: '' tutti, '1' solo preferiti, '0' solo non preferiti.
         $favourite = (string) ($request->getGet('fav') ?? '');
@@ -65,7 +64,6 @@ class Quotes extends BaseController
             'quote_statuses' => $this->quoteModel->statuses(),
             'years'          => $this->quoteModel->getAvailableYears(),
             'year'           => $year,
-            'month'          => $month,
             'months'         => $months,
             'favourite'      => $favourite,
             // I preventivi non hanno saldo: conteggio, imponibile, IVA e totale.

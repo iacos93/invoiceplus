@@ -294,7 +294,7 @@ INSERT INTO ip_settings (setting_key, setting_value) VALUES
     ('generate_quote_number_for_draft', '1'),
     ('invoice_default_payment_method', '1'),
     ('sdi_channel', 'manual'),
-    ('first_day_of_week', '0'),
+    ('first_day_of_week', '1'),
     ('mark_invoices_sent_pdf', '0'),
     ('mark_quotes_sent_pdf', '0'),
     ('enable_invoice_deletion', '0'),

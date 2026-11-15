@@ -5,6 +5,27 @@ on:
     branches: [main]
   pull_request:
 
+# Cache dei job
+#
+# Ogni job mette in cache `vendor/`. La chiave porta il lock e la versione di
+# PHP, quindi una dipendenza cambiata invalida la cache da sola e `composer
+# install` fa il suo lavoro invece di fidarsi di un albero vecchio.
+#
+# I pacchetti di sistema (`/var/cache/apt/archives`) NON sono in cache, e non
+# per svista: c'erano, e la misura sui run del 12 e 14 novembre 2026 le ha
+# bocciate. `setup-php` impiega 3-4 secondi e `composer install` 3-5, quindi
+# ripristinare e risalvare decine di MB di .deb costa quanto il download che
+# toglie (e `apt-get update` resta in ogni caso). Il tempo dei job non sta lì:
+# sta nei 20-23 secondi di `Initialize containers` che ogni job con servizi
+# paga per avviare Postgres, MariaDB o Redis, e nei 20 secondi di `Installa
+# Playwright` del job del browser. Prima di rimetterla, misuri di nuovo: le
+# durate per passo sono nei log di ogni esecuzione.
+#
+# Nel job del browser si cacheano invece i browser di Playwright
+# (`~/.cache/ms-playwright`): lì il download è di ~170 MB e il passo che lo fa
+# dura 20 s, quindi la cache ripaga. Le librerie di sistema che
+# `playwright install --with-deps` aggiunge restano fuori: finiscono in /usr.
+
 jobs:
   # PostgreSQL e' il database di sviluppo: la matrice PHP verifica le due
   # versioni supportate.
@@ -37,6 +58,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
+      # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
+      # job» è in testa al file, col motivo per cui i pacchetti di sistema non
+      # si cacheano.
+      - name: Recupera le dipendenze dalla cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-${{ runner.os }}-php${{ matrix.php }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            vendor-${{ runner.os }}-php${{ matrix.php }}-
 
       - name: Installa PHP
         uses: shivammathur/setup-php@v2
@@ -121,6 +154,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
+      # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
+      # job» è in testa al file, col motivo per cui i pacchetti di sistema non
+      # si cacheano.
+      - name: Recupera le dipendenze dalla cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            vendor-${{ runner.os }}-php8.5-
+
       - name: Installa PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -176,6 +221,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
+      # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
+      # job» è in testa al file, col motivo per cui i pacchetti di sistema non
+      # si cacheano.
+      - name: Recupera le dipendenze dalla cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            vendor-${{ runner.os }}-php8.5-
+
       - name: Installa PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -215,6 +272,67 @@ jobs:
       - name: Verifica le dipendenze
         run: composer audit --locked
 
+  # Compressione e cache degli asset vivono in public/.htaccess, e i test della
+  # suite non le attraversano mai: `php spark serve` non legge il file e qui non
+  # c'è nessun Apache. Le regole del file le controlla
+  # tests/unit/HtaccessAssetRulesTest.php; gli header che ne escono li produce
+  # solo un Apache vero, ed è quello che si prova qui.
+  #
+  # Il job serve i soli file statici (`--solo-statico`): dentro Apache non c'è
+  # PHP, che richiederebbe anche un database per la pagina di accesso. Il test
+  # di quella pagina si salta con un messaggio che dice perché, e la prova
+  # completa si lancia in locale con `php tools/apache_headers_check.php`
+  # (avvia anche php-fpm). Gli asset e la regola «le pagine non si cacheano»
+  # sono verificati lo stesso.
+  intestazioni-apache:
+    runs-on: ubuntu-latest
+    name: Intestazioni Apache / PHP 8.4
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
+      # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
+      # job» è in testa al file, col motivo per cui i pacchetti di sistema non
+      # si cacheano.
+      - name: Recupera le dipendenze dalla cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-${{ runner.os }}-php8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            vendor-${{ runner.os }}-php8.4-
+
+      - name: Installa PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, json, curl, gd, zip, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Installa le dipendenze
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # Un .env e una chiave come negli altri job: PHPUnit carica il framework
+      # e senza chiave basta che un test sfiori l'encrypter per farlo fallire
+      # con un errore che parla d'altro. Non servono né database né Redis: il
+      # test di questo job non tocca il database.
+      - name: Configura l'ambiente
+        run: |
+          cp env .env
+          php spark key:generate
+
+      # apache2 su Ubuntu porta mod_deflate, mod_expires, mod_headers e
+      # mod_rewrite come moduli: lo script li carica per percorso assoluto,
+      # quindi non serve a2enmod. Il servizio di sistema non parte sui runner
+      # (non c'è systemd), e comunque lo script avvia un httpd suo su una porta
+      # libera: quello di sistema non viene toccato.
+      - name: Installa Apache
+        run: sudo apt-get update && sudo apt-get install -y apache2
+
+      - name: Compressione e cache degli asset
+        run: php tools/apache_headers_check.php --solo-statico
+
   # La copertura non era misurata: `--no-coverage` in tutti i job teneva la CI
   # veloce ma lasciava invisibile quanto codice nessun test tocca. Qui si
   # produce il clover, si stampa il riepilogo e una soglia minima impedisce un
@@ -240,6 +358,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
+      # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
+      # job» è in testa al file, col motivo per cui i pacchetti di sistema non
+      # si cacheano.
+      - name: Recupera le dipendenze dalla cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            vendor-${{ runner.os }}-php8.5-
 
       - name: Installa PHP
         uses: shivammathur/setup-php@v2
@@ -335,6 +465,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
+      # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
+      # job» è in testa al file, col motivo per cui i pacchetti di sistema non
+      # si cacheano.
+      - name: Recupera le dipendenze dalla cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            vendor-${{ runner.os }}-php8.5-
+
       - name: Installa PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -386,6 +528,25 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: tests/browser/package-lock.json
+
+      # Chromium per Playwright sono ~170 MB, e senza cache si riscaricano a
+      # ogni esecuzione: è il passo più lento del job (20 s misurati sul run del
+      # 14 novembre). La chiave è il lock di tests/browser, dove sta la versione
+      # di @playwright/test: quando cambia, la cache non si usa e Playwright
+      # riscarica. Se la cache contiene una versione diversa da quella che gli
+      # serve, `playwright install` installa solo ciò che manca — quindi una
+      # cache vecchia costa un download parziale, non un errore.
+      #
+      # Restano fuori le librerie di sistema di `--with-deps` (libnss, ffmpeg e
+      # compagne): finiscono in /usr e non si cacheano. Vedi la nota in testa al
+      # file.
+      - name: Recupera i browser di Playwright dalla cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests/browser/package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
 
       - name: Installa Playwright
         working-directory: tests/browser

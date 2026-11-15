@@ -10,10 +10,58 @@ Le regole per scrivere le voci e preparare una release sono in
 ## [Non pubblicata]
 
 **Da fare prima di aggiornare:** `php spark migrate` (aggiunge a ogni azienda
-le colonne dei loghi e del piè di pagina dei documenti).
+le colonne dei loghi, del piè di pagina dei documenti e del codice destinatario
+SdI, il conto di saldo sugli incassi e sui metodi di pagamento, il saldo di
+apertura dei conti, porta la settimana del calendario a cominciare di lunedì,
+mette gli indici sulle colonne di collegamento e rende univoche le chiavi
+d'accesso di preventivi e allegati).
 
 ### Aggiunto
 
+- **Rotazione automatica di log e debugbar.** `writable/logs` cresceva di
+  200-460 KB al giorno e `writable/debugbar` di qualche MB, e nessuno le
+  svuotava: sono le uniche due cartelle che crescevano senza limite, e ce ne si
+  accorgeva solo quando il disco era pieno — cioè quando l'applicazione smette
+  di scrivere e comincia a sbagliare. Il giro giornaliero del cron, quello che
+  fa già i backup, ora comprime i log più vecchi di una settimana (un .log di
+  testo si riduce a un decimo) e toglie i compressi oltre sei mesi e i file
+  della debugbar oltre due settimane. Il file del giorno non si tocca: si sta
+  ancora scrivendo.
+- **Saldo di apertura e saldo corrente dei conti.** Ogni conto di saldo dice
+  con quanto si apre e da quando: è il numero che si legge dall'estratto conto
+  il giorno in cui si comincia a tenere la prima nota. L'elenco dei conti
+  mostra il saldo corrente — apertura, più incassi, meno spese — con la data
+  di apertura sotto; un conto senza saldo iniziale lo dice ("solo i movimenti
+  registrati") invece di far credere che il totale sia quello della banca.
+  I movimenti di estratto conto non entrano nella somma: sono la stessa banca
+  fotografata, non soldi in più, e contare sia l'incasso sia il bonifico
+  gonfierebbe il saldo del doppio. Allo stesso modo restano fuori dal totale
+  gli incassi e le spese *precedenti* alla data di apertura: sono già dentro
+  il saldo iniziale, che si legge dall'estratto conto quel giorno. È il secondo
+  pezzo della prima nota.
+- **Il conto di saldo sugli incassi.** Ogni incasso dice ora su quale banca o
+  cassa sono entrati i soldi: le spese lo dicevano già, gli incassi no, quindi
+  nessun saldo di conto poteva tornare. Il conto lo propone il metodo di
+  pagamento — ogni metodo ha il suo in Impostazioni → Metodi di pagamento
+  (bonifico sul conto corrente, contanti sulla cassa) e in mancanza vale il
+  conto predefinito dell'azienda — e resta modificabile nel form; l'incasso
+  rapido dalla fattura e l'import usano la stessa proposta. «Nessun conto» è
+  una scelta rispettata, non un campo da riempire d'ufficio. È il primo pezzo
+  della prima nota: dal saldo iniziale di ogni conto in poi.
+- **Il codice destinatario SdI dell'azienda.** Nella scheda azienda, accanto a
+  P.IVA e codice fiscale, c'è ora il codice destinatario con cui l'azienda
+  riceve le fatture elettroniche; quando è compilato compare anche in cima alla
+  barra laterale, sotto il nome dell'azienda, così si legge e si copia senza
+  aprire Impostazioni. Era un dato che esisteva solo per i clienti, cioè per chi
+  le fatture le riceve.
+- **Codice SdI e codice cliente nella scheda cliente.** Nella tessera
+  anagrafica, accanto a P.IVA e codice fiscale, ci sono ora il codice
+  destinatario SdI e il codice cliente, ognuno con il pulsante che lo copia
+  negli appunti: sono i due dati che si passano di continuo (al cliente, al
+  commercialista, nel cassetto fiscale) e prima bisognava aprire il modulo di
+  modifica per leggerli. Da tre codici in su la piastra si dispone su due
+  colonne, così la tessera non si allunga; un cliente senza SdI o senza P.IVA
+  vede solo le righe compilate.
 - **Loghi dei documenti per azienda.** Nella scheda di ogni azienda si caricano
   il logo esteso (intestazione) e il solo segno (piè di pagina), stampati su
   fatture, preventivi e DDT di quell'azienda. Prima i due loghi erano unici
@@ -66,8 +114,131 @@ le colonne dei loghi e del piè di pagina dei documenti).
   report (vendite per cliente, storico pagamenti, scaduto, vendite per anno)
   aprono con il logo esteso e i contatti dell'azienda attiva, gli stessi di
   fatture e preventivi.
+- **Calendario a elenco.** Accanto alla griglia mensile c'è ora una vista a
+  elenco dello stesso mese: una riga per giorno, in ordine di data, con la data
+  scritta giorno/mese/anno e il giorno della settimana nella lingua
+  dell'interfaccia — il modo in cui una scadenza si legge qui. Ogni riga porta
+  il tipo (fattura, F24, attività), il titolo e l'importo, e in testa restano i
+  totali del mese con la quota già scaduta. Si passa dall'una all'altra dalla
+  barra in alto, senza perdere il mese aperto: la vista scelta resta anche
+  cambiando mese con le frecce, e i due elenchi non sono due pagine da tenere
+  allineate.
 
 ### Cambiato
+
+- **L'interfaccia non carica più jQuery.** Erano **85,5 KB (29,6 KB compressi)**
+  chiesti in `<head>`, cioè prima di qualsiasi contenuto, su ogni pagina dell'area
+  amministrativa e del portale, per il solo `scripts.js`. Le sue trentasette
+  chiamate a `$(` sono ora DOM puro: un listener per elemento al posto delle
+  selezioni con delega, `fetch` al posto di `$.post`, `hidden` e `classList` al
+  posto di `show`/`hide`/`toggle`; le sette view che avevano script inline
+  (impostazioni, canale SdI, form utente, assegnazione clienti, integrazione MCP,
+  modali di pagamento e attività) fanno lo stesso. Il codice dell'interfaccia
+  cresce di 1,7 KB (bundle 39.961 byte contro 38.269), quindi il bilancio per
+  pagina è **−83,8 KB e una richiesta in meno** nel percorso critico; il file
+  `vendor/jquery.min.js` è stato tolto dal progetto.
+  Con jQuery sono sparite due cose che si portava dietro senza far rumore: il
+  prefilter CSRF leggeva il token da `document.cookie`, ma il cookie è httponly e
+  il token partiva sempre vuoto; e la chiamata `$(...).tooltip()` in
+  `scripts.js` non esiste in Bootstrap 5, quindi il blocco di avvio si
+  interrompeva lì e l'altezza dei contenuti e il loader a pagina piena non
+  venivano mai inizializzati. I tooltip restano quelli di Bootstrap 5 già
+  inizializzati da `layout/base.php`, e le due modali usano `bootstrap.Modal`.
+  Verificato in una sessione vera nel browser: filtro live e gruppi del canale
+  SdI nelle impostazioni, campi amministratore nel form utente, assegnazione di
+  tutti i clienti, integrazione MCP, misuratore di password; console senza
+  errori e nessuna richiesta a `jquery.min.js`.
+- **I font delle icone contengono solo i glifi che l'app disegna.** Il foglio di
+  Font Awesome era già filtrato sulle icone in uso, i file dei font no: si
+  scaricavano **299.644 byte** in tre file per ~150 glifi. Ora il foglio carica
+  tre sottoinsiemi da **16.304 byte in tutto (−94,6 %)**: il font solido da
+  156.400 a 11.344 byte, il regular da 25.392 a 4.244, e soprattutto il font dei
+  marchi — che nella pagina del calendario pesava 117.852 byte per tre icone
+  (Apple, Google, Outlook) — ridotto a **716 byte**. Li produce `pyftsubset`
+  (`php tools/subset_icons.php`) dai code point delle sole icone citate dal
+  codice; accanto a ogni font resta un manifesto con i glifi che il file
+  contiene davvero. Chi installa l'app non ha bisogno di Python: i file sono
+  versionati, e si rigenerano solo quando si aggiunge un'icona (senza
+  fonttools lo script lo dice invece di produrre un font monco). Se la
+  rigenerazione viene dimenticata lo segnala il test, che confronta i manifesti
+  con gli usi reali: un'icona nuova non sparisce dalla pagina in silenzio.
+- **Bootstrap ridotto alle classi che l'app usa.** Il foglio vendor era 227 KB
+  e la pagina ne usa una parte: carousel, spinner, progress, toast, accordion,
+  offcanvas e centinaia di utility che nessuna view scrive venivano scaricati e
+  analizzati a ogni primo caricamento. Ora `layout` carica
+  `bootstrap.subset.min.css` (76.305 byte invece di 232.111: −67%; in gzip
+  13,5 KB invece di 31,1), generato da `php tools/subset_bootstrap.php`
+  leggendo le classi nei sorgenti di `app/` e del JS, più il bundle di Bootstrap,
+  che è dove vivono quelle che i componenti aggiungono da soli (`show`,
+  `modal-backdrop`, i `bs-tooltip-*` del posizionamento). Una regola resta solo
+  se tutte le classi del suo selettore sono in uso, quindi il foglio non è una
+  lista da mantenere a mano: `missingClasses()` è l'asserzione del test, e
+  aggiungere una classe in una view senza rigenerare fa fallire la suite invece
+  di far sparire quello stile in silenzio.
+- **Il PDF di un documento non viene più ristampato a ogni richiesta.** Lo
+  stesso documento veniva impaginato da capo ogni volta — due volte, quando il
+  piè di pagina porta il totale delle pagine, perché il conteggio dei fogli è un
+  passaggio di stampa a sé — e le occasioni non mancano: chi apre la fattura per
+  controllarla e poi la scarica, l'allegato della mail, l'export ZIP, un secondo
+  invio al cliente. Ora il PDF resta in `writable/cache/pdf`, con la chiave
+  presa dall'HTML: se il documento, il cliente, le righe, le impostazioni o il
+  logo cambiano, cambia l'HTML e il PDF si ristampa, senza che nessuno debba
+  ricordarsi di invalidare qualcosa. Misurato su una fattura vera: 255-383 ms
+  per la prima stampa, 2,2 ms quando il PDF c'è già. La cartella tiene al
+  massimo 200 file (i più vecchi vengono tolti) e un file troncato non viene
+  servito: si ristampa, perché un PDF rotto è peggio di un PDF lento.
+- **Asset compressi e messi in cache dal server.** Il `.htaccess` dichiara la
+  compressione (deflate) per HTML, CSS, JS, JSON e SVG e una cache di un anno
+  `immutable` per CSS, JS, font e immagini: gli URL di questi file portano già
+  `?v=filemtime`, quindi cambiano quando cambia il file e la cache lunga non
+  può servire una versione vecchia. Le pagine restano fuori dalla cache — sono
+  la pagina, e possono contenere i dati di un altro utente. Con Apache il
+  guadagno è immediato (un CSS da 168 KB scende a 27,7 KB in rete); con nginx o
+  su hosting che non legge `.htaccess` non cambia nulla e non rompe nulla.
+- **Il logo dell'accesso non viaggia più dentro l'HTML.** Era incorporato come
+  data URI: due copie in base64, circa 33 KB ciascuna, rispedite a ogni
+  apertura della pagina di login e mai messe in cache dal browser (il base64
+  comprime anche male). Ora lo serve una rotta — `logo/login.<ext>` — con ETag
+  e cache lunga, e il nome del file lo decide l'impostazione, non l'URL. Il PDF
+  resta sul data URI: dompdf legge dal filesystem e non fa richieste HTTP.
+- **Ricerca globale da tre caratteri, con 300 ms di pausa.** Con due caratteri
+  ogni parola faceva partire una query su sei tabelle (join e LIKE non
+  filtrati) per risultati che nessuno stava ancora cercando; il pannello si
+  apriva vuoto perché il campo partiva prima del server. Ora la soglia è la
+  stessa nei due punti — campo e endpoint — e la pausa è quella dello
+  scheletro di caricamento.
+- **Il filtro per mese è un intervallo di date, non `EXTRACT(MONTH FROM ...)`.**
+  Su un archivio grande la funzione impediva l'uso dell'indice e il motore
+  leggeva tutte le righe dell'anno per mostrarne un mese: misurato su 640.000
+  righe, 70.272 letture contro 5.952 dell'intervallo equivalente. Nulla cambia
+  per chi guarda — stessi documenti, stessi totali — e la selezione multipla
+  resta un OR di intervalli, così i mesi lasciati fuori non rientrano.
+- **Le chiavi d'accesso di preventivi e allegati sono UNIQUE.** Sono le uniche
+  colonne interrogate da fuori, senza sessione: il cliente che apre il link del
+  preventivo o scarica un allegato passa da lì. Un indice semplice le rendeva
+  veloci ma non univoche. Dove i duplicati ci sono già (archivio importato da
+  CI3) la migrazione non fallisce: lascia l'indice semplice e scrive nel log
+  quante chiavi doppie ci sono da correggere.
+- **Le iniziali del cliente arrivano a tre.** Il monogramma della tessera si
+  fermava alle prime due lettere, e le ragioni sociali lunghe finivano per
+  coincidere: «ICS Duca d'Aosta», «ICS Giovanni XXIII» e «ICS Filippo Maria
+  Beltrami» erano tutte «IC». Ora si prendono le iniziali delle prime tre
+  parole che contano («IDA», «IGX», «IFM») e il carattere scende di misura per
+  farle stare nella piastrella; chi ha un nome di due parole vede lo stesso
+  monogramma di prima. L'articolo eliso non ruba più l'iniziale: «d'Aosta»
+  conta come «Aosta».
+- **Azienda e anno fermi in cima alla barra laterale.** I due selettori erano
+  già in testa al menu, ma scorrevano via con esso: su una pagina lunga, o con
+  le sezioni aperte, cambiarli voleva dire risalire. Ora restano fissi in alto,
+  e l'etichetta «Contesto» che li introduceva è sparita — sono due comandi che
+  si spiegano da soli, e occupava una riga per dire poco.
+- **Elenchi più rapidi sui database grandi.** Stati fattura, righe per
+  prodotto e aliquota, pagamenti per metodo, movimenti bancari per fattura e
+  spesa, note cliente: erano colonne di collegamento senza indice, e
+  PostgreSQL non ne crea uno da sé sulle chiavi esterne, quindi filtrare le
+  fatture per stato leggeva la tabella intera. `php spark migrate` aggiunge
+  ventinove indici (con dodici fatture non si nota, con qualche migliaio sì);
+  `migrate:rollback` li toglie.
 
 - **Nuovo logo e nuovo carattere del nome.** Il segno è ora una piastrella blu
   con le righe di una fattura, l'ultima delle quali finisce in un "+"; il nome
@@ -158,6 +329,73 @@ le colonne dei loghi e del piè di pagina dei documenti).
 
 ### Corretto
 
+- **Campo e pulsanti della chiave MCP come negli altri campi segreti.** La
+  chiave aveva «Genera» come blocco d'avviso arancione e due pulsanti più
+  alti del campo, quindi in quella scheda l'unica azione che si vedeva era
+  generare una chiave nuova; l'endpoint aveva una copia di dimensioni diverse.
+  Ora il campo usa la stessa forma dei campi segreti delle Impostazioni (chiave
+  cron, URL del feed): pulsanti secondari del corpo del campo, valore in
+  monospazio perché è una stringa da copiare, e per un attimo l'icona della
+  copia diventa una spunta come lì.
+- **Il pulsante Copia della chiave MCP non copiava niente.** La chiave è un
+  bearer token e per scelta non sta nell'HTML della pagina: dopo averla
+  generata e chiusa la scheda non c'era più modo di riprenderla, e l'unica via
+  restava rigenerarla — che sconnette tutti i client già configurati. Ora il
+  pulsante la chiede al server, la mostra nel campo e la copia: il segreto
+  arriva solo quando si preme Copia e solo con la sessione amministrativa
+  aperta, e lo snippet di configurazione si aggiorna con la chiave vera invece
+  di restare sul segnaposto.
+- **Lo stato della chiave MCP dice il vero.** Il campo della chiave mostrava
+  sempre «nessuna chiave configurata», anche con una chiave al suo posto — e con
+  il badge in cima che diceva «attivo» nella stessa schermata: il testo dello
+  stato non arrivava al campo. Ora lo stato lo calcola il campo stesso, legge
+  anche la chiave messa in `mcp.key` dentro `.env` (quella che il server
+  confronta, prima ignorata) e manda a copiare la chiave che c'è invece di
+  rigenerarla.
+- **Ogni azienda ha il suo anno, e non lo perde più.** Il filtro anno della
+  sidebar era uno solo per tutte le aziende e veniva azzerato a ogni cambio
+  azienda: chi lavorava su due soggetti — su una chiudeva il 2025, sull'altra
+  emetteva il 2026 — si trovava il periodo cambiato sotto le mani ogni volta.
+  Ora il periodo è di ciascuna azienda: cambiando azienda si riprende l'anno in
+  cui si lavorava lì, e tornando indietro lo si ritrova com'era; la scelta vive
+  in sessione e in un cookie di un anno, quindi sopravvive anche a logout e
+  chiusura del browser. Un anno rimasto in memoria ma ormai senza documenti in
+  quell'azienda torna a "Tutti gli anni" invece di mostrare un archivio vuoto,
+  che sembrerebbe un cambio non riuscito. Chi ha il cookie vecchio (un anno
+  solo) non perde nulla: viene attribuito all'azienda in cui rientra.
+- **Calendario: settimana all'italiana.** La griglia del mese si apriva con la
+  domenica in prima colonna: l'impostazione arrivava dal seme di InvoicePlane
+  (domenica primo giorno) e nessuno l'aveva scelta. Ora la settimana comincia
+  di lunedì e la domenica chiude la griglia, come si legge un calendario in
+  Italia; la migrazione cambia il valore solo se è ancora quello di partenza,
+  e la stessa impostazione governa i selettori di data. Chi preferisce la
+  domenica la reimposta da Impostazioni → Primo giorno della settimana.
+- **Piano dei conti: azioni di riga e intestazione.** Ogni voce aveva due
+  pulsanti affiancati (modifica, elimina) diversi da tutte le altre liste, che
+  usano un solo pulsante «Opzioni» con il menu: con nomi o note lunghe la coppia
+  finiva oltre il bordo destro della scheda. Ora anche qui c'è il menu Opzioni,
+  con modifica ed eliminazione e la stessa richiesta di conferma delle altre
+  tabelle, e la colonna resta stretta sul pulsante. Con loro sparisce
+  l'intestazione che galleggiava dentro le righe (la card era diventata un
+  contenitore di scorrimento, e l'intestazione fissa si ancorava a quello invece
+  che alla pagina).
+- **Favicon**: era l'ultima icona disegnata a parte — due righe invece di tre e
+  una croce più grande, per reggere i 16px della scheda del browser — e non
+  coincideva con il marchio della barra né con l'icona dell'app installata. Ora
+  è lo stesso segno — lo stesso file di disegno delle icone dell'app, con il
+  PNG rigenerato dall'SVG — ricentrato sul proprio ingombro come loro.
+- **Icona dell'app installata**: le icone della PWA erano un disegno a parte
+  rispetto al marchio — due righe invece di tre, la croce che usciva dal bordo
+  della piastrella e l'icona Apple già arrotondata, che iOS arrotondava una
+  seconda volta. Ora nascono tutte dallo stesso segno dell'app (tre righe
+  sfumate e croce dentro la piastrella), con la versione *maskable* raccolta nel
+  72% centrale per non farsi tagliare dalla maschera di Android; i due disegni
+  stanno accanto ai PNG, con il comando per rigenerarli. La versione della
+  cache del service worker cambia, così l'icona nuova arriva anche a chi ha già
+  installato l'app. Il disegno è anche ricentrato sul proprio ingombro: nella
+  barra, accanto al nome, la croce che sborda in basso a destra non si nota, ma
+  in una piastrella da sola faceva sembrare tutto il segno spostato a destra.
+  Ora i margini sono uguali sui quattro lati (84px per lato a 512).
 - **Logo troppo piccolo nei PDF**: un SVG con `width`/`height` diversi dalla
   `viewBox` (tipico dei file esportati da Illustrator o Inkscape) usciva a circa
   un quarto della grandezza, qualunque fosse lo stile. Ora le dimensioni
@@ -171,9 +409,21 @@ le colonne dei loghi e del piè di pagina dei documenti).
   di installazione e comandi di sviluppo aggiornati; nuova guida
   [Installazione su un sottodominio](docs/installazione-su-un-sottodominio.md)
   con configurazione nginx e Apache, `.env`, cron e verifiche.
-- **Asset versionati.** Favicon, icona per iPhone, logo della pagina di
-  benvenuto e `zxcvbn.js` portano `?v=` come gli altri asset, così un'icona o un
-  logo cambiati arrivano anche a chi li aveva già in cache.
+- **Pagine delle impostazioni dopo la navigazione parziale.** In Impostazioni,
+  Fattura elettronica, Utenti, assegnazione clienti, Integrazione MCP e nella
+  scelta delle attività, gli script partivano con `DOMContentLoaded`: aprendo la
+  pagina dal menu non si agganciavano e «Genera», «Copia» e i campi collegati
+  non rispondevano fino a un ricaricamento. Ora usano `ipReady()`; un test
+  impedisce che torni il listener nudo nelle viste.
+- **Cache degli asset.** `sw.js` non cade più nella cache di un anno del
+  `.htaccess` (il service worker deve poter essere aggiornato), e favicon,
+  icona per iPhone, logo della pagina di benvenuto e `zxcvbn.js` portano
+  `?v=` come gli altri asset, così un'icona o un logo cambiati arrivano
+  anche a chi li aveva già in cache.
+  Anche i font richiamati dai fogli di stile (Sora e le icone) portano
+  l'impronta del file nell'indirizzo: rigenerando il sottoinsieme delle icone,
+  chi aveva il file vecchio vede subito quelle nuove. Il collaudo con Apache
+  verifica ora anche l'intestazione di `sw.js`.
 - **Pulsanti delle conferme**: «Annulla» e «Esci senza salvare» (e le altre
   conferme di eliminazione) erano a 16px, più grandi dei pulsanti del resto
   dell'app; ora hanno la misura dei pulsanti piccoli.

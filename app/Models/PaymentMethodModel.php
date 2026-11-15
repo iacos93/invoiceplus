@@ -22,6 +22,9 @@ class PaymentMethodModel extends IpBaseModel
     protected $allowedFields = [
         'payment_method_name',
         'payment_method_requires_bank_account',
+        // Conto su cui questo metodo porta i soldi (bonifico -> conto corrente,
+        // contanti -> cassa). Vuoto: vale il conto predefinito dell'azienda.
+        'payment_method_bank_account_id',
         'payment_method_sdi_code',
     ];
 
@@ -33,6 +36,7 @@ class PaymentMethodModel extends IpBaseModel
         // nella select della fattura.
         'payment_method_name'                   => 'required|max_length[35]|is_unique[ip_payment_methods.payment_method_name,payment_method_id,{payment_method_id}]',
         'payment_method_requires_bank_account'  => 'permit_empty',
+        'payment_method_bank_account_id'        => 'permit_empty|is_natural',
         'payment_method_sdi_code'               => 'permit_empty|regex_match[/^MP(0[1-9]|1[0-9]|2[0-3])$/]',
         // Non e' un campo del form: CI4 pretende una regola per ogni campo
         // usato come segnaposto {…}, e is_unique qui sopra ne usa uno per

@@ -39,7 +39,7 @@
     <?= $this->include('layout/fonts') ?>
 
     <!-- Bootstrap 5 + vendor -->
-    <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.min.css'); ?>">
+    <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.subset.min.css'); ?>">
     <!-- Font Awesome ridotto alle icone in uso (tools/subset_fontawesome.php) -->
     <link rel="stylesheet" href="<?php _core_asset('vendor/fontawesome6/css/app.min.css'); ?>">
     <?php
@@ -115,16 +115,17 @@
     <main class="ip-auth-form">
         <div class="ip-auth-card">
             <?php
-                // Il logo sta in writable/uploads, non raggiungibile via http: data URI
-                // (vedi logo_data_uri).
+                // Il logo sta in writable/uploads, non raggiungibile via http:
+                // lo serve la rotta logo/... (controller Media) con cache lunga,
+                // invece di viaggiare in base64 dentro l'HTML a ogni accesso.
                 //
                 // Un marchio monocromatico scuro sparisce sul fondo del tema scuro, per
                 // questo la variante chiara è caricabile a parte. Lo scambio è via CSS
                 // (html[data-theme], vedi .login-logo--light/--dark in custom.css) e non
                 // qui: il tema lo sceglie il browser da localStorage, il server al
                 // momento del render non sa quale sia attivo.
-                $login_logo      = logo_data_uri(get_setting('login_logo'));
-                $login_logo_dark = logo_data_uri(get_setting('login_logo_dark'));
+                $login_logo      = logo_url('login');
+                $login_logo_dark = logo_url('login-dark');
 
                 // Con una sola delle due caricate quella vale per entrambi i temi:
                 // meglio un logo poco leggibile che nessun logo.

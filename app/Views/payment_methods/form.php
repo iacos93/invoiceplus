@@ -91,6 +91,35 @@ $account     = $default_account ?? null;
                                         <span class="ip-field-error"><?= esc($errors['payment_method_sdi_code']) ?></span>
                                     <?php endif; ?>
                                 </div>
+
+                                <?php
+                                // Dove questo metodo porta i soldi. Serve al
+                                // form dell'incasso, che propone il conto senza
+                                // chiederlo ogni volta, e quindi al saldo di
+                                // banca e cassa: prima gli incassi non
+                                // arrivavano su nessun conto.
+                                $methodAccount = old('payment_method_bank_account_id', $model->formValue('payment_method_bank_account_id'));
+                                ?>
+                                <div class="ip-doc-field">
+                                    <label class="ip-doc-label" for="payment_method_bank_account_id">
+                                        <?= trans('payment_method_bank_account', '', 'Conto di saldo predefinito') ?>
+                                    </label>
+                                    <select name="payment_method_bank_account_id" id="payment_method_bank_account_id" class="form-control simple-select">
+                                        <option value="0"><?= trans('no_bank_account', '', 'Nessun conto') ?></option>
+                                        <?php foreach (($bank_accounts ?? []) as $bank_account): ?>
+                                            <option value="<?= (int) $bank_account['bank_account_id'] ?>"
+                                                <?= (string) $methodAccount === (string) $bank_account['bank_account_id'] ? 'selected' : '' ?>>
+                                                <?= esc($bank_account['bank_account_name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="ip-field-help">
+                                        <?= trans('payment_method_bank_account_hint', '', 'Il conto degli incassi con questo metodo: corrente per il bonifico, cassa per i contanti. Vuoto, vale il conto predefinito dell\'azienda.') ?>
+                                    </p>
+                                    <?php if (!empty($errors['payment_method_bank_account_id'])): ?>
+                                        <span class="ip-field-error"><?= esc($errors['payment_method_bank_account_id']) ?></span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
 
                             <?php // Fuori dalla griglia: con il paragrafo di spiegazione

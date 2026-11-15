@@ -38,7 +38,7 @@ $is_public_view = !empty($public_view);
     <?= $this->include('layout/fonts') ?>
 
     <!-- Bootstrap 5 + vendor -->
-    <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.min.css'); ?>">
+    <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.subset.min.css'); ?>">
     <!-- Font Awesome ridotto alle icone in uso (tools/subset_fontawesome.php) -->
     <link rel="stylesheet" href="<?php _core_asset('vendor/fontawesome6/css/app.min.css'); ?>">
     <?php
@@ -53,8 +53,6 @@ $is_public_view = !empty($public_view);
         <link rel="stylesheet" href="<?php _theme_asset('css/monospace.css'); ?>">
     <?php } ?>
 
-    <!-- jQuery (usato dal codice legacy delle view) -->
-    <script src="<?php _core_asset('vendor/jquery.min.js'); ?>"></script>
     <!-- Bootstrap 5 bundle (include Popper) -->
     <script src="<?php _core_asset('vendor/bootstrap.bundle.min.js'); ?>"></script>
 

@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 
+use App\Models\BankAccountModel;
 use App\Models\ClientModel;
 use App\Models\CustomFieldModel;
 use App\Models\CustomValueModel;
@@ -374,13 +375,25 @@ class Payments extends BaseController
             $invoicePaymentMethods['invoice' . $openInvoice['invoice_id']] = $openInvoice['payment_method'] ?? 0;
         }
 
+        // Conto di saldo proposto da ogni metodo: il form lo segue finché
+        // l'utente non sceglie a mano (script in fondo alla vista).
+        $paymentMethods = (new PaymentMethodModel())->getAllOrdered();
+        $methodAccounts = [];
+
+        foreach ($paymentMethods as $paymentMethod) {
+            $methodAccounts[(string) $paymentMethod['payment_method_id']]
+                = default_bank_account_for_payment((int) $paymentMethod['payment_method_id']);
+        }
+
         $data = [
             'payment_id'              => $id,
             'errors'                  => $errors,
             'model'                   => $this->paymentModel,
             'payment'                 => $payment,
             'open_invoices'           => $openInvoices,
-            'payment_methods'         => (new PaymentMethodModel())->getAllOrdered(),
+            'payment_methods'         => $paymentMethods,
+            'bank_accounts'           => (new BankAccountModel())->getAllOrdered(),
+            'method_accounts'         => json_encode($methodAccounts),
             'clients'                 => (new ClientModel())->getAllOrdered(),
             'custom_fields'           => $customFields,
             'custom_values'           => $customValues,

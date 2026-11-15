@@ -31,9 +31,11 @@ class Companies extends BaseController
     /**
      * Cambia l'azienda su cui si sta lavorando.
      *
-     * Si azzera anche il filtro anno: gli anni disponibili dipendono dai
-     * documenti dell'azienda, e restare su un anno in cui la nuova azienda non
-     * ha nulla farebbe apparire un archivio vuoto invece del cambio riuscito.
+     * L'anno accompagna l'azienda e non l'utente: ogni azienda ricorda il
+     * periodo su cui ci si lavorava (selected_years_map()), quindi il cambio
+     * riporta dove si era su quella, non al periodo dell'azienda lasciata. Se
+     * lì quell'anno non ha documenti si torna a "Tutti gli anni": un archivio
+     * vuoto sembrerebbe che il cambio non sia riuscito.
      */
     public function switchCompany()
     {
@@ -53,16 +55,16 @@ class Companies extends BaseController
         }
 
         session()->set('active_company_id', $companyId);
-        session()->remove('selected_year');
 
         session()->setFlashdata('alert_success', 'Ora stai operando su ' . $company['company_name']);
 
         $back = $request->getPost('back');
 
-        // Anche il cookie va riportato a "Tutti gli anni": altrimenti alla
-        // prossima sessione (o al prossimo avvio del browser) l'anno vecchio
-        // tornerebbe dal cookie e annullerebbe l'azzeramento appena fatto.
-        return remember_selected_year(redirect()->to(ip_back_url('dashboard', $back)), 0);
+        // Ora che la memoria è per azienda, l'anno da riprendere è quello di
+        // questa: selected_year() lo legge dalla mappa dell'azienda appena
+        // attivata e scarta da sé un anno che qui non ha documenti. Il cookie
+        // va rimandato con la mappa intera, perché è quella a durare un anno.
+        return remember_selected_year(redirect()->to(ip_back_url('dashboard', $back)), selected_year());
     }
 
     public function form(?int $id = null)

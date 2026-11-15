@@ -106,6 +106,34 @@ $title = $payment_id ? trans('edit') . ' ' . trans('payment') : trans('new_payme
                         </select>
                     </div>
 
+                    <?php
+                    // Conto di saldo: è il dato che porta l'incasso dentro un
+                    // saldo di banca o di cassa (prima non c'era, e ogni saldo
+                    // ignorava gli incassi). Lo propone il metodo scelto —
+                    // bonifico sul conto, contanti sulla cassa — e resta
+                    // modificabile per l'eccezione.
+                    $proposed_account = old('bank_account_id', $model->formValue('bank_account_id'));
+                    if ($proposed_account === null || $proposed_account === '') {
+                        $proposed_account = default_bank_account_for_payment((int) $model->formValue('payment_method_id'));
+                    }
+                    ?>
+                    <div class="ip-doc-field ip-doc-field--full">
+                        <label class="ip-doc-label" for="bank_account_id"><?= trans('bank_account', '', 'Conto di saldo') ?></label>
+                        <select name="bank_account_id" id="bank_account_id" class="form-control simple-select">
+                            <option value="0"><?= trans('no_bank_account', '', 'Nessun conto') ?></option>
+                            <?php foreach ($bank_accounts as $bank_account): ?>
+                                <option value="<?= (int) $bank_account['bank_account_id'] ?>"
+                                    <?= (string) $proposed_account === (string) $bank_account['bank_account_id'] ? 'selected' : '' ?>>
+                                    <?= esc($bank_account['bank_account_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="ip-field-help"><?= trans('payment_bank_account_hint', '', 'Il conto su cui sono entrati i soldi: serve al saldo di banca e cassa. Cambialo solo se il cliente ha pagato altrove.') ?></p>
+                        <?php if (! empty($errors['bank_account_id'])): ?>
+                            <div class="ip-field-error"><?= esc($errors['bank_account_id']) ?></div>
+                        <?php endif; ?>
+                    </div>
+
                     <?php // Ripartizione su più metodi: solo per un nuovo incasso (vedi Payments::saveSplit()). ?>
                     <?php if (! $payment_id): ?>
                         <div class="ip-doc-field ip-doc-field--full" role="group" aria-labelledby="payment_split_label">
@@ -245,6 +273,23 @@ $title = $payment_id ? trans('edit') . ' ' . trans('payment') : trans('new_payme
         splitRows.addEventListener('click', function (e) {
             const btn = e.target.closest('.payment-split-remove');
             if (btn) btn.closest('.payment-split-row').remove();
+        });
+    }
+
+    // Conto di saldo: segue il metodo di pagamento finché l'utente non lo
+    // sceglie a mano. Da lì in poi non lo tocca più — sostituirgli la scelta
+    // mentre sta compilando gli farebbe salvare l'incasso sul conto sbagliato.
+    const methodSelect = document.getElementById('payment_method_id');
+    const accountSelect = document.getElementById('bank_account_id');
+    const methodAccounts = <?= $method_accounts ?>;
+    let accountTouched = false;
+
+    if (methodSelect && accountSelect) {
+        accountSelect.addEventListener('change', function () { accountTouched = true; });
+        methodSelect.addEventListener('change', function () {
+            if (accountTouched) { return; }
+            const proposta = methodAccounts[this.value];
+            if (proposta) { accountSelect.value = String(proposta); }
         });
     }
     })();

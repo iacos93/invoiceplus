@@ -356,7 +356,7 @@
         input.addEventListener('input', function () {
             clearTimeout(timer);
             timer = setTimeout(function () {
-                if (input.value.trim().length < 2 || skeleton) { return; }
+                if (input.value.trim().length < 3 || skeleton) { return; }
                 // aria-busy sul combobox mentre la risposta JSON è in volo.
                 input.setAttribute('aria-busy', 'true');
                 skeleton = document.createElement('div');
@@ -371,7 +371,7 @@
                 input.setAttribute('aria-expanded', 'true');
                 ensureObserver();
                 safety = setTimeout(clearSkeleton, 8000);
-            }, 220);
+            }, 300);
         });
     }
 

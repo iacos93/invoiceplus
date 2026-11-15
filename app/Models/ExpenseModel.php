@@ -159,7 +159,7 @@ class ExpenseModel extends IpBaseModel
             $this->where(year_sql('ip_expenses.expense_date'), $year);
         }
 
-        $this->applyMonthFilter($this, 'ip_expenses.expense_date', $month);
+        $this->applyMonthFilter($this, 'ip_expenses.expense_date', $month, $year);
         $this->applyPaidFilter($this, $paid);
         $this->applySignFilter($this, $sign);
         $this->scopeToCompany();
@@ -301,7 +301,7 @@ class ExpenseModel extends IpBaseModel
      *
      * @return mixed
      */
-    private function applyMonthFilter($builder, string $column, int|array $month)
+    private function applyMonthFilter($builder, string $column, int|array $month, int $year = 0)
     {
         $months = is_array($month) ? $month : [$month];
         $months = array_values(array_filter(
@@ -311,6 +311,24 @@ class ExpenseModel extends IpBaseModel
 
         if ($months === []) {
             return $builder;
+        }
+
+        // Con l'anno noto è un intervallo di date: EXTRACT(MONTH FROM ...)
+        // impedisce l'uso dell'indice. Vedi InvoiceModel::applyMonthFilter().
+        if ($year > 0) {
+            $builder->groupStart();
+
+            foreach ($months as $m) {
+                $start = sprintf('%04d-%02d-01', $year, $m);
+                $end   = date('Y-m-d', (int) strtotime($start . ' +1 month'));
+
+                $builder->orGroupStart()
+                        ->where($column . ' >=', $start)
+                        ->where($column . ' <', $end)
+                        ->groupEnd();
+            }
+
+            return $builder->groupEnd();
         }
 
         if (count($months) === 1) {

@@ -15,7 +15,10 @@
  *  - badge di stato live dell'endpoint (attivo / non configurato);
  *  - snippet di configurazione client gia' pronto da copiare;
  *  - conferma prima di rigenerare la chiave (azione distruttiva);
- *  - feedback toast alla copia dell'endpoint.
+ *  - feedback toast alla copia dell'endpoint;
+ *  - copia della chiave: il valore memorizzato non sta nella pagina, quindi il
+ *    pulsante lo chiede al server (mcp/ajax/reveal_key) e lo mostra nel campo
+ *    prima di copiarlo; senza questo la copia non copiava niente.
  */
 
 $this->setVar('pageTitle', trans('mcp_settings', '', 'Integrazione MCP'));
@@ -23,9 +26,12 @@ $this->setVar('pageTitle', trans('mcp_settings', '', 'Integrazione MCP'));
 // La chiave è write-only: il valore memorizzato è il ciphertext e serve solo
 // a sapere se l'integrazione è configurata, non va mai stampato. Il campo
 // parte vuoto e si riempie solo con la risposta di mcp/ajax/get_key.
-$mcpKeyStored = (string) get_setting('mcp_key', '');
+// La chiave può stare anche fuori dal database (mcp.key in .env): conta quella,
+// perché è quella che il server /mcp confronta. Lo stato mostrato deve dire la
+// verità in entrambi i casi, altrimenti un'installazione con la chiave in .env
+// sembrerebbe non configurata.
 $mcpCompanyId = (string) get_setting('mcp_company_id', '0');
-$mcpActive    = $mcpKeyStored !== '';
+$mcpActive    = mcp_key_configured();
 $mcpUrl       = site_url('mcp');
 ?>
 
@@ -61,7 +67,7 @@ $mcpUrl       = site_url('mcp');
                         </div>
                         <div class="ip-doc-section__body">
                             <div class="ip-doc-grid">
-                                <?= $this->include('mcp/_key_field', ['mcpKeyStored' => $mcpKeyStored]) ?>
+                                <?= $this->include('mcp/_key_field') ?>
 
                                 <div class="ip-doc-field">
                                     <label class="ip-doc-label" for="mcp_company_id">
@@ -94,11 +100,15 @@ $mcpUrl       = site_url('mcp');
                                     <label class="ip-doc-label" for="mcp_url">
                                         <?= trans('mcp_url') ?>
                                     </label>
-                                    <div class="input-group">
+                                    <?php /* ip-secret-group come nel campo della chiave:
+                                             l'endpoint è un valore da copiare, non da leggere, e i
+                                             due pulsanti Copia della pagina devono avere lo stesso corpo. */ ?>
+                                    <div class="input-group ip-secret-group">
                                         <input type="text" id="mcp_url" class="form-control" readonly
                                                value="<?= esc($mcpUrl) ?>">
-                                        <button id="btn_copy_mcp_url" type="button" class="btn btn-secondary"
-                                                title="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>">
+                                        <button id="btn_copy_mcp_url" type="button" class="btn btn-secondary ip-secret-copy"
+                                                title="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>"
+                                                aria-label="<?= esc(trans('copy', '', 'Copia'), 'attr') ?>">
                                             <i class="fa fa-solid fa-copy" aria-hidden="true"></i>
                                         </button>
                                     </div>
@@ -134,7 +144,7 @@ $mcpUrl       = site_url('mcp');
 </form>
 
 <script>
-    $(function () {
+    ipReady(function () {
         var tokenName   = '<?= csrf_token() ?>';
         var tokenInput  = document.querySelector('input[name="' + tokenName + '"]');
         var tokenField  = document.getElementById('mcp_key');
@@ -142,6 +152,7 @@ $mcpUrl       = site_url('mcp');
         var copyKeyBtn  = document.getElementById('btn_copy_mcp_key');
         var copyBtn     = document.getElementById('btn_copy_mcp_url');
         var urlInput    = document.getElementById('mcp_url');
+        var revealUrl   = '<?= site_url('mcp/ajax/reveal_key') ?>';
 
         // Toast volante: riusa il container e lo stile dei flashdata (layout/alerts.php).
         function showToast(message, variant) {
@@ -218,10 +229,60 @@ $mcpUrl       = site_url('mcp');
             fallback();
         }
 
+        // Lo snippet client segue la chiave mostrata nel campo: se resta il
+        // segnaposto, chi lo copia incolla una configurazione che non funziona.
+        function setSnippetKey(key) {
+            var snippet = document.querySelector('.ip-mcp-snippet code');
+            if (snippet) {
+                // textContent: la chiave non deve mai passare da innerHTML.
+                snippet.textContent = snippet.textContent.replace(
+                    /Bearer .*$/m,
+                    function () { return 'Bearer ' + key; }
+                );
+            }
+        }
+
+        // La chiave memorizzata non sta nell'HTML: il server la manda solo a
+        // chi la chiede dalla pagina, e solo dietro sessione amministrativa.
+        // Senza questo il pulsante Copia non aveva niente da copiare.
+        function revealKey() {
+            var fd = new FormData();
+            fd.append(tokenName, tokenInput.value);
+
+            return fetch(revealUrl, {method: 'POST', body: fd})
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    // CSRF monouso: il token va rinnovato anche se la chiave
+                    // non c'è.
+                    if (data && data.token) {
+                        tokenInput.value = data.token;
+                    }
+                    if (!data || !data.key) {
+                        return null;
+                    }
+                    tokenField.value = data.key;
+                    tokenField.select();
+                    setSnippetKey(data.key);
+
+                    return data.key;
+                });
+        }
+
+        // Come nelle Impostazioni: per un attimo l'icona diventa una spunta,
+        // così la copia si vede anche senza leggere il toast.
+        function flashCopied(btn) {
+            if (!btn) {
+                return;
+            }
+            btn.classList.add('is-copied');
+            setTimeout(function () { btn.classList.remove('is-copied'); }, 1500);
+        }
+
         function copyKeyField() {
             tokenField.select();
             copyText(tokenField.value,
                 function () {
+                    flashCopied(copyKeyBtn);
                     showToast('<?= esc(trans('mcp_key_copied', '', 'Chiave copiata negli appunti'), 'js') ?>', 'success');
                 },
                 function () {
@@ -258,29 +319,37 @@ $mcpUrl       = site_url('mcp');
                     // chiaro. La si mette nel campo, la si seleziona e la si copia.
                     tokenField.value = data.key;
                     tokenField.select();
+                    setSnippetKey(data.key);
                     copyKeyField();
-                    // Aggiorna lo snippet client così resta coerente con la
-                    // nuova chiave. textContent: la chiave non deve mai
-                    // passare da innerHTML.
-                    var snippet = document.querySelector('.ip-mcp-snippet code');
-                    if (snippet) {
-                        snippet.textContent = snippet.textContent.replace(
-                            /Bearer .*$/m,
-                            function () { return 'Bearer ' + data.key; }
-                        );
-                    }
                 });
         });
 
         if (copyKeyBtn) {
             copyKeyBtn.addEventListener('click', function () {
-                if (!tokenField.value) {
-                    // La chiave memorizzata è write-only: senza una generazione
-                    // in questa pagina non c'è nulla da copiare.
-                    showToast('<?= esc(trans('mcp_key_not_generated', '', 'Genera prima una chiave: quella esistente non è più visibile'), 'js') ?>', 'warning');
+                // Campo già pieno (chiave appena generata o appena rivelata):
+                // si copia e basta.
+                if (tokenField.value) {
+                    copyKeyField();
+
                     return;
                 }
-                copyKeyField();
+
+                // Campo vuoto: la chiave si chiede al server, si mostra nel
+                // campo e si copia. Prima qui non si copiava niente e l'unica
+                // via era rigenerarla, sconnetttendo i client configurati.
+                copyKeyBtn.disabled = true;
+                revealKey().then(function (key) {
+                    copyKeyBtn.disabled = false;
+                    if (!key) {
+                        showToast('<?= esc(trans('mcp_key_not_generated', '', 'Nessuna chiave configurata: generala prima di copiarla'), 'js') ?>', 'warning');
+
+                        return;
+                    }
+                    copyKeyField();
+                }, function () {
+                    copyKeyBtn.disabled = false;
+                    showToast('<?= esc(trans('mcp_copy_failed', '', 'Copia non riuscita: la chiave è selezionata, premi Ctrl+C'), 'js') ?>', 'warning');
+                });
             });
         }
 
@@ -289,6 +358,7 @@ $mcpUrl       = site_url('mcp');
                 urlInput.select();
                 copyText(urlInput.value,
                     function () {
+                        flashCopied(copyBtn);
                         showToast('<?= esc(trans('mcp_copied'), 'js') ?>', 'success');
                     },
                     function () {

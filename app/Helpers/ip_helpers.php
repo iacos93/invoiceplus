@@ -13,44 +13,155 @@ if (!function_exists('get_setting')) {
     }
 }
 
+if (!function_exists('mcp_key_configured')) {
+    /**
+     * La chiave del server MCP esiste, ovunque sia stata messa.
+     *
+     * Può stare nelle impostazioni (cifrata) oppure in `mcp.key` dentro `.env`,
+     * che Mcp::authenticated() preferisce. Il pannello guardava solo il
+     * database e nell'altro caso scriveva "nessuna chiave configurata" mentre
+     * l'integrazione era attiva: due risposte diverse nella stessa schermata.
+     *
+     * Un solo posto decide, e non serve decifrare: basta sapere che c'è.
+     */
+    function mcp_key_configured(): bool
+    {
+        return trim((string) env('mcp.key', '')) !== ''
+            || (string) get_setting('mcp_key', '') !== '';
+    }
+}
+
+if (!function_exists('mcp_key_placeholder')) {
+    /**
+     * Il testo dentro il campo della chiave MCP.
+     *
+     * Con una chiave configurata manda a copiarla, non a rigenerarla: chi
+     * rigenera per riavere la chiave sconnette tutti i client già configurati.
+     * Senza chiave, invita a generarne una.
+     */
+    function mcp_key_placeholder(bool $configured): string
+    {
+        return $configured
+            ? trans('mcp_key_placeholder', '', 'Chiave configurata: premi Copia per mostrarla e copiarla')
+            : trans('mcp_key_placeholder_empty', '', 'Nessuna chiave configurata: generala per attivare l\'integrazione');
+    }
+}
+
+if (!function_exists('selected_years_map')) {
+    /**
+     * L'anno scelto in ogni azienda: `[company_id => anno]`, 0 = tutti gli anni.
+     *
+     * Una scelta sola per tutte le aziende non regge: chi lavora su due soggetti
+     * tiene periodi diversi — su una sta chiudendo il 2025, sull'altra emette il
+     * 2026 — e cambiare azienda gli cambiava il periodo sotto le mani. Così ogni
+     * azienda ricorda il suo, e il cambio azienda riporta dove si era.
+     *
+     * Sta in sessione e, per sopravvivere a logout e chiusura del browser, in un
+     * cookie di un anno con la stessa mappa in JSON. Il cookie è piccolo e non
+     * contiene altro che gli anni: sono numeri, una voce per azienda.
+     *
+     * @return array<int, int>
+     */
+    function selected_years_map(): array
+    {
+        $fromSession = session('selected_years');
+
+        if (is_array($fromSession)) {
+            return $fromSession;
+        }
+
+        $map = selected_years_from_cookies(
+            (string) (service('request')->getCookie('ip_selected_years') ?? ''),
+            (string) (service('request')->getCookie('ip_selected_year') ?? ''),
+            active_company_id()
+        );
+
+        // Rimesso in sessione: le altre chiamate della stessa pagina (layout
+        // compreso) non rileggono il cookie né rifanno query.
+        session()->set('selected_years', $map);
+
+        return $map;
+    }
+}
+
+if (!function_exists('selected_years_from_cookies')) {
+    /**
+     * La mappa azienda => anno contenuta nei cookie.
+     *
+     * Separata dalla richiesta per poterla provare senza HTTP. Se c'è solo il
+     * cookie vecchio — un anno per tutte le aziende — lo si attribuisce
+     * all'azienda in cui si sta entrando, che è l'unica lettura sensata di quel
+     * valore; alla prima scelta nuova sparisce da sé, perché da lì in poi si
+     * scrive solo la mappa.
+     *
+     * @return array<int, int>
+     */
+    function selected_years_from_cookies(string $json, string $legacy, int $companyId): array
+    {
+        $map = [];
+
+        if ($json !== '') {
+            $decoded = json_decode($json, true);
+
+            if (is_array($decoded)) {
+                foreach ($decoded as $company => $year) {
+                    $map[(int) $company] = (int) $year;
+                }
+            }
+        }
+
+        if ($map === [] && (int) $legacy !== 0) {
+            $map[$companyId] = (int) $legacy;
+        }
+
+        return $map;
+    }
+}
+
 if (!function_exists('selected_year')) {
     /**
-     * Anno selezionato globalmente dall'utente (selettore in sidebar).
-     * 0 = "Tutti gli anni". Persiste in sessione, non nella query string:
-     * a differenza del filtro anno/mese locale di fatture e preventivi
-     * (che resta nell'URL così è linkabile/condivisibile), questo è un
-     * contesto di navigazione — deve seguire l'utente da una pagina
-     * all'altra senza che ogni link dell'app debba propagarlo esplicitamente.
+     * Anno scelto nell'azienda attiva (selettore in sidebar), 0 = tutti gli anni.
      *
-     * La sessione però scade (due ore) e il logout la distrugge: l'ultima
-     * scelta è copiata anche in un cookie di un anno (remember_selected_year(),
-     * scritto da YearFilter e dal cambio azienda), così chi riapre il browser
-     * o rientra il giorno dopo ritrova l'anno su cui stava lavorando invece
-     * di "Tutti gli anni".
+     * Persiste in sessione, non nella query string: a differenza del filtro
+     * anno/mese locale di fatture e preventivi (che resta nell'URL così è
+     * linkabile/condivisibile), questo è un contesto di navigazione — deve
+     * seguire l'utente da una pagina all'altra senza che ogni link dell'app
+     * debba propagarlo esplicitamente.
      */
     function selected_year(): int
     {
-        $fromSession = session('selected_year');
+        $companyId = active_company_id();
+        $map       = selected_years_map();
 
-        if ($fromSession !== null) {
-            return (int) $fromSession;
+        if (!array_key_exists($companyId, $map)) {
+            return 0;
         }
 
-        // Sessione nuova (logout, browser riaperto, scadenza): si riparte dal
-        // cookie. L'anno però si accetta solo se ha ancora documenti in questa
-        // azienda: un anno ormai vuoto farebbe apparire un archivio deserto e
-        // sembrerebbe che il filtro non funzioni.
-        $candidate = (int) service('request')->getCookie('ip_selected_year');
+        $candidate = (int) $map[$companyId];
 
+        // L'anno vale finché ha documenti in questa azienda: uno ormai vuoto
+        // farebbe apparire un archivio deserto e sembrerebbe che il filtro non
+        // funzioni. Il controllo si fa qui e non solo sul cookie perché il
+        // periodo di un'azienda può essere rimasto indietro (documenti archiviati
+        // o mai importati) mentre l'azienda attiva era un'altra.
         if ($candidate !== 0 && !in_array($candidate, available_years(), true)) {
-            $candidate = 0;
-        }
+            set_selected_year(0);
 
-        // Rimesso in sessione, con il valore eventualmente corretto: le altre
-        // chiamate della stessa pagina (layout compreso) non rifanno la query.
-        session()->set('selected_year', $candidate);
+            return 0;
+        }
 
         return $candidate;
+    }
+}
+
+if (!function_exists('set_selected_year')) {
+    /** Sceglie l'anno per l'azienda attiva, in sessione. */
+    function set_selected_year(int $year): void
+    {
+        $map                      = selected_years_map();
+        $map[active_company_id()] = $year;
+
+        session()->set('selected_years', $map);
     }
 }
 
@@ -63,13 +174,21 @@ if (!function_exists('remember_selected_year')) {
      * costruisce una Response nuova e i cookie messi sul servizio globale non
      * la seguono.
      *
-     * Nel cookie c'è solo l'intero dell'anno — nessun dato del documento.
+     * Nel cookie c'è solo la mappa degli anni per azienda — nessun dato del
+     * documento. Il vecchio cookie con un anno solo (ip_selected_year) resta
+     * letto da selected_years_map() per chi ce l'ha già, ma non viene più
+     * scritto.
      */
     function remember_selected_year(
         \CodeIgniter\HTTP\ResponseInterface $response,
         int $year
     ): \CodeIgniter\HTTP\ResponseInterface {
-        return $response->setCookie('ip_selected_year', (string) $year, YEAR, '', '/');
+        $map                      = selected_years_map();
+        $map[active_company_id()] = $year;
+
+        session()->set('selected_years', $map);
+
+        return $response->setCookie('ip_selected_years', json_encode($map), YEAR, '', '/');
     }
 }
 
@@ -653,6 +772,37 @@ if (!function_exists('currency_wrap')) {
     }
 }
 
+if (!function_exists('default_bank_account_for_payment')) {
+    /**
+     * Conto di saldo da proporre per un incasso: quello del metodo di
+     * pagamento, altrimenti il predefinito dell'azienda, altrimenti nessuno (0).
+     *
+     * Il conto del metodo vale solo se appartiene all'azienda attiva: i conti
+     * sono per azienda, e un metodo che punta al conto di un'altra farebbe
+     * finire l'incasso nel saldo di un soggetto che non c'entra. Un metodo
+     * senza conto non eredita il primo conto che capita, ma il predefinito
+     * dichiarato in Impostazioni: altrimenti il saldo si riempirebbe su un
+     * conto scelto dall'ordine alfabetico.
+     */
+    function default_bank_account_for_payment(int $paymentMethodId): int
+    {
+        $bankAccounts = new \App\Models\BankAccountModel();
+
+        if ($paymentMethodId > 0) {
+            $method    = (new \App\Models\PaymentMethodModel())->find($paymentMethodId);
+            $accountId = (int) ($method['payment_method_bank_account_id'] ?? 0);
+
+            if ($accountId > 0 && $bankAccounts->findScoped($accountId) !== null) {
+                return $accountId;
+            }
+        }
+
+        $default = $bankAccounts->getDefault();
+
+        return (int) ($default['bank_account_id'] ?? 0);
+    }
+}
+
 if (!function_exists('format_amount')) {
     /**
      * Formatta un importo con i separatori configurati
@@ -1015,29 +1165,66 @@ if (!function_exists('pdf_create')) {
     /**
      * Genera un PDF con Dompdf e lo invia allo stream o lo salva
      * (equivalente semplificato di pdf_create() CI3 con dompdf).
+     *
+     * Lo stesso HTML non viene stampato due volte: il PDF esce dalla cache
+     * (App\Libraries\PdfCache), la cui chiave è l'HTML stesso. Un documento con
+     * il segnaposto delle pagine costava due impaginazioni a ogni richiesta —
+     * il conto dei fogli e il render vero — e lo stesso documento veniva
+     * richiesto più volte fra download, allegato email ed export.
      */
     function pdf_create(string $html, string $filename = 'document.pdf', bool $stream = true, ?string $path = null)
     {
-        $html   = pdf_page_total($html);
-        $dompdf = new \Dompdf\Dompdf();
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4');
-        // Media "print": le regole @media screen (es. il padding d'anteprima)
-        // non si applicano, così il PDF resta governato dai soli margini @page.
-        $dompdf->getOptions()->setDefaultMediaType('print');
-        $dompdf->render();
+        $pdf = (new \App\Libraries\PdfCache())->remember($html, static function (string $html): string {
+            $html   = pdf_page_total($html);
+            $dompdf = new \Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4');
+            // Media "print": le regole @media screen (es. il padding d'anteprima)
+            // non si applicano, così il PDF resta governato dai soli margini @page.
+            $dompdf->getOptions()->setDefaultMediaType('print');
+            $dompdf->render();
+
+            return $dompdf->output();
+        });
 
         if ($path !== null) {
-            file_put_contents($path, $dompdf->output());
+            file_put_contents($path, $pdf);
             return $path;
         }
 
         if ($stream) {
-            $dompdf->stream($filename, ['Attachment' => true]);
+            pdf_send($pdf, $filename);
             exit;
         }
 
-        return $dompdf->output();
+        return $pdf;
+    }
+}
+
+if (!function_exists('pdf_send')) {
+    /**
+     * Manda al browser i byte di un PDF già stampato.
+     *
+     * Riproduce le intestazioni che dompdf scriveva da sé quando il PDF lo
+     * produceva lui (Content-Disposition compreso il nome alternativo per i
+     * caratteri fuori da ISO-8859-1, che ora possono arrivare da un documento
+     * con accenti nel numero): un download deve restare identico.
+     */
+    function pdf_send(string $pdf, string $filename): void
+    {
+        if (headers_sent()) {
+            echo $pdf;
+            return;
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . mb_strlen($pdf, '8bit'));
+
+        $filename = str_replace(["\n", "'"], '', basename($filename, '.pdf')) . '.pdf';
+        header(\Dompdf\Helpers::buildContentDispositionHeader('attachment', $filename));
+
+        echo $pdf;
+        flush();
     }
 }
 
@@ -1180,6 +1367,75 @@ if (!function_exists('report_pdf_brand')) {
     }
 }
 
+if (!function_exists('logo_mimes')) {
+    /**
+     * Estensioni ammesse per un logo e il loro content-type.
+     *
+     * @return array<string, string>
+     */
+    function logo_mimes(): array
+    {
+        return [
+            'gif'  => 'image/gif',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'svg'  => 'image/svg+xml',
+        ];
+    }
+}
+
+if (!function_exists('logo_path')) {
+    /**
+     * Percorso assoluto di un logo caricato, o null se non c'è o non è
+     * un'immagine ammessa.
+     *
+     * `basename()` non è un dettaglio: il valore arriva dalle impostazioni, ma
+     * un `../../` nel nome porterebbe fuori da uploads. Lo usano il data URI
+     * (per i PDF) e la rotta che serve il logo alle pagine.
+     */
+    function logo_path(?string $logo): ?string
+    {
+        if (!$logo) {
+            return null;
+        }
+
+        $path = WRITEPATH . 'uploads/' . basename($logo);
+
+        if (!is_file($path)) {
+            return null;
+        }
+
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+        return isset(logo_mimes()[$extension]) ? $path : null;
+    }
+}
+
+if (!function_exists('logo_url')) {
+    /**
+     * URL del logo servito come file (rotta logo/..., controller Media).
+     *
+     * Le pagine usano questo; il data URI resta per il PDF, dove dompdf non fa
+     * richieste HTTP. Stringa vuota se non c'è: chi chiama decide il fallback.
+     * Il `?v=` è la data del file, così la cache lunga non serve un logo vecchio
+     * dopo una sostituzione.
+     */
+    function logo_url(string $variant = 'login'): string
+    {
+        $setting = $variant === 'login-dark' ? 'login_logo_dark' : 'login_logo';
+        $path    = logo_path((string) get_setting($setting, ''));
+
+        if ($path === null) {
+            return '';
+        }
+
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+        return site_url('logo/' . $variant . '.' . $extension) . '?v=' . filemtime($path);
+    }
+}
+
 if (!function_exists('logo_data_uri')) {
     /**
      * data URI di un logo caricato in writable/uploads.
@@ -1195,31 +1451,15 @@ if (!function_exists('logo_data_uri')) {
      */
     function logo_data_uri(?string $logo): string
     {
-        if (!$logo) {
+        $path = logo_path($logo);
+
+        if ($path === null) {
             return '';
         }
 
-        $path = WRITEPATH . 'uploads/' . basename($logo);
-
-        if (!is_file($path)) {
-            return '';
-        }
-
-        $mimes = [
-            'gif'  => 'image/gif',
-            'jpg'  => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'png'  => 'image/png',
-            'svg'  => 'image/svg+xml',
-        ];
-
+        $mimes     = logo_mimes();
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
-        if (!isset($mimes[$extension])) {
-            return '';
-        }
-
-        $data = @file_get_contents($path);
+        $data      = @file_get_contents($path);
 
         if ($data === false) {
             return '';
@@ -1306,7 +1546,7 @@ if (!function_exists('item_vat_label')) {
 if (!function_exists('name_monogram')) {
     /**
      * Monogramma di un nome o di una ragione sociale: le iniziali delle prime
-     * due parole che contano.
+     * parole che contano, due o tre secondo quante ne ha ($max).
      *
      * Prendere le prime due parole qualunque dava "CD" per «Comune di
      * Carpignano Sesia»: la preposizione finiva nel monogramma al posto del
@@ -1316,7 +1556,7 @@ if (!function_exists('name_monogram')) {
      * resta nulla (un nome fatto solo di particelle) si torna alle parole
      * così come sono.
      */
-    function name_monogram(string $name): string
+    function name_monogram(string $name, int $max = 3): string
     {
         $skip = ['di', 'de', 'del', 'dello', 'della', 'dei', 'degli', 'delle', 'da', 'dal', 'dalla',
             'e', 'ed', 'il', 'lo', 'la', 'i', 'gli', 'le', 'a', 'al', 'alla', 'in', 'per', 'con', 'su',
@@ -1326,7 +1566,11 @@ if (!function_exists('name_monogram')) {
         $significant = [];
 
         foreach (preg_split('/[\s\-\/]+/u', trim($name)) ?: [] as $word) {
-            // Solo lettere e cifre: "d'Italia" resta "dItalia", «"Bottacchi"» "Bottacchi".
+            // L'articolo eliso resta attaccato alla parola ("d'Aosta"): la sua
+            // lettera non è un'iniziale, e prenderla dava "IDD" per «ICS Duca
+            // d'Aosta». Si toglie prima, così conta la lettera che si legge.
+            $word  = preg_replace("/^[\p{L}]'/u", '', $word) ?? $word;
+            // Solo lettere e cifre: "d'Italia" resta "Italia", «"Bottacchi"» "Bottacchi".
             $clean = preg_replace('/[^\p{L}\p{N}]+/u', '', $word) ?? '';
 
             if ($clean === '') {
@@ -1340,9 +1584,15 @@ if (!function_exists('name_monogram')) {
             }
         }
 
+        // Fino a tre iniziali, non due: le ragioni sociali lunghe si mangiano le
+        // prime due ("ICS Duca d'Aosta", "ICS Giovanni XXIII", "ICS Filippo
+        // Maria Beltrami" diventavano tutte e tre "IC") e nella scheda il
+        // monogramma smetteva di distinguere un cliente dall'altro. Con due
+        // parole significative il risultato resta quello di prima, quindi chi
+        // ha un nome corto non vede cambiare nulla.
         $monogram = '';
 
-        foreach (array_slice($significant ?: $all, 0, 2) as $word) {
+        foreach (array_slice($significant ?: $all, 0, $max) as $word) {
             $monogram .= mb_substr($word, 0, 1);
         }
 

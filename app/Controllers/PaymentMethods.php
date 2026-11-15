@@ -67,6 +67,7 @@ class PaymentMethods extends BaseController
                 'errors'            => $this->paymentMethodModel->errors(),
                 'model'             => $this->paymentMethodModel,
                 'default_account'   => (new BankAccountModel())->getDefault(),
+                'bank_accounts'     => (new BankAccountModel())->getAllOrdered(),
             ];
 
             return view('payment_methods/form', $data);
@@ -85,6 +86,7 @@ class PaymentMethods extends BaseController
             'errors'            => [],
             'model'             => $this->paymentMethodModel,
             'default_account'   => (new BankAccountModel())->getDefault(),
+            'bank_accounts'     => (new BankAccountModel())->getAllOrdered(),
         ];
 
         return view('payment_methods/form', $data);

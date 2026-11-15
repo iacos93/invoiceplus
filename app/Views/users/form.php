@@ -29,20 +29,23 @@ $legacyIban = trim((string) old('user_iban', $model->formValue('user_iban')));
 <?php $this->setVar('pageTitle', trans('user_form')); ?>
 
 <script>
-    $(function () {
-        show_fields();
-
-        $('#user_type').change(function () {
-            show_fields();
-        });
+    ipReady(function () {
+        var userType = document.getElementById('user_type');
+        var adminFields = document.getElementById('administrator_fields');
+        if (!userType || !adminFields) {
+            return;
+        }
 
         // I campi fiscali valgono solo per l'amministratore: l'utente
         // ospite e' in sola lettura sui documenti dei clienti assegnati.
         // (Il ramo #guest_fields e' stato tolto: non esiste nessun elemento
         // con quell'id nella pagina, era codice morto.)
         function show_fields() {
-            $('#administrator_fields').toggle($('#user_type').val() === '1');
+            adminFields.hidden = userType.value !== '1';
         }
+
+        show_fields();
+        userType.addEventListener('change', show_fields);
     });
 </script>
 

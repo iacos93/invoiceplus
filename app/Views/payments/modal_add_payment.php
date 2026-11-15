@@ -44,6 +44,25 @@
                     </select>
                 </div>
 
+                <?php
+                // Conto di saldo: proposto dal metodo della fattura, così
+                // l'incasso rapido finisce su un conto anche senza aprire il
+                // form completo (da qui la prima nota lo vede).
+                $modalAccount = default_bank_account_for_payment((int) ($invoice_payment_method ?? 0));
+                ?>
+                <div class="ip-doc-field">
+                    <label class="ip-doc-label" for="modal_bank_account_id"><?= trans('bank_account', '', 'Conto di saldo') ?></label>
+                    <select name="bank_account_id" id="modal_bank_account_id" class="form-control simple-select">
+                        <option value="0"><?= trans('no_bank_account', '', 'Nessun conto') ?></option>
+                        <?php foreach (($bank_accounts ?? []) as $bank_account): ?>
+                            <option value="<?= (int) $bank_account['bank_account_id'] ?>"
+                                <?= (string) $modalAccount === (string) $bank_account['bank_account_id'] ? 'selected' : '' ?>>
+                                <?= esc($bank_account['bank_account_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
                 <div class="ip-doc-field">
                     <label class="ip-doc-label" for="modal_payment_note"><?= trans('note') ?></label>
                     <textarea name="payment_note" id="modal_payment_note" rows="3" class="form-control"></textarea>
@@ -68,16 +87,33 @@
 
 <script>
     (function () {
-        if (typeof jQuery === 'undefined') return;
-        var $modal = $('#modal_add_payment');
+        var modalEl = document.getElementById('modal_add_payment');
+        if (!modalEl) return;
 
         // I select con ricerca e i datepicker dentro la modale sono
         // inizializzati da ip-components.js, che li aggancia da solo (i
         // pannelli vengono montati dentro .modal per non finire fuori dal
         // focus trap di Bootstrap).
-        $modal.on('shown.bs.modal', function () {
-            if (window.IPComponents) { window.IPComponents.init($modal[0]); }
+        modalEl.addEventListener('shown.bs.modal', function () {
+            if (window.IPComponents) { window.IPComponents.init(modalEl); }
         });
+
+        // Il conto segue il metodo scelto, finché l'utente non lo cambia: la
+        // modale parte dal metodo della fattura, e questo copre i casi in cui
+        // lo si cambia qui (parte in contanti e parte con bonifico).
+        var modalMethod  = document.getElementById('modal_payment_method_id');
+        var modalAccount = document.getElementById('modal_bank_account_id');
+        var modalAccounts = <?= $method_accounts ?>;
+        var modalTouched  = false;
+
+        if (modalMethod && modalAccount) {
+            modalAccount.addEventListener('change', function () { modalTouched = true; });
+            modalMethod.addEventListener('change', function () {
+                if (modalTouched) { return; }
+                var proposta = modalAccounts[this.value];
+                if (proposta) { modalAccount.value = String(proposta); }
+            });
+        }
 
         document.getElementById('btn_modal_payment_submit').addEventListener('click', function () {
             var form = document.getElementById('modal-payment-form');

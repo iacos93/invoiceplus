@@ -95,6 +95,43 @@ class CalendarService
     }
 
     /**
+     * Le stesse scadenze del mese, giorno per giorno, in ordine di data.
+     *
+     * Serve alla vista a elenco: non è una seconda verità sul calendario, è
+     * lo stesso elenco già ordinato che alimenta griglia e feed, raggruppato
+     * per giorno. I giorni senza scadenze non ci sono — un elenco si legge per
+     * sapere cosa scade, non per contare i giorni del mese.
+     *
+     * @param list<array{type: string, id: int, date: string, title: string, amount: float|null, overdue: bool, url: string}> $events
+     *
+     * @return list<array{date: string, events: list<array<string, mixed>>}>
+     */
+    public function daysOfMonth(array $events, string $yearMonth): array
+    {
+        $days = [];
+
+        foreach ($events as $event) {
+            if (substr($event['date'], 0, 7) !== $yearMonth) {
+                continue;
+            }
+
+            $days[$event['date']][] = $event;
+        }
+
+        // L'elenco arriva già ordinato per data; ksort tiene l'ordine anche se
+        // un giorno venisse aggiunto da una fonte che non lo rispetta.
+        ksort($days);
+
+        $ordered = [];
+
+        foreach ($days as $date => $dayEvents) {
+            $ordered[] = ['date' => $date, 'events' => $dayEvents];
+        }
+
+        return $ordered;
+    }
+
+    /**
      * Eventi come feed iCalendar (RFC 5545), tutti a giornata intera.
      *
      * Sola lettura per costruzione: genera solo VEVENT, non ne legge mai.

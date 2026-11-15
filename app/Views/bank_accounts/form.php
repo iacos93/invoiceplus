@@ -147,6 +147,57 @@ $v = static fn (string $key) => (string) old($key, $model->formValue($key));
                         </div>
                     </section>
 
+                    <?php
+                    // Il saldo iniziale non compare su nessun documento: serve
+                    // al saldo del conto e alla prima nota. Sta in fondo perché
+                    // chi crea un conto per emettere fatture può anche non
+                    // compilarlo, e i campi che servono al documento vengono
+                    // prima.
+                    $saldo_iniziale = $v('bank_account_opening_balance');
+                    $data_apertura  = $v('bank_account_opening_date');
+                    ?>
+                    <section class="ip-doc-section">
+                        <div class="ip-doc-section__head">
+                            <span class="ip-doc-step">4</span>
+                            <h2 class="ip-doc-section__title"><?= trans('opening_balance', '', 'Saldo di apertura') ?></h2>
+                            <span class="ip-doc-section__hint"><?= trans('opening_balance_section_hint', '', 'Da dove parte il saldo del conto') ?></span>
+                        </div>
+                        <div class="ip-doc-section__body">
+                            <div class="ip-doc-grid">
+                                <div class="ip-doc-field">
+                                    <label class="ip-doc-label" for="bank_account_opening_balance">
+                                        <?= trans('opening_balance', '', 'Saldo di apertura') ?>
+                                    </label>
+                                    <input type="text" name="bank_account_opening_balance" id="bank_account_opening_balance"
+                                           class="form-control ip-num" inputmode="decimal" autocomplete="off"
+                                           value="<?= esc($saldo_iniziale === null || $saldo_iniziale === '' ? '' : format_amount($saldo_iniziale)) ?>"
+                                           placeholder="0,00">
+                                    <p class="ip-field-help">
+                                        <?= trans('opening_balance_help', '', 'Quello che c\'era sul conto il giorno in cui hai iniziato a tenere la prima nota. Vuoto, il saldo parte dai soli movimenti registrati qui.') ?>
+                                    </p>
+                                    <?php if (!empty($errors['bank_account_opening_balance'])): ?>
+                                        <span class="ip-field-error"><?= esc($errors['bank_account_opening_balance']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="ip-doc-field">
+                                    <label class="ip-doc-label" for="bank_account_opening_date">
+                                        <?= trans('opening_date', '', 'Data di apertura') ?>
+                                    </label>
+                                    <input type="text" name="bank_account_opening_date" id="bank_account_opening_date"
+                                           class="form-control datepicker" autocomplete="off"
+                                           value="<?= esc($data_apertura ? date_from_mysql($data_apertura) : '') ?>">
+                                    <p class="ip-field-help">
+                                        <?= trans('opening_date_help', '', 'Da quando vale il saldo iniziale: serve a chi comincia a met\'anno. Vuota, vale da sempre.') ?>
+                                    </p>
+                                    <?php if (!empty($errors['bank_account_opening_date'])): ?>
+                                        <span class="ip-field-error"><?= esc($errors['bank_account_opening_date']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                 </div>
 
                 <?php /* Anteprima: aggiornata dal vivo da ip-bank-account-form.js. Il

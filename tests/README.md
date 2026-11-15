@@ -142,6 +142,43 @@ Il test crea due fatture su due clienti reali (una con la data del mese scorso),
 le emette, genera PDF e XML, le incassa e verifica totali, numeri e stato. Gira
 in transazione con rollback: la copia resta com'era.
 
+### Intestazioni di Apache (compressione e cache)
+
+Le regole stanno in `public/.htaccess` e si controllano in due posti, perché due
+sono le cose da verificare.
+
+**Il file** — `tests/unit/HtaccessAssetRulesTest.php`, nella suite normale e
+quindi in CI: che il deflate copra i tipi serviti, che i file già compressi ne
+siano esclusi, che la cache immutabile ci sia sia in `mod_expires` sia in
+`mod_headers`, che le pagine non abbiano cache lunga, che la rewrite del front
+controller resti, e che **ogni estensione presente in `public/assets` stia in
+una delle liste** — così un nuovo tipo di asset non finisce fuori dalla cache
+senza che nessuno lo dica.
+
+**Gli header veri** — `tests/collaudo/AssetHeadersTest.php`: li produce solo
+Apache (`php spark serve` non legge `.htaccess`), quindi serve un server. Il
+collaudo ne avvia uno usa e getta su una porta libera, con `DocumentRoot` sulla
+`public/` e `AllowOverride All`, e lo spegne alla fine:
+
+```console
+php tools/apache_headers_check.php          # avvia, prova, spegne
+php tools/apache_headers_check.php --base-url=https://staging.example
+```
+
+Il primo comando esce 0 se tutto torna, 1 se un header non è quello atteso, 2
+se sulla macchina manca `httpd` o `php-fpm`. Senza `IP_APACHE_BASE_URL` le
+richieste vere si saltano:
+
+```console
+vendor/bin/phpunit tests/collaudo/AssetHeadersTest.php --no-coverage
+```
+
+In CI il job `intestazioni-apache` installa `apache2` e lancia lo stesso
+comando con `--solo-statico`: dentro Apache non c'è PHP, quindi si servono i
+soli file (gli asset, più una risposta che non è un asset per la regola «le
+pagine non si cacheano») e il test della pagina di accesso si salta con il
+motivo nel messaggio. La prova completa, con php-fpm, resta quella in locale.
+
 ## Come sono organizzati
 
 - `tests/unit` — logica pura: servizi, librerie, calcoli, formattazione.

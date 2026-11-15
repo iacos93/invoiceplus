@@ -650,6 +650,25 @@ class Cron extends BaseController
             $messaggio .= '; ATTENZIONE: ' . self::backupFailureMessage('file caricati');
         }
 
+        // Rotazione di log e debugbar: prima non la faceva nessuno, e sono le
+        // uniche cartelle di writable che crescevano senza limite. Sta qui
+        // perché questo è il giro giornaliero già in mano al cron: un secondo
+        // endpoint da configurare non lo avrebbe chiamato nessuno.
+        try {
+            $pulizia = \App\Libraries\LogRotation::run();
+
+            if ($pulizia['compressed'] || $pulizia['deleted'] || $pulizia['failed']) {
+                log_message('info', 'Rotazione log: {c} compressi, {d} eliminati, {f} non riusciti', [
+                    'c' => $pulizia['compressed'],
+                    'd' => $pulizia['deleted'],
+                    'f' => $pulizia['failed'],
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // Non è un motivo per far fallire il backup.
+            log_message('error', 'Rotazione log fallita: ' . $e->getMessage());
+        }
+
         return $messaggio;
     }
 

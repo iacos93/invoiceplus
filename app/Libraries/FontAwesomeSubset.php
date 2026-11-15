@@ -44,6 +44,16 @@ final class FontAwesomeSubset
      */
     private const NOT_ICONS = [
         'fa-margin', // spaziatore delle icone dentro i bottoni (custom.css)
+
+        // Nomi di file del font, non icone: compaiono in IconFontSubset e nelle
+        // istruzioni, e senza questa voce la verifica li segnalerebbe come
+        // icone senza glifo a ogni giro.
+        'fa-solid-900',
+        'fa-solid-subset',
+        'fa-regular-400',
+        'fa-regular-subset',
+        'fa-brands-400',
+        'fa-brands-subset',
     ];
 
     public static function basePath(?string $root = null): string
@@ -112,7 +122,11 @@ final class FontAwesomeSubset
      */
     public static function iconsIn(string $text): array
     {
-        preg_match_all('/\bfa-[a-z0-9-]+\b/i', $text, $matches);
+        // Niente flag `i`: i nomi delle icone sono minuscoli, mentre una
+        // ricerca senza distinzione di maiuscole pesca anche pezzi di
+        // espressioni regolari scritte nei sorgenti (per esempio `fA-F` dentro
+        // `[0-9a-fA-F]`), che poi risultano “icone senza glifo”.
+        preg_match_all('/\bfa-[a-z0-9-]+\b/', $text, $matches);
 
         return array_values(array_unique($matches[0]));
     }
@@ -181,6 +195,7 @@ final class FontAwesomeSubset
             . ' non modificare a mano, rilancia lo script. */';
 
         $css = self::subsetCss($vendor, array_keys($used), $notice);
+        $css = self::fontsToSubset($css, $base);
 
         return [
             'css'          => $css,
@@ -190,6 +205,45 @@ final class FontAwesomeSubset
             'kept'         => preg_match_all('/\.fa-[a-z0-9-]+:before\{content:/', $css),
             'total'        => preg_match_all('/\.fa-[a-z0-9-]+:before\{content:/', $vendor),
         ];
+    }
+
+    /**
+     * Puntare i @font-face ai font ridotti.
+     *
+     * Il foglio ridotto toglie le regole delle icone non usate, i file dei font
+     * no: solid 156 KB e brands 118 KB per ~150 glifi in tutto. Il ritaglio dei
+     * file lo fa `tools/subset_icons.php` (pyftsubset) e i risultati si
+     * chiamano `fa-<famiglia>-subset.woff2`; qui si fa in modo che il foglio li
+     * carichi. Le copie `.ttf` spariscono dal `src` perché i sottoinsiemi
+     * esistono solo in woff2 — e nessun browser che l'app supporta ha bisogno
+     * del TrueType.
+     */
+    private static function fontsToSubset(string $css, string $base): string
+    {
+        $mappa = [
+            'fa-solid-900'   => 'fa-solid-subset',
+            'fa-regular-400' => 'fa-regular-subset',
+            'fa-brands-400'  => 'fa-brands-subset',
+        ];
+
+        foreach ($mappa as $vendor => $subset) {
+            // ?v=<impronta del file>: i font sono serviti con cache di un anno
+            // (public/.htaccess) e dal foglio vengono richiamati per percorso,
+            // senza il ?v= che gli helper degli asset aggiungono alle pagine.
+            // Rigenerando il sottoinsieme con un'icona nuova, chi aveva il file
+            // vecchio non la vedrebbe finché non svuota la cache: con
+            // l'impronta nell'indirizzo il file nuovo è un altro indirizzo.
+            $file = $base . '/public/assets/core/vendor/fontawesome6/webfonts/' . $subset . '.woff2';
+            $ver  = is_file($file) ? '?v=' . substr((string) md5_file($file), 0, 8) : '';
+
+            $css = str_replace('url(../webfonts/' . $vendor . '.woff2)', 'url(../webfonts/' . $subset . '.woff2' . $ver . ')', $css);
+            // Il `.ttf` accanto al woff2 non ha un sottoinsieme: si toglie, sia
+            // nella forma con la virgola sia se fosse l'unica sorgente.
+            $css = str_replace(',url(../webfonts/' . $vendor . '.ttf) format("truetype")', '', $css);
+            $css = str_replace('url(../webfonts/' . $vendor . '.ttf) format("truetype")', 'url(../webfonts/' . $subset . '.woff2' . $ver . ') format("woff2")', $css);
+        }
+
+        return $css;
     }
 
     /**

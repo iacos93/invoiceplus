@@ -167,6 +167,30 @@ final class CalendarServiceTest extends CIUnitTestCase
         $this->assertStringNotContainsString('BEGIN:VEVENT', $ics);
     }
 
+    /**
+     * Vista a elenco: un giorno per gruppo, in ordine di data, e solo quelli
+     * del mese chiesto.
+     */
+    public function testDaysOfMonthGroupsByDateInOrderAndSkipsOtherMonths(): void
+    {
+        $days = $this->svc->daysOfMonth([
+            $this->event(['date' => '2026-09-20', 'title' => 'Più avanti']),
+            $this->event(['date' => '2026-08-31', 'title' => 'Agosto']),
+            $this->event(['date' => '2026-09-03', 'title' => 'Prima']),
+            $this->event(['date' => '2026-09-03', 'title' => 'Stesso giorno', 'id' => 43]),
+        ], '2026-09');
+
+        $this->assertSame(['2026-09-03', '2026-09-20'], array_column($days, 'date'));
+        $this->assertCount(2, $days[0]['events']);
+        $this->assertSame('Prima', $days[0]['events'][0]['title']);
+    }
+
+    /** Un mese senza scadenze dà un elenco vuoto, non un giorno vuoto. */
+    public function testDaysOfMonthIsEmptyWithoutEvents(): void
+    {
+        $this->assertSame([], $this->svc->daysOfMonth([], '2026-09'));
+    }
+
     public function testCalendarNameIsEscapedAndPresent(): void
     {
         $ics = $this->svc->toIcs([], 'Studio Rossi; Scadenze, 2026');

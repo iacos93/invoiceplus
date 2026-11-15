@@ -49,6 +49,39 @@ class McpSettings extends BaseController
     }
 
     /**
+     * Restituisce la chiave già configurata, per copiarla in un client.
+     *
+     * Serve perché il pulsante Copia altrimenti copiava il vuoto: la chiave non
+     * sta nell'HTML, quindi dopo aver chiuso la pagina non c'era più modo di
+     * riprenderla, e l'unica via era rigenerarla — che sconnette tutti i client
+     * già configurati. Il segreto si legge solo qui, dietro la sessione
+     * amministrativa, e solo quando si chiede di copiarlo: aprire la pagina non
+     * basta a leggerlo.
+     *
+     * Vale la chiave effettivamente in uso: quella in .env (mcp.key) se c'è,
+     * altrimenti quella cifrata nelle impostazioni — la stessa che confronta
+     * Mcp::authenticated(), così si copia ciò che funziona davvero.
+     */
+    public function revealKey()
+    {
+        $envKey = trim((string) env('mcp.key', ''));
+        $key    = $envKey !== '' ? $envKey : decrypt_secret((string) get_setting('mcp_key', ''));
+
+        if ($key === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'token'   => csrf_hash(),
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'key'     => $key,
+            'token'   => csrf_hash(),
+        ]);
+    }
+
+    /**
      * Rigenera la chiave del server MCP. Come per cron_key, rigenerarla
      * invalida subito i client già configurati: va aggiornata anche la
      * variabile d'ambiente del client.

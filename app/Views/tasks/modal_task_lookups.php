@@ -1,64 +1,108 @@
 <script>
     // Porting CI4 del modulo tasks: selezione delle attività completate
     // da aggiungere a una fattura (equivalente di modal_task_lookups.php CI3).
-    // Richiede jQuery + Bootstrap, caricati dal modulo invoices (CI4).
-    $(function () {
+    ipReady(function () {
         var selectedTasks = [];
-        $('.item-task-id').each(function () {
-            var currentVal = $(this).val();
-            if (currentVal.length) {
-                selectedTasks.push(parseInt(currentVal));
+        document.querySelectorAll('.item-task-id').forEach(function (field) {
+            if (field.value.length) {
+                selectedTasks.push(parseInt(field.value, 10));
             }
         });
 
         var hiddenTasks = 0;
-        $('.modal-task-id').each(function () {
-            var currentId = parseInt($(this).attr('id').replace('task-id-', ''));
+        document.querySelectorAll('.modal-task-id').forEach(function (cell) {
+            var currentId = parseInt(cell.id.replace('task-id-', ''), 10);
             if (selectedTasks.indexOf(currentId) !== -1) {
-                $('#task-id-' + currentId).parent().parent().hide();
+                // La cella sta nella riga solo due livelli sopra.
+                var row = cell.parentElement && cell.parentElement.parentElement;
+                if (row) {
+                    row.hidden = true;
+                }
                 hiddenTasks++;
             }
         });
 
-        if (hiddenTasks >= $('.task-row').length) {
-            $('#task-modal-submit').hide();
+        if (hiddenTasks >= document.querySelectorAll('.task-row').length) {
+            var submit = document.getElementById('task-modal-submit');
+            if (submit) {
+                submit.hidden = true;
+            }
         }
 
-        $('.select-items-confirm').click(function () {
-            var task_ids = [];
+        // Ultimo corpo della tabella degli articoli: e' quello in cui finiscono
+        // le righe aggiunte qui.
+        function lastBody() {
+            var bodies = document.querySelectorAll('#item_table tbody');
+            return bodies.length ? bodies[bodies.length - 1] : null;
+        }
 
-            $("input[name='task_ids[]']:checked").each(function () {
-                task_ids.push(parseInt($(this).val()));
+        function fillLast(selector, value) {
+            var body = lastBody();
+            if (!body) {
+                return;
+            }
+            body.querySelectorAll(selector).forEach(function (field) {
+                field.value = value;
             });
+        }
 
-            $.post("<?= site_url('tasks/ajax/process_task_selections') ?>", {
-                task_ids: task_ids
-            }, function (data) {
-                var items = JSON.parse(data);
+        var confirmButton = document.querySelector('.select-items-confirm');
+        if (confirmButton) {
+            confirmButton.addEventListener('click', function () {
+                var task_ids = [];
 
-                for (var key in items) {
-                    if (!items[key].tax_rate_id) items[key].tax_rate_id = 0;
+                document.querySelectorAll("input[name='task_ids[]']:checked").forEach(function (box) {
+                    task_ids.push(parseInt(box.value, 10));
+                });
 
-                    if ($('#item_table tbody:last input[name=item_name]').val() !== '') {
-                        $('#new_row').clone().appendTo('#item_table').removeAttr('id').addClass('item').show();
-                    }
-                    $('#item_table tbody:last input[name=item_task_id]').val(items[key].task_id);
-                    $('#item_table tbody:last input[name=item_name]').val(items[key].task_name);
-                    $('#item_table tbody:last textarea[name=item_description]').val(items[key].task_description);
-                    $('#item_table tbody:last input[name=item_price]').val(items[key].task_price);
-                    $('#item_table tbody:last input[name=item_quantity]').val('1');
-                    $('#item_table tbody:last select[name=item_tax_rate_id]').val(items[key].tax_rate_id);
+                ipPost("<?= site_url('tasks/ajax/process_task_selections') ?>", {
+                    task_ids: task_ids
+                }).then(function (data) {
+                    var items = JSON.parse(data);
+                    var newRow = document.getElementById('new_row');
 
-                    $('#modal-choose-items').modal('hide');
-                }
+                    Object.keys(items).forEach(function (key) {
+                        var item = items[key];
+                        if (!item.tax_rate_id) {
+                            item.tax_rate_id = 0;
+                        }
+
+                        var body = lastBody();
+                        var nameField = body ? body.querySelector('input[name=item_name]') : null;
+                        if (newRow && nameField && nameField.value !== '') {
+                            var row = newRow.cloneNode(true);
+                            row.removeAttribute('id');
+                            row.classList.add('item');
+                            row.hidden = false;
+                            lastBody().appendChild(row);
+                        }
+                        fillLast('input[name=item_task_id]', item.task_id);
+                        fillLast('input[name=item_name]', item.task_name);
+                        fillLast('textarea[name=item_description]', item.task_description);
+                        fillLast('input[name=item_price]', item.task_price);
+                        fillLast('input[name=item_quantity]', '1');
+                        fillLast('select[name=item_tax_rate_id]', item.tax_rate_id);
+
+                        var modal = document.getElementById('modal-choose-items');
+                        if (modal && window.bootstrap) {
+                            bootstrap.Modal.getOrCreateInstance(modal).hide();
+                        }
+                    });
+                });
             });
-        });
+        }
 
         // Toggle checkbox quando si clicca sulla riga
-        $('#tasks_table tr').click(function (event) {
-            if (event.target.type !== 'checkbox') {
-                $(':checkbox', this).trigger('click');
-            }
+        document.querySelectorAll('#tasks_table tr').forEach(function (row) {
+            row.addEventListener('click', function (event) {
+                if (event.target.type === 'checkbox') {
+                    return;
+                }
+                var box = row.querySelector('input[type=checkbox]');
+                if (box) {
+                    box.click();
+                }
+            });
         });
     });
 </script>

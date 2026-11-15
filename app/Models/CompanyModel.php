@@ -22,7 +22,7 @@ class CompanyModel extends IpBaseModel
     protected $afterDelete = ['clearFinanceCache'];
 
     protected $allowedFields = [
-        'company_name', 'company_vat_id', 'company_tax_code', 'company_address_1',
+        'company_name', 'company_vat_id', 'company_tax_code', 'company_sdi_code', 'company_address_1',
         'company_city', 'company_state', 'company_zip', 'company_country',
         'company_phone', 'company_email', 'company_form', 'company_coefficient',
         'company_contributions', 'company_inps_scheme', 'company_forfettario_startup',
@@ -63,6 +63,11 @@ class CompanyModel extends IpBaseModel
         'company_name'          => 'required',
         'company_vat_id'        => 'permit_empty',
         'company_tax_code'      => 'permit_empty',
+        // Codice destinatario SdI dell'azienda: sette caratteri come quello dei
+        // clienti (maiuscole e cifre). Vuoto è ammesso: chi riceve solo via PEC
+        // non ne ha bisogno, e un valore fuori misura finirebbe nel cassetto
+        // di un altro.
+        'company_sdi_code'      => 'permit_empty|max_length[7]',
         'company_address_1'     => 'permit_empty',
         'company_city'          => 'permit_empty',
         'company_state'         => 'permit_empty',

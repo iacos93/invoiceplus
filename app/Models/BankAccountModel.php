@@ -24,6 +24,10 @@ class BankAccountModel extends IpBaseModel
         'bank_account_iban',
         'bank_account_bic',
         'bank_account_sia_code',
+        // Punto di partenza del saldo: quello che si legge dall'estratto conto
+        // il giorno in cui si comincia a tenere la prima nota, e da quando vale.
+        'bank_account_opening_balance',
+        'bank_account_opening_date',
         'bank_account_note',
         'bank_account_is_default',
         'company_id',
@@ -43,6 +47,9 @@ class BankAccountModel extends IpBaseModel
         // Il SIA e' di lunghezza fissa: cinque caratteri assegnati dalla banca.
         // Uno piu' corto passa dritto nel tracciato e sposta i campi a destra.
         'bank_account_sia_code'   => 'permit_empty|alpha_numeric|exact_length[5]',
+        // Il segno fa parte del dato: un conto in rosso si apre in negativo.
+        'bank_account_opening_balance' => 'permit_empty|decimal',
+        'bank_account_opening_date'    => 'permit_empty|valid_date[Y-m-d]',
         'bank_account_note'       => 'permit_empty',
         'bank_account_is_default' => 'permit_empty',
     ];
@@ -66,6 +73,33 @@ class BankAccountModel extends IpBaseModel
     public function validationRulesLegacy(): array
     {
         return $this->validationRules;
+    }
+
+    /**
+     * Il saldo arriva dal form nel formato locale (1.234,56) e come data
+     * italiana: qui torna nei due formati che il database e i calcoli si
+     * aspettano. Una data vuota resta vuota: «da quando vale il saldo» è
+     * facoltativo, e inventare oggi come data di apertura falserebbe la
+     * lettura di un conto vecchio.
+     */
+    public function dbArrayFromPost(array $post): array
+    {
+        $dbArray = parent::dbArrayFromPost($post);
+
+        if (array_key_exists('bank_account_opening_balance', $dbArray)) {
+            $importo = $dbArray['bank_account_opening_balance'];
+            $dbArray['bank_account_opening_balance'] = ($importo === null || trim((string) $importo) === '')
+                ? null
+                : standardize_amount($importo);
+        }
+
+        if (! empty($dbArray['bank_account_opening_date'])) {
+            $dbArray['bank_account_opening_date'] = date_to_mysql($dbArray['bank_account_opening_date']);
+        } else {
+            $dbArray['bank_account_opening_date'] = null;
+        }
+
+        return $dbArray;
     }
 
     public function getAllOrdered(?int $perPage = null, int $page = 1): array
@@ -214,6 +248,116 @@ class BankAccountModel extends IpBaseModel
     public function usageFor(int $id): int
     {
         return array_sum($this->usageCounts()[$id] ?? []);
+    }
+
+    /**
+     * Saldo corrente di ogni conto dell'azienda attiva.
+     *
+     * saldo = saldo iniziale + incassi - spese. Le due fonti sono quelle che
+     * spostano davvero i soldi: l'incasso di una fattura (`ip_payments`) e la
+     * spesa (`ip_expenses`).
+     *
+     * I movimenti di estratto conto NON entrano nella somma: sono la
+     * fotografia della stessa banca, non soldi in più. L'incasso di una
+     * fattura compare di norma anche lì, e sommarlo due volte gonfierebbe il
+     * saldo del doppio; servono alla riconciliazione, non al totale.
+     *
+     * Per gli incassi il perimetro azienda arriva dalla fattura, perché
+     * ip_payments non ha company_id. Le righe con company_id nullo (archivio
+     * precedente al multi-azienda) restano visibili come nel resto dell'app:
+     * escluderle farebbe sparire dal saldo soldi che ci sono.
+     *
+     * @return array<int, array{opening: float, date: ?string, in: float, out: float, balance: float, declared: bool}>
+     */
+    public function balances(): array
+    {
+        $companyId = active_company_id();
+        $saldo     = [];
+
+        foreach ($this->scopeToCompany()->orderBy('bank_account_id', 'ASC')->findAll() as $account) {
+            $id = (int) $account['bank_account_id'];
+
+            $saldo[$id] = [
+                'opening'  => (float) ($account['bank_account_opening_balance'] ?? 0),
+                'date'     => $account['bank_account_opening_date'] ?? null,
+                'in'       => 0.0,
+                'out'      => 0.0,
+                'balance'  => 0.0,
+                'declared' => ($account['bank_account_opening_balance'] ?? null) !== null,
+            ];
+        }
+
+        if ($saldo === []) {
+            return [];
+        }
+
+        $perimetro = static function ($builder, string $alias) use ($companyId) {
+            if ($companyId > 0) {
+                $builder->groupStart()
+                        ->where($alias . '.company_id', $companyId)
+                        ->orWhere($alias . '.company_id', null)
+                        ->groupEnd();
+            }
+
+            return $builder;
+        };
+
+        // Incassi: le note di credito rimborsate sono già negative, quindi la
+        // somma le toglie senza doverle distinguere.
+        //
+        // Il join sul conto serve a una cosa sola: i movimenti precedenti alla
+        // data di apertura restano fuori dal totale. Sono già dentro il saldo
+        // iniziale — è quello che si legge dall'estratto conto quel giorno — e
+        // sommarli di nuovo li conterebbe due volte. Un conto senza data li
+        // conta tutti, che è il comportamento di prima.
+        $incassi = $perimetro(
+            $this->db->table('ip_payments p')
+                     ->select('p.bank_account_id AS conto, SUM(p.payment_amount) AS totale')
+                     ->join('ip_invoices i', 'i.invoice_id = p.invoice_id', 'inner')
+                     ->join('ip_bank_accounts a', 'a.bank_account_id = p.bank_account_id', 'inner')
+                     ->where('p.bank_account_id >', 0)
+                     ->groupStart()
+                     ->where('a.bank_account_opening_date', null)
+                     ->orWhere('p.payment_date >=', 'a.bank_account_opening_date', false)
+                     ->groupEnd()
+                     ->groupBy('p.bank_account_id'),
+            'i'
+        )->get()->getResultArray();
+
+        foreach ($incassi as $riga) {
+            $id = (int) $riga['conto'];
+
+            if (isset($saldo[$id])) {
+                $saldo[$id]['in'] = (float) $riga['totale'];
+            }
+        }
+
+        $spese = $perimetro(
+            $this->db->table('ip_expenses e')
+                     ->select('e.bank_account_id AS conto, SUM(e.expense_amount) AS totale')
+                     ->join('ip_bank_accounts a', 'a.bank_account_id = e.bank_account_id', 'inner')
+                     ->where('e.bank_account_id >', 0)
+                     ->groupStart()
+                     ->where('a.bank_account_opening_date', null)
+                     ->orWhere('e.expense_date >=', 'a.bank_account_opening_date', false)
+                     ->groupEnd()
+                     ->groupBy('e.bank_account_id'),
+            'e'
+        )->get()->getResultArray();
+
+        foreach ($spese as $riga) {
+            $id = (int) $riga['conto'];
+
+            if (isset($saldo[$id])) {
+                $saldo[$id]['out'] = (float) $riga['totale'];
+            }
+        }
+
+        foreach ($saldo as $id => $conto) {
+            $saldo[$id]['balance'] = $conto['opening'] + $conto['in'] - $conto['out'];
+        }
+
+        return $saldo;
     }
 
     /**

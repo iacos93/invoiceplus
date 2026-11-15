@@ -1,5 +1,6 @@
 <?php
 
+use App\Libraries\PdfCache;
 use App\Models\InvoiceModel;
 use App\Models\ItemModel;
 use App\Models\QuoteModel;
@@ -154,6 +155,48 @@ final class DocumentPdfIntegrationTest extends CIUnitTestCase
         $html = (new DocumentPdfBuilder())->invoice($invoice);
 
         $this->assertSame($attesa, substr_count($html, 'class="c-discount num"'));
+    }
+
+    /**
+     * Il PDF viene riusato ma non resta mai vecchio.
+     *
+     * Sono le due facce della stessa scelta: la chiave della cache è l'HTML, e
+     * appena un dato del documento cambia l'HTML cambia. Un PDF fiscale vecchio
+     * servito al posto di quello aggiornato sarebbe il danno che questa cache
+     * non deve poter fare, e nessuno deve ricordarsi di invalidare niente quando
+     * una riga viene modificata.
+     */
+    public function testIlPdfVieneRiusatoMaNonRestaVecchio(): void
+    {
+        $invoiceId = $this->ultimaFatturaConRighe();
+        $invoice   = (new InvoiceModel())->getById($invoiceId);
+        $this->assertIsArray($invoice);
+
+        $cache = new PdfCache();
+        $html  = (new DocumentPdfBuilder())->invoice($invoice);
+
+        $primo = pdf_create($html, 'fattura.pdf', false);
+        $this->assertFileExists($cache->file($html));
+
+        // Ricomposto da zero, stesso documento: il file in cache basta.
+        $secondo = pdf_create((new DocumentPdfBuilder())->invoice($invoice), 'fattura.pdf', false);
+        $this->assertSame($primo, $secondo);
+
+        // Una riga cambiata, in una transazione che non lascia tracce.
+        $this->testDb->transBegin();
+
+        try {
+            $this->testDb->query(
+                'UPDATE ip_invoice_items SET item_price = item_price + 1 WHERE invoice_id = ?',
+                [$invoiceId]
+            );
+
+            $dopo = pdf_create((new DocumentPdfBuilder())->invoice($invoice), 'fattura.pdf', false);
+        } finally {
+            $this->testDb->transRollback();
+        }
+
+        $this->assertNotSame($primo, $dopo);
     }
 
     private function ultimaFatturaConRighe(): int

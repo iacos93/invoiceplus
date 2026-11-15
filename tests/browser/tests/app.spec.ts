@@ -16,6 +16,13 @@ async function login(page: Page): Promise<void> {
     await page.fill('#password', PASSWORD);
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/dashboard$/);
+
+    // L'URL cambia quando la navigazione è confermata, non quando la pagina è
+    // pronta: il bundle `ip-app.min.js` è un `<script defer>` in fondo al body e
+    // porta con sé scorciatoie e ricerca globale. Premere un tasto subito dopo
+    // `toHaveURL` lo consegnava a un documento senza ascoltatori (e l'attesa
+    // successiva non ripete il tasto, quindi non poteva che scadere).
+    await page.waitForLoadState('load');
 }
 
 test('login e cambio tema persistente', async ({ page }) => {

@@ -43,19 +43,31 @@ $renderRows = static function (array $nodes, int $level = 0) use (&$renderRows, 
             default           => 'text-bg-secondary',
         }) . '">' . esc($typeLabels[$node['account_type']] ?? $node['account_type']) . '</span></td>';
         $html .= '<td class="text-end">' . ($annual != 0.0 ? format_currency($annual) : '<span class="text-muted">—</span>') . '</td>';
+                // Azioni di riga come nelle altre liste: un solo pulsante «Opzioni»
+        // con il menu, non due bottoni nudi. Due pulsanti affiancati (matita e
+        // cestino) occupavano il doppio e, quando la colonna si stringeva,
+        // uscivano dal bordo della card; qui la colonna resta piccola e la
+        // conferma di eliminazione passa dallo stesso menu delle altre tabelle.
         $html .= '<td class="text-end">';
-        $html .= '<div class="btn-group btn-group-sm">';
-        $html .= '<a class="btn btn-secondary" href="' . site_url('management/accounts/form/' . $id) . '" title="' . esc(trans('edit', '', 'Modifica'), 'attr') . '">'
-            . '<i class="fa fa-regular fa-edit" aria-hidden="true"></i><span class="visually-hidden">' . esc(trans('edit', '', 'Modifica')) . '</span></a>';
-        $html .= '<form method="post" action="' . site_url('management/accounts/delete/' . $id) . '" class="d-inline">'
+        $html .= '<div class="options btn-group">'
+            . '<button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown"'
+            . ' aria-expanded="false" aria-label="' . esc(trans('options', '', 'Opzioni'), 'attr') . '">'
+            . '<i class="fa fa-solid fa-cog" aria-hidden="true"></i> ' . trans('options', '', 'Opzioni')
+            . '</button>'
+            . '<ul class="dropdown-menu dropdown-menu-end">'
+            . '<li><a href="' . site_url('management/accounts/form/' . $id) . '">'
+            . '<i class="fa fa-regular fa-edit fa-margin" aria-hidden="true"></i> ' . trans('edit', '', 'Modifica')
+            . '</a></li>'
+            . '<li><form method="post" action="' . site_url('management/accounts/delete/' . $id) . '">'
             . csrf_field()
-            . '<button type="button" class="btn btn-secondary" data-bs-toggle="confirm"'
+            . '<button type="button" class="dropdown-button" data-bs-toggle="confirm"'
             . ' data-confirm-title="' . esc(trans('confirm', '', 'Conferma'), 'attr') . '"'
             . ' data-confirm-body="' . esc(trans('management_delete_account_warning', '', 'Eliminare questa voce? Se è usata da righe o spese non verrà eliminata: disattivala.'), 'attr') . '"'
             . ' data-confirm-ok="' . esc(trans('delete', '', 'Elimina'), 'attr') . '" data-confirm-danger="1">'
-            . '<i class="fa fa-solid fa-trash-can" aria-hidden="true"></i><span class="visually-hidden">' . esc(trans('delete', '', 'Elimina')) . '</span></button>'
-            . '</form>';
-        $html .= '</div>';
+            . '<i class="fa fa-solid fa-trash-can fa-margin" aria-hidden="true"></i> ' . trans('delete', '', 'Elimina')
+            . '</button></form></li>'
+            . '</ul>'
+            . '</div>';
         $html .= '</td>';
         $html .= '</tr>';
 
