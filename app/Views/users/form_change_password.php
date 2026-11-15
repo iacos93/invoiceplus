@@ -3,7 +3,7 @@
 
 <?php $this->setVar('pageTitle', trans('change_password')); ?>
 
-<script src="<?= base_url('assets/core/js/zxcvbn.js') ?>"></script>
+<script src="<?php _core_asset('js/zxcvbn.js'); ?>"></script>
 
 <form method="POST" action="<?= site_url('users/change_password/' . $user_id) ?>">
 

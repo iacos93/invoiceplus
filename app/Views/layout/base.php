@@ -26,10 +26,10 @@
     ?>
     <meta name="_csrf" content="<?= csrf_hash() ?>">
 
-    <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/core/img/favicon.svg') ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php _core_asset('img/favicon.svg'); ?>">
 
 
-    <link rel="icon" type="image/png" href="<?= base_url('assets/core/img/favicon.png') ?>">
+    <link rel="icon" type="image/png" href="<?php _core_asset('img/favicon.png'); ?>">
     <?= $this->include('layout/pwa_head') ?>
 
     <?= $this->include('layout/theme_head') ?>
@@ -158,6 +158,20 @@
                 opts.signal = window.ipPageSignal;
             }
             target.addEventListener(type, handler, opts);
+        };
+
+        /* Avvio di uno script di pagina. `DOMContentLoaded` scatta una volta
+           sola, al primo caricamento: con la navigazione parziale gli script del
+           contenuto nuovo girano a documento già pronto e il listener non
+           verrebbe mai chiamato. Qui si esegue subito se il documento è pronto,
+           e si aspetta l'evento solo se è ancora in caricamento: la forma di
+           `$(function () {…})` di jQuery. */
+        window.ipReady = function (fn) {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fn, { once: true });
+            } else {
+                fn();
+            }
         };
     </script>
 </head>

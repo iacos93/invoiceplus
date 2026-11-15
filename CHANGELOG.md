@@ -171,6 +171,9 @@ le colonne dei loghi e del piè di pagina dei documenti).
   di installazione e comandi di sviluppo aggiornati; nuova guida
   [Installazione su un sottodominio](docs/installazione-su-un-sottodominio.md)
   con configurazione nginx e Apache, `.env`, cron e verifiche.
+- **Asset versionati.** Favicon, icona per iPhone, logo della pagina di
+  benvenuto e `zxcvbn.js` portano `?v=` come gli altri asset, così un'icona o un
+  logo cambiati arrivano anche a chi li aveva già in cache.
 - **Pulsanti delle conferme**: «Annulla» e «Esci senza salvare» (e le altre
   conferme di eliminazione) erano a 16px, più grandi dei pulsanti del resto
   dell'app; ora hanno la misura dei pulsanti piccoli.

@@ -27,10 +27,10 @@ $is_public_view = !empty($public_view);
     <meta name="robots" content="NOINDEX,NOFOLLOW">
     <meta name="_csrf" content="<?= csrf_hash() ?>">
 
-    <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/core/img/favicon.svg') ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php _core_asset('img/favicon.svg'); ?>">
 
 
-    <link rel="icon" type="image/png" href="<?= base_url('assets/core/img/favicon.png') ?>">
+    <link rel="icon" type="image/png" href="<?php _core_asset('img/favicon.png'); ?>">
 
     <?= $this->include('layout/theme_head') ?>
 

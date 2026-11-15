@@ -21,12 +21,12 @@ $stati = [
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="robots" content="NOINDEX,NOFOLLOW">
     <title><?= esc(trans('setup_env_title', '', 'Prima di cominciare')) ?> · Invoice+</title>
-    <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/core/img/favicon.svg') ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php _core_asset('img/favicon.svg'); ?>">
     <?= view('layout/theme_head') ?>
     <?= view('layout/fonts') ?>
-    <link rel="stylesheet" href="<?= base_url('assets/core/vendor/bootstrap.min.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/core/vendor/fontawesome6/css/app.min.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/core/css/custom.min.css') ?>">
+    <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.min.css'); ?>">
+    <link rel="stylesheet" href="<?php _core_asset('vendor/fontawesome6/css/app.min.css'); ?>">
+    <link rel="stylesheet" href="<?php _core_asset('css/custom.min.css'); ?>">
     <style>
         .ip-setup-env { max-width: 760px; margin: 0 auto; padding: 40px 20px 64px; }
         .ip-setup-env__brand { display: flex; align-items: center; gap: 10px; margin-bottom: 28px;

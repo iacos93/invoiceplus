@@ -14,14 +14,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="NOINDEX,NOFOLLOW">
 
-    <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/core/img/favicon.svg') ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php _core_asset('img/favicon.svg'); ?>">
 
 
-    <link rel="icon" type="image/png" href="<?= base_url('assets/core/img/favicon.png') ?>">
+    <link rel="icon" type="image/png" href="<?php _core_asset('img/favicon.png'); ?>">
 
     <?= $this->include('layout/theme_head') ?>
 
-    <link rel="stylesheet" href="<?= base_url('assets/invoiceplane/css/welcome.css') ?>">
+    <link rel="stylesheet" href="<?php _theme_asset('css/welcome.css'); ?>">
     <link rel="stylesheet" href="<?php _core_asset('vendor/bootstrap.min.css'); ?>">
     <link rel="stylesheet" href="<?php _core_asset('vendor/fontawesome6/css/app.min.css'); ?>">
     <link rel="stylesheet" href="<?php _core_asset('css/custom.css'); ?>"></head>
@@ -37,7 +37,7 @@
                 <div class="card text-center">
                     <div class="card-body">
 
-                        <img src="<?= base_url('assets/core/img/logo_400x200.png') ?>"
+                        <img src="<?php _core_asset('img/logo_400x200.png'); ?>"
                              alt="Invoice+" class="img-fluid d-block mx-auto"
                              style="max-width:300px;margin-bottom:20px">
 

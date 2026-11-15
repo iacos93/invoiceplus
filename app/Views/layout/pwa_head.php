@@ -33,7 +33,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Invoice+">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="apple-touch-icon" href="<?= base_url('assets/core/img/apple-touch-icon.png') ?>">
+<link rel="apple-touch-icon" href="<?php _core_asset('img/apple-touch-icon.png'); ?>">
 <script>
     // Installazione. Chrome ed Edge avvisano con `beforeinstallprompt` che l'app
     // si può installare: l'evento va trattenuto e riproposto al clic sul
