@@ -303,10 +303,12 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.13.0`, che aggiunge
-l'azione di gruppo «Segna come pagate» nella lista Fatture — registra l'incasso
-del residuo e lascia fuori le RiBa non ancora scadute — e porta su una riga
-propria il pulsante delle liste vuote. La `v0.12.0` rende
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.13.1`, che ferma al
+salvataggio un codice SIA fuori standard — lettera O o simboli — invece di
+lasciarlo scoprire alla banca con la distinta RiBa scartata. La `v0.13.0`
+aggiunge l'azione di gruppo «Segna come pagate» nella lista Fatture — registra
+l'incasso del residuo e lascia fuori le RiBa non ancora scadute — e porta su una
+riga propria il pulsante delle liste vuote. La `v0.12.0` rende
 interattivi i grafici e le barre di stato della Bacheca, restringe la pagina
 RiBa alle fatture davvero presentabili, pagina fornitori, prodotti, attività e
 progetti con totali coerenti con le righe visibili, riduce le query a ogni

@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.13.1] — 2026-11-16
+
 ### Corretto
 
 - Il codice SIA del conto di saldo accetta solo cinque caratteri alfanumerici,
