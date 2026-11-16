@@ -190,6 +190,7 @@ class DashboardOverview
                 'label'  => $row['label'],
                 'value'  => $value,
                 'status' => $row['class'],
+                'count'  => (int) ($row['num_total'] ?? 0),
             ];
             $donutTotal += $value;
         }

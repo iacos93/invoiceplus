@@ -122,6 +122,26 @@ final class DashboardChartsInteractiveTest extends CIUnitTestCase
         $this->assertStringContainsString('aria-pressed="true"', $html);
     }
 
+    public function testLeBarreDegliStatiSonoCollegamentiConTooltip(): void
+    {
+        $html = $this->bacheca();
+
+        preg_match_all('/<a href="([^"]*)" class="ip-status-bar-seg [^"]*"[^>]*data-tip="([^"]*)"/', $html, $seg, PREG_SET_ORDER);
+
+        $this->assertNotEmpty($seg, 'Le barre degli stati non hanno segmenti collegati');
+
+        $basi = array_map(static fn(array $m): string => html_entity_decode($m[1], ENT_QUOTES), $seg);
+        $this->assertNotEmpty(array_filter($basi, static fn(string $h): bool => str_contains($h, '/invoices/status/')), 'La barra delle fatture non porta agli stati');
+
+        foreach ($seg as $m) {
+            $dati = json_decode(html_entity_decode($m[2], ENT_QUOTES), true);
+
+            $this->assertIsArray($dati, 'data-tip di un segmento non è JSON valido');
+            $this->assertCount(3, $dati['rows'], 'Il tooltip del segmento deve avere importo, documenti e quota');
+            $this->assertStringContainsString('%', $dati['rows'][2]['value'], 'Manca la quota percentuale');
+        }
+    }
+
     public function testIGraficiNonUsanoPiuITitoliNativi(): void
     {
         $html = $this->bacheca();

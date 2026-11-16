@@ -111,13 +111,18 @@
 
 .ip-status-bar {
   display: flex;
-  height: 6px;
+  /* 8px e non 6: ogni segmento è un bersaglio (tooltip e collegamento
+     all'elenco dello stato, ip-chart-tips.js) e 6px erano troppo pochi da
+     centrare con il puntatore. */
+  height: 8px;
   overflow: hidden;
   background: var(--ip-border-soft);
 }
 .ip-status-bar-seg {
+  display: block;
   height: 100%;
   min-width: 2px;
+  cursor: pointer;
   transition: opacity var(--ip-transition);
   /* Colore di riserva: uno stato nuovo, o non mappato qui sotto, resta
      visibile invece di produrre un segmento trasparente. */
@@ -139,7 +144,12 @@
 .ip-status-bar-seg--overdue  { background: var(--ip-danger-text); }
 .ip-status-bar-seg--canceled { background: var(--ip-text); }
 .ip-status-bar:hover .ip-status-bar-seg { opacity: .55; }
-.ip-status-bar .ip-status-bar-seg:hover { opacity: 1; }
+.ip-status-bar .ip-status-bar-seg:hover,
+.ip-status-bar .ip-status-bar-seg:focus-visible { opacity: 1; }
+/* Il bordo del focus sta dentro il segmento: la barra ha overflow nascosto e
+   un contorno esterno verrebbe tagliato. */
+.ip-status-bar-seg:focus-visible { outline: 2px solid var(--ip-primary); outline-offset: -2px; }
+span.ip-status-bar-seg { cursor: default; }
 
 /* -----------------------------------------------------------------------------
    25. Navigazione temporale della lista documenti (anno + mesi)

@@ -20,7 +20,7 @@
     }
     window.__ipChartTips = true;
 
-    var SELECTOR = '.ip-chart-month[data-tip]';
+    var SELECTOR = '.ip-chart-month[data-tip], .ip-status-bar-seg[data-tip]';
     var tip = null;
     var active = null;
     var lastPointerType = 'mouse';
@@ -119,7 +119,7 @@
         active = group;
         group.classList.add('is-active');
 
-        render(data, group.hasAttribute('data-href'));
+        render(data, navigable(group));
         ensureTip().hidden = false;
         place(x, y);
     }
@@ -136,6 +136,12 @@
 
     function groupOf(target) {
         return target && target.closest ? target.closest(SELECTOR) : null;
+    }
+
+    // Un mese di grafico porta al suo elenco con data-href; un segmento della
+    // barra degli stati è un collegamento vero (href) e si apre da solo.
+    function navigable(group) {
+        return group.hasAttribute('data-href') || group.hasAttribute('href');
     }
 
     function open(group) {
@@ -218,7 +224,8 @@
 
         // Al tocco il primo tap mostra i valori, il secondo apre: senza, non
         // ci sarebbe modo di leggerli senza cambiare pagina.
-        if (lastPointerType === 'touch' && group.hasAttribute('data-href') && shownByTouch !== group) {
+        if (lastPointerType === 'touch' && navigable(group) && shownByTouch !== group) {
+            event.preventDefault();
             var box = group.getBoundingClientRect();
             show(group, box.left + box.width / 2, box.top + 24);
             shownByTouch = group;
@@ -228,7 +235,9 @@
 
         shownByTouch = null;
         open(group);
-    });
+    // In cattura: il primo tap al tocco deve fermare la navigazione di ip-pjax
+    // prima che parta.
+    }, true);
 
     function toggleSeries(item) {
         var body = item.closest('.ip-chart-body');

@@ -870,6 +870,15 @@ html[data-theme="dark"] .ip-chart-month.is-active .ip-chart-label { fill: #fffff
 .ip-chart-tip__dot--expenses { background: var(--ip-danger); }
 .ip-chart-tip__dot--profit   { background: var(--ip-success); }
 .ip-chart-tip__dot--loss     { background: var(--ip-danger); }
+/* Stati dei documenti (tooltip della barra "per stato"): stesse tinte dei segmenti. */
+.ip-chart-tip__dot--draft    { background: var(--ip-neutral-solid); }
+.ip-chart-tip__dot--sent     { background: var(--ip-info-text); }
+.ip-chart-tip__dot--viewed   { background: var(--ip-warning-text); }
+.ip-chart-tip__dot--paid,
+.ip-chart-tip__dot--approved { background: var(--ip-success-text); }
+.ip-chart-tip__dot--rejected,
+.ip-chart-tip__dot--overdue  { background: var(--ip-danger-text); }
+.ip-chart-tip__dot--canceled { background: var(--ip-text); }
 .ip-chart-tip__hint {
   margin-top: 6px;
   padding-top: 5px;

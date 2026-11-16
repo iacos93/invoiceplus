@@ -22,22 +22,43 @@ $status_label_class = [
 // Il colore non viaggia più come esadecimale: il segmento porta la classe
 // dello stato e la tinta la decide il CSS (--ip-*), così chiaro e scuro
 // restano sincroni come per i timbri di stato in tabella.
-$statusMixBar = static function (array $rows, string $ariaLabel): string {
+$statusMixBar = static function (array $rows, string $ariaLabel, string $listBase = '', string $docsLabel = ''): string {
     $rows  = array_values(array_filter($rows, static fn($r) => (float) $r['value'] > 0));
     $total = array_sum(array_map(static fn($r) => (float) $r['value'], $rows));
     if ($total <= 0 || $rows === []) {
         return '';
     }
 
+    // Ogni segmento è un collegamento all'elenco di quello stato, con i valori
+    // nel tooltip di ip-chart-tips.js: prima era un <span> con il solo tooltip
+    // nativo del browser, alto 6px e senza un posto dove andare.
     $segments = '';
     foreach ($rows as $row) {
-        $share     = (float) $row['value'] / $total * 100;
-        $segments .= '<span class="ip-status-bar-seg ip-status-bar-seg--' . esc((string) ($row['status'] ?? ''), 'attr') . '" style="width:' . round($share, 2)
-            . '%" title="' . esc($row['label']) . ': '
-            . esc(format_currency($row['value'])) . ' (' . number_format($share, 0, ',', '.') . '%)"></span>';
+        $share = (float) $row['value'] / $total * 100;
+        $tip   = [
+            'title' => $row['label'],
+            'rows'  => [
+                [trans('amount', '', 'Importo'), strip_tags(format_currency($row['value'])), (string) ($row['status'] ?? '')],
+                [$docsLabel !== '' ? $docsLabel : trans('documents', '', 'Documenti'), (string) (int) ($row['count'] ?? 0), ''],
+                [trans('share', '', 'Quota'), number_format($share, 1, ',', '.') . '%', ''],
+            ],
+        ];
+        if ($listBase !== '') {
+            $tip['hint'] = trans('chart_open_status', '', 'Clic per aprire questo stato');
+        }
+        $payload = esc((string) json_encode([
+            'title' => $tip['title'],
+            'rows'  => array_map(static fn(array $r): array => ['label' => $r[0], 'value' => $r[1], 'cls' => $r[2]], $tip['rows']),
+        ] + (isset($tip['hint']) ? ['hint' => $tip['hint']] : []), JSON_UNESCAPED_UNICODE), 'attr');
+
+        $tag   = $listBase !== '' ? 'a' : 'span';
+        $href  = $listBase !== '' ? ' href="' . esc(rtrim($listBase, '/') . '/' . ($row['status'] ?? ''), 'attr') . '"' : '';
+        $label = esc($row['label'] . ': ' . strip_tags(format_currency($row['value'])) . ' (' . number_format($share, 0, ',', '.') . '%)', 'attr');
+        $segments .= '<' . $tag . $href . ' class="ip-status-bar-seg ip-status-bar-seg--' . esc((string) ($row['status'] ?? ''), 'attr')
+            . '" style="width:' . round($share, 2) . '%" data-tip="' . $payload . '" aria-label="' . $label . '"></' . $tag . '>';
     }
 
-    return '<div class="ip-status-bar-wrap" role="img" aria-label="' . esc($ariaLabel) . '">'
+    return '<div class="ip-status-bar-wrap" role="group" aria-label="' . esc($ariaLabel) . '">'
         . '<div class="ip-status-bar">' . $segments . '</div></div>';
 };
 
@@ -831,7 +852,7 @@ $windowsToggle .= '</div></div>';
                                  tabella qui sotto (la quota sul totale), su una
                                  codifica piu' leggibile della torta e senza occupare
                                  una card a se'. */ ?>
-                        <?= $statusMixBar($donut_data, trans('dashboard_status_mix', '', 'Composizione stati fattura')) ?>
+                        <?= $statusMixBar($donut_data, trans('dashboard_status_mix', '', 'Composizione stati fattura'), site_url('invoices/status'), trans('invoices')) ?>
                         <div class="table-responsive">
                             <table class="table no-margin ip-overview-table">
                                 <tbody>
@@ -880,10 +901,11 @@ $windowsToggle .= '</div></div>';
                                 'label'  => $total['label'],
                                 'value'  => (float) $total['sum_total'],
                                 'status' => $total['class'],
+                                'count'  => (int) ($total['num_total'] ?? 0),
                             ];
                         }
                         ?>
-                        <?= $statusMixBar($quoteMix, trans('dashboard_status_mix_quotes', '', 'Composizione stati preventivo')) ?>
+                        <?= $statusMixBar($quoteMix, trans('dashboard_status_mix_quotes', '', 'Composizione stati preventivo'), site_url('quotes/status'), trans('quotes')) ?>
                         <div class="table-responsive">
                             <table class="table no-margin ip-overview-table">
                                 <tbody>

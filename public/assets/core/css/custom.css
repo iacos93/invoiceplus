@@ -3329,6 +3329,15 @@ html[data-theme="dark"] .ip-chart-month.is-active .ip-chart-label { fill: #fffff
 .ip-chart-tip__dot--expenses { background: var(--ip-danger); }
 .ip-chart-tip__dot--profit   { background: var(--ip-success); }
 .ip-chart-tip__dot--loss     { background: var(--ip-danger); }
+/* Stati dei documenti (tooltip della barra "per stato"): stesse tinte dei segmenti. */
+.ip-chart-tip__dot--draft    { background: var(--ip-neutral-solid); }
+.ip-chart-tip__dot--sent     { background: var(--ip-info-text); }
+.ip-chart-tip__dot--viewed   { background: var(--ip-warning-text); }
+.ip-chart-tip__dot--paid,
+.ip-chart-tip__dot--approved { background: var(--ip-success-text); }
+.ip-chart-tip__dot--rejected,
+.ip-chart-tip__dot--overdue  { background: var(--ip-danger-text); }
+.ip-chart-tip__dot--canceled { background: var(--ip-text); }
 .ip-chart-tip__hint {
   margin-top: 6px;
   padding-top: 5px;
@@ -6602,13 +6611,18 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 
 .ip-status-bar {
   display: flex;
-  height: 6px;
+  /* 8px e non 6: ogni segmento è un bersaglio (tooltip e collegamento
+     all'elenco dello stato, ip-chart-tips.js) e 6px erano troppo pochi da
+     centrare con il puntatore. */
+  height: 8px;
   overflow: hidden;
   background: var(--ip-border-soft);
 }
 .ip-status-bar-seg {
+  display: block;
   height: 100%;
   min-width: 2px;
+  cursor: pointer;
   transition: opacity var(--ip-transition);
   /* Colore di riserva: uno stato nuovo, o non mappato qui sotto, resta
      visibile invece di produrre un segmento trasparente. */
@@ -6630,7 +6644,12 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-status-bar-seg--overdue  { background: var(--ip-danger-text); }
 .ip-status-bar-seg--canceled { background: var(--ip-text); }
 .ip-status-bar:hover .ip-status-bar-seg { opacity: .55; }
-.ip-status-bar .ip-status-bar-seg:hover { opacity: 1; }
+.ip-status-bar .ip-status-bar-seg:hover,
+.ip-status-bar .ip-status-bar-seg:focus-visible { opacity: 1; }
+/* Il bordo del focus sta dentro il segmento: la barra ha overflow nascosto e
+   un contorno esterno verrebbe tagliato. */
+.ip-status-bar-seg:focus-visible { outline: 2px solid var(--ip-primary); outline-offset: -2px; }
+span.ip-status-bar-seg { cursor: default; }
 
 /* -----------------------------------------------------------------------------
    25. Navigazione temporale della lista documenti (anno + mesi)

@@ -868,6 +868,7 @@ return array (
   'dashboard_last_6_months' => 'ultimi 6 mesi',
   'dashboard_6_months_until' => '6 mesi fino a %s',
   'chart_open_month' => 'Clic per aprire i dettagli',
+  'chart_open_status' => 'Clic per aprire questo stato',
   'dashboard_profit_net_label' => 'Utile al netto IVA',
   'dashboard_margin_label' => 'Margine',
   'dashboard_no_chart_data' => 'Nessun movimento fatturazione negli ultimi 6 mesi.',

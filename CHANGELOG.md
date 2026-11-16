@@ -11,6 +11,12 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- La barra di composizione di «Fatture per stato» e «Preventivi per stato» in
+  Bacheca è interattiva come i grafici: ogni segmento è un collegamento
+  all'elenco di quello stato, con un tooltip (importo, numero di documenti,
+  quota) e raggiungibile da tastiera; la barra è alta 8 px invece di 6, per
+  poterla centrare con il puntatore.
+
 - I grafici della Bacheca e della scheda cliente sono interattivi: al
   passaggio del mouse (o con Tab e le frecce, o al tocco) il mese si evidenzia
   e un tooltip mostra i valori già formattati, al posto del tooltip nativo del
