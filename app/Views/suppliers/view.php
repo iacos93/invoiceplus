@@ -136,7 +136,7 @@ $addr = array_filter([
                                         <span class="ip-num"><?= esc($e['expense_number'] ?: $e['expense_id']) ?></span>
                                     </a>
                                     <?php if (($e['expense_source'] ?? '') === 'xml'): ?>
-                                        <a class="badge ip-status text-bg-info" href="<?= site_url('expenses/preview_xml/' . (int) $e['expense_id']) ?>">XML</a>
+                                        <a class="ip-src-tag" href="<?= site_url('expenses/preview_xml/' . (int) $e['expense_id']) ?>" title="<?= esc(trans('xml_preview', '', 'Anteprima fattura elettronica'), 'attr') ?>">XML</a>
                                     <?php endif; ?>
                                 </td>
                                 <td data-label="<?= esc(trans('category', '', 'Categoria')) ?>"><?= esc($e['expense_category_name'] ?? '—') ?></td>

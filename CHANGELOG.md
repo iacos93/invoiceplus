@@ -113,6 +113,12 @@ Le regole per scrivere le voci e preparare una release sono in
   colore della banda si animava mentre l'opacità cambiava di colpo. Ora si
   anima solo l'opacità, e la banda sfuma in modo continuo.
 
+- Il marcatore «XML» accanto al numero delle spese (scheda fornitore e lista
+  Spese) non è più un timbro di stato: al passaggio del mouse sulla riga si
+  invertiva a pieno colore (bianco su azzurro) e le due pagine lo disegnavano
+  in modo diverso. Ora è un contorno sottile, uguale nelle due pagine, che si
+  tinge appena solo se è il collegamento a essere sotto il puntatore.
+
 ### Corretto
 
 - Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei
