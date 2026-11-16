@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.12.0] — 2026-11-16
+
 ### Modificato
 
 - La pagina RiBa elenca solo le fatture emesse con pagamento RiBa (metodo con
@@ -141,6 +143,16 @@ Le regole per scrivere le voci e preparare una release sono in
   ed esclude le altre note di credito.
 
 ### Corretto
+
+- Nella pagina Integrazione MCP il pulsante Copia della chiave non dice più
+  «la chiave è selezionata, premi Ctrl+C» quando la chiave non è mai arrivata:
+  una sessione scaduta o un token CSRF consumato da un'altra scheda facevano
+  scaricare l'HTML del rimando al posto del JSON, e l'errore finiva nello
+  stesso ramo della copia negata, su un campo vuoto. Ora la richiesta
+  distingue una risposta non JSON e avvisa di ricaricare la pagina, e anche la
+  rigenerazione segnala il fallimento invece di restare muta. La copia
+  inoltre usa il comando sincrono del browser quando l'API Clipboard non è
+  disponibile in un contesto sicuro.
 
 - Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei
   conti» (Importa piano standard, Crea una voce, Piano dei conti) avevano la

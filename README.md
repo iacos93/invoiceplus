@@ -303,7 +303,13 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.11.0`, che rinnova
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.12.0`, che rende
+interattivi i grafici e le barre di stato della Bacheca, restringe la pagina
+RiBa alle fatture davvero presentabili, pagina fornitori, prodotti, attività e
+progetti con totali coerenti con le righe visibili, riduce le query a ogni
+pagina e chiude una serie di difetti — fra cui la pagina Integrazione MCP che
+dichiarava selezionata una chiave mai arrivata, e su MySQL la Bacheca e
+l'installazione pulita. La `v0.11.0` rinnova
 il marchio e il carattere del nome, aggiunge loghi e piè di pagina per azienda
 sui documenti, la colonna IVA nelle righe, l'installazione come app (PWA), il
 primo avvio guidato con la pagina «Primi passi», nuovi controlli sulla fattura
