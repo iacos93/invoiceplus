@@ -254,6 +254,8 @@ return array (
   'mcp_key_copied' => 'Key copied to clipboard',
   'mcp_key_not_generated' => 'No key configured: generate one before copying it',
   'mcp_copy_failed' => 'Copy failed: the key is selected, press Ctrl+C',
+  'mcp_key_reveal_failed' => 'Could not read the key: reload the page and try again',
+  'mcp_key_generate_failed' => 'Generation failed: reload the page and try again',
   'mcp_url_copy_failed' => 'Copy failed: the endpoint is selected, press Ctrl+C',
   'mcp_company' => 'MCP integration company',
   'mcp_settings' => 'MCP integration',

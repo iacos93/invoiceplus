@@ -205,8 +205,10 @@ $mcpUrl       = site_url('mcp');
         }
 
         // Copia negli appunti con fallback al comando del browser: se l'API
-        // Clipboard è negata (http, iframe) il campo è comunque selezionato e
-        // document.execCommand('copy') recupera il caso più comune.
+        // Clipboard è negata (documento non a fuoco, pannello incorporato,
+        // http) il campo è comunque selezionato e document.execCommand('copy')
+        // recupera il caso più comune — in Chromium copia anche quando
+        // writeText risponde «Document is not focused».
         function copyText(value, onSuccess, onFailure) {
             function fallback() {
                 var copied = false;
@@ -222,11 +224,44 @@ $mcpUrl       = site_url('mcp');
                 }
             }
 
-            if (navigator.clipboard && navigator.clipboard.writeText) {
+            // Fuori da un contesto sicuro writeText è garantito negato: si va
+            // dritti al comando sincrono invece di attendere un rifiuto.
+            if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
                 navigator.clipboard.writeText(value).then(onSuccess, fallback);
                 return;
             }
             fallback();
+        }
+
+        // POST che si aspetta JSON. Una sessione scaduta o un token CSRF
+        // consumato da un'altra scheda non arrivano come errore: il filtro
+        // rimanda alla pagina (302) e qui si scarica il suo HTML, che
+        // r.json() non riesce a leggere. Senza questo controllo il fallimento
+        // della richiesta finiva nello stesso ramo della copia negata, e la
+        // pagina diceva «la chiave è selezionata» su un campo vuoto.
+        function postJson(url) {
+            var fd = new FormData();
+            fd.append(tokenName, tokenInput.value);
+
+            return fetch(url, {method: 'POST', body: fd})
+                .then(function (r) {
+                    var type = r.headers.get('content-type') || '';
+                    if (!r.ok || type.indexOf('application/json') === -1) {
+                        throw new Error('risposta non JSON: ' + r.status);
+                    }
+
+                    return r.json();
+                })
+                .then(function (data) {
+                    // CSRF monouso: il token va rinnovato anche quando la
+                    // chiave non c'è, altrimenti il clic successivo è già
+                    // destinato a fallire.
+                    if (data && data.token) {
+                        tokenInput.value = data.token;
+                    }
+
+                    return data;
+                });
         }
 
         // Lo snippet client segue la chiave mostrata nel campo: se resta il
@@ -246,26 +281,16 @@ $mcpUrl       = site_url('mcp');
         // chi la chiede dalla pagina, e solo dietro sessione amministrativa.
         // Senza questo il pulsante Copia non aveva niente da copiare.
         function revealKey() {
-            var fd = new FormData();
-            fd.append(tokenName, tokenInput.value);
+            return postJson(revealUrl).then(function (data) {
+                if (!data || !data.key) {
+                    return null;
+                }
+                tokenField.value = data.key;
+                tokenField.select();
+                setSnippetKey(data.key);
 
-            return fetch(revealUrl, {method: 'POST', body: fd})
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    // CSRF monouso: il token va rinnovato anche se la chiave
-                    // non c'è.
-                    if (data && data.token) {
-                        tokenInput.value = data.token;
-                    }
-                    if (!data || !data.key) {
-                        return null;
-                    }
-                    tokenField.value = data.key;
-                    tokenField.select();
-                    setSnippetKey(data.key);
-
-                    return data.key;
-                });
+                return data.key;
+            });
         }
 
         // Come nelle Impostazioni: per un attimo l'icona diventa una spunta,
@@ -300,17 +325,8 @@ $mcpUrl       = site_url('mcp');
                 return;
             }
 
-            var fd = new FormData();
-            fd.append(tokenName, tokenInput.value);
-
-            fetch('<?= site_url('mcp/ajax/get_key') ?>', {method: 'POST', body: fd})
-                .then(function (r) { return r.json(); })
+            postJson('<?= site_url('mcp/ajax/get_key') ?>')
                 .then(function (data) {
-                    if (data && data.token) {
-                        // Il CSRF è monouso: il token della pagina va rinnovato
-                        // anche quando la generazione fallisce.
-                        tokenInput.value = data.token;
-                    }
                     if (!data || !data.key) {
                         return;
                     }
@@ -321,6 +337,10 @@ $mcpUrl       = site_url('mcp');
                     tokenField.select();
                     setSnippetKey(data.key);
                     copyKeyField();
+                }, function () {
+                    // Sessione scaduta o CSRF consumato: senza questo il
+                    // pulsante non dava alcun segno e sembrava rotto.
+                    showToast('<?= esc(trans('mcp_key_generate_failed', '', 'Generazione non riuscita: ricarica la pagina e riprova'), 'js') ?>', 'warning');
                 });
         });
 
@@ -348,7 +368,9 @@ $mcpUrl       = site_url('mcp');
                     copyKeyField();
                 }, function () {
                     copyKeyBtn.disabled = false;
-                    showToast('<?= esc(trans('mcp_copy_failed', '', 'Copia non riuscita: la chiave è selezionata, premi Ctrl+C'), 'js') ?>', 'warning');
+                    // La chiave non è mai arrivata: il campo è vuoto, dire che
+                    // è selezionata mandava a premere Ctrl+C su niente.
+                    showToast('<?= esc(trans('mcp_key_reveal_failed', '', 'Impossibile leggere la chiave: ricarica la pagina e riprova'), 'js') ?>', 'warning');
                 });
             });
         }

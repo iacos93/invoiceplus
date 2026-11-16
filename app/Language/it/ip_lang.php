@@ -256,6 +256,8 @@ return array (
   'mcp_key_copied' => 'Chiave copiata negli appunti',
   'mcp_key_not_generated' => 'Nessuna chiave configurata: generala prima di copiarla',
   'mcp_copy_failed' => 'Copia non riuscita: la chiave è selezionata, premi Ctrl+C',
+  'mcp_key_reveal_failed' => 'Impossibile leggere la chiave: ricarica la pagina e riprova',
+  'mcp_key_generate_failed' => 'Generazione non riuscita: ricarica la pagina e riprova',
   'mcp_url_copy_failed' => 'Copia non riuscita: l\'endpoint è selezionato, premi Ctrl+C',
   'mcp_company' => 'Azienda dell\'integrazione MCP',
   'mcp_settings' => 'Integrazione MCP',
