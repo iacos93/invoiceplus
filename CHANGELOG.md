@@ -128,6 +128,13 @@ Le regole per scrivere le voci e preparare una release sono in
   px in tutto) invece del solo spazio della parola, che lo lasciava attaccato
   alle cifre.
 
+- L'import degli XML di fatture emesse collegava la nota di credito alla
+  fattura stornata cercando solo il numero: con più anni in archivio la NC
+  agganciava la fattura omonima più vecchia, di un altro cliente (la NC 1/2026
+  che storna la 21/2026 finiva sulla 21/2025). Ora usa anche la data della
+  fattura collegata riportata nel tracciato (o l'anno della nota di credito)
+  ed esclude le altre note di credito.
+
 ### Corretto
 
 - Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei

@@ -412,9 +412,27 @@ class SalesInvoiceImporter
         }
 
         if ($this->isCreditNote($doc) && $doc['linked'] !== null) {
-            $parent = (new InvoiceModel())->scopeToCompany()
+            // La numerazione riparte ogni anno: cercare solo il numero
+            // agganciava la nota di credito alla fattura omonima più vecchia
+            // (la NC 1/2026 che storna la 21/2026 finiva sulla 21/2025, di un
+            // altro cliente). Il tracciato porta anche la data della fattura
+            // collegata; se manca, vale l'anno della nota di credito. Le
+            // altre note di credito non sono mai la fattura stornata.
+            $creditTypes = FatturaXml::CREDIT_NOTE_TYPES;
+            $query       = (new InvoiceModel())->scopeToCompany()
                 ->where('invoice_number', $doc['linked']['id'])
-                ->first();
+                ->groupStart()
+                    ->whereNotIn('invoice_doc_type', $creditTypes)
+                    ->orWhere('invoice_doc_type', null)
+                ->groupEnd();
+
+            if (! empty($doc['linked']['date'])) {
+                $query->where('invoice_date_created', $doc['linked']['date']);
+            } else {
+                $query->where('EXTRACT(YEAR FROM invoice_date_created)', (int) substr($doc['date'], 0, 4));
+            }
+
+            $parent = $query->orderBy('invoice_date_created', 'DESC')->first();
 
             if ($parent) {
                 $data['creditinvoice_parent_id'] = (int) $parent['invoice_id'];
