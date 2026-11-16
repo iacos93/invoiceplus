@@ -124,6 +124,10 @@ Le regole per scrivere le voci e preparare una release sono in
   dedicata al badge (display: table) annullava il padding. Ora ha lo stesso
   spazio interno degli altri badge.
 
+- Il badge «XML» accanto al numero della spesa ha un margine proprio (circa 9
+  px in tutto) invece del solo spazio della parola, che lo lasciava attaccato
+  alle cifre.
+
 ### Corretto
 
 - Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei

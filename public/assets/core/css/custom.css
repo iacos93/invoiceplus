@@ -14462,6 +14462,11 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 }
 .ip-window-body--flush .table > tbody > tr.empty-row > td { vertical-align: middle; }
 
+/* Accanto al numero il badge aveva solo lo spazio della parola (3-4px) e
+   sembrava attaccato alle cifre, specie con i numeri lunghi dei fornitori.
+   Sotto il numero (.ip-num-tag) resta allineato a sinistra. */
+.ip-badge-tag:not(.ip-num-tag) { margin-left: 6px; }
+
 /* Badge che indicano l'origine del dato ("XML": la spesa viene da una fattura
    elettronica) e non uno stato: stesso disegno dei badge di stato, ma senza il
    timbro a colore pieno che quelli prendono al passaggio del mouse sulla riga.
