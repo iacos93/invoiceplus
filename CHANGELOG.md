@@ -85,6 +85,25 @@ Le regole per scrivere le voci e preparare una release sono in
   posto del triangolo nativo, e la nota finale è testo normale invece del
   carattere monospazio della riga di stato passkey.
 
+- L'Indice di redditività mostra sempre 12 mesi, mentre Grafico ricavi e
+  Grafico costi restano a 6 nella card normale e mostrano tutti i 12 mesi (con
+  i loro totali e l'etichetta del periodo) quando la finestra è espansa.
+  L'ultimo mese della finestra è lo stesso per le due lunghezze: con i dati
+  fermi a gennaio, il 12 mesi non finisce più a oggi.
+
+- La banda che evidenzia il mese nei grafici è traslucida e non più un grigio
+  pieno: nel grafico ad area copriva la linea proprio nel mese guardato.
+
+- Lo stato vuoto delle finestre della Bacheca («Preventivi recenti» senza
+  preventivi) non si tinge più di grigio al passaggio del mouse e occupa tutto
+  lo spazio della finestra, centrato, invece di un blocco grigio nella parte
+  alta con il resto bianco.
+
+- La pagina «Sei offline» usa il marchio vero dell'app (le stesse proporzioni
+  di pwa-icon.svg): quello in linea era una copia a mano con barre e croce
+  diverse. La cache del service worker passa a v4, perché la pagina è
+  precaricata.
+
 ### Corretto
 
 - Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei

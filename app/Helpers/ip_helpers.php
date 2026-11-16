@@ -2352,6 +2352,12 @@ if (!function_exists('chart_window_anchor')) {
     {
         static $cache = [];
 
+        // L'àncora si decide sempre sulla finestra di riferimento a 6 mesi:
+        // se ogni lunghezza decidesse per conto suo, la serie a 12 mesi
+        // finirebbe a questo mese mentre quella a 6 finisce a gennaio, e le
+        // due finestre della stessa pagina non sarebbero confrontabili.
+        $months = 6;
+
         if (isset($cache[$months])) {
             return $cache[$months];
         }

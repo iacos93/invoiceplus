@@ -804,10 +804,14 @@ svg.ip-spark {
    stesso, quindi Tab, frecce, Invio e Spazio funzionano senza altro markup. */
 .ip-chart-month { outline: none; }
 .ip-chart-month[data-href] { cursor: pointer; }
+/* La banda è traslucida (inchiostro al 7%) e non un grigio pieno: nel grafico
+   ad area sta sopra la linea e il suo riempimento, e un fondo opaco la
+   nascondeva proprio nel mese che si stava guardando. */
 .ip-chart-month:hover .ip-chart-col,
-.ip-chart-month.is-active .ip-chart-col { fill: var(--ip-hover, #f4f4f5); }
+.ip-chart-month.is-active .ip-chart-col { fill: var(--ip-text); fill-opacity: .07; }
 .ip-chart-month:focus-visible .ip-chart-col {
-  fill: var(--ip-hover, #f4f4f5);
+  fill: var(--ip-text);
+  fill-opacity: .07;
   stroke: var(--ip-primary);
   stroke-width: 1.5;
 }
@@ -886,3 +890,9 @@ html[data-theme="dark"] .ip-chart-month.is-active .ip-chart-label { fill: #fffff
   color: var(--ip-text-muted);
   border-top: 1px solid var(--ip-border);
 }
+
+/* Ricavi e costi: sei mesi a card normale, dodici quando la finestra è
+   espansa. Le due varianti sono nel markup e si scambia la visibilità. */
+.ip-chart-variant--12 { display: none; }
+.ip-window--expanded .ip-chart-variant--12 { display: block; }
+.ip-window--expanded .ip-chart-variant--6 { display: none; }

@@ -191,6 +191,10 @@ $monthHref = static function (string $base, ?string $ym, bool $withMonth = true)
 };
 $openHint = trans('chart_open_month', '', 'Clic per aprire i dettagli');
 
+$windowLabel12 = date('Y-m', $windowEnd) === date('Y-m')
+    ? trans('dashboard_last_12_months', '', 'ultimi 12 mesi')
+    : sprintf(trans('dashboard_12_months_until', '', '12 mesi fino a %s'), date('m/Y', $windowEnd));
+
 $sparkline = static function (array $values, string $colorVar = 'var(--ip-primary)'): string {
     $values = array_values(array_map('floatval', $values));
     if (count($values) === 0) {
@@ -241,7 +245,10 @@ $unpaidSpark = [];
 foreach ($chart_series as $row) {
     $unpaidSpark[] = (float) $row['invoiced'] - (float) $row['paid'];
 }
-$profitLabels = array_map(static fn($r) => $r['label'], $chart_series);
+// L'Indice di redditività mostra sempre 12 mesi, a prescindere dalle finestre
+// a 6 delle altre card.
+$profitSpark12  = array_map('floatval', $profit_series_12);
+$profitLabels   = array_map(static fn($r) => $r['label'], $chart_series_12);
 $indiceColor  = $profit_total < 0 ? 'var(--ip-danger)' : 'var(--ip-success)';
 
 // Geometria e scala condivise dai grafici SVG della dashboard: stessa
@@ -474,11 +481,11 @@ $windowsToggle .= '</div></div>';
                 <div class="ip-indice-chart">
                     <?php
                     $profitMeta = [];
-                    foreach ($chart_series as $i => $row) {
+                    foreach ($chart_series_12 as $i => $row) {
                         $profitMeta[$i] = ['ym' => $row['ym'] ?? null, 'base' => site_url('finance'), 'month' => false, 'row' => trans('dashboard_profit_net_label', '', 'Utile al netto IVA')];
                     }
                     ?>
-                    <?= $areaChart($profitSpark, $profitLabels, $indiceColor, $profitMeta) ?>
+                    <?= $areaChart($profitSpark12, $profitLabels, $indiceColor, $profitMeta) ?>
                 </div>
             </div>
         </section>
@@ -660,9 +667,13 @@ $windowsToggle .= '</div></div>';
         <div class="ip-window-split">
             <section class="ip-window" data-window="graf_ricavi">
                 <?= $winHead('graf_ricavi', trans('dashboard_revenue_chart', '', 'Grafico ricavi'), site_url('invoices'), 'fa-solid fa-chart-column') ?>
-                <div class="ip-chart-body">
+                <?php foreach ([6, 12] as $span):
+                $rSeries = $span === 12 ? $chart_series_12 : $chart_series;
+                $rMax    = $span === 12 ? $chart_max_12 : $chart_max;
+                ?>
+                <div class="ip-chart-body ip-chart-variant ip-chart-variant--<?= $span ?>">
                     <div class="ip-chart-meta">
-                        <span class="ip-chart-period"><?= esc($windowLabel) ?></span>
+                        <span class="ip-chart-period"><?= esc($span === 12 ? $windowLabel12 : $windowLabel) ?></span>
                         <span class="ip-chart-legend">
                             <?php // Le voci della legenda accendono e spengono la serie (ip-chart-tips.js). ?>
                             <span class="ip-chart-legend-item" data-series="invoiced" role="button" tabindex="0" aria-pressed="true"><span class="ip-chart-legend-dot ip-chart-legend-dot--invoiced"></span><?= trans('dashboard_invoiced_label', '', 'Fatturato') ?></span>
@@ -670,13 +681,13 @@ $windowsToggle .= '</div></div>';
                         </span>
                     </div>
                     <?php
-                    $cMax = (float) $chart_max;
-                    $cN   = count($chart_series);
+                    $cMax = (float) $rMax;
+                    $cN   = count($rSeries);
                     // Totali di periodo (ultimi 6 mesi): in intestazione danno
                     // subito il quadro aggregato senza scorrere il grafico.
                     $sumInvoiced = 0.0;
                     $sumPaid     = 0.0;
-                    foreach ($chart_series as $row) {
+                    foreach ($rSeries as $row) {
                         $sumInvoiced += (float) $row['invoiced'];
                         $sumPaid     += (float) $row['paid'];
                     }
@@ -717,7 +728,7 @@ $windowsToggle .= '</div></div>';
                             <line class="ip-chart-grid" x1="<?= $padLeft ?>" y1="<?= round($tickY, 1) ?>" x2="<?= $W ?>" y2="<?= round($tickY, 1) ?>" />
                             <text class="ip-chart-axis" x="<?= $padLeft - 8 ?>" y="<?= round($tickY + 3.5, 1) ?>" text-anchor="end"><?= esc($axisLabel($tickVal)) ?></text>
                         <?php endfor; ?>
-                        <?php foreach ($chart_series as $i => $row):
+                        <?php foreach ($rSeries as $i => $row):
                             $inv    = (float) $row['invoiced'];
                             $paid   = (float) $row['paid'];
                             $xCol   = $padLeft + $i * $colW;
@@ -752,32 +763,39 @@ $windowsToggle .= '</div></div>';
                     <?php else: ?>
                     <div class="ip-chart-empty">
                         <i class="fa fa-solid fa-chart-column" aria-hidden="true"></i>
-                        <p><?= trans('dashboard_no_chart_data', '', 'Nessun movimento fatturazione negli ultimi 6 mesi.') ?></p>
+                        <p><?= trans('dashboard_no_chart_data', '', 'Nessun movimento fatturazione nel periodo.') ?></p>
                     </div>
                     <?php endif; ?>
                 </div>
+                <?php endforeach; ?>
             </section>
 
             <section class="ip-window" data-window="graf_costi">
                 <?= $winHead('graf_costi', trans('dashboard_expenses_chart', '', 'Grafico costi'), site_url('expenses'), 'fa-solid fa-credit-card') ?>
-                <div class="ip-chart-body">
+                <?php foreach ([6, 12] as $span):
+                $eSeries = $span === 12 ? $expense_series_12 : $expense_series;
+                $eTotal  = $span === 12 ? $expenses_total_12m : $expenses_total_6m;
+                $pTotal  = $span === 12 ? $profit_total_12m : $profit_total_6m;
+                $iNet    = $span === 12 ? $income_net_12m : $income_net_6m;
+                ?>
+                <div class="ip-chart-body ip-chart-variant ip-chart-variant--<?= $span ?>">
                     <div class="ip-chart-meta">
-                        <span class="ip-chart-period"><?= esc($windowLabel) ?></span>
+                        <span class="ip-chart-period"><?= esc($span === 12 ? $windowLabel12 : $windowLabel) ?></span>
                         <span class="ip-chart-legend">
                             <span class="ip-chart-legend-item"><span class="ip-chart-legend-dot ip-chart-legend-dot--expenses"></span><?= trans('dashboard_expenses_label', '', 'Spese') ?></span>
                         </span>
                     </div>
                     <?php
-                    $eN      = count($expense_series);
+                    $eN      = count($eSeries);
                     $expMax  = 1.0;
-                    foreach ($expense_series as $row) {
+                    foreach ($eSeries as $row) {
                         $expMax = max($expMax, abs((float) $row['total']));
                     }
                     $expScale = $chartScale($expMax);
                     $eColW    = $plotW / max(1, $eN);
                     $eBarW    = max(1, $eColW * 0.42);
                     $eInner   = ($eColW - $eBarW) / 2;
-                    $hasExp   = $expenses_total_6m > 0;
+                    $hasExp   = $eTotal > 0;
                     ?>
                     <?php if ($hasExp): ?>
                     <div class="ip-chart-summary">
@@ -786,16 +804,16 @@ $windowsToggle .= '</div></div>';
                                      inclusa: dirlo evita che il lettore sommi
                                      questa voce all'utile (che è al netto). */ ?>
                             <?= esc(trans('dashboard_expenses_gross_label', '', 'Spese IVA inclusa')) ?>
-                            <span class="ip-chart-summary-value"><?= format_currency($expenses_total_6m) ?></span>
+                            <span class="ip-chart-summary-value"><?= format_currency($eTotal) ?></span>
                         </span>
                         <span class="ip-chart-summary-item ip-chart-summary-item--profit">
                             <?= esc(trans('dashboard_profit_label', '', 'Utile di impresa')) ?>
-                            <span class="ip-chart-summary-value"><?= format_currency($profit_total_6m) ?></span>
+                            <span class="ip-chart-summary-value"><?= format_currency($pTotal) ?></span>
                         </span>
                         <span class="ip-chart-summary-item">
                             <?= esc(trans('dashboard_margin_label', '', 'Margine')) ?>
                             <span class="ip-chart-summary-value">
-                                <?= $income_net_6m > 0 ? number_format($profit_total_6m / $income_net_6m * 100, 1, ',', '.') . '%' : '—' ?>
+                                <?= $iNet > 0 ? number_format($pTotal / $iNet * 100, 1, ',', '.') . '%' : '—' ?>
                             </span>
                         </span>
                     </div>
@@ -807,7 +825,7 @@ $windowsToggle .= '</div></div>';
                             <line class="ip-chart-grid" x1="<?= $padLeft ?>" y1="<?= round($tickY, 1) ?>" x2="<?= $W ?>" y2="<?= round($tickY, 1) ?>" />
                             <text class="ip-chart-axis" x="<?= $padLeft - 8 ?>" y="<?= round($tickY + 3.5, 1) ?>" text-anchor="end"><?= esc($axisLabel($tickVal)) ?></text>
                         <?php endfor; ?>
-                        <?php foreach ($expense_series as $i => $row):
+                        <?php foreach ($eSeries as $i => $row):
                             $exp    = (float) $row['total'];
                             $xExp   = $padLeft + $i * $eColW + $eInner;
                             $yExp   = ($expScale['yOf'])($exp);
@@ -833,10 +851,11 @@ $windowsToggle .= '</div></div>';
                     <?php else: ?>
                     <div class="ip-chart-empty">
                         <i class="fa fa-regular fa-credit-card" aria-hidden="true"></i>
-                        <p><?= trans('dashboard_no_expense_data', '', 'Nessuna spesa registrata negli ultimi 6 mesi.') ?></p>
+                        <p><?= trans('dashboard_no_expense_data', '', 'Nessuna spesa registrata nel periodo.') ?></p>
                     </div>
                     <?php endif; ?>
                 </div>
+                <?php endforeach; ?>
             </section>
         </div>
 

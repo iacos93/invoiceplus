@@ -1439,3 +1439,32 @@
   min-height: var(--ip-control-h-sm);
 }
 #ip-confirm-modal .modal-footer .btn .fa { font-size: var(--ip-text-sm); }
+
+/* Stato vuoto nelle finestre della Bacheca ("Preventivi recenti" senza
+   preventivi): la riga è un invito, non un record. Con table-hover Bootstrap
+   la tingeva di grigio al passaggio del mouse (la tinta di riga arriva da
+   --bs-table-bg-state), e su una finestra alta il blocco grigio copriva solo
+   la parte alta lasciando il resto bianco. Niente tinta, e la riga si prende
+   tutto lo spazio che la finestra offre, centrata. */
+.table > tbody > tr.empty-row:hover > *,
+.table > tbody > tr > td[colspan]:only-child:hover {
+  --bs-table-bg-state: transparent;
+  --bs-table-hover-bg: transparent;
+  background-color: transparent;
+  box-shadow: none;
+}
+.ip-window-body--flush:has(.table > tbody > tr.empty-row:only-child) {
+  display: flex;
+  flex-direction: column;
+}
+.ip-window-body--flush:has(.table > tbody > tr.empty-row:only-child) .table-responsive {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.ip-window-body--flush:has(.table > tbody > tr.empty-row:only-child) .table {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.ip-window-body--flush .table > tbody > tr.empty-row > td { vertical-align: middle; }
+

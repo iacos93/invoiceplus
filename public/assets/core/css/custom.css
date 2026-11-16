@@ -3263,10 +3263,14 @@ svg.ip-spark {
    stesso, quindi Tab, frecce, Invio e Spazio funzionano senza altro markup. */
 .ip-chart-month { outline: none; }
 .ip-chart-month[data-href] { cursor: pointer; }
+/* La banda è traslucida (inchiostro al 7%) e non un grigio pieno: nel grafico
+   ad area sta sopra la linea e il suo riempimento, e un fondo opaco la
+   nascondeva proprio nel mese che si stava guardando. */
 .ip-chart-month:hover .ip-chart-col,
-.ip-chart-month.is-active .ip-chart-col { fill: var(--ip-hover, #f4f4f5); }
+.ip-chart-month.is-active .ip-chart-col { fill: var(--ip-text); fill-opacity: .07; }
 .ip-chart-month:focus-visible .ip-chart-col {
-  fill: var(--ip-hover, #f4f4f5);
+  fill: var(--ip-text);
+  fill-opacity: .07;
   stroke: var(--ip-primary);
   stroke-width: 1.5;
 }
@@ -3345,6 +3349,12 @@ html[data-theme="dark"] .ip-chart-month.is-active .ip-chart-label { fill: #fffff
   color: var(--ip-text-muted);
   border-top: 1px solid var(--ip-border);
 }
+
+/* Ricavi e costi: sei mesi a card normale, dodici quando la finestra è
+   espansa. Le due varianti sono nel markup e si scambia la visibilità. */
+.ip-chart-variant--12 { display: none; }
+.ip-window--expanded .ip-chart-variant--12 { display: block; }
+.ip-window--expanded .ip-chart-variant--6 { display: none; }
 /* -----------------------------------------------------------------------------
    20. Pagine "lista tabella" (invoices/quotes/clients index...) — card dock.
    La tabella aderisce al .card-header (no .card-body). Qui la tabella è
@@ -14413,3 +14423,32 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   min-height: var(--ip-control-h-sm);
 }
 #ip-confirm-modal .modal-footer .btn .fa { font-size: var(--ip-text-sm); }
+
+/* Stato vuoto nelle finestre della Bacheca ("Preventivi recenti" senza
+   preventivi): la riga è un invito, non un record. Con table-hover Bootstrap
+   la tingeva di grigio al passaggio del mouse (la tinta di riga arriva da
+   --bs-table-bg-state), e su una finestra alta il blocco grigio copriva solo
+   la parte alta lasciando il resto bianco. Niente tinta, e la riga si prende
+   tutto lo spazio che la finestra offre, centrata. */
+.table > tbody > tr.empty-row:hover > *,
+.table > tbody > tr > td[colspan]:only-child:hover {
+  --bs-table-bg-state: transparent;
+  --bs-table-hover-bg: transparent;
+  background-color: transparent;
+  box-shadow: none;
+}
+.ip-window-body--flush:has(.table > tbody > tr.empty-row:only-child) {
+  display: flex;
+  flex-direction: column;
+}
+.ip-window-body--flush:has(.table > tbody > tr.empty-row:only-child) .table-responsive {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.ip-window-body--flush:has(.table > tbody > tr.empty-row:only-child) .table {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.ip-window-body--flush .table > tbody > tr.empty-row > td { vertical-align: middle; }
+

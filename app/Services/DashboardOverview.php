@@ -174,6 +174,31 @@ class DashboardOverview
             $ivaSeries[] = $payableTax - (float) ($expenseTaxSeries[$i]['total'] ?? 0);
         }
 
+        // Stesse serie su 12 mesi: l'Indice di redditività le mostra sempre, e i
+        // grafici ricavi e costi le mostrano quando la finestra è espansa. La
+        // finestra finisce nello stesso mese di quella a 6 (chart_window_anchor
+        // decide sempre sui 6 mesi), così le due non si contraddicono.
+        $chartSeries12      = $invoiceAmountModel->getMonthlySeries(12);
+        $expenseSeries12    = $expenseModel->getMonthlySeries(12);
+        $invoiceTaxSeries12 = $invoiceAmountModel->getMonthlyTaxSeries(12);
+        $expenseTaxSeries12 = $expenseModel->getMonthlyTaxSeries(12);
+        $expensesTotal12m   = 0.0;
+        $incomeNet12m       = 0.0;
+        $profitSeries12     = [];
+        $chartMax12         = 0.0;
+
+        foreach ($chartSeries12 as $i => $row) {
+            $expensesGross = (float) ($expenseSeries12[$i]['total'] ?? 0);
+            $expensesNet   = $expensesGross - (float) ($expenseTaxSeries12[$i]['total'] ?? 0);
+            $incomeNet     = (float) $row['invoiced'] - (float) ($invoiceTaxSeries12[$i]['total'] ?? 0);
+
+            $expensesTotal12m += $expensesGross;
+            $incomeNet12m     += $incomeNet;
+            $profitSeries12[]  = $incomeNet - $expensesNet;
+            $chartMax12        = max($chartMax12, abs((float) $row['invoiced']), abs((float) $row['paid']));
+        }
+        $chartMax12 = $chartMax12 > 0 ? $chartMax12 : 1.0;
+
         // Donut composizione stati fattura: label + valore + colore per la
         // legenda, totalizzato a parte (somma di chi ha sum_total > 0).
         $donutData  = [];
@@ -290,6 +315,13 @@ class DashboardOverview
             'iva_delta'             => $ivaDelta,
             'iva_series'            => $ivaSeries,
             'chart_max'             => $chartMax,
+            'chart_series_12'       => $chartSeries12,
+            'expense_series_12'     => $expenseSeries12,
+            'profit_series_12'      => $profitSeries12,
+            'expenses_total_12m'    => $expensesTotal12m,
+            'profit_total_12m'      => array_sum($profitSeries12),
+            'income_net_12m'        => $incomeNet12m,
+            'chart_max_12'          => $chartMax12,
             'donut_data'            => $donutData,
             'donut_total'           => $donutTotal,
             'invoice_delta'         => $invoiceDelta,

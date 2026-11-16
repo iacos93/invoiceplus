@@ -142,6 +142,24 @@ final class DashboardChartsInteractiveTest extends CIUnitTestCase
         }
     }
 
+    public function testLIndiceMostraSempreDodiciMesiERicaviECostiHannoLaVarianteEstesa(): void
+    {
+        $html = $this->bacheca();
+
+        preg_match('/<svg class="ip-area".*?<\/svg>/s', $html, $area);
+        $this->assertNotEmpty($area, 'Manca il grafico dell\'Indice di redditività');
+        $this->assertSame(12, substr_count($area[0], 'class="ip-chart-month"'), 'L\'Indice deve mostrare 12 mesi');
+
+        // Ricavi e costi: sei mesi a card normale, dodici a finestra espansa.
+        foreach (['graf_ricavi', 'graf_costi'] as $finestra) {
+            preg_match('/data-window="' . $finestra . '".*?<\/section>/s', $html, $sez);
+            $this->assertNotEmpty($sez, 'Manca la finestra ' . $finestra);
+            $this->assertStringContainsString('ip-chart-variant--6', $sez[0], $finestra . ': manca la variante a 6 mesi');
+            $this->assertStringContainsString('ip-chart-variant--12', $sez[0], $finestra . ': manca la variante a 12 mesi');
+            $this->assertSame(18, substr_count($sez[0], 'class="ip-chart-month"'), $finestra . ': 6 + 12 mesi');
+        }
+    }
+
     public function testIGraficiNonUsanoPiuITitoliNativi(): void
     {
         $html = $this->bacheca();
