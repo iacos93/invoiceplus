@@ -76,9 +76,11 @@ $usageText = static function (array $counts): string {
                         <td colspan="6">
                             <i class="fa fa-solid fa-university empty-icon" aria-hidden="true"></i>
                             <?= trans('no_bank_accounts', '', 'Nessun conto di saldo.') ?>
-                            <a href="<?= site_url('bank_accounts/form') ?>" class="empty-cta">
-                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('bank_account_add_first', '', 'Aggiungi il primo conto') ?>
-                            </a>
+                            <div class="empty-actions">
+                                <a href="<?= site_url('bank_accounts/form') ?>" class="empty-cta">
+                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('bank_account_add_first', '', 'Aggiungi il primo conto') ?>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 <?php else: ?>

@@ -160,9 +160,11 @@ $summary = $summary ?? ['projects' => 0, 'open_tasks' => 0, 'completed_tasks' =>
                     <td colspan="5">
                         <i class="fa fa-solid fa-briefcase empty-icon" aria-hidden="true"></i>
                         <?= trans('alert_no_projects_found', '', 'Nessun progetto presente.') ?>
-                        <a href="<?= site_url('projects/form') ?>" class="empty-cta">
-                            <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new', '', 'Nuovo progetto') ?>
-                        </a>
+                        <div class="empty-actions">
+                            <a href="<?= site_url('projects/form') ?>" class="empty-cta">
+                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new', '', 'Nuovo progetto') ?>
+                            </a>
+                        </div>
                     </td>
                 </tr>
             <?php endif; ?>

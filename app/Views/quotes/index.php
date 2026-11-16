@@ -339,9 +339,11 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                     <td colspan="9">
                         <i class="fa fa-regular fa-file empty-icon" aria-hidden="true"></i>
                         <?= trans('no_quotes') ?>
-                        <a href="<?= site_url('quotes/form_create') ?>" class="empty-cta">
-                            <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_quote', '', 'Nuovo preventivo') ?>
-                        </a>
+                        <div class="empty-actions">
+                            <a href="<?= site_url('quotes/form_create') ?>" class="empty-cta">
+                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_quote', '', 'Nuovo preventivo') ?>
+                            </a>
+                        </div>
                     </td>
                 </tr>
             <?php endif; ?>

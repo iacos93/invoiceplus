@@ -117,9 +117,11 @@ $recur_frequencies = [
                         <td colspan="8">
                             <i class="fa fa-solid fa-refresh empty-icon" aria-hidden="true"></i>
                             <?= trans('no_recurring_invoices') ?>
-                            <a href="<?= site_url('invoices/form_create') ?>" class="empty-cta">
-                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> Nuova
-                            </a>
+                            <div class="empty-actions">
+                                <a href="<?= site_url('invoices/form_create') ?>" class="empty-cta">
+                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> Nuova
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 <?php endif; ?>

@@ -87,9 +87,11 @@ $actions = '<a class="btn btn-sm btn-primary" href="' . site_url('users/form') .
                     <td colspan="4">
                         <i class="fa fa-solid fa-users empty-icon" aria-hidden="true"></i>
                         Nessun utente presente.
-                        <a href="<?= site_url('users/form') ?>" class="empty-cta">
-                            <i class="fa fa-solid fa-plus" aria-hidden="true"></i> Nuovo
-                        </a>
+                        <div class="empty-actions">
+                            <a href="<?= site_url('users/form') ?>" class="empty-cta">
+                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> Nuovo
+                            </a>
+                        </div>
                     </td>
                 </tr>
             <?php endif; ?>

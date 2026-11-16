@@ -149,9 +149,11 @@ $addr = array_filter([
                                 <td colspan="5">
                                     <i class="fa fa-solid fa-shopping-cart empty-icon" aria-hidden="true"></i>
                                     <?= trans('no_linked_expenses') ?>
-                                    <a href="<?= site_url('expenses/form') ?>?supplier_id=<?= $id ?>" class="empty-cta">
-                                        <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('add_expense', '', 'Nuova spesa') ?>
-                                    </a>
+                                    <div class="empty-actions">
+                                        <a href="<?= site_url('expenses/form') ?>?supplier_id=<?= $id ?>" class="empty-cta">
+                                            <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('add_expense', '', 'Nuova spesa') ?>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endif; ?>

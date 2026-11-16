@@ -177,9 +177,11 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                     <td colspan="6">
                         <i class="fa fa-regular fa-check-square empty-icon" aria-hidden="true"></i>
                         <?= trans('no_tasks_found') ?>
-                        <a href="<?= site_url('tasks/form') ?>" class="empty-cta">
-                            <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new_task') ?>
-                        </a>
+                        <div class="empty-actions">
+                            <a href="<?= site_url('tasks/form') ?>" class="empty-cta">
+                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new_task') ?>
+                            </a>
+                        </div>
                     </td>
                 </tr>
             <?php endif; ?>

@@ -9,6 +9,15 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- Nelle liste vuote la chiamata all'azione («Aggiungi il primo conto», «Nuova
+  fattura», «Nuova spesa»…) sta su una riga propria sotto il messaggio, com'era
+  già nella lista Spese: le righe di stato vuoto la racchiudono in
+  `.empty-actions` invece di affidare il capo riga solo al `display: flex`
+  dell'ancora. Nella pagina Conti di saldo il pulsante restava attaccato alla
+  frase, in linea con il testo.
+
 ## [v0.12.0] — 2026-11-16
 
 ### Modificato

@@ -1004,9 +1004,11 @@ $windowsToggle .= '</div></div>';
                                         <td colspan="5">
                                             <i class="fa fa-regular fa-file-text empty-icon" aria-hidden="true"></i>
                                             <?= trans('no_records') ?>
-                                            <a href="<?= site_url('invoices/form_create') ?>" class="empty-cta">
-                                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_invoice', '', 'Nuova fattura') ?>
-                                            </a>
+                                            <div class="empty-actions">
+                                                <a href="<?= site_url('invoices/form_create') ?>" class="empty-cta">
+                                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_invoice', '', 'Nuova fattura') ?>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endif; ?>
@@ -1064,9 +1066,11 @@ $windowsToggle .= '</div></div>';
                                         <td colspan="5">
                                             <i class="fa fa-regular fa-file empty-icon" aria-hidden="true"></i>
                                             <?= trans('no_records') ?>
-                                            <a href="<?= site_url('quotes/form_create') ?>" class="empty-cta">
-                                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_quote', '', 'Nuovo preventivo') ?>
-                                            </a>
+                                            <div class="empty-actions">
+                                                <a href="<?= site_url('quotes/form_create') ?>" class="empty-cta">
+                                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_quote', '', 'Nuovo preventivo') ?>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endif; ?>
@@ -1127,9 +1131,11 @@ $windowsToggle .= '</div></div>';
                                         <td colspan="5">
                                             <i class="fa fa-solid fa-truck empty-icon" aria-hidden="true"></i>
                                             <?= trans('no_delivery_notes', '', 'Nessun documento di trasporto.') ?>
-                                            <a href="<?= site_url('delivery_notes/form') ?>" class="empty-cta">
-                                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new_delivery_note', '', 'Nuovo DDT') ?>
-                                            </a>
+                                            <div class="empty-actions">
+                                                <a href="<?= site_url('delivery_notes/form') ?>" class="empty-cta">
+                                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new_delivery_note', '', 'Nuovo DDT') ?>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endif; ?>
@@ -1165,9 +1171,11 @@ $windowsToggle .= '</div></div>';
                                         <td colspan="2">
                                             <i class="fa fa-solid fa-list empty-icon" aria-hidden="true"></i>
                                             <?= trans('no_records') ?>
-                                            <a href="<?= site_url('projects/form') ?>" class="empty-cta">
-                                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('add_project', '', 'Nuovo progetto') ?>
-                                            </a>
+                                            <div class="empty-actions">
+                                                <a href="<?= site_url('projects/form') ?>" class="empty-cta">
+                                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('add_project', '', 'Nuovo progetto') ?>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endif; ?>
@@ -1219,9 +1227,11 @@ $windowsToggle .= '</div></div>';
                                         <td colspan="4">
                                             <i class="fa fa-regular fa-check-square empty-icon" aria-hidden="true"></i>
                                             <?= trans('no_records') ?>
-                                            <a href="<?= site_url('tasks/form') ?>" class="empty-cta">
-                                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('add_task', '', 'Nuova attività') ?>
-                                            </a>
+                                            <div class="empty-actions">
+                                                <a href="<?= site_url('tasks/form') ?>" class="empty-cta">
+                                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('add_task', '', 'Nuova attività') ?>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endif; ?>

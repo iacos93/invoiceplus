@@ -82,9 +82,11 @@ $actions = '<a class="btn btn-sm btn-primary" href="' . site_url('custom_fields/
                     <td colspan="5">
                         <i class="fa fa-solid fa-tags empty-icon" aria-hidden="true"></i>
                         Nessun campo personalizzato presente.
-                        <a href="<?= site_url('custom_fields/form') ?>" class="empty-cta">
-                            <i class="fa fa-solid fa-plus" aria-hidden="true"></i> Nuovo
-                        </a>
+                        <div class="empty-actions">
+                            <a href="<?= site_url('custom_fields/form') ?>" class="empty-cta">
+                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> Nuovo
+                            </a>
+                        </div>
                     </td>
                 </tr>
             <?php endif; ?>

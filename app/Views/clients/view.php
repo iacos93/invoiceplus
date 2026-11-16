@@ -713,9 +713,11 @@ $actions = '<div class="btn-group btn-group-sm">'
                             <td colspan="4">
                                 <i class="fa fa-regular fa-file empty-icon" aria-hidden="true"></i>
                                 <?= trans('no_quotes') ?>
-                                <a href="<?= site_url('quotes/form_create') ?>?client_id=<?= (int) $client['client_id'] ?>" class="empty-cta">
-                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_quote', '', 'Nuovo preventivo') ?>
-                                </a>
+                                <div class="empty-actions">
+                                    <a href="<?= site_url('quotes/form_create') ?>?client_id=<?= (int) $client['client_id'] ?>" class="empty-cta">
+                                        <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_quote', '', 'Nuovo preventivo') ?>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endif; ?>
@@ -769,9 +771,11 @@ $actions = '<div class="btn-group btn-group-sm">'
                             <td colspan="6">
                                 <i class="fa fa-regular fa-file-text empty-icon" aria-hidden="true"></i>
                                 <?= trans('no_invoices') ?>
-                                <a href="<?= site_url('invoices/form_create') ?>?client_id=<?= (int) $client['client_id'] ?>" class="empty-cta">
-                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_invoice', '', 'Nuova fattura') ?>
-                                </a>
+                                <div class="empty-actions">
+                                    <a href="<?= site_url('invoices/form_create') ?>?client_id=<?= (int) $client['client_id'] ?>" class="empty-cta">
+                                        <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('create_invoice', '', 'Nuova fattura') ?>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endif; ?>

@@ -36,9 +36,11 @@ $erCtaIcon  = (string) ($_er['cta_icon'] ?? 'fa-solid fa-plus');
         <i class="fa <?= esc($erIcon, 'attr') ?> empty-icon" aria-hidden="true"></i>
         <?= esc($erMessage) ?>
         <?php if ($erCtaUrl !== '' && $erCtaLabel !== ''): ?>
-            <a href="<?= esc($erCtaUrl, 'attr') ?>" class="empty-cta">
-                <i class="fa <?= esc($erCtaIcon, 'attr') ?>" aria-hidden="true"></i> <?= esc($erCtaLabel) ?>
-            </a>
+            <div class="empty-actions">
+                <a href="<?= esc($erCtaUrl, 'attr') ?>" class="empty-cta">
+                    <i class="fa <?= esc($erCtaIcon, 'attr') ?>" aria-hidden="true"></i> <?= esc($erCtaLabel) ?>
+                </a>
+            </div>
         <?php endif; ?>
     </td>
 </tr>

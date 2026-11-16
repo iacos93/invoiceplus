@@ -59,9 +59,11 @@ $actions = '<a class="btn btn-sm btn-primary" href="' . ip_resource_url('expense
                         <td colspan="3">
                             <i class="fa fa-solid fa-tags empty-icon" aria-hidden="true"></i>
                             <?= trans('no_expense_categories') ?>
-                            <a href="<?= ip_resource_url('expense_categories', 'form') ?>" class="empty-cta">
-                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new', '', 'Nuova') ?>
-                            </a>
+                            <div class="empty-actions">
+                                <a href="<?= ip_resource_url('expense_categories', 'form') ?>" class="empty-cta">
+                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new', '', 'Nuova') ?>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 <?php endif; ?>
