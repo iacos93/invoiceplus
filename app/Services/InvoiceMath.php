@@ -446,6 +446,54 @@ final class InvoiceMath
     }
 
     /**
+     * Perché una fattura non può essere segnata come pagata in blocco.
+     *
+     * L'azione di gruppo della lista fatture registra un incasso del residuo,
+     * non cambia lo stato a mano: lo stato "Pagato" segue i pagamenti, e
+     * scriverlo direttamente lo scollerebbe dal saldo. Le righe che non hanno
+     * niente da incassare vanno quindi saltate, altrimenti si registrerebbe un
+     * pagamento da zero.
+     *
+     * La RiBa è il caso che ha motivato il metodo: una ricevuta bancaria non
+     * ancora scaduta non è un incasso da registrare oggi — la banca la
+     * presenta alla scadenza — e segnarla pagata in blocco farebbe sparire
+     * dallo scadenzario un documento che nessuno ha pagato. La condizione vale
+     * solo per le fatture con un metodo il cui codice SdI è MP12: sugli altri
+     * metodi la scadenza non dice niente su quando arriva il denaro.
+     *
+     * Una RiBa senza scadenza si considera incassabile (non c'è una data che
+     * dica il contrario).
+     *
+     * @return string|null null se si può incassare, altrimenti il motivo:
+     *                     'draft', 'settled', 'riba_pending'
+     */
+    public static function bulkPaidSkipReason(
+        int $statusId,
+        float $total,
+        float $balance,
+        bool $isRiba,
+        ?string $dueDate,
+        string $today
+    ): ?string {
+        // Una bozza non è un documento emesso: non si incassa.
+        if ($statusId === 1) {
+            return 'draft';
+        }
+
+        if (self::suggestedPayment($total, $balance) <= 0.0) {
+            return 'settled';
+        }
+
+        // Scadenza di oggi compresa: da oggi la banca può presentarla.
+        if ($isRiba && $dueDate !== null && $dueDate !== ''
+            && substr($dueDate, 0, 10) > substr($today, 0, 10)) {
+            return 'riba_pending';
+        }
+
+        return null;
+    }
+
+    /**
      * Il pagamento (già col segno del documento) supera il residuo?
      *
      * Il confronto "importo > saldo" funziona solo per le fatture: su una

@@ -436,6 +436,35 @@ final class InvoiceMathTest extends CIUnitTestCase
         $this->assertFalse(InvoiceMath::discountExceedsBase([], 0.0, 0.0));
     }
 
+    public function testBulkPaidSkipsRibaNotYetDue(): void
+    {
+        // RiBa che scade domani: la banca la presenta domani, non oggi.
+        $this->assertSame('riba_pending', InvoiceMath::bulkPaidSkipReason(2, 1220.0, 1220.0, true, '2026-11-17', '2026-11-16'));
+
+        // Scaduta ieri o con scadenza oggi: da oggi si incassa, quindi si registra.
+        $this->assertNull(InvoiceMath::bulkPaidSkipReason(2, 1220.0, 1220.0, true, '2026-11-15', '2026-11-16'));
+        $this->assertNull(InvoiceMath::bulkPaidSkipReason(2, 1220.0, 1220.0, true, '2026-11-16', '2026-11-16'));
+
+        // La stessa scadenza futura su un bonifico non ferma niente: è la RiBa
+        // a dire che il denaro non è ancora arrivato.
+        $this->assertNull(InvoiceMath::bulkPaidSkipReason(2, 1220.0, 1220.0, false, '2027-01-31', '2026-11-16'));
+
+        // Senza scadenza non c'è una data che dica il contrario.
+        $this->assertNull(InvoiceMath::bulkPaidSkipReason(2, 1220.0, 1220.0, true, null, '2026-11-16'));
+    }
+
+    public function testBulkPaidSkipsDraftsAndSettled(): void
+    {
+        $this->assertSame('draft', InvoiceMath::bulkPaidSkipReason(1, 1220.0, 1220.0, false, null, '2026-11-16'));
+        $this->assertSame('settled', InvoiceMath::bulkPaidSkipReason(4, 1220.0, 0.0, false, null, '2026-11-16'));
+
+        // Pagata in eccesso: non c'è residuo da incassare.
+        $this->assertSame('settled', InvoiceMath::bulkPaidSkipReason(2, 1220.0, -5.0, false, null, '2026-11-16'));
+
+        // Nota di credito da rimborsare: il residuo c'è, nel verso del documento.
+        $this->assertNull(InvoiceMath::bulkPaidSkipReason(2, -122.0, -122.0, false, null, '2026-11-16'));
+    }
+
     /** @return list<array{taxable: float, exact: float, rate: float, natura: null}> */
     private static function lines(float $taxable): array
     {

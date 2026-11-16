@@ -11,11 +11,13 @@ use App\Models\InvoiceModel;
 use App\Models\InvoiceTaxRateModel;
 use App\Models\ItemModel;
 use App\Models\PaymentMethodModel;
+use App\Models\PaymentModel;
 use App\Models\ProjectModel;
 use App\Models\TaskModel;
 use App\Models\TaxRateModel;
 use App\Models\UnitModel;
 use App\Services\DocumentPdfBuilder;
+use App\Services\InvoiceMath;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use App\Services\FatturaPaXmlService;
 
@@ -252,6 +254,11 @@ class Invoices extends BaseController
      *    fiscale, per questo la vista lo fa confermare dicendolo.
      *  - elimina: stessa condizione del pulsante di riga (solo bozze, salvo
      *    enable_invoice_deletion), verificata qui documento per documento.
+     *  - segna come pagate: registra un incasso del residuo, non cambia lo
+     *    stato — "Pagato" è una conseguenza del saldo, e scriverlo a mano lo
+     *    scollerebbe dai pagamenti. Restano fuori bozze, documenti già saldati
+     *    e le RiBa non ancora scadute, che la banca presenterà alla scadenza
+     *    (la regola sta in InvoiceMath::bulkPaidSkipReason() ed è testata lì).
      *
      * Ogni fattura è risolta con findScoped(): il perimetro azienda non è un
      * filtro di comodo, e un id arrivato dal POST non è una prova di
@@ -270,7 +277,7 @@ class Invoices extends BaseController
         $ids    = array_values(array_unique(array_filter(array_map('intval', $ids))));
         $back   = (string) ($request->getPost('back') ?? '');
 
-        $allowed = ['favourite_on', 'favourite_off', 'mark_sent', 'delete'];
+        $allowed = ['favourite_on', 'favourite_off', 'mark_sent', 'mark_paid', 'delete'];
 
         if (!in_array($action, $allowed, true) || $ids === []) {
             session()->setFlashdata('alert_error', trans('bulk_nothing_selected', '', 'Nessuna fattura selezionata.'));
@@ -280,6 +287,13 @@ class Invoices extends BaseController
 
         $done    = 0;
         $skipped = 0;
+
+        // Metodi RiBa (codice SdI MP12), oggi e conteggio a parte delle RiBa
+        // saltate: servono solo all'azione che registra gli incassi, e i
+        // metodi si leggono una volta sola invece di una per riga.
+        $ribaMethodIds = $action === 'mark_paid' ? (new PaymentMethodModel())->ribaMethodIds() : [];
+        $today         = date('Y-m-d');
+        $ribaSkipped   = 0;
 
         foreach ($ids as $invoiceId) {
             $invoice = $this->invoiceModel->findScoped($invoiceId);
@@ -315,6 +329,33 @@ class Invoices extends BaseController
                     $done++;
                     break;
 
+                case 'mark_paid':
+                    // Il residuo e i totali stanno in ip_invoice_amounts:
+                    // findScoped() legge la sola ip_invoices e qui non basta.
+                    $full = $this->invoiceModel->getByIdScoped($invoiceId);
+
+                    $reason = $full === null ? 'missing' : InvoiceMath::bulkPaidSkipReason(
+                        (int) $full['invoice_status_id'],
+                        (float) $full['invoice_total'],
+                        (float) $full['invoice_balance'],
+                        in_array((int) ($full['payment_method'] ?? 0), $ribaMethodIds, true),
+                        $full['invoice_date_due'] ?? null,
+                        $today
+                    );
+
+                    if ($reason !== null || ! $this->registerBulkPayment($full)) {
+                        $skipped++;
+
+                        if ($reason === 'riba_pending') {
+                            $ribaSkipped++;
+                        }
+
+                        break;
+                    }
+
+                    $done++;
+                    break;
+
                 case 'delete':
                     $enableDeletion = (int) get_setting('enable_invoice_deletion', 0);
 
@@ -338,6 +379,7 @@ class Invoices extends BaseController
             'favourite_on'  => trans('bulk_done_favourite_on', '', 'aggiunte ai preferiti'),
             'favourite_off' => trans('bulk_done_favourite_off', '', 'tolte dai preferiti'),
             'mark_sent'     => trans('bulk_done_mark_sent', '', 'segnate come inviate'),
+            'mark_paid'     => trans('bulk_done_mark_paid_invoice', '', 'segnate come pagate'),
             'delete'        => trans('bulk_done_delete', '', 'eliminate'),
         ];
 
@@ -348,6 +390,13 @@ class Invoices extends BaseController
 
             if ($skipped > 0) {
                 $msg .= ' — ' . $skipped . ' ' . trans('bulk_skipped', '', 'saltate perché non ammesse per questa azione');
+
+                // Le RiBa non scadute sono un'esclusione voluta, non un
+                // errore: chi ha selezionato tutto deve sapere quante ne sono
+                // rimaste fuori e perché.
+                if ($ribaSkipped > 0) {
+                    $msg .= ' (' . sprintf(trans('bulk_skipped_riba', '', '%d RiBa non ancora scadute'), $ribaSkipped) . ')';
+                }
             }
 
             session()->setFlashdata('alert_success', $msg);
@@ -357,6 +406,46 @@ class Invoices extends BaseController
         }
 
         return redirect()->to(ip_back_url('invoices', $back));
+    }
+
+    /**
+     * Registra l'incasso del residuo di una fattura (azione di gruppo).
+     *
+     * Passa dal modello dei pagamenti e non da un update dello stato: il
+     * pagamento è la fonte di verità del saldo e da lì InvoiceAmountModel
+     * porta la fattura a "Pagato", esattamente come un incasso inserito dal
+     * form. Data di oggi, metodo della fattura e conto di saldo predefinito di
+     * quel metodo, così la riga che si vede nei pagamenti è quella che si
+     * sarebbe scritta a mano.
+     */
+    private function registerBulkPayment(array $invoice): bool
+    {
+        $suggested = InvoiceMath::suggestedPayment(
+            (float) $invoice['invoice_total'],
+            (float) $invoice['invoice_balance']
+        );
+
+        if ($suggested <= 0) {
+            return false;
+        }
+
+        $paymentModel = new PaymentModel();
+        $methodId     = (int) ($invoice['payment_method'] ?? 0);
+
+        $post = $paymentModel->applyDocumentSign([
+            'invoice_id'        => (int) $invoice['invoice_id'],
+            'payment_date'      => date('Y-m-d'),
+            'payment_amount'    => format_amount($suggested),
+            'payment_method_id' => $methodId,
+            'bank_account_id'   => default_bank_account_for_payment($methodId) ?: null,
+            'payment_note'      => trans('bulk_payment_note', '', 'Incasso registrato dalle azioni di gruppo'),
+        ]);
+
+        if (! $paymentModel->validate($post)) {
+            return false;
+        }
+
+        return (bool) $paymentModel->saveRecord(null, $paymentModel->dbArrayFromPost($post));
     }
 
     /**

@@ -9,6 +9,16 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Aggiunto
+
+- Nella lista Fatture l'azione di gruppo «Segna come pagate» registra un incasso
+  pari al residuo delle fatture selezionate, con la data di oggi e il metodo di
+  pagamento della fattura: lo stato passa a «Pagato» perché segue i pagamenti,
+  non perché qualcuno l'ha scritto. Restano fuori le bozze, le fatture già
+  saldate e **le RiBa non ancora scadute**, che la banca presenterà alla
+  scadenza — prima l'unica via era incassare a mano, fattura per fattura. Il
+  riepilogo dice quante righe sono state saltate e quante di queste erano RiBa.
+
 ### Corretto
 
 - Nelle liste vuote la chiamata all'azione («Aggiungi il primo conto», «Nuova

@@ -183,8 +183,10 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
    Le azioni offerte sono le sole che esistono già su una riga singola —
    preferiti ed elimina — più "segna come inviata", che è la transizione che
    il menu Opzioni non copriva e che obbligava a entrare in ogni documento.
-   Non c'è "segna come pagata": lo stato "pagata" segue i pagamenti
-   registrati, metterlo a mano scollegherebbe lo stato dal saldo. */
+   Non c'è un "segna come pagata" che scrive lo stato: sarebbe scollegato dal
+   saldo. C'è invece "segna come pagate", che registra un incasso del residuo
+   (lo stato segue i pagamenti) e lascia fuori le RiBa non ancora scadute, che
+   la banca presenterà alla scadenza. */
 ?>
 <div id="content" class="table-content">
     <form method="POST" action="<?= site_url('invoices/bulk') ?>" id="ip-bulk-form" class="ip-bulk">
@@ -207,6 +209,13 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                         data-confirm-body="<?= esc(trans('bulk_mark_sent_confirm', '', 'Le bozze selezionate passano a "inviata" e ricevono il numero definitivo.'), 'attr') ?>"
                         data-confirm-ok="<?= esc(trans('bulk_mark_sent', '', 'Segna come inviata'), 'attr') ?>">
                     <i class="fa fa-regular fa-paper-plane" aria-hidden="true"></i> <?= trans('bulk_mark_sent', '', 'Segna come inviata') ?>
+                </button>
+                <button type="submit" name="bulk_action" value="mark_paid" class="btn btn-sm btn-secondary"
+                        data-bs-toggle="confirm"
+                        data-confirm-title="<?= esc(trans('confirm', '', 'Conferma'), 'attr') ?>"
+                        data-confirm-body="<?= esc(trans('bulk_mark_paid_invoice_confirm', '', 'Le fatture selezionate ricevono un incasso pari al residuo, con la data di oggi e il metodo di pagamento della fattura: lo stato passa a «Pagato» di conseguenza. Restano fuori le bozze, le fatture già saldate e le RiBa non ancora scadute.'), 'attr') ?>"
+                        data-confirm-ok="<?= esc(trans('bulk_mark_paid', '', 'Segna come pagate'), 'attr') ?>">
+                    <i class="fa fa-solid fa-money-bill" aria-hidden="true"></i> <?= trans('bulk_mark_paid', '', 'Segna come pagate') ?>
                 </button>
                 <button type="submit" name="bulk_action" value="delete" class="btn btn-sm btn-secondary ip-bulk-bar__danger"
                         data-bs-toggle="confirm"
@@ -468,9 +477,11 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                         <td colspan="12">
                             <i class="fa fa-regular fa-file-text empty-icon" aria-hidden="true"></i>
                             <?= trans('no_invoices') ?>
-                            <a href="<?= site_url('invoices/form_create') ?>" class="empty-cta">
-                                <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new_invoice', '', 'Nuova fattura') ?>
-                            </a>
+                            <div class="empty-actions">
+                                <a href="<?= site_url('invoices/form_create') ?>" class="empty-cta">
+                                    <i class="fa fa-solid fa-plus" aria-hidden="true"></i> <?= trans('new_invoice', '', 'Nuova fattura') ?>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 <?php endif; ?>
