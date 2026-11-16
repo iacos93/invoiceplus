@@ -81,6 +81,11 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei
+  conti» (Importa piano standard, Crea una voce, Piano dei conti) avevano la
+  misura piena di Bootstrap, più alta e con testo più grande di tutti gli
+  altri pulsanti d'azione dell'app: ora sono compatti come il resto.
+
 - I grafici della Bacheca (fatturato e incassato, spese, utile, IVA e le
   sparkline delle card) non si aprono più vuoti quando negli ultimi 6 mesi non
   ci sono movimenti: con un anno scelto in topbar la finestra finisce a

@@ -33,7 +33,7 @@ $typeLabels = \App\Models\CostingAccountModel::TYPES;
             </div>
             <div class="ip-doc-section__body">
                 <p><?= trans('management_budget_needs_plan', '', 'Il budget si assegna alle voci del piano dei conti: importane uno o crea le voci che usi.') ?></p>
-                <a class="btn btn-primary" href="<?= site_url('management/accounts') ?>">
+                <a class="btn btn-sm btn-primary" href="<?= site_url('management/accounts') ?>">
                     <i class="fa fa-solid fa-sitemap" aria-hidden="true"></i>
                     <?= trans('management_plan', '', 'Piano dei conti') ?>
                 </a>

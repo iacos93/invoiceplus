@@ -102,12 +102,12 @@ $renderRows = static function (array $nodes, int $level = 0) use (&$renderRows, 
                 <div class="ip-bilancino-actions">
                     <form method="post" action="<?= site_url('management/accounts/import_standard') ?>" class="d-inline">
                         <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-sm btn-primary">
                             <i class="fa fa-solid fa-download" aria-hidden="true"></i>
                             <?= trans('management_import_standard', '', 'Importa piano standard') ?>
                         </button>
                     </form>
-                    <a class="btn btn-secondary" href="<?= site_url('management/accounts/form') ?>">
+                    <a class="btn btn-sm btn-secondary" href="<?= site_url('management/accounts/form') ?>">
                         <i class="fa fa-solid fa-plus" aria-hidden="true"></i>
                         <?= trans('management_new_account', '', 'Crea una voce') ?>
                     </a>
