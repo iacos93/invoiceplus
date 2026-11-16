@@ -3206,11 +3206,15 @@ html[data-theme="dark"] .ip-chart-month:hover .ip-chart-label { fill: #ffffff; }
    sotto le barre si scurisce, così occhio collega subito barre e mese
    senza aspettare i tooltip nativi. La banda sta sotto le barre (prima
    nel gruppo), che conservano i propri <title>. */
+/* La banda è sempre del colore dell'inchiostro e si anima solo l'opacità: se
+   si animava il colore (da trasparente a inchiostro) con l'opacità che
+   cambiava di colpo, all'uscita del mouse restava un lampo pieno, nero nel
+   tema chiaro e bianco in quello scuro, per i 150ms della sfumatura. */
 .ip-chart-col {
-  fill: transparent;
-  transition: fill .15s ease;
+  fill: var(--ip-text);
+  fill-opacity: 0;
+  transition: fill-opacity .15s ease;
 }
-.ip-chart-month:hover .ip-chart-col { fill: var(--ip-hover, #f4f4f5); }
 /* Stato vuoto: quando non ci sono serie o sono tutte zero, il grafico
    viene nascosto e mostrato questo placeholder. */
 .ip-chart-empty {
@@ -3267,9 +3271,8 @@ svg.ip-spark {
    ad area sta sopra la linea e il suo riempimento, e un fondo opaco la
    nascondeva proprio nel mese che si stava guardando. */
 .ip-chart-month:hover .ip-chart-col,
-.ip-chart-month.is-active .ip-chart-col { fill: var(--ip-text); fill-opacity: .07; }
+.ip-chart-month.is-active .ip-chart-col { fill-opacity: .07; }
 .ip-chart-month:focus-visible .ip-chart-col {
-  fill: var(--ip-text);
   fill-opacity: .07;
   stroke: var(--ip-primary);
   stroke-width: 1.5;

@@ -108,6 +108,11 @@ Le regole per scrivere le voci e preparare una release sono in
   barra di composizione ha lo spazio anche sotto (14 px): stava attaccata alla
   prima riga della tabella.
 
+- Nei grafici, uscendo con il mouse da un mese compariva per un istante una
+  banda a piena intensità (nera nel tema chiaro, bianca in quello scuro): il
+  colore della banda si animava mentre l'opacità cambiava di colpo. Ora si
+  anima solo l'opacità, e la banda sfuma in modo continuo.
+
 ### Corretto
 
 - Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei
