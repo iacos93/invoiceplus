@@ -11,6 +11,11 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- I pulsanti dei filtri (barra e pannello di filtro, mesi, commutatore
+  Clienti/Fornitori, invio dei form di filtro) non fanno più scorrere la
+  pagina: restano dov'è. Solo il cambio pagina del pager riporta alla cima
+  della lista.
+
 - **Meno query a ogni pagina.** Per applicare il perimetro dell'azienda
   l'applicazione chiedeva al database, a ogni richiesta e per ogni tabella
   toccata, se esistesse la colonna `company_id` (fino a quattro interrogazioni

@@ -24,15 +24,6 @@
 (function () {
     'use strict';
 
-    // Radice dell'app ricavata dal percorso di questo script (servito sotto
-    // /assets/, da solo o nel bundle): le view non pubblicano la base URL e
-    // l'app può vivere in una sottocartella.
-    var appBase = (function () {
-        var src = document.currentScript && document.currentScript.src;
-        var at = src ? new URL(src).pathname.indexOf('/assets/') : -1;
-
-        return at >= 0 ? new URL(src).pathname.slice(0, at + 1) : '/';
-    })();
 
     if (!window.fetch || !window.history || !window.history.pushState || !window.DOMParser) {
         return;
@@ -448,38 +439,20 @@
         window.scrollTo(0, Math.max(0, top));
     }
 
-    // Un link che rinnova la stessa lista — pager, filtri di stato e tipo —
-    // deve riportare alla cima della lista e non del documento: i filtri sono
-    // proprio ciò da cui si sta scegliendo.
+    // I pulsanti dei filtri — barra, pannello, mesi, commutatore
+    // Clienti/Fornitori — non muovono la pagina ('keep'): chi li usa li ha
+    // sotto il puntatore e spesso ne preme subito un altro (o estende con
+    // shift/ctrl+clic). Allineare la lista sotto le barre fisse li portava via
+    // da sotto il mouse a ogni clic, e la pagina "scendeva" da sola.
     //
-    // La barra dei mesi fa eccezione e non muove nulla ('keep'): chi sceglie
-    // un mese ha la barra sotto il puntatore e spesso ne sceglie subito un
-    // altro (o estende con shift/ctrl+clic). Allineare la lista sotto le barre
-    // fisse gliela portava via da sotto il mouse a ogni clic.
+    // Solo il pager, che cambia pagina di una lista lunga, riporta alla cima
+    // della lista e non del documento.
     function scrollIntent(link) {
-        if (link.closest('.ip-period-nav')) {
+        if (link.closest('.ip-period-nav, .ip-filter-bar, .ip-filter-panel')) {
             return 'keep';
         }
 
-        if (!link.closest('.ip-pager, .ip-filter-bar, .ip-filter-panel')) {
-            return undefined;
-        }
-
-        // Un pulsante della barra filtri che porta in un'altra sezione (il
-        // commutatore Clienti/Fornitori) non rinnova la stessa lista: cambia
-        // pagina, e allinearla alla tabella la faceva scendere a ogni clic.
-        return sectionOf(link.pathname) === sectionOf(window.location.pathname)
-            ? 'list'
-            : undefined;
-    }
-
-    // Primo segmento del percorso dopo la base dell'app: "clients" per
-    // /clients/status/all, anche con l'app installata in una sottocartella.
-    function sectionOf(path) {
-        var base = appBase;
-        var rest = path.indexOf(base) === 0 ? path.slice(base.length) : path;
-
-        return rest.replace(/^\/+/, '').replace(/^index\.php\/?/, '').split('/')[0];
+        return link.closest('.ip-pager') ? 'list' : undefined;
     }
 
     function scrollAfterRender(saved) {
@@ -813,9 +786,9 @@
             });
             url.search = params.toString();
 
-            // I form GET dell'app sono filtri e ricerche di una lista: come il
-            // pager, riportano alla cima dei risultati e non del documento.
-            navigate(url.href, { push: true, scroll: 'list' });
+            // I form GET dell'app sono filtri e ricerche di una lista: il
+            // pulsante che li invia non deve muovere la pagina.
+            navigate(url.href, { push: true, scroll: 'keep' });
         });
     }
 
