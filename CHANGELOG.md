@@ -150,9 +150,11 @@ Le regole per scrivere le voci e preparare una release sono in
   scaricare l'HTML del rimando al posto del JSON, e l'errore finiva nello
   stesso ramo della copia negata, su un campo vuoto. Ora la richiesta
   distingue una risposta non JSON e avvisa di ricaricare la pagina, e anche la
-  rigenerazione segnala il fallimento invece di restare muta. La copia
-  inoltre usa il comando sincrono del browser quando l'API Clipboard non è
-  disponibile in un contesto sicuro.
+  rigenerazione segnala il fallimento invece di restare muta; se il token CSRF
+  è stato consumato, la pagina rilegge il proprio e riprova una volta, invece
+  di chiedere di ricaricare. La copia inoltre usa il comando sincrono del
+  browser quando l'API Clipboard non è disponibile in un contesto sicuro, e se
+  anche quello è negato lascia la chiave a fuoco e selezionata per Ctrl+C.
 
 - Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei
   conti» (Importa piano standard, Crea una voce, Piano dei conti) avevano la

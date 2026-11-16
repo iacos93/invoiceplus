@@ -235,11 +235,10 @@ $mcpUrl       = site_url('mcp');
 
         // POST che si aspetta JSON. Una sessione scaduta o un token CSRF
         // consumato da un'altra scheda non arrivano come errore: il filtro
-        // rimanda alla pagina (302) e qui si scarica il suo HTML, che
-        // r.json() non riesce a leggere. Senza questo controllo il fallimento
-        // della richiesta finiva nello stesso ramo della copia negata, e la
-        // pagina diceva «la chiave è selezionata» su un campo vuoto.
-        function postJson(url) {
+        // rimanda alla pagina (303) e qui si scarica il suo HTML, che r.json()
+        // non riesce a leggere. L'errore resta marcato, perché è l'unico caso
+        // che si può riprovare da soli.
+        function postOnce(url) {
             var fd = new FormData();
             fd.append(tokenName, tokenInput.value);
 
@@ -247,7 +246,9 @@ $mcpUrl       = site_url('mcp');
                 .then(function (r) {
                     var type = r.headers.get('content-type') || '';
                     if (!r.ok || type.indexOf('application/json') === -1) {
-                        throw new Error('risposta non JSON: ' + r.status);
+                        var err = new Error('risposta non JSON: ' + r.status);
+                        err.nonJson = true;
+                        throw err;
                     }
 
                     return r.json();
@@ -262,6 +263,39 @@ $mcpUrl       = site_url('mcp');
 
                     return data;
                 });
+        }
+
+        // Il token CSRF è monouso e vive in un cookie: se un'altra scheda — o
+        // una richiesta partita mentre questa pagina era in secondo piano — lo
+        // ha già consumato, il POST non torna JSON ma il rimando alla pagina.
+        // In produzione succedeva davvero: una get_key ha risposto 303 e la
+        // chiave non è mai arrivata. Invece di lasciare l'utente a ricaricare,
+        // qui si rilegge la pagina, si prende il token nuovo e si riprova una
+        // volta sola (un secondo giro con lo stesso esito sarebbe un ciclo).
+        function postJson(url) {
+            return postOnce(url).catch(function (e) {
+                if (!e || !e.nonJson) {
+                    throw e;
+                }
+
+                return fetch(window.location.href, {cache: 'no-store', credentials: 'same-origin'})
+                    .then(function (r) { return r.text(); })
+                    .then(function (html) {
+                        var page  = new DOMParser().parseFromString(html, 'text/html');
+                        var field = page.querySelector('input[name="' + tokenName + '"]');
+
+                        // Sessione scaduta: la pagina riletta è il login. Ha
+                        // anche lui un token CSRF, quindi si controlla che sia
+                        // davvero questa pagina (#mcp_key) e non un altro
+                        // form: lì ricaricare non serve, serve rientrare.
+                        if (!field || !field.value || !page.querySelector('#mcp_key')) {
+                            throw e;
+                        }
+                        tokenInput.value = field.value;
+
+                        return postOnce(url);
+                    });
+            });
         }
 
         // Lo snippet client segue la chiave mostrata nel campo: se resta il
@@ -311,6 +345,10 @@ $mcpUrl       = site_url('mcp');
                     showToast('<?= esc(trans('mcp_key_copied', '', 'Chiave copiata negli appunti'), 'js') ?>', 'success');
                 },
                 function () {
+                    // La copia è negata (il browser chiede un gesto dell'utente
+                    // che qui non c'è più): il campo va lasciato a fuoco e
+                    // selezionato, così Ctrl+C funziona subito.
+                    tokenField.focus();
                     showToast('<?= esc(trans('mcp_copy_failed', '', 'Copia non riuscita: la chiave è selezionata, premi Ctrl+C'), 'js') ?>', 'warning');
                 });
         }
