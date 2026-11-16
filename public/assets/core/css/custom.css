@@ -6079,7 +6079,9 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 /* Barra impilata "composizione stati" dentro la finestra flush: il suo
    padding non viene ereditato dalla tabella. */
 .ip-status-bar-wrap {
-  padding: 14px 14px 0;
+  /* Anche sotto: la barra stava attaccata alla prima riga della tabella
+     (Bozza), con 14px sopra e nessuno spazio sotto. */
+  padding: 14px 14px 14px;
 }
 .ip-status-bar-wrap .ip-status-bar { border-radius: var(--ip-radius-sm); }
 

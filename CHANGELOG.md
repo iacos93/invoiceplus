@@ -104,6 +104,10 @@ Le regole per scrivere le voci e preparare una release sono in
   diverse. La cache del service worker passa a v4, perché la pagina è
   precaricata.
 
+- Nelle finestre «Fatture per stato» e «Preventivi per stato» della Bacheca la
+  barra di composizione ha lo spazio anche sotto (14 px): stava attaccata alla
+  prima riga della tabella.
+
 ### Corretto
 
 - Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei
