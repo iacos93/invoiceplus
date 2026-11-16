@@ -399,21 +399,30 @@ $actions = '<div class="btn-group btn-group-sm">'
                                       // (.ip-chart-col) si tinge all'hover e il
                                       // gruppo evidenzia anche l'etichetta, cosi'
                                       // barre e mese si leggono come una cosa sola. ?>
-                                <g class="ip-chart-month">
+                                <?php $tipData = esc((string) json_encode([
+                                    'title' => $row['label'],
+                                    'rows'  => [
+                                        ['label' => trans('total_billed', '', 'Fatturato'), 'value' => strip_tags(format_currency($inv)), 'cls' => 'invoiced'],
+                                        ['label' => trans('total_paid', '', 'Incassato'), 'value' => strip_tags(format_currency($paid)), 'cls' => 'paid'],
+                                    ],
+                                ], JSON_UNESCAPED_UNICODE), 'attr'); ?>
+                                <g class="ip-chart-month" tabindex="0" role="img"
+                                    aria-label="<?= esc($row['label'] . ': ' . trans('total_billed', '', 'Fatturato') . ' ' . strip_tags(format_currency($inv)) . ', ' . trans('total_paid', '', 'Incassato') . ' ' . strip_tags(format_currency($paid)), 'attr') ?>"
+                                    data-tip="<?= $tipData ?>">
                                     <rect class="ip-chart-col"
                                         x="<?= round($xCol, 1) ?>" y="4"
                                         width="<?= round($colW, 1) ?>" height="<?= $H - 4 ?>" rx="6"/>
                                     <rect class="ip-chart-bar ip-chart-bar--track" style="--i:<?= $i ?>"
                                         x="<?= round($xBar, 1) ?>" y="<?= round(min($yTrack, $padTop + $barH - ($track > 0 ? 2 : 0)), 1) ?>"
                                         width="<?= round($barW, 1) ?>" height="<?= round(max($hTrack, $track > 0 ? 2 : 0), 1) ?>"
-                                        rx="3"><title><?= esc(trans('total_billed', '', 'Fatturato')) ?>: <?= format_currency($inv) ?></title></rect>
+                                        rx="3" />
                                     <?php // Il minimo di 2 unita' sposta in su il y del
                                           // riempimento, cosi' la barretta resta ancorata
                                           // alla baseline invece di galleggiare. ?>
                                     <rect class="ip-chart-bar ip-chart-bar--paid" style="--i:<?= $i ?>"
                                         x="<?= round($xBar, 1) ?>" y="<?= round(min($yPaid, $padTop + $barH - ($paid > 0 ? 2 : 0)), 1) ?>"
                                         width="<?= round($barW, 1) ?>" height="<?= round(max($hPaid, $paid > 0 ? 2 : 0), 1) ?>"
-                                        rx="3"><title><?= esc(trans('total_paid', '', 'Incassato')) ?>: <?= format_currency($paid) ?></title></rect>
+                                        rx="3" />
                                     <text class="ip-chart-label" x="<?= $cxBar ?>" y="<?= $H - 8 ?>" text-anchor="middle"><?= $label ?></text>
                                 </g>
                                 <?php endforeach; ?>

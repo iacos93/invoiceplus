@@ -793,3 +793,87 @@ svg.ip-spark {
     flex-basis: 100%;
   }
 }
+
+/* -----------------------------------------------------------------------------
+   Grafici interattivi (ip-chart-tips.js)
+   ----------------------------------------------------------------------------
+   Ogni mese è un gruppo: la banda a tutta altezza è il bersaglio (non la
+   barra da pochi pixel), si tinge al passaggio e al focus da tastiera, e il
+   tooltip riporta i valori già formattati dal server. Dove il mese porta a un
+   elenco il cursore è una mano; il pulsante dell'azione resta il gruppo
+   stesso, quindi Tab, frecce, Invio e Spazio funzionano senza altro markup. */
+.ip-chart-month { outline: none; }
+.ip-chart-month[data-href] { cursor: pointer; }
+.ip-chart-month:hover .ip-chart-col,
+.ip-chart-month.is-active .ip-chart-col { fill: var(--ip-hover, #f4f4f5); }
+.ip-chart-month:focus-visible .ip-chart-col {
+  fill: var(--ip-hover, #f4f4f5);
+  stroke: var(--ip-primary);
+  stroke-width: 1.5;
+}
+.ip-chart-month:hover .ip-chart-label,
+.ip-chart-month.is-active .ip-chart-label { fill: var(--ip-text-strong); }
+html[data-theme="dark"] .ip-chart-month:hover .ip-chart-label,
+html[data-theme="dark"] .ip-chart-month.is-active .ip-chart-label { fill: #ffffff; }
+/* Le barre del mese attivo restano piene, le altre si abbassano appena. */
+.ip-chart:has(.ip-chart-month.is-active) .ip-chart-month:not(.is-active) .ip-chart-bar { opacity: 0.55; }
+.ip-chart-month .ip-area-dot { transition: transform .15s ease; transform-box: fill-box; transform-origin: center; }
+.ip-chart-month:hover .ip-area-dot,
+.ip-chart-month.is-active .ip-area-dot { transform: scale(1.45); }
+
+/* Legenda: accende e spegne la serie. */
+.ip-chart-legend-item[data-series] {
+  cursor: pointer;
+  border-radius: var(--ip-radius-sm);
+  transition: opacity .15s ease;
+}
+.ip-chart-legend-item[data-series]:hover { opacity: 0.8; }
+.ip-chart-legend-item[data-series]:focus-visible { outline: 2px solid var(--ip-primary); outline-offset: 2px; }
+.ip-chart-legend-item[aria-pressed="false"] { opacity: 0.45; text-decoration: line-through; }
+.ip-chart.ip-hide-invoiced .ip-chart-bar--invoiced,
+.ip-chart.ip-hide-paid .ip-chart-bar--paid { display: none; }
+
+/* Tooltip: un solo elemento per tutta la pagina, accodato al body. */
+.ip-chart-tip {
+  position: fixed;
+  z-index: 1080;
+  min-width: 150px;
+  max-width: 260px;
+  padding: 8px 10px;
+  font-size: var(--ip-text-sm);
+  color: var(--ip-text);
+  background: var(--ip-bg-card);
+  border: 1px solid var(--ip-border);
+  border-radius: var(--ip-radius-sm);
+  box-shadow: var(--ip-shadow-md, 0 6px 18px rgba(0, 0, 0, .18));
+  pointer-events: none;
+}
+.ip-chart-tip[hidden] { display: none; }
+.ip-chart-tip__title {
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--ip-text-strong);
+  text-transform: capitalize;
+}
+.ip-chart-tip__row { display: flex; align-items: center; gap: 8px; padding: 1px 0; }
+.ip-chart-tip__label { flex: 1 1 auto; color: var(--ip-text-muted); }
+.ip-chart-tip__value { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.ip-chart-tip__dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ip-text-muted);
+}
+.ip-chart-tip__dot--invoiced { background: var(--ip-info); }
+.ip-chart-tip__dot--paid     { background: var(--ip-success); }
+.ip-chart-tip__dot--expenses { background: var(--ip-danger); }
+.ip-chart-tip__dot--profit   { background: var(--ip-success); }
+.ip-chart-tip__dot--loss     { background: var(--ip-danger); }
+.ip-chart-tip__hint {
+  margin-top: 6px;
+  padding-top: 5px;
+  font-size: var(--ip-text-xs);
+  color: var(--ip-text-muted);
+  border-top: 1px solid var(--ip-border);
+}

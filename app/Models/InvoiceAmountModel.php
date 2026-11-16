@@ -331,6 +331,8 @@ class InvoiceAmountModel extends IpBaseModel
                 'invoiced' => $invoicedMap[$ym] ?? 0.0,
                 'paid'     => $paidMap[$ym] ?? 0.0,
                 'label'    => $label,
+                // AAAA-MM: serve ai grafici interattivi per aprire l'elenco del mese.
+                'ym'       => $ym,
             ];
         }
 

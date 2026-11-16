@@ -89,7 +89,9 @@ final class MonthlySeriesLabelTest extends CIUnitTestCase
         $serie = (new InvoiceAmountModel())->getMonthlySeries(12);
 
         $this->assertCount(12, $serie);
-        $this->assertSame(['invoiced', 'paid', 'label'], array_keys($serie[0]));
+        // 'ym' (AAAA-MM) serve ai grafici interattivi per aprire l'elenco del mese.
+        $this->assertSame(['invoiced', 'paid', 'label', 'ym'], array_keys($serie[0]));
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}$/', $serie[0]['ym']);
     }
 
     /**

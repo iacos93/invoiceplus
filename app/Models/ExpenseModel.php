@@ -538,6 +538,7 @@ class ExpenseModel extends IpBaseModel
             $out[] = [
                 'total' => $map[$ym] ?? 0.0,
                 'label' => $label,
+                'ym'    => $ym,
             ];
         }
 

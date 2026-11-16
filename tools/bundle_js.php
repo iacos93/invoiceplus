@@ -27,6 +27,7 @@ $bundle = [
     'ip-skeleton.js',
     'ip-pjax.js',
     'ip-table-rows.js',
+    'ip-chart-tips.js',
     'ip-bulk-actions.js',
     'ip-desc-counter.js',
     'ip-items-reorder.js',

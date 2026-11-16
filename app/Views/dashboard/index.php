@@ -145,6 +145,31 @@ $windowLabel = date('Y-m', $windowEnd) === date('Y-m')
     ? trans('dashboard_last_6_months', '', 'ultimi 6 mesi')
     : sprintf(trans('dashboard_6_months_until', '', '6 mesi fino a %s'), date('m/Y', $windowEnd));
 
+// Interattività dei grafici (ip-chart-tips.js): ogni mese è un gruppo con i
+// propri valori in data-tip (JSON) e, dove ha senso, un link all'elenco
+// filtrato per quel mese. I testi dei valori sono già formattati qui, così il
+// JS non deve conoscere valuta, separatori né lingua.
+$tipAttr = static function (string $title, array $rows, string $hint = ''): string {
+    $payload = ['title' => $title, 'rows' => array_map(
+        static fn(array $r): array => ['label' => $r[0], 'value' => strip_tags((string) $r[1]), 'cls' => $r[2] ?? ''],
+        $rows
+    )];
+    if ($hint !== '') {
+        $payload['hint'] = $hint;
+    }
+
+    return ' data-tip="' . esc((string) json_encode($payload, JSON_UNESCAPED_UNICODE), 'attr') . '"';
+};
+// "2025-08" -> anno e mese per i filtri ?year=&month= delle liste.
+$monthHref = static function (string $base, ?string $ym, bool $withMonth = true): string {
+    if ($base === '' || $ym === null || preg_match('/^(\d{4})-(\d{2})$/', $ym, $m) !== 1) {
+        return '';
+    }
+
+    return ' data-href="' . esc($base . (str_contains($base, '?') ? '&' : '?') . 'year=' . $m[1] . ($withMonth ? '&month=' . (int) $m[2] : ''), 'attr') . '"';
+};
+$openHint = trans('chart_open_month', '', 'Clic per aprire i dettagli');
+
 $sparkline = static function (array $values, string $colorVar = 'var(--ip-primary)'): string {
     $values = array_values(array_map('floatval', $values));
     if (count($values) === 0) {
@@ -255,7 +280,7 @@ $chartScale = static function (float $max) use ($niceStep, $axisLabel, $padTop, 
 // la curva si leggeva solo in forma — non si ricavava un importo. Ora ha la
 // stessa scala "tonda" e lo stesso gutter sinistro dei grafici a barre, così le
 // tre finestre grafico della dashboard si leggono allo stesso modo.
-$areaChart = static function (array $values, array $labels, string $colorVar) use ($niceStep, $axisLabel): string {
+$areaChart = static function (array $values, array $labels, string $colorVar, array $meta = []) use ($niceStep, $axisLabel, $tipAttr, $monthHref, $openHint): string {
     $values = array_values(array_map('floatval', $values));
     $labels = array_values($labels);
     $n      = count($values);
@@ -314,19 +339,29 @@ $areaChart = static function (array $values, array $labels, string $colorVar) us
     $dArea = $dLine . ' L' . round($xOf($n - 1), 1) . ',' . round($zeroY, 1)
         . ' L' . round($xOf(0), 1) . ',' . round($zeroY, 1) . ' Z';
 
-    // Un punto per mese, con <title> nativo: i sei valori diventano leggibili
-    // uno per uno invece di essere solo un profilo.
-    $dots = '';
-    $xLbl = '';
+    // Un gruppo per mese: banda sensibile a tutta altezza (il bersaglio non è
+    // il puntino da 7px), punto e valori nel tooltip di ip-chart-tips.js.
+    $dots  = '';
+    $xLbl  = '';
+    $bands = '';
+    $bandW = $n > 1 ? $plotW / ($n - 1) : $plotW;
     foreach ($values as $i => $v) {
-        $dots .= '<circle class="ip-area-dot" cx="' . round($xOf($i), 1) . '" cy="' . round($yOf($v), 1)
-            . '" r="3.5" fill="' . $colorVar . '"><title>' . esc($labels[$i] ?? '') . ': '
-            . esc(format_currency($v)) . '</title></circle>';
+        $cx    = $xOf($i);
+        $title = (string) ($labels[$i] ?? '');
+        $href  = $monthHref($meta[$i]['base'] ?? '', $meta[$i]['ym'] ?? null, (bool) ($meta[$i]['month'] ?? true));
+        $bands .= '<g class="ip-chart-month" tabindex="0" role="img" aria-label="' . esc($title . ': ' . strip_tags(format_currency($v)), 'attr') . '"'
+            . $tipAttr($title, [[$meta[$i]['row'] ?? trans('dashboard_profit_label', '', 'Utile di impresa'), format_currency($v), $v < 0 ? 'loss' : 'profit']], $href !== '' ? $openHint : '')
+            . $href . '>'
+            . '<rect class="ip-chart-col" x="' . round(max($padL, $cx - $bandW / 2), 1) . '" y="' . ($padT - 6) . '" width="' . round($bandW, 1)
+            . '" height="' . ($H - $padT) . '" rx="6" />'
+            . '<circle class="ip-area-dot" cx="' . round($cx, 1) . '" cy="' . round($yOf($v), 1) . '" r="3.5" fill="' . $colorVar . '" />'
+            . '</g>';
         // Sei etichette ci stanno tutte: saltarne una sì e una no lasciava
         // "Lug Ago" appaiate in fondo e la spaziatura sembrava sbagliata.
-        $xLbl .= '<text class="ip-chart-label" x="' . round($xOf($i), 1) . '" y="' . ($H - 8)
-            . '" text-anchor="middle">' . esc($labels[$i] ?? '') . '</text>';
+        $xLbl .= '<text class="ip-chart-label" x="' . round($cx, 1) . '" y="' . ($H - 8)
+            . '" text-anchor="middle">' . esc($title) . '</text>';
     }
+    $dots = $bands;
 
     return '<svg class="ip-area" viewBox="0 0 ' . $W . ' ' . $H . '" role="img" aria-label="'
         . esc(trans('dashboard_profit_label', '', 'Indice di redditività')) . '">'
@@ -416,7 +451,13 @@ $windowsToggle .= '</div></div>';
                     </div>
                 </div>
                 <div class="ip-indice-chart">
-                    <?= $areaChart($profitSpark, $profitLabels, $indiceColor) ?>
+                    <?php
+                    $profitMeta = [];
+                    foreach ($chart_series as $i => $row) {
+                        $profitMeta[$i] = ['ym' => $row['ym'] ?? null, 'base' => site_url('finance'), 'month' => false, 'row' => trans('dashboard_profit_net_label', '', 'Utile al netto IVA')];
+                    }
+                    ?>
+                    <?= $areaChart($profitSpark, $profitLabels, $indiceColor, $profitMeta) ?>
                 </div>
             </div>
         </section>
@@ -602,8 +643,9 @@ $windowsToggle .= '</div></div>';
                     <div class="ip-chart-meta">
                         <span class="ip-chart-period"><?= esc($windowLabel) ?></span>
                         <span class="ip-chart-legend">
-                            <span class="ip-chart-legend-item"><span class="ip-chart-legend-dot ip-chart-legend-dot--invoiced"></span><?= trans('dashboard_invoiced_label', '', 'Fatturato') ?></span>
-                            <span class="ip-chart-legend-item"><span class="ip-chart-legend-dot ip-chart-legend-dot--paid"></span><?= trans('dashboard_collected_label', '', 'Incassato') ?></span>
+                            <?php // Le voci della legenda accendono e spengono la serie (ip-chart-tips.js). ?>
+                            <span class="ip-chart-legend-item" data-series="invoiced" role="button" tabindex="0" aria-pressed="true"><span class="ip-chart-legend-dot ip-chart-legend-dot--invoiced"></span><?= trans('dashboard_invoiced_label', '', 'Fatturato') ?></span>
+                            <span class="ip-chart-legend-item" data-series="paid" role="button" tabindex="0" aria-pressed="true"><span class="ip-chart-legend-dot ip-chart-legend-dot--paid"></span><?= trans('dashboard_collected_label', '', 'Incassato') ?></span>
                         </span>
                     </div>
                     <?php
@@ -667,15 +709,22 @@ $windowsToggle .= '</div></div>';
                             $cxBar  = $xCol + $colW / 2;
                             $label  = esc($row['label']);
                         ?>
-                        <rect class="ip-chart-bar ip-chart-bar--invoiced"
-                            x="<?= round($xInv, 1) ?>" y="<?= round($yInv, 1) ?>"
-                            width="<?= round($barW, 1) ?>" height="<?= round(max($hInv, $inv > 0 ? 1 : 0), 1) ?>"
-                            rx="2"><title><?= esc(trans('dashboard_invoiced_label', '', 'Fatturato')) ?>: <?= format_currency($inv) ?></title></rect>
-                        <rect class="ip-chart-bar ip-chart-bar--paid"
-                            x="<?= round($xPaid, 1) ?>" y="<?= round($yPaid, 1) ?>"
-                            width="<?= round($barW, 1) ?>" height="<?= round(max($hPaid, $paid > 0 ? 1 : 0), 1) ?>"
-                            rx="2"><title><?= esc(trans('dashboard_collected_label', '', 'Incassato')) ?>: <?= format_currency($paid) ?></title></rect>
-                        <text class="ip-chart-label" x="<?= $cxBar ?>" y="<?= $H - 8 ?>" text-anchor="middle"><?= $label ?></text>
+                        <g class="ip-chart-month" tabindex="0" role="link"
+                            aria-label="<?= esc($row['label'] . ': ' . trans('dashboard_invoiced_label', '', 'Fatturato') . ' ' . strip_tags(format_currency($inv)) . ', ' . trans('dashboard_collected_label', '', 'Incassato') . ' ' . strip_tags(format_currency($paid)), 'attr') ?>"
+                            <?= $tipAttr($row['label'], [
+                                [trans('dashboard_invoiced_label', '', 'Fatturato'), format_currency($inv), 'invoiced'],
+                                [trans('dashboard_collected_label', '', 'Incassato'), format_currency($paid), 'paid'],
+                            ], $openHint) ?>
+                            <?= $monthHref(site_url('invoices/status/all'), $row['ym'] ?? null) ?>>
+                            <rect class="ip-chart-col" x="<?= round($xCol, 1) ?>" y="4" width="<?= round($colW, 1) ?>" height="<?= $H - 4 ?>" rx="6" />
+                            <rect class="ip-chart-bar ip-chart-bar--invoiced" style="--i:<?= $i ?>"
+                                x="<?= round($xInv, 1) ?>" y="<?= round($yInv, 1) ?>"
+                                width="<?= round($barW, 1) ?>" height="<?= round(max($hInv, $inv > 0 ? 1 : 0), 1) ?>" rx="2" />
+                            <rect class="ip-chart-bar ip-chart-bar--paid" style="--i:<?= $i ?>"
+                                x="<?= round($xPaid, 1) ?>" y="<?= round($yPaid, 1) ?>"
+                                width="<?= round($barW, 1) ?>" height="<?= round(max($hPaid, $paid > 0 ? 1 : 0), 1) ?>" rx="2" />
+                            <text class="ip-chart-label" x="<?= $cxBar ?>" y="<?= $H - 8 ?>" text-anchor="middle"><?= $label ?></text>
+                        </g>
                         <?php endforeach; ?>
                         <line class="ip-chart-baseline" x1="<?= $padLeft ?>" y1="<?= $padTop + $barH ?>" x2="<?= $W ?>" y2="<?= $padTop + $barH ?>" />
                     </svg>
@@ -745,11 +794,18 @@ $windowsToggle .= '</div></div>';
                             $cxBar  = $padLeft + $i * $eColW + $eColW / 2;
                             $label  = esc($row['label']);
                         ?>
-                        <rect class="ip-chart-bar ip-chart-bar--expenses"
-                            x="<?= round($xExp, 1) ?>" y="<?= round($yExp, 1) ?>"
-                            width="<?= round($eBarW, 1) ?>" height="<?= round(max($hExp, $exp > 0 ? 1 : 0), 1) ?>"
-                            rx="2"><title><?= esc(trans('dashboard_expenses_label', '', 'Spese')) ?>: <?= format_currency($exp) ?></title></rect>
-                        <text class="ip-chart-label" x="<?= $cxBar ?>" y="<?= $H - 8 ?>" text-anchor="middle"><?= $label ?></text>
+                        <g class="ip-chart-month" tabindex="0" role="link"
+                            aria-label="<?= esc($row['label'] . ': ' . trans('dashboard_expenses_label', '', 'Spese') . ' ' . strip_tags(format_currency($exp)), 'attr') ?>"
+                            <?= $tipAttr($row['label'], [
+                                [trans('dashboard_expenses_label', '', 'Spese'), format_currency($exp), 'expenses'],
+                            ], $openHint) ?>
+                            <?= $monthHref(site_url('expenses'), $row['ym'] ?? null) ?>>
+                            <rect class="ip-chart-col" x="<?= round($padLeft + $i * $eColW, 1) ?>" y="4" width="<?= round($eColW, 1) ?>" height="<?= $H - 4 ?>" rx="6" />
+                            <rect class="ip-chart-bar ip-chart-bar--expenses" style="--i:<?= $i ?>"
+                                x="<?= round($xExp, 1) ?>" y="<?= round($yExp, 1) ?>"
+                                width="<?= round($eBarW, 1) ?>" height="<?= round(max($hExp, $exp > 0 ? 1 : 0), 1) ?>" rx="2" />
+                            <text class="ip-chart-label" x="<?= $cxBar ?>" y="<?= $H - 8 ?>" text-anchor="middle"><?= $label ?></text>
+                        </g>
                         <?php endforeach; ?>
                         <line class="ip-chart-baseline" x1="<?= $padLeft ?>" y1="<?= $padTop + $barH ?>" x2="<?= $W ?>" y2="<?= $padTop + $barH ?>" />
                     </svg>

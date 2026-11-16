@@ -11,6 +11,14 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- I grafici della Bacheca e della scheda cliente sono interattivi: al
+  passaggio del mouse (o con Tab e le frecce, o al tocco) il mese si evidenzia
+  e un tooltip mostra i valori già formattati, al posto del tooltip nativo del
+  browser. Un clic sul mese di ricavi e costi apre l'elenco di fatture o spese
+  di quel mese; il grafico dell'indice apre «Utile e imposte» dell'anno. Le
+  voci della legenda dei ricavi accendono e spengono Fatturato e Incassato. Al
+  tocco il primo tap mostra i valori e il secondo apre.
+
 - I pulsanti dei filtri (barra e pannello di filtro, mesi, commutatore
   Clienti/Fornitori, invio dei form di filtro) non fanno più scorrere la
   pagina: restano dov'è. Solo il cambio pagina del pager riporta alla cima
