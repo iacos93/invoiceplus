@@ -1199,7 +1199,7 @@ return array (
   'sharing_hint' => 'How the client accesses the document',
   'shipping_address' => 'Destination place (if different)',
   'sia_code' => 'SIA code',
-  'sia_help' => 'Five characters assigned by the bank: they identify the company as creditor in RIBA flows. Needed only if you present bank receipts on this account.',
+  'sia_help' => 'Five alphanumeric characters (no letter O) assigned by the bank: they identify the company as creditor in RIBA flows. Needed only if you present bank receipts on this account.',
   'sidebar_analysis' => 'Analysis',
   'sidebar_manage' => 'Management',
   'sidebar_version' => 'invoicing',

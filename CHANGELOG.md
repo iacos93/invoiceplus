@@ -9,6 +9,15 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- Il codice SIA del conto di saldo accetta solo cinque caratteri alfanumerici,
+  lettera O esclusa, come chiede lo standard CBI dei flussi RiBa, e il messaggio
+  d'errore dice qual è il problema. Prima passavano anche la O e i simboli: un
+  «5$3T8» copiato dall'home banking veniva ripulito in quattro caratteri,
+  salvato senza proteste e poi rifiutato dalla banca insieme all'intera
+  distinta — non solo alla ricevuta sbagliata.
+
 ## [v0.13.0] — 2026-11-16
 
 ### Aggiunto

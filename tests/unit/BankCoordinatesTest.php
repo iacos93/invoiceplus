@@ -96,6 +96,61 @@ final class BankCoordinatesTest extends CIUnitTestCase
         $this->assertSame(' Conto principale ', $post['bank_account_name']);
     }
 
+    public function testSiaCodeAcceptsFiveAlphanumerics(): void
+    {
+        $this->assertTrue($this->rules->valid_sia_code('5S3T8'));
+        $this->assertTrue($this->rules->valid_sia_code('ab123'));
+        // Vuoto: la presenza la decide permit_empty, non questa regola.
+        $this->assertTrue($this->rules->valid_sia_code(''));
+        $this->assertTrue($this->rules->valid_sia_code(null));
+
+        // La regola deve essere quella del modello, non solo quella del servizio.
+        $rules = (new \ReflectionClass(BankAccountModel::class))->getDefaultProperties()['validationRules'];
+        $this->assertSame('permit_empty|valid_sia_code', $rules['bank_account_sia_code']);
+    }
+
+    public function testSiaCodeRejectsLetterOAndLengthErrors(): void
+    {
+        // Lo standard CBI esclude la O (si confonde con lo zero) e chiede
+        // cinque caratteri: entrambe le cose si vedevano solo dalla banca,
+        // giorni dopo, con la distinta scartata.
+        $this->assertFalse($this->rules->valid_sia_code('5O3T8'));
+        $this->assertFalse($this->rules->valid_sia_code('5o3t8'));
+        $this->assertFalse($this->rules->valid_sia_code('53T8'));
+        $this->assertFalse($this->rules->valid_sia_code('5S3T89'));
+    }
+
+    public function testSiaRuleIsRegisteredInTheValidationService(): void
+    {
+        // Il nome della regola va provato davvero: se non fosse registrata in
+        // Config\Validation, il form dei conti andrebbe in errore invece di
+        // rifiutare il codice.
+        $validation = \Config\Services::validation();
+        $validation->setRules(['bank_account_sia_code' => 'permit_empty|valid_sia_code']);
+
+        $this->assertTrue($validation->run(['bank_account_sia_code' => '5S3T8']));
+
+        $validation->reset();
+        $validation->setRules(['bank_account_sia_code' => 'permit_empty|valid_sia_code']);
+
+        $this->assertFalse($validation->run(['bank_account_sia_code' => '5O3T8']));
+        $this->assertSame(
+            'Il codice SIA è di cinque caratteri alfanumerici, senza la lettera O.',
+            $validation->getError('bank_account_sia_code')
+        );
+    }
+
+    public function testSiaCodeWithSymbolIsRejectedAfterCleaning(): void
+    {
+        // Il caso vero: "5$3T8" arrivato dall'home banking. La pulizia toglie
+        // il simbolo e resta un codice di quattro caratteri, che il tracciato
+        // RiBa accetterebbe spostando i campi a destra.
+        $post = BankAccountModel::normalizePost(['bank_account_sia_code' => '5$3T8']);
+
+        $this->assertSame('53T8', $post['bank_account_sia_code']);
+        $this->assertFalse($this->rules->valid_sia_code($post['bank_account_sia_code']));
+    }
+
     public function testSdiCodeComesFromTheRecord(): void
     {
         $this->assertSame('MP05', PaymentMethodModel::sdiCodeFor([

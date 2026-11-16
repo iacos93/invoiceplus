@@ -46,7 +46,9 @@ class BankAccountModel extends IpBaseModel
         'bank_account_bic'        => 'permit_empty|alpha_numeric|min_length[8]|max_length[11]',
         // Il SIA e' di lunghezza fissa: cinque caratteri assegnati dalla banca.
         // Uno piu' corto passa dritto nel tracciato e sposta i campi a destra.
-        'bank_account_sia_code'   => 'permit_empty|alpha_numeric|exact_length[5]',
+        // La regola e' in FiscalRules perche' lo standard CBI esclude la lettera
+        // O (si confonderebbe con lo zero) e alpha_numeric la lasciava passare.
+        'bank_account_sia_code'   => 'permit_empty|valid_sia_code',
         // Il segno fa parte del dato: un conto in rosso si apre in negativo.
         'bank_account_opening_balance' => 'permit_empty|decimal',
         'bank_account_opening_date'    => 'permit_empty|valid_date[Y-m-d]',
@@ -64,10 +66,9 @@ class BankAccountModel extends IpBaseModel
             'min_length'    => 'Il BIC è di 8 o 11 caratteri',
             'max_length'    => 'Il BIC è di 8 o 11 caratteri',
         ],
-        'bank_account_sia_code' => [
-            'alpha_numeric' => 'Il codice SIA contiene solo lettere e cifre',
-            'exact_length'  => 'Il codice SIA è di cinque caratteri',
-        ],
+        // Nessun messaggio qui: valid_sia_code() descrive da sé che cosa non va
+        // (cinque caratteri alfanumerici, senza la O), e un testo generico al
+        // suo posto nasconderebbe proprio il caso da correggere.
     ];
 
     public function validationRulesLegacy(): array

@@ -1208,7 +1208,7 @@ return array (
   'sharing_hint' => 'Come il cliente accede al documento',
   'shipping_address' => 'Luogo di destinazione (se diverso)',
   'sia_code' => 'Codice SIA',
-  'sia_help' => 'Cinque caratteri assegnati dalla banca: identificano l\'azienda come creditore nei flussi RiBa. Serve solo se presenti ricevute bancarie su questo conto.',
+  'sia_help' => 'Cinque caratteri alfanumerici (senza la O) assegnati dalla banca: identificano l\'azienda come creditore nei flussi RiBa. Serve solo se presenti ricevute bancarie su questo conto.',
   'sidebar_analysis' => 'Analisi',
   'sidebar_manage' => 'Gestione',
   'sidebar_version' => 'fatturazione',

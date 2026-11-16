@@ -73,4 +73,35 @@ class FiscalRules
 
         return true;
     }
+
+    /**
+     * Codice SIA dei flussi RiBa: cinque caratteri alfanumerici, lettera O
+     * esclusa.
+     *
+     * Lo standard CBI esclude la O per non confonderla con lo zero, e questo
+     * codice finisce nel record di testa della distinta (posizioni 4-8), nel
+     * record 14 di ogni effetto e nel record di coda: un carattere fuori posto
+     * fa scartare l'intera distinta, non la singola ricevuta, e lo si scopre
+     * giorni dopo aver caricato il file. Con la sola regola alpha_numeric
+     * passava anche "5O3T8"; con un simbolo, "5$3T8", la pulizia del POST lo
+     * riduceva a quattro caratteri senza dire niente.
+     *
+     * Il valore vuoto passa: la presenza la decide 'permit_empty'.
+     */
+    public function valid_sia_code(?string $str, ?string &$error = null): bool
+    {
+        $sia = strtoupper(trim((string) $str));
+
+        if ($sia === '') {
+            return true;
+        }
+
+        if (!preg_match('/^[A-NP-Z0-9]{5}$/', $sia)) {
+            $error = 'Il codice SIA è di cinque caratteri alfanumerici, senza la lettera O.';
+
+            return false;
+        }
+
+        return true;
+    }
 }
