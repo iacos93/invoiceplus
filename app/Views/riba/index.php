@@ -28,11 +28,11 @@ $actions = '<div class="headerbar-total">'
     </div>
 
     <?php if (!$has_riba_method): ?>
-        <?php // Senza un metodo con codice MP12 la pagina non sa quali fatture
-              // erano destinate alla RiBa e le elenca tutte, come prima. ?>
+        <?php // Senza un metodo con codice MP12 nessuna fattura risulta emessa
+              // come RiBa, quindi qui non c'è nulla da presentare. ?>
         <div class="alert alert-info small">
             <i class="fa fa-solid fa-info-circle" aria-hidden="true"></i>
-            <?= trans('riba_no_method', '', 'Nessun metodo di pagamento con modalità MP12 (RIBA): le fatture non possono essere distinte per metodo. Impostane uno in Impostazioni → Metodi di pagamento per trovarle già selezionate qui.') ?>
+            <?= trans('riba_no_method_only', '', 'Nessun metodo di pagamento con modalità MP12 (RIBA): qui compaiono solo le fatture emesse con pagamento RiBa. Creane uno in Impostazioni → Metodi di pagamento e assegnalo alle fatture da presentare.') ?>
         </div>
     <?php endif; ?>
 
@@ -49,14 +49,7 @@ $actions = '<div class="headerbar-total">'
                 <span class="ip-doc-step">1</span>
                 <h2 class="ip-doc-section__title"><?= trans('select_invoices', '', 'Fatture da presentare') ?></h2>
                 <span class="ip-doc-section__hint">
-                    <?php if ($riba_count > 0): ?>
-                        <?= $riba_count ?> <?= trans('with_riba_method', '', 'con metodo RiBa') ?>
-                        <?php if (count($invoices) > $riba_count): ?>
-                            · <?= count($invoices) - $riba_count ?> <?= trans('other_open', '', 'altre aperte') ?>
-                        <?php endif; ?>
-                    <?php else: ?>
-                        <?= count($invoices) ?>
-                    <?php endif; ?>
+                    <?= count($invoices) ?> <?= trans('with_riba_method', '', 'con metodo RiBa') ?>
                 </span>
             </div>
 
@@ -76,34 +69,18 @@ $actions = '<div class="headerbar-total">'
                     </tr>
                     </thead>
                     <tbody>
-                    <?php $ip_riba_divider = false; ?>
                     <?php foreach ($invoices as $inv): ?>
-                        <?php
-                        $isRiba = !empty($inv['is_riba']);
-                        $hasIban = !empty($inv['client_iban']);
-                        // Il separatore compare una volta sola, e solo se sopra
-                        // c'e' davvero un blocco RiBa da separare.
-                        if (!$isRiba && !$ip_riba_divider && $riba_count > 0):
-                            $ip_riba_divider = true; ?>
-                            <tr class="ip-riba-divider">
-                                <td colspan="6">
-                                    <?= trans('riba_other_invoices', '', 'Altre fatture aperte — senza metodo RiBa, presentabili comunque') ?>
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                        <tr class="ip-item-row<?= $isRiba ? ' is-riba' : '' ?>">
+                        <?php $hasIban = !empty($inv['client_iban']); ?>
+                        <tr class="ip-item-row is-riba">
                             <td class="ip-items-table__actions">
                                 <?php // Preselezionate solo quelle domiciliabili: senza IBAN del
                                       // debitore la ricevuta entra nel flusso ma non si domicilia. ?>
                                 <input type="checkbox" name="invoice_ids[]" value="<?= (int) $inv['invoice_id'] ?>"
-                                       class="riba-check" <?= $isRiba && $hasIban ? 'checked' : '' ?>
+                                       class="riba-check" <?= $hasIban ? 'checked' : '' ?>
                                        aria-label="<?= esc(sprintf(trans('select_invoice', '', 'Seleziona fattura %s'), $inv['invoice_number'] ?: ('#' . $inv['invoice_id']))) ?>">
                             </td>
                             <td>
                                 <span class="ip-num"><?= esc($inv['invoice_number'] ?: ('#' . $inv['invoice_id'])) ?></span>
-                                <?php if ($isRiba): ?>
-                                    <span class="badge text-bg-secondary">RiBa</span>
-                                <?php endif; ?>
                             </td>
                             <td><?= esc(format_client($inv)) ?></td>
                             <td>
@@ -121,7 +98,7 @@ $actions = '<div class="headerbar-total">'
                     <?php endforeach; ?>
                     <?php if (empty($invoices)): ?>
                         <tr><td colspan="6" class="ip-items-table__empty">
-                            <?= trans('riba_none', '', 'Nessuna fattura da presentare: servono documenti emessi, con saldo aperto e non già inseriti in una distinta.') ?>
+                            <?= trans('riba_none_only', '', 'Nessuna fattura da presentare: servono fatture emesse con pagamento RiBa, con saldo aperto e non già inserite in una distinta.') ?>
                         </td></tr>
                     <?php endif; ?>
                     </tbody>

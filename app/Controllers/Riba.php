@@ -27,61 +27,40 @@ class Riba extends BaseController
     public function index()
     {
         $ribaMethods = (new PaymentMethodModel())->ribaMethodIds();
-        $invoices    = $this->presentable();
-
-        // Le fatture emesse *come* RiBa vanno in cima e arrivano già spuntate:
-        // sono quelle che si intendeva presentare, e cercarle in mezzo a tutte
-        // le altre aperte era il vero lavoro di questa pagina. Le altre restano
-        // sotto e selezionabili: il metodo di pagamento non sempre è compilato,
-        // e nasconderle vorrebbe dire non poterle più presentare da qui.
-        [$ribaInvoices, $otherInvoices] = $this->partitionByRiba($invoices, $ribaMethods);
 
         return view('riba/index', [
-            'invoices'       => array_merge($ribaInvoices, $otherInvoices),
-            'riba_count'     => count($ribaInvoices),
+            'invoices'        => $this->presentable($ribaMethods),
             'has_riba_method' => $ribaMethods !== [],
-            'accounts'       => (new BankAccountModel())->getAllOrdered(),
+            'accounts'        => (new BankAccountModel())->getAllOrdered(),
         ]);
     }
 
     /**
-     * Fatture presentabili: emesse, con saldo aperto e non già in una distinta.
-     * Le bozze non sono crediti e le già presentate darebbero un doppio incasso.
+     * Fatture presentabili: emesse con pagamento RiBa (metodo con modalità
+     * MP12), con saldo aperto e non già in una distinta.
+     *
+     * Solo RiBa: prima la pagina elencava sotto anche tutte le altre fatture
+     * aperte, "presentabili comunque", e con l'archivio importato ci finivano
+     * decine di fatture pagate a bonifico. Una fattura va in distinta solo se
+     * è stata emessa come RiBa; per presentarne una che non lo è, si cambia il
+     * metodo di pagamento sulla fattura. Le bozze non sono crediti e le già
+     * presentate darebbero un doppio incasso.
+     *
+     * @param list<int> $ribaMethods
      */
-    private function presentable(): array
+    private function presentable(array $ribaMethods): array
     {
+        if ($ribaMethods === []) {
+            return [];
+        }
+
         return array_values(array_filter(
             $this->invoiceModel->getAllWithStatus('all', 0, 0),
             static fn($invoice) => (int) $invoice['invoice_status_id'] !== 1
                 && (float) ($invoice['invoice_balance'] ?? 0) > 0
                 && empty($invoice['riba_flow_ref'])
+                && in_array((int) ($invoice['payment_method'] ?? 0), $ribaMethods, true)
         ));
-    }
-
-    /**
-     * Divide le fatture in "con metodo RiBa" e le altre, conservando l'ordine
-     * di partenza dentro ciascun gruppo. Marca le prime con is_riba, che la
-     * view usa per l'etichetta e per la spunta iniziale.
-     */
-    private function partitionByRiba(array $invoices, array $ribaMethods): array
-    {
-        $riba  = [];
-        $other = [];
-
-        foreach ($invoices as $invoice) {
-            $isRiba = $ribaMethods !== []
-                && in_array((int) ($invoice['payment_method'] ?? 0), $ribaMethods, true);
-
-            $invoice['is_riba'] = $isRiba;
-
-            if ($isRiba) {
-                $riba[] = $invoice;
-            } else {
-                $other[] = $invoice;
-            }
-        }
-
-        return [$riba, $other];
     }
 
     public function generate()
@@ -114,7 +93,7 @@ class Riba extends BaseController
 
         $company  = (new CompanyModel())->find(active_company_id()) ?: [];
         $selected = array_values(array_filter(
-            $this->presentable(),
+            $this->presentable((new PaymentMethodModel())->ribaMethodIds()),
             static fn($invoice) => in_array((int) $invoice['invoice_id'], $ids, true)
         ));
 

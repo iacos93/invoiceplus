@@ -11,6 +11,11 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- La pagina RiBa elenca solo le fatture emesse con pagamento RiBa (metodo con
+  modalità MP12), con saldo aperto e non già in distinta; anche la generazione
+  del flusso accetta solo quelle. Prima mostrava sotto tutte le altre fatture
+  aperte, «presentabili comunque».
+
 - La barra di composizione di «Fatture per stato» e «Preventivi per stato» in
   Bacheca è interattiva come i grafici: ogni segmento è un collegamento
   all'elenco di quello stato, con un tooltip (importo, numero di documenti,

@@ -1467,6 +1467,8 @@ return array (
   'regime_note_forfettario' => 'Substitute tax on a flat-rate share of revenue. Actual costs are not deductible.',
   'regime_note_semplificato' => 'Tiered IRPEF on profit, plus surcharges and social security contributions.',
   'regime_note_societa' => 'IRES on profit and IRAP on production value: the other fields below do not apply.',
+  'riba_no_method_only' => 'No payment method with MP12 (RIBA) mode: only invoices issued with RiBa payment appear here. Create one in Settings → Payment methods and assign it to the invoices to present.',
+  'riba_none_only' => 'No invoices to present: they must be issued with RiBa payment, have an open balance and not already be in a batch.',
   'riba_no_method' => 'No payment method with MP12 (RiBa) mode: invoices cannot be listed by method. Set one in Settings → Payment methods to find them already selected here.',
   'riba_other_invoices' => 'Other open invoices — without RiBa method, still presentable',
   'rows_removed' => 'rows removed from the archive',

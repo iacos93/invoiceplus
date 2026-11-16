@@ -1476,6 +1476,8 @@ return array (
   'regime_note_forfettario' => 'Imposta sostitutiva su una quota forfettaria dei ricavi. I costi effettivi non si deducono.',
   'regime_note_semplificato' => 'IRPEF a scaglioni sull\'utile, più addizionali e contributi previdenziali.',
   'regime_note_societa' => 'IRES sull\'utile e IRAP sul valore della produzione: gli altri campi qui sotto non si applicano.',
+  'riba_no_method_only' => 'Nessun metodo di pagamento con modalità MP12 (RIBA): qui compaiono solo le fatture emesse con pagamento RiBa. Creane uno in Impostazioni → Metodi di pagamento e assegnalo alle fatture da presentare.',
+  'riba_none_only' => 'Nessuna fattura da presentare: servono fatture emesse con pagamento RiBa, con saldo aperto e non già inserite in una distinta.',
   'riba_no_method' => 'Nessun metodo di pagamento con modalità MP12 (RIBA): le fatture non possono essere distinte per metodo. Impostane uno in Impostazioni → Metodi di pagamento per trovarle già selezionate qui.',
   'riba_other_invoices' => 'Altre fatture aperte — senza metodo RiBa, presentabili comunque',
   'rows_removed' => 'righe rimosse dall\'archivio',
