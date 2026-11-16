@@ -247,7 +247,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                             <?php if (($expense['expense_source'] ?? '') === 'xml'): ?>
                                 <?php /* Da fattura elettronica: utile sapere che i dati
                                          non sono stati digitati a mano. */ ?>
-                                <span class="ip-src-tag ip-num-tag" title="<?= esc($expense['expense_file'] ?? '', 'attr') ?>">XML</span>
+                                <span class="badge ip-status text-bg-info ip-num-tag ip-badge-tag" title="<?= esc($expense['expense_file'] ?? '', 'attr') ?>">XML</span>
                             <?php endif; ?>
                         </td>
                         <td data-cell="status" data-label="<?= esc(trans('status', '', 'Stato')) ?>">

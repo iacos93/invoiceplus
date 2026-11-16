@@ -1468,3 +1468,13 @@
 }
 .ip-window-body--flush .table > tbody > tr.empty-row > td { vertical-align: middle; }
 
+/* Badge che indicano l'origine del dato ("XML": la spesa viene da una fattura
+   elettronica) e non uno stato: stesso disegno dei badge di stato, ma senza il
+   timbro a colore pieno che quelli prendono al passaggio del mouse sulla riga.
+   Invertito, un'etichetta accessoria gridava più del numero accanto. */
+.table-hover tbody tr:hover .badge.ip-status.text-bg-info.ip-badge-tag {
+  color: var(--ip-info-text) !important;
+  background: var(--ip-info-bg) !important;
+  border-color: color-mix(in srgb, var(--ip-info-text) 55%, transparent);
+}
+

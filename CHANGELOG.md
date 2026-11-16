@@ -114,10 +114,9 @@ Le regole per scrivere le voci e preparare una release sono in
   anima solo l'opacità, e la banda sfuma in modo continuo.
 
 - Il marcatore «XML» accanto al numero delle spese (scheda fornitore e lista
-  Spese) non è più un timbro di stato: al passaggio del mouse sulla riga si
-  invertiva a pieno colore (bianco su azzurro) e le due pagine lo disegnavano
-  in modo diverso. Ora è un contorno sottile, uguale nelle due pagine, che si
-  tinge appena solo se è il collegamento a essere sotto il puntatore.
+  Spese) resta il badge standard dell'app ma non si inverte più a colore pieno
+  al passaggio del mouse sulla riga, come fanno i timbri di stato: è
+  un'etichetta di origine, non uno stato, e invertito gridava più del numero.
 
 ### Corretto
 

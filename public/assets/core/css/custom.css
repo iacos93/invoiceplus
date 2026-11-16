@@ -12278,39 +12278,6 @@ html[data-theme="dark"] .ip-import-outcome.is-error{ background:#2c1c19; color:#
   margin-top: 3px;
 }
 
-/* Marcatore dell'origine del dato accanto a un numero ("XML": la spesa viene
-   da una fattura elettronica). Non è uno stato, quindi non è un timbro: era un
-   badge ip-status, e le regole dei timbri lo invertivano a colore pieno al
-   passaggio del mouse sulla riga, con il bianco su azzurro che gridava più del
-   numero. Resta un contorno sottile; se è un collegamento (anteprima XML) al
-   passaggio si tinge appena. Stessa forma nella scheda fornitore e nella lista
-   Spese. */
-.ip-src-tag {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 6px;
-  font-size: var(--ip-text-xs);
-  font-weight: 600;
-  line-height: 1.5;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  text-decoration: none;
-  vertical-align: 1px;
-  color: var(--ip-info-text);
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--ip-info-text) 45%, transparent);
-  border-radius: var(--ip-radius-sm);
-  transition: background-color var(--ip-transition), border-color var(--ip-transition);
-}
-a.ip-src-tag:hover,
-a.ip-src-tag:focus-visible {
-  color: var(--ip-info-text);
-  background: var(--ip-info-bg);
-  border-color: var(--ip-info-text);
-}
-/* In lista Spese sta sotto il numero (i numeri dei fornitori sono lunghi). */
-.ip-src-tag.ip-num-tag { margin-left: 0; }
-
 /* KPI positivo (IVA a credito). */
 .card-value.card-value-success {
   color: var(--ip-success, #2e7d32);
@@ -14489,4 +14456,14 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
   margin: 0;
 }
 .ip-window-body--flush .table > tbody > tr.empty-row > td { vertical-align: middle; }
+
+/* Badge che indicano l'origine del dato ("XML": la spesa viene da una fattura
+   elettronica) e non uno stato: stesso disegno dei badge di stato, ma senza il
+   timbro a colore pieno che quelli prendono al passaggio del mouse sulla riga.
+   Invertito, un'etichetta accessoria gridava più del numero accanto. */
+.table-hover tbody tr:hover .badge.ip-status.text-bg-info.ip-badge-tag {
+  color: var(--ip-info-text) !important;
+  background: var(--ip-info-bg) !important;
+  border-color: color-mix(in srgb, var(--ip-info-text) 55%, transparent);
+}
 
