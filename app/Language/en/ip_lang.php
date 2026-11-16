@@ -845,6 +845,7 @@ return array (
   'dashboard_iva_subtext' => 'Sales',
   'dashboard_iva_subtext_purchase' => 'Purchases',
   'dashboard_last_6_months' => 'last 6 months',
+  'dashboard_6_months_until' => '6 months to %s',
   'dashboard_margin_label' => 'Margin',
   'dashboard_no_chart_data' => 'No invoicing activity in the last 6 months.',
   'dashboard_no_expense_data' => 'No expenses recorded in the last 6 months.',

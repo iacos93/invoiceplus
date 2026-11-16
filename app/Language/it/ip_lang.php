@@ -866,6 +866,7 @@ return array (
   'dashboard_iva_subtext' => 'Vendite',
   'dashboard_iva_subtext_purchase' => 'Acquisti',
   'dashboard_last_6_months' => 'ultimi 6 mesi',
+  'dashboard_6_months_until' => '6 mesi fino a %s',
   'dashboard_margin_label' => 'Margine',
   'dashboard_no_chart_data' => 'Nessun movimento fatturazione negli ultimi 6 mesi.',
   'dashboard_no_expense_data' => 'Nessuna spesa registrata negli ultimi 6 mesi.',

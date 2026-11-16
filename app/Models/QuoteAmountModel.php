@@ -181,9 +181,9 @@ class QuoteAmountModel extends IpBaseModel
     {
         $out = [];
         $months = max(1, $months);
-        $firstTs = strtotime('-' . ($months - 1) . ' month', strtotime('first day of this month 00:00:00'));
+        $firstTs = strtotime('-' . ($months - 1) . ' month', strtotime(chart_window_anchor($months)));
         $startDate = date('Y-m-01', $firstTs);
-        $endDate = date('Y-m-t');
+        $endDate = date('Y-m-t', strtotime(chart_window_anchor($months)));
 
         $scope = company_scope_sql('ip_quotes');
 
@@ -206,7 +206,7 @@ class QuoteAmountModel extends IpBaseModel
 
 
         for ($i = $months - 1; $i >= 0; $i--) {
-            $ts = strtotime("-$i month", strtotime('first day of this month 00:00:00'));
+            $ts = strtotime("-$i month", strtotime(chart_window_anchor($months)));
             $ym = date('Y-m', $ts);
             $label = month_label($ts);
             $out[] = [

@@ -137,6 +137,14 @@ $trendBadge = static function (?float $delta, bool $invert = false, ?string $pre
 // Sparkline SVG: piccola serie di barre (max 6-7) dentro la finestra KPI.
 // Gestisce anche valori negativi (es. IVA): in quel caso la scala si divide
 // a metà, le barre positive salgono dalla linea zero e le negative scendono.
+// Finestra dei grafici: "ultimi 6 mesi" solo quando finisce questo mese;
+// con un anno passato scelto, o un archivio fermo a qualche mese fa, la
+// finestra segue i dati e l'etichetta dice dove finisce.
+$windowEnd   = strtotime(chart_window_anchor(6));
+$windowLabel = date('Y-m', $windowEnd) === date('Y-m')
+    ? trans('dashboard_last_6_months', '', 'ultimi 6 mesi')
+    : sprintf(trans('dashboard_6_months_until', '', '6 mesi fino a %s'), date('m/Y', $windowEnd));
+
 $sparkline = static function (array $values, string $colorVar = 'var(--ip-primary)'): string {
     $values = array_values(array_map('floatval', $values));
     if (count($values) === 0) {
@@ -592,7 +600,7 @@ $windowsToggle .= '</div></div>';
                 <?= $winHead('graf_ricavi', trans('dashboard_revenue_chart', '', 'Grafico ricavi'), site_url('invoices'), 'fa-solid fa-chart-column') ?>
                 <div class="ip-chart-body">
                     <div class="ip-chart-meta">
-                        <span class="ip-chart-period"><?= esc(trans('dashboard_last_6_months', '', 'ultimi 6 mesi')) ?></span>
+                        <span class="ip-chart-period"><?= esc($windowLabel) ?></span>
                         <span class="ip-chart-legend">
                             <span class="ip-chart-legend-item"><span class="ip-chart-legend-dot ip-chart-legend-dot--invoiced"></span><?= trans('dashboard_invoiced_label', '', 'Fatturato') ?></span>
                             <span class="ip-chart-legend-item"><span class="ip-chart-legend-dot ip-chart-legend-dot--paid"></span><?= trans('dashboard_collected_label', '', 'Incassato') ?></span>
@@ -684,7 +692,7 @@ $windowsToggle .= '</div></div>';
                 <?= $winHead('graf_costi', trans('dashboard_expenses_chart', '', 'Grafico costi'), site_url('expenses'), 'fa-solid fa-credit-card') ?>
                 <div class="ip-chart-body">
                     <div class="ip-chart-meta">
-                        <span class="ip-chart-period"><?= esc(trans('dashboard_last_6_months', '', 'ultimi 6 mesi')) ?></span>
+                        <span class="ip-chart-period"><?= esc($windowLabel) ?></span>
                         <span class="ip-chart-legend">
                             <span class="ip-chart-legend-item"><span class="ip-chart-legend-dot ip-chart-legend-dot--expenses"></span><?= trans('dashboard_expenses_label', '', 'Spese') ?></span>
                         </span>

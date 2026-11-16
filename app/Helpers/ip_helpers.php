@@ -2332,3 +2332,56 @@ if (!function_exists('sql_year_month')) {
         };
     }
 }
+
+if (!function_exists('chart_window_anchor')) {
+    /**
+     * Primo giorno del mese in cui finisce la finestra dei grafici mensili
+     * (Bacheca, sparkline, serie IVA), come 'Y-m-01 00:00:00'.
+     *
+     * Era sempre "questo mese": con un archivio che arriva a dicembre dell'anno
+     * scorso, o con un anno passato scelto in topbar, gli ultimi 6 mesi erano
+     * vuoti e i grafici si aprivano piatti, come rotti. Ora:
+     *  - con un anno scelto la finestra finisce a dicembre di quell'anno (o a
+     *    questo mese, se l'anno è quello in corso);
+     *  - con "tutti gli anni" finisce a questo mese, salvo che la finestra
+     *    corrente sia vuota: allora segue l'ultimo mese con movimenti.
+     *
+     * Si calcola una volta per richiesta.
+     */
+    function chart_window_anchor(int $months = 6): string
+    {
+        static $cache = [];
+
+        if (isset($cache[$months])) {
+            return $cache[$months];
+        }
+
+        $current = date('Y-m-01 00:00:00');
+        $year    = selected_year();
+
+        if ($year > 0) {
+            return $cache[$months] = $year < (int) date('Y') ? $year . '-12-01 00:00:00' : $current;
+        }
+
+        $from = date('Y-m-01', strtotime('-' . (max(1, $months) - 1) . ' month', strtotime($current)));
+        $db   = \Config\Database::connect();
+
+        $row = $db->query(
+            "SELECT GREATEST(
+                COALESCE((SELECT MAX(i.invoice_date_created) FROM ip_invoices i WHERE i.invoice_status_id != 1" . company_scope_sql('i') . "), '1970-01-01'),
+                COALESCE((SELECT MAX(p.payment_date) FROM ip_payments p JOIN ip_invoices i ON i.invoice_id = p.invoice_id WHERE 1 = 1" . company_scope_sql('i') . "), '1970-01-01'),
+                COALESCE((SELECT MAX(e.expense_date) FROM ip_expenses e WHERE 1 = 1" . company_scope_sql('e') . "), '1970-01-01')
+            ) AS last_day"
+        )->getRowArray();
+
+        $last = substr((string) ($row['last_day'] ?? ''), 0, 10);
+
+        // Nessun movimento mai, o già dentro la finestra corrente: non si sposta.
+        if ($last === '' || $last <= '1970-01-01' || $last >= $from) {
+            return $cache[$months] = $current;
+        }
+
+        return $cache[$months] = date('Y-m-01 00:00:00', strtotime($last));
+    }
+}
+

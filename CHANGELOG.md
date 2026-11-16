@@ -73,6 +73,14 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- I grafici della Bacheca (fatturato e incassato, spese, utile, IVA e le
+  sparkline delle card) non si aprono più vuoti quando negli ultimi 6 mesi non
+  ci sono movimenti: con un anno scelto in topbar la finestra finisce a
+  dicembre di quell'anno, con «Tutti gli anni» segue l'ultimo mese con
+  movimenti, e l'etichetta dice «6 mesi fino a MM/AAAA». Prima era sempre «gli
+  ultimi 6 mesi da oggi», quindi un archivio fermo a dicembre mostrava grafici
+  piatti.
+
 - L'import degli XML di fatture emesse scartava come doppione una nota di
   credito con lo stesso numero di una fattura dello stesso anno (le note di
   credito hanno di solito una serie propria): il fatturato restava gonfiato
