@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.13.0] — 2026-11-16
+
 ### Aggiunto
 
 - Nella lista Fatture l'azione di gruppo «Segna come pagate» registra un incasso
