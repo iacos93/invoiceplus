@@ -118,6 +118,12 @@ Le regole per scrivere le voci e preparare una release sono in
   al passaggio del mouse sulla riga, come fanno i timbri di stato: è
   un'etichetta di origine, non uno stato, e invertito gridava più del numero.
 
+- Il badge «XML» delle spese aveva il testo attaccato al bordo: nella scheda
+  fornitore una regola per le aree cliccabili delle tabelle azzerava il
+  padding orizzontale dei link, badge compresi, e nella lista Spese la riga
+  dedicata al badge (display: table) annullava il padding. Ora ha lo stesso
+  spazio interno degli altri badge.
+
 ### Corretto
 
 - Nel Controllo di gestione i pulsanti delle schermate «Prima il piano dei

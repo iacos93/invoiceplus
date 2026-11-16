@@ -75,7 +75,10 @@
    numero, non di fianco — i numeri dei fornitori sono lunghi
    (2026F001340825) e il badge in linea allargava la colonna. */
 .ip-num-tag {
-  display: table;
+  /* Riga sua ma larga quanto il contenuto. Era display: table, che sul badge
+     (inline-flex) annullava il padding: il testo toccava il bordo. */
+  display: flex;
+  width: max-content;
   margin-top: 3px;
 }
 

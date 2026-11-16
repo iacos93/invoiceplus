@@ -820,9 +820,11 @@ dall'altra) avevano quindi intestazioni di altezza diversa. */
 /* Numero documento nelle liste: è il link che porta al record ed era alto
    16px. inline-block + padding verticale lo portano a 24px senza allargare
    la riga (il padding rientra nell'altezza già occupata dalla cella). */
-.ip-table-card tbody td > a,
-.ip-table-card tbody td > form > a,
-.ip-window td > a,
+/* Esclusi i badge-link (es. "XML" nella scheda fornitore): hanno il loro
+   padding, e quello orizzontale a zero li lasciava col testo sul bordo. */
+.ip-table-card tbody td > a:not(.badge),
+.ip-table-card tbody td > form > a:not(.badge),
+.ip-window td > a:not(.badge),
 .ip-window-footer > .ip-window-more {
   display: inline-block;
   min-width: 24px;
