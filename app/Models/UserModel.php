@@ -277,8 +277,12 @@ class UserModel extends IpBaseModel
 
     /**
      * Cambia la password di un utente (equivalente di save_change_password() CI3).
+     *
+     * Torna l'id scritto, o 0 se l'update è stato rifiutato, come
+     * saveRecord(): chi chiama deve poterlo dire, invece di annunciare
+     * «Password cambiata» con la vecchia password ancora valida.
      */
-    public function saveChangePassword(int $userId, string $password): void
+    public function saveChangePassword(int $userId, string $password): int
     {
         $salt                       = $this->salt();
         $dbArray['user_psalt']      = $salt;
@@ -294,7 +298,13 @@ class UserModel extends IpBaseModel
         // password valida.
         $this->skipValidation(true);
 
-        $this->update($userId, $dbArray);
+        try {
+            return $this->update($userId, $dbArray) ? $userId : 0;
+        } finally {
+            // La deroga vale per questa scrittura sola: lasciarla accesa
+            // salterebbe i controlli della successiva sullo stesso modello.
+            $this->skipValidation(false);
+        }
     }
 
     /**

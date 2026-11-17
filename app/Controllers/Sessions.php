@@ -834,7 +834,15 @@ class Sessions extends BaseController
                 return redirect()->to('/sessions/passwordreset');
             }
 
-            $userModel->saveChangePassword($userId, $newPassword);
+            // Il token si cancella solo a password scritta: svuotarlo dopo un
+            // update rifiutato lascerebbe l'utente con la vecchia password e
+            // senza il link per sceglierne un'altra.
+            if ($userModel->saveChangePassword($userId, $newPassword) === 0) {
+                session()->setFlashdata('alert_error', 'Password non cambiata: ' . $userModel->saveErrorSummary());
+
+                return redirect()->to('/sessions/passwordreset/' . rawurlencode((string) $request->getPost('token')));
+            }
+
             $userModel->update($userId, [
                 'user_passwordreset_token'         => '',
                 'user_passwordreset_token_expires' => null,

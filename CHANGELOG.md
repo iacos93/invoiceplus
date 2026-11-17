@@ -11,6 +11,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Un cambio password rifiutato dal database annunciava comunque «Password
+  cambiata» e lasciava valida quella vecchia. `UserModel::saveChangePassword()`
+  ora restituisce l'id scritto oppure 0, come `saveRecord()`: la scheda utente
+  riapre il form con l'errore, e nel reset password il token non viene più
+  cancellato se la password non è stata scritta — prima un errore lasciava
+  l'utente con la vecchia password e senza il link per sceglierne un'altra.
+
 - L'Indice di redditività lascia mezza banda di spazio ai due lati della
   curva: la banda che evidenzia il mese è larga quanto la distanza fra due
   punti, e quella del primo mese veniva ritagliata sul bordo finendo sopra le

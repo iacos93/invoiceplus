@@ -157,7 +157,20 @@ class Users extends BaseController
             );
 
             if ($validation->run($post)) {
-                $this->userModel->saveChangePassword($userId, (string) $post['user_password']);
+                $savedId = $this->userModel->saveChangePassword($userId, (string) $post['user_password']);
+
+                // Password non scritta: il form resta aperto con l'errore. Il
+                // successo non si annuncia più a scatola chiusa, o si usciva
+                // dalla scheda credendo di aver cambiato una password che era
+                // ancora quella vecchia.
+                if ($savedId === 0) {
+                    session()->setFlashdata('alert_error', 'Password non cambiata: ' . $this->userModel->saveErrorSummary());
+
+                    return view('users/form_change_password', [
+                        'user_id' => $userId,
+                        'errors'  => [],
+                    ]);
+                }
 
                 session()->setFlashdata('alert_success', trans('password_changed'));
 
