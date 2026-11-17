@@ -33,6 +33,7 @@
                         <label class="ip-doc-label" for="f24_amount"><?= trans('amount', '', 'Importo') ?></label>
                         <input type="text" name="f24_amount" id="f24_amount" class="form-control amount"
                                value="<?= esc(format_amount($model->formValue('f24_amount'))) ?>">
+                        <?php if (!empty($errors['f24_amount'])): ?><span class="ip-field-error"><?= esc($errors['f24_amount']) ?></span><?php endif; ?>
                     </div>
                     <div class="ip-doc-field">
                         <label class="ip-doc-label" for="f24_paid_date"><?= trans('paid_on', '', 'Pagato il') ?></label>

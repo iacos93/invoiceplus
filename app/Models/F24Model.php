@@ -36,12 +36,13 @@ class F24Model extends IpBaseModel
      * qui, e la regola è stretta su quel formato: date_to_mysql() lascia
      * passare intatta una stringa che non riesce a interpretare, e senza il
      * formato scritto valid_date() accetterebbe anche «domani» (usa
-     * strtotime()). L'importo è già normalizzato, quindi il controllo è solo
-     * che sia un numero.
+     * strtotime()). L'importo arriva già normalizzato, quindi il controllo è
+     * solo che ci sia e che sia un numero: zero resta un valore, perché una
+     * delega interamente compensata esiste.
      */
     protected $validationRules = [
         'f24_due_date'         => 'required|valid_date[Y-m-d]',
-        'f24_amount'           => 'permit_empty|numeric',
+        'f24_amount'           => 'required|numeric',
         'f24_period'           => 'permit_empty|max_length[20]',
         'f24_paid_date'        => 'permit_empty|valid_date[Y-m-d]',
         'bank_account_id'      => 'permit_empty|is_natural',
@@ -56,7 +57,8 @@ class F24Model extends IpBaseModel
             'valid_date' => 'La scadenza non è una data valida',
         ],
         'f24_amount' => [
-            'numeric' => "L'importo deve essere un numero",
+            'required' => "L'importo è obbligatorio",
+            'numeric'  => "L'importo deve essere un numero",
         ],
         'f24_period' => [
             'max_length' => 'Il periodo non può superare i 20 caratteri',

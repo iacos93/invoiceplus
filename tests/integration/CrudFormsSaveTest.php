@@ -755,6 +755,54 @@ final class CrudFormsSaveTest extends CIUnitTestCase
     }
 
     /**
+     * Anche l'importo è obbligatorio: prima un campo vuoto diventava 0 nel
+     * controller e si salvava come una delega a saldo zero.
+     */
+    public function testF24SenzaImportoRestaNelFormConAvvisoSulCampo(): void
+    {
+        $entita = self::entitaScriventi()['f24'][0];
+
+        $dati = $this->datiDelForm($entita, 'Collaudo Importo', true);
+        $dati['f24_amount'] = '';
+
+        $prima = $this->contaRighe($entita);
+
+        $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
+
+        $this->assertSame(200, $risposta->response()->getStatusCode(), 'Importo vuoto: il form deve riaprirsi');
+
+        $html = (string) $risposta->response()->getBody();
+
+        $this->assertStringContainsString(esc("L'importo è obbligatorio"), $html, 'Importo vuoto: manca l\'avviso sul campo');
+        $this->assertStringNotContainsString(esc($entita['successo']), $html, 'Importo vuoto: non deve annunciare il salvataggio');
+        $this->assertSame($prima, $this->contaRighe($entita), 'Importo vuoto: nessuna riga deve nascere');
+    }
+
+    /**
+     * Zero è un importo, non un campo vuoto: la delega interamente compensata
+     * si salva, e il prezzo di questa regola non è averla resa obbligatoria.
+     */
+    public function testF24ConImportoZeroSiSalva(): void
+    {
+        $entita = self::entitaScriventi()['f24'][0];
+
+        $dati = $this->datiDelForm($entita, 'Collaudo Importo Zero', true);
+        $dati['f24_amount'] = '0,00';
+
+        $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
+
+        $this->assertSame(302, $risposta->response()->getStatusCode(), 'Importo zero: la delega deve salvarsi');
+
+        $riga = $this->testDb->query(
+            'SELECT f24_amount FROM ip_f24 WHERE f24_note = ?',
+            ['Collaudo Importo Zero']
+        )->getRowArray();
+
+        $this->assertNotNull($riga, 'Importo zero: riga non creata');
+        $this->assertSame(0.0, (float) $riga['f24_amount'], 'Importo zero: l\'importo salvato non è zero');
+    }
+
+    /**
      * «Nessun conto» si salva come NULL.
      *
      * La colonna è un intero e il form manda la stringa vuota: PostgreSQL la

@@ -58,7 +58,11 @@ class F24 extends BaseController
                 throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
             }
 
-            $post['f24_amount']    = standardize_amount($post['f24_amount'] ?? 0) ?: 0;
+            // L'importo vuoto resta vuoto, non diventa zero: la regola
+            // required del modello lo rifiuta con un avviso sul campo, mentre
+            // con lo `?: 0` di prima passava come delega a saldo zero. Lo zero
+            // scritto davvero (0,00) è ancora un importo valido.
+            $post['f24_amount']    = standardize_amount($post['f24_amount'] ?? '');
             $post['f24_due_date']  = date_to_mysql($post['f24_due_date'] ?? '');
             $post['f24_paid_date'] = !empty($post['f24_paid_date']) ? date_to_mysql($post['f24_paid_date']) : null;
 
