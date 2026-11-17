@@ -544,6 +544,39 @@ final class CrudFormsSaveTest extends CIUnitTestCase
     }
 
     /**
+     * Lo stesso rifiuto, ma da un modello vero: nessun controller di prova.
+     *
+     * Prezzo «0»: la validazione del controller lo accetta — guarda il POST
+     * com'è arrivato, e per la regola required «0» è un valore — mentre
+     * dbArrayFromPost() lo trasforma in NULL, perché empty() considera vuoto
+     * anche lo zero, e insert() rivalida l'array che sta per scrivere e
+     * rifiuta. È il caso 0 di saveFormRecord() raggiungibile con dati veri di
+     * un form convertito: il form deve riaprirsi con l'avviso e il motivo,
+     * senza annunciare il salvataggio.
+     */
+    public function testPrezzoZeroTieneApertoIlFormSenzaAnnunciare(): void
+    {
+        // Il provider incapsula ogni entità per PHPUnit 13: qui serve la riga.
+        $entita = self::entitaScriventi()['prodotti'][0];
+
+        $dati = $this->datiDelForm($entita, 'Collaudo Prezzo Zero', true);
+        $dati['product_price'] = '0';
+
+        $prima = $this->contaRighe($entita);
+
+        $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
+
+        $this->assertSame(200, $risposta->response()->getStatusCode(), 'Prezzo zero: il form deve riaprirsi, non tornare alla lista');
+
+        $html = (string) $risposta->response()->getBody();
+
+        $this->assertStringContainsString(esc($entita['errore']), $html, 'Prezzo zero: manca l\'avviso del rifiuto');
+        $this->assertStringContainsString(esc("Il prezzo e' obbligatorio"), $html, 'Prezzo zero: manca il motivo che il modello ha scritto');
+        $this->assertStringNotContainsString(esc($entita['successo']), $html, 'Prezzo zero: non deve annunciare il salvataggio');
+        $this->assertSame($prima, $this->contaRighe($entita), 'Prezzo zero: nessuna riga deve nascere');
+    }
+
+    /**
      * I dati del form presi da una riga vera con il campo sotto esame cambiato:
      * così il POST passa la validazione del controller senza dover elencare a
      * mano i campi obbligatori di ogni entità.
