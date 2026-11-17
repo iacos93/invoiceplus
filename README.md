@@ -303,10 +303,12 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.1`, che chiude un
-difetto dell'arricchimento appena introdotto: una fattura con due indirizzi
-email nello stesso nodo lasciava il fornitore senza indirizzo e CAP. La
-`v0.14.0` riempie l'anagrafica fornitori con indirizzo, contatti e IBAN letti
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.2`, che fa
+restituire `0` a `SupplierModel::saveRecord()` quando il database non ha
+salvato: prima tornava l'id lo stesso e il form annunciava un salvataggio
+mai avvenuto. La `v0.14.1` chiude un difetto dell'arricchimento: una
+fattura con due indirizzi email nello stesso nodo lasciava il fornitore
+senza indirizzo e CAP. La `v0.14.0` riempie l'anagrafica fornitori con indirizzo, contatti e IBAN letti
 dalle fatture elettroniche ricevute, senza mai sovrascrivere un campo già
 scritto, e porta un comando per applicarla ai fornitori già in archivio. La `v0.13.1` ferma al
 salvataggio un codice SIA fuori standard — lettera O o simboli — invece di

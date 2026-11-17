@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.2] — 2026-11-17
+
 ### Corretto
 
 - `SupplierModel::saveRecord()` restituiva l'id anche quando non aveva scritto
