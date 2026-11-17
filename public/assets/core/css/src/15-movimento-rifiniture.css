@@ -21,6 +21,18 @@
 ::view-transition-new(ip-sidebar) { animation: none; }
 ::view-transition-old(root),
 ::view-transition-new(root) { animation-duration: 0.14s; }
+
+/* Cambio del tema chiaro/scuro (html.ip-theme-changing, messa e levata da
+   window.ipSetTheme in layout/theme_head.php). I nomi qui sopra isolano le due
+   barre dallo snapshot della pagina, che e' quello che serve quando si naviga:
+   restano ferme e si sfuma solo il contenuto. Durante un cambio tema invece
+   devono stare dentro lo snapshot, altrimenti il resto della pagina sfuma e
+   loro due cambiano colore di colpo. Il nome va tolto prima che il browser
+   fotografi la pagina: per questo la classe e' gia' presente quando parte
+   la transizione. */
+html.ip-theme-changing .ip-topbar,
+html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
+
 @media (prefers-reduced-motion: reduce) {
   @view-transition { navigation: none; }
 }

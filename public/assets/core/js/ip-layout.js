@@ -89,26 +89,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 })();
 
-// Toggle tema chiaro/scuro — vedi layout/theme_head.php per l'applicazione
-// anticipata e il fallback su prefers-color-scheme.
+// Toggle tema chiaro/scuro — la dissolvenza e il salvataggio della preferenza
+// stanno in window.ipSetTheme (layout/theme_head.php), uguale per tutte le
+// layout: qui c'e' solo il clic.
 (function () {
     var btn = document.getElementById('ip-theme-toggle');
     if (!btn) { return; }
     btn.addEventListener('click', function () {
-        var root = document.documentElement;
-        var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
-        root.dataset.theme = next;
-        root.setAttribute('data-bs-theme', next);
-        try { localStorage.setItem('ip-theme', next); } catch (e) {}
-        // Transizione morbida: abilita le transizioni solo per la durata del
-        // cambio, poi leva la classe cosi' il resto dell'app resta senza
-        // transizioni (il caricamento iniziale resta istantaneo).
-        // La guardia prefers-reduced-motion in custom.css la neutralizza.
-        root.classList.add('ip-theme-animating');
-        if (window.__ipThemeAnim) { clearTimeout(window.__ipThemeAnim); }
-        window.__ipThemeAnim = setTimeout(function () {
-            root.classList.remove('ip-theme-animating');
-        }, 300);
+        window.ipSetTheme(window.__ipTheme === 'dark' ? 'light' : 'dark');
     });
 })();
 

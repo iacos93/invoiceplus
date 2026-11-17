@@ -759,15 +759,34 @@ html::-webkit-scrollbar-thumb:hover { background: var(--ip-border-strong); }
 #main-content #content {
   animation: ip-fade-in 200ms ease both;
 }
-/* Transizione di tema morbida: abilitata solo durante il toggle (la classe
-   .ip-theme-animating e' messa/levata da layout/base.php), così il cambio
-   chiaro<->scuro non e' brusco ma il caricamento iniziale resta istantaneo.
-   La guardia prefers-reduced-motion la neutralizza comunque. */
-html.ip-theme-animating,
-html.ip-theme-animating *,
-html.ip-theme-animating *::before,
-html.ip-theme-animating *::after {
-  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease !important;
+/* Dissolvenza del cambio tema (window.ipSetTheme in layout/theme_head.php).
+   Con le View Transitions il browser fotografa la pagina prima e dopo il
+   cambio e dissolve le due immagini: ogni fotogramma e' una pagina completa,
+   quindi il testo resta leggibile per tutta la transizione e ombre e sfondi
+   sfumano insieme ai colori.
+
+   Prima qui c'era una transition su ogni elemento, attiva solo durante il
+   toggle: il testo sbiadiva a meta' strada (chiaro su chiaro), ombre e
+   sfondi a gradiente scattavano di colpo e la clausola !important spegneva
+   le transizioni dei componenti — il menu che si chiudeva smetteva di
+   sfumare proprio mentre si cambiava tema. */
+/* I selettori partono da html.ip-theme-changing per due motivi: la classe
+   segnala il cambio in corso, e vale anche come precedenza — in
+   15-movimento-rifiniture.css la durata di root e' gia' fissata a 140ms per la
+   navigazione fra pagine, e una regola senza classe perderebbe per ordine di
+   cascata. */
+html.ip-theme-changing::view-transition-old(root),
+html.ip-theme-changing::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: ease;
+}
+/* I due pseudo-elementi non rientrano nella guardia globale su *, qui sopra:
+   con "riduci animazioni" il cambio deve essere immediato. */
+@media (prefers-reduced-motion: reduce) {
+  html.ip-theme-changing::view-transition-old(root),
+  html.ip-theme-changing::view-transition-new(root) {
+    animation: none;
+  }
 }
 /* -----------------------------------------------------------------------------
    1sexies. Primitive di dettaglio — sticky head, zebra, icon-button
@@ -12765,6 +12784,18 @@ tr.is-selectable:has(input:checked) > td { background: var(--ip-primary-soft); }
 ::view-transition-new(ip-sidebar) { animation: none; }
 ::view-transition-old(root),
 ::view-transition-new(root) { animation-duration: 0.14s; }
+
+/* Cambio del tema chiaro/scuro (html.ip-theme-changing, messa e levata da
+   window.ipSetTheme in layout/theme_head.php). I nomi qui sopra isolano le due
+   barre dallo snapshot della pagina, che e' quello che serve quando si naviga:
+   restano ferme e si sfuma solo il contenuto. Durante un cambio tema invece
+   devono stare dentro lo snapshot, altrimenti il resto della pagina sfuma e
+   loro due cambiano colore di colpo. Il nome va tolto prima che il browser
+   fotografi la pagina: per questo la classe e' gia' presente quando parte
+   la transizione. */
+html.ip-theme-changing .ip-topbar,
+html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
+
 @media (prefers-reduced-motion: reduce) {
   @view-transition { navigation: none; }
 }

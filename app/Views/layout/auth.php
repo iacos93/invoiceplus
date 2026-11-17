@@ -157,17 +157,14 @@
 </div>
 
 <script>
-    // Toggle tema chiaro/scuro — vedi layout/theme_head.php per l'applicazione
-    // anticipata e il fallback su prefers-color-scheme.
+    // Toggle tema chiaro/scuro: la dissolvenza e il salvataggio della
+    // preferenza stanno in window.ipSetTheme (layout/theme_head.php), uguale
+    // per le tre layout.
     (function () {
         var btn = document.getElementById('ip-theme-toggle');
         if (!btn) { return; }
         btn.addEventListener('click', function () {
-            var root = document.documentElement;
-            var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
-            root.dataset.theme = next;
-            root.setAttribute('data-bs-theme', next);
-            try { localStorage.setItem('ip-theme', next); } catch (e) {}
+            window.ipSetTheme(window.__ipTheme === 'dark' ? 'light' : 'dark');
         });
     })();
 </script>

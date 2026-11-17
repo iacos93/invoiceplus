@@ -757,15 +757,34 @@ html::-webkit-scrollbar-thumb:hover { background: var(--ip-border-strong); }
 #main-content #content {
   animation: ip-fade-in 200ms ease both;
 }
-/* Transizione di tema morbida: abilitata solo durante il toggle (la classe
-   .ip-theme-animating e' messa/levata da layout/base.php), così il cambio
-   chiaro<->scuro non e' brusco ma il caricamento iniziale resta istantaneo.
-   La guardia prefers-reduced-motion la neutralizza comunque. */
-html.ip-theme-animating,
-html.ip-theme-animating *,
-html.ip-theme-animating *::before,
-html.ip-theme-animating *::after {
-  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease !important;
+/* Dissolvenza del cambio tema (window.ipSetTheme in layout/theme_head.php).
+   Con le View Transitions il browser fotografa la pagina prima e dopo il
+   cambio e dissolve le due immagini: ogni fotogramma e' una pagina completa,
+   quindi il testo resta leggibile per tutta la transizione e ombre e sfondi
+   sfumano insieme ai colori.
+
+   Prima qui c'era una transition su ogni elemento, attiva solo durante il
+   toggle: il testo sbiadiva a meta' strada (chiaro su chiaro), ombre e
+   sfondi a gradiente scattavano di colpo e la clausola !important spegneva
+   le transizioni dei componenti — il menu che si chiudeva smetteva di
+   sfumare proprio mentre si cambiava tema. */
+/* I selettori partono da html.ip-theme-changing per due motivi: la classe
+   segnala il cambio in corso, e vale anche come precedenza — in
+   15-movimento-rifiniture.css la durata di root e' gia' fissata a 140ms per la
+   navigazione fra pagine, e una regola senza classe perderebbe per ordine di
+   cascata. */
+html.ip-theme-changing::view-transition-old(root),
+html.ip-theme-changing::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: ease;
+}
+/* I due pseudo-elementi non rientrano nella guardia globale su *, qui sopra:
+   con "riduci animazioni" il cambio deve essere immediato. */
+@media (prefers-reduced-motion: reduce) {
+  html.ip-theme-changing::view-transition-old(root),
+  html.ip-theme-changing::view-transition-new(root) {
+    animation: none;
+  }
 }
 /* -----------------------------------------------------------------------------
    1sexies. Primitive di dettaglio — sticky head, zebra, icon-button

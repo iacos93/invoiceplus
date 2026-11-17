@@ -51,6 +51,16 @@ Le regole per scrivere le voci e preparare una release sono in
   arrotondati. Ora usa `dropdown-button`, la classe già prevista per i
   pulsanti dentro i menu.
 
+- Il passaggio fra tema chiaro e tema scuro è una dissolvenza sola, invece di
+  un cambio elemento per elemento. Prima ogni testo, bordo e sfondo cambiava
+  per conto suo: a metà strada il testo risultava chiaro su chiaro e per un
+  istante non si leggeva, mentre ombre e pannelli sfumati scattavano di colpo.
+  Con le View Transitions il browser fotografa la pagina prima e dopo il
+  cambio e dissolve le due immagini, quindi ogni fotogramma è una pagina
+  completa e leggibile. Il menu utente e il resto dell'interfaccia continuano
+  a sfumare normalmente. Chi ha attivato «riduci animazioni» nel sistema vede
+  il cambio immediato, e sui browser senza View Transitions non cambia nulla.
+
 ## [v0.15.1] — 2026-11-17
 
 ### Corretto
