@@ -61,6 +61,22 @@ final class SupplierEnrichmentTest extends CodeIgniter\Test\CIUnitTestCase
         );
     }
 
+    public function testEmailWithTwoAddressesKeepsTheFirst(): void
+    {
+        // Caso vero: nel nodo Contatti/Email di una fattura c'erano due
+        // indirizzi. Il valore intero non passa valid_email, il modello non
+        // salva la riga e il fornitore resta senza indirizzo e CAP: si tiene il
+        // primo indirizzo, che è quello che il campo può contenere.
+        $this->assertSame(
+            'support@lundax.com',
+            SupplierModel::firstValidEmail('support@lundax.com invoice@lundax.com')
+        );
+        $this->assertSame('a@b.it', SupplierModel::firstValidEmail(' a@b.it , c@d.it '));
+        $this->assertSame('a@b.it', SupplierModel::firstValidEmail('<a@b.it>'));
+        $this->assertSame('', SupplierModel::firstValidEmail(''));
+        $this->assertSame('', SupplierModel::firstValidEmail('non è una email'));
+    }
+
     public function testKeepsExistingValueEvenWhenDifferent(): void
     {
         $this->assertSame([], SupplierModel::emptyFields(

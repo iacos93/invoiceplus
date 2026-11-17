@@ -114,15 +114,35 @@ class SuppliersEnrich extends BaseCommand
             return EXIT_SUCCESS;
         }
 
-        $campi = 0;
+        $campi  = 0;
+        $falliti = [];
 
         foreach ($updates as $supplierId => $patch) {
             $model->saveRecord($supplierId, $patch);
+
+            // Il modello non lancia: se una validazione fallisce il salvataggio
+            // resta indietro e l'errore finisce in errors(). Contarlo come
+            // riuscito farebbe dire al comando una cosa che non è successa.
+            if ($model->errors() !== []) {
+                $falliti[$supplierId] = $model->errors();
+
+                continue;
+            }
+
             $campi += count($patch);
         }
 
         CLI::write('');
-        CLI::write(sprintf('Aggiornati %d fornitori (%d campi).', count($updates), $campi), 'green');
+        CLI::write(sprintf('Aggiornati %d fornitori (%d campi).', count($updates) - count($falliti), $campi), 'green');
+
+        foreach ($falliti as $supplierId => $errori) {
+            CLI::error(sprintf(
+                '#%d %s: non salvato (%s)',
+                $supplierId,
+                $byId[$supplierId]['supplier_name'],
+                implode(' ', $errori)
+            ));
+        }
 
         return EXIT_SUCCESS;
     }
@@ -177,6 +197,13 @@ class SuppliersEnrich extends BaseCommand
 
             foreach (self::MAP as $column => $key) {
                 $value = trim((string) ($parsed[$key] ?? ''));
+
+                // Un nodo Email può contenere due indirizzi: se ne tiene uno, o
+                // la validazione del modello rifiuta la riga intera e il
+                // fornitore resta senza indirizzo pur avendone uno leggibile.
+                if ($column === 'supplier_email') {
+                    $value = SupplierModel::firstValidEmail($value);
+                }
 
                 if ($value !== '') {
                     $values[$supplierId][$column] = $value;

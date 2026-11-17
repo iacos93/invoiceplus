@@ -9,6 +9,15 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- Un fornitore la cui fattura riporta due indirizzi email nello stesso nodo
+  restava senza anagrafica: il valore intero non superava la validazione e il
+  modello non salvava **nessuno** dei campi della riga, indirizzo e CAP
+  compresi, senza mostrare un errore. Ora si tiene il primo indirizzo valido, e
+  `suppliers:enrich` segnala i fornitori che non è riuscito a salvare invece di
+  contarli come aggiornati.
+
 ## [v0.14.0] — 2026-11-16
 
 ### Aggiunto

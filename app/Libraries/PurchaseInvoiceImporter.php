@@ -195,7 +195,7 @@ class PurchaseInvoiceImporter
                 'supplier_state'     => $parsed['supplier_state'] ?? '',
                 'supplier_zip'       => $parsed['supplier_zip'] ?? '',
                 'supplier_country'   => $parsed['supplier_country'] ?? '',
-                'supplier_email'     => $parsed['supplier_email'] ?? '',
+                'supplier_email'     => SupplierModel::firstValidEmail($parsed['supplier_email'] ?? ''),
                 'supplier_phone'     => $parsed['supplier_phone'] ?? '',
                 'supplier_iban'      => $parsed['supplier_iban'] ?? '',
             ];

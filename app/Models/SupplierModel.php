@@ -236,6 +236,29 @@ class SupplierModel extends IpBaseModel
         return $patch;
     }
 
+    /**
+     * Primo indirizzo email valido dentro un valore che ne contiene più di uno.
+     *
+     * Le fatture elettroniche a volte riportano due indirizzi nello stesso nodo
+     * Contatti/Email («support@… invoice@…»), separati da spazio o virgola.
+     * L'anagrafica ne tiene uno solo, e la regola valid_email rifiuta il valore
+     * intero: il modello allora non salva *nessuno* dei campi della riga, quindi
+     * un doppio indirizzo faceva perdere anche l'indirizzo e il CAP dello stesso
+     * fornitore, senza un errore visibile.
+     */
+    public static function firstValidEmail(?string $value): string
+    {
+        foreach (preg_split('/[\s,;]+/', (string) $value) ?: [] as $candidate) {
+            $candidate = trim($candidate, " \t\n\r\0\x0B<>");
+
+            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
     public function saveRecord(?int $id, array $data): int
     {
         $now = date('Y-m-d H:i:s');
