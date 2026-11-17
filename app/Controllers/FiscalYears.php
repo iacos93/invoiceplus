@@ -96,9 +96,10 @@ class FiscalYears extends BaseController
 
                 // Rifiutati dal modello: nemmeno gli scaglioni vanno scritti,
                 // o resterebbero agganciati a una testata mai salvata.
-                if ($this->model->saveRecord($targetId, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', 'Parametri fiscali non salvati: ' . $this->model->saveErrorSummary());
-
+                if ($this->saveFormRecord($this->model, $targetId, $dbArray, [
+                    'errore' => 'Parametri fiscali non salvati',
+                    'creato' => 'Parametri fiscali ' . $year . ' salvati correttamente',
+                ]) === 0) {
                     return $this->renderForm($id, $post, $this->collectBrackets($post), $this->model->errors());
                 }
 
@@ -106,8 +107,6 @@ class FiscalYears extends BaseController
                     ? ($companyId ?: null)
                     : ($row['company_id'] !== null ? (int) $row['company_id'] : null);
                 $brackets->replaceForYear($year, $this->collectBrackets($post), $bracketCompany);
-
-                session()->setFlashdata('alert_success', 'Parametri fiscali ' . $year . ' salvati correttamente');
 
                 return redirect()->to('/fiscal_years');
             }
