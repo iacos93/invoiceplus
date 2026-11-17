@@ -347,7 +347,15 @@ $areaChart = static function (array $values, array $labels, string $colorVar, ar
     $span  = $hasNeg ? $plotH / 2 : $plotH;
     $zeroY = $hasNeg ? $padT + $plotH / 2 : $padT + $plotH;
     $yOf   = static fn(float $v): float => $zeroY - ($v / $axisMax) * $span;
-    $xOf   = static fn(int $i): float => $padL + $i * $plotW / ($n - 1);
+
+    // La banda del mese è larga quanto la distanza fra due punti, quindi metà
+    // sborda oltre il primo e l'ultimo. Appoggiata al bordo, la banda del primo
+    // mese finiva sopra le etichette della scala: era ritagliata lì, e si
+    // vedeva spostata rispetto al punto che indicava. Mezza banda di margine
+    // per lato le fa stare tutte dentro il riquadro e centrate sul proprio mese.
+    $bandW = $n > 1 ? $plotW / ($n - 1) : $plotW;
+    $inset = $bandW / 2;
+    $xOf   = static fn(int $i): float => $padL + $inset + $i * ($plotW - $bandW) / max(1, $n - 1);
 
     // Etichetta di scala: $axisLabel formatta solo valori positivi (k / M),
     // il segno lo anteponiamo qui per le tacche sotto lo zero.
@@ -378,7 +386,6 @@ $areaChart = static function (array $values, array $labels, string $colorVar, ar
     $dots  = '';
     $xLbl  = '';
     $bands = '';
-    $bandW = $n > 1 ? $plotW / ($n - 1) : $plotW;
     foreach ($values as $i => $v) {
         $cx    = $xOf($i);
         $title = (string) ($labels[$i] ?? '');
@@ -386,7 +393,7 @@ $areaChart = static function (array $values, array $labels, string $colorVar, ar
         $bands .= '<g class="ip-chart-month" tabindex="0" role="img" aria-label="' . esc($title . ': ' . strip_tags(format_currency($v)), 'attr') . '"'
             . $tipAttr($title, [[$meta[$i]['row'] ?? trans('dashboard_profit_label', '', 'Utile di impresa'), format_currency($v), $v < 0 ? 'loss' : 'profit']], $href !== '' ? $openHint : '')
             . $href . '>'
-            . '<rect class="ip-chart-col" x="' . round(max($padL, $cx - $bandW / 2), 1) . '" y="' . ($padT - 6) . '" width="' . round($bandW, 1)
+            . '<rect class="ip-chart-col" x="' . round($cx - $bandW / 2, 1) . '" y="' . ($padT - 6) . '" width="' . round($bandW, 1)
             . '" height="' . ($H - $padT) . '" rx="6" />'
             . '<circle class="ip-area-dot" cx="' . round($cx, 1) . '" cy="' . round($yOf($v), 1) . '" r="3.5" fill="' . $colorVar . '" />'
             . '</g>';

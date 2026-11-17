@@ -9,6 +9,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- L'Indice di redditività lascia mezza banda di spazio ai due lati della
+  curva: la banda che evidenzia il mese è larga quanto la distanza fra due
+  punti, e quella del primo mese veniva ritagliata sul bordo finendo sopra le
+  etichette della scala — si vedeva spostata rispetto al punto che indicava.
+
 ## [v0.14.5] — 2026-11-17
 
 ### Corretto

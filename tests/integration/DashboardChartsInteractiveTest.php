@@ -160,6 +160,41 @@ final class DashboardChartsInteractiveTest extends CIUnitTestCase
         }
     }
 
+    /**
+     * La banda che evidenzia il mese era ritagliata sul bordo sinistro del
+     * riquadro (x = max(padL, centro - metà banda)): la banda del primo mese
+     * finiva sopra le etichette della scala e sembrava spostata rispetto al
+     * suo punto. Ora il riquadro riserva mezza banda per lato.
+     */
+    public function testLaBandaDelMeseStaDentroIlRiquadroEInAsseColPunto(): void
+    {
+        $html = $this->bacheca();
+
+        preg_match('/<svg class="ip-area".*?<\/svg>/s', $html, $area);
+        $this->assertNotEmpty($area, 'Manca il grafico dell\'Indice di redditività');
+
+        preg_match_all(
+            '/<rect class="ip-chart-col" x="([0-9.]+)"[^>]*width="([0-9.]+)"[^>]*\/>\s*<circle class="ip-area-dot" cx="([0-9.]+)"/',
+            $area[0],
+            $bande,
+            PREG_SET_ORDER
+        );
+
+        $this->assertCount(12, $bande, 'Servono dodici bande, una per mese');
+
+        foreach ($bande as $banda) {
+            [$tutta, $x, $larghezza, $cx] = $banda;
+            $centro = (float) $x + (float) $larghezza / 2;
+
+            $this->assertEqualsWithDelta((float) $cx, $centro, 0.2, 'La banda non è centrata sul suo punto: ' . $tutta);
+
+            // 56 è il gutter sinistro del grafico ad area: le etichette di
+            // scala finiscono otto unità prima. Una banda che comincia prima
+            // ci sta sopra.
+            $this->assertGreaterThanOrEqual(56.0, (float) $x, 'La banda esce a sinistra del riquadro: ' . $tutta);
+        }
+    }
+
     public function testIGraficiNonUsanoPiuITitoliNativi(): void
     {
         $html = $this->bacheca();
