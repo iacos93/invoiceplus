@@ -11,6 +11,12 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Creando un valore personalizzato la pagina annunciava «Valore
+  personalizzato creato correttamente» anche quando la riga non era stata
+  scritta: il valore non c'era e non si sapeva perché. Ora l'annuncio arriva
+  solo se il salvataggio è andato a buon fine; altrimenti il form si riapre
+  con il motivo del rifiuto.
+
 - Un prodotto in omaggio si può salvare: il prezzo 0,00 veniva trattato come
   un campo vuoto, quindi il salvataggio si fermava con «Il prezzo è
   obbligatorio». Vale anche per il prezzo d'acquisto, che a zero restava

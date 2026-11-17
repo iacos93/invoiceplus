@@ -68,14 +68,27 @@ class CustomValues extends BaseController
             $post = $request->getPost();
 
             if ($this->customValueModel->validate($post)) {
-                $this->customValueModel->saveCustom($fieldId, $post);
+                $dbArray = $this->customValueModel->dbArrayFromPost($post);
 
-                session()->setFlashdata('alert_success', 'Valore personalizzato creato correttamente');
+                // Il valore appartiene al campo che si sta guardando: la
+                // colonna non ammette NULL e il campo non è nel form.
+                $dbArray['custom_values_field'] = $fieldId;
 
-                return redirect()->to('/custom_values/field/' . $fieldId);
+                // saveFormRecord() e non un salvataggio diretto: se il
+                // modello rifiuta la riga lo zero arriva qui e la pagina dice
+                // perché, invece di annunciare un valore che non esiste.
+                $savedId = $this->saveFormRecord($this->customValueModel, null, $dbArray, [
+                    'errore' => 'Valore personalizzato non salvato',
+                    'creato' => 'Valore personalizzato creato correttamente',
+                ]);
+
+                if ($savedId > 0) {
+                    return redirect()->to('/custom_values/field/' . $fieldId);
+                }
             }
 
-            // Validazione fallita: ripopola i valori dal post per la view
+            // Validazione fallita o scrittura rifiutata: ripopola i valori dal
+            // post per la view
             $this->customValueModel->formValues = $post;
 
             $data = [

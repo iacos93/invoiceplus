@@ -72,17 +72,6 @@ class CustomValueModel extends IpBaseModel
     }
 
     /**
-     * Crea un nuovo valore per il campo (equivalente di save_custom() CI3).
-     */
-    public function saveCustom(int $fieldId, array $post): int
-    {
-        $dbArray = $this->dbArrayFromPost($post);
-        $dbArray['custom_values_field'] = $fieldId;
-
-        return $this->saveRecord(null, $dbArray);
-    }
-
-    /**
      * La colonna custom_values_order non esiste nello schema reale:
      * salvata solo se presente nel DB.
      */

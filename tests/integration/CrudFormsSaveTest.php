@@ -653,6 +653,80 @@ final class CrudFormsSaveTest extends CIUnitTestCase
     }
 
     /**
+     * Il valore personalizzato si crea davvero, e finisce sotto il campo da cui
+     * si è partiti: custom_values_field non è un campo del form e la colonna
+     * non ammette NULL.
+     */
+    public function testValorePersonalizzatoSiCrea(): void
+    {
+        $fieldId = $this->campoPersonalizzatoDiCollaudo();
+        $url     = 'custom_values/create/' . $fieldId;
+
+        $risposta = $this->inviaConToken($url, ['custom_values_value' => 'Collaudo valore'], $url);
+
+        $this->assertSame(302, $risposta->response()->getStatusCode(), 'Valore personalizzato: la creazione deve salvare');
+
+        $riga = $this->testDb->query(
+            'SELECT custom_values_field FROM ip_custom_values WHERE custom_values_value = ?',
+            ['Collaudo valore']
+        )->getRowArray();
+
+        $this->assertNotNull($riga, 'Valore personalizzato: riga non creata');
+        $this->assertSame($fieldId, (int) $riga['custom_values_field'], 'Valore personalizzato: salvato sotto un altro campo');
+    }
+
+    /**
+     * Il modello rifiuta: la pagina non annuncia il salvataggio, dice perché e
+     * resta sul form.
+     *
+     * È il caso che prima sfuggiva: create() scriveva e annunciava senza
+     * guardare l'esito, quindi un valore rifiutato dal database risultava
+     * creato.
+     */
+    #[RunInSeparateProcess]
+    public function testValorePersonalizzatoRifiutatoRestaNelFormSenzaAnnunciare(): void
+    {
+        $fieldId = $this->campoPersonalizzatoDiCollaudo();
+        $url     = 'custom_values/create/' . $fieldId;
+
+        $this->withRoutes([
+            ['GET', 'custom_values/create/(:num)', '\ValoriPersonalizzatiCheRifiuta::create/$1'],
+            ['POST', 'custom_values/create/(:num)', '\ValoriPersonalizzatiCheRifiuta::create/$1'],
+        ]);
+
+        $prima = $this->contaValori();
+
+        $risposta = $this->inviaConToken($url, ['custom_values_value' => 'Collaudo rifiutato'], $url);
+
+        $this->assertSame(200, $risposta->response()->getStatusCode(), 'Rifiuto: il form deve riaprirsi');
+
+        $html = (string) $risposta->response()->getBody();
+
+        $this->assertStringContainsString(esc('Valore personalizzato non salvato'), $html, 'Rifiuto: manca l\'avviso del rifiuto');
+        $this->assertStringNotContainsString(esc('Valore personalizzato creato correttamente'), $html, 'Rifiuto: non deve annunciare il salvataggio');
+        $this->assertSame($prima, $this->contaValori(), 'Rifiuto: nessun valore deve nascere');
+    }
+
+    /**
+     * Un campo personalizzato di collaudo: il seed del CI non ne ha, e i valori
+     * personalizzati non possono esistere senza un campo. Resta nella
+     * transazione, che viene annullata.
+     */
+    private function campoPersonalizzatoDiCollaudo(): int
+    {
+        $this->testDb->query(
+            "INSERT INTO ip_custom_fields (custom_field_table, custom_field_label, custom_field_type) VALUES ('ip_client_custom', 'Campo di collaudo', 'DROPDOWN')"
+        );
+
+        return (int) $this->testDb->insertID();
+    }
+
+    private function contaValori(): int
+    {
+        return (int) $this->testDb->query('SELECT COUNT(*) AS n FROM ip_custom_values')->getRow()->n;
+    }
+
+    /**
      * I dati del form presi da una riga vera con il campo sotto esame cambiato:
      * così il POST passa la validazione del controller senza dover elencare a
      * mano i campi obbligatori di ogni entità.
@@ -1017,3 +1091,23 @@ final class ParametriFiscaliCheRifiuta extends \App\Controllers\FiscalYears
     }
 }
 
+
+/**
+ * Il controller dei valori personalizzati con un modello che rifiuta la
+ * scrittura: prova via HTTP il ramo d'errore della creazione, che prima
+ * annunciava il valore creato senza guardare l'esito.
+ */
+final class ValoriPersonalizzatiCheRifiuta extends \App\Controllers\CustomValues
+{
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->customValueModel = new class extends \App\Models\CustomValueModel {
+            public function saveRecord(?int $id, array $dbArray)
+            {
+                return 0;
+            }
+        };
+    }
+}
