@@ -303,7 +303,9 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.5`, che fa
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.6`, che tiene
+la banda del mese dentro il grafico dell'Indice di redditività e non annuncia
+più un cambio password che il database ha rifiutato. La `v0.14.5` fa
 partire l'Indice di redditività da gennaio dell'anno scelto invece che dal
 dicembre dell'anno prima. La `v0.14.4` toglie le bozze dalla numerazione:
 una fattura in preparazione non consuma il progressivo e in elenco si legge

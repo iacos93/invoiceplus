@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.6] — 2026-11-17
+
 ### Corretto
 
 - Un cambio password rifiutato dal database annunciava comunque «Password
