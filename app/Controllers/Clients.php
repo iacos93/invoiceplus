@@ -88,6 +88,15 @@ class Clients extends BaseController
                 $dbArray  = $this->clientModel->dbArrayFromPost($post);
                 $clientId = $this->clientModel->saveRecord($id, $dbArray);
 
+                // Nessuna riga scritta: niente campi personalizzati da salvare
+                // e nessuna scheda da aprire (la /clients/view/0 è un 404).
+                if ($clientId === 0) {
+                    session()->setFlashdata('alert_error', 'Cliente non salvato: ' . $this->clientModel->saveErrorSummary());
+                    $this->clientModel->formValues = $post;
+
+                    return $this->renderForm($id, $this->clientModel->errors());
+                }
+
                 if (!$id) {
                     $this->clientModel->assignToAllUsers($clientId);
                 }

@@ -53,13 +53,16 @@ class EmailTemplates extends BaseController
 
             if ($this->emailTemplateModel->validate($post)) {
                 $dbArray = $this->emailTemplateModel->dbArrayFromPost($post);
-                $this->emailTemplateModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', $id
-                    ? 'Modello email aggiornato correttamente'
-                    : 'Modello email creato correttamente');
+                if ($this->emailTemplateModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Modello email non salvato: ' . $this->emailTemplateModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', $id
+                        ? 'Modello email aggiornato correttamente'
+                        : 'Modello email creato correttamente');
 
-                return redirect()->to('/email_templates');
+                    return redirect()->to('/email_templates');
+                }
             }
 
             // Validazione fallita: ripopola i valori dal post per la view

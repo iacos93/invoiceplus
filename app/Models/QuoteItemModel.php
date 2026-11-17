@@ -86,7 +86,13 @@ class QuoteItemModel extends IpBaseModel
      */
     public function saveItem(?int $itemId, array $dbArray): int
     {
-        $itemId = $this->saveRecord($itemId, $dbArray);
+        $itemId = (int) $this->saveRecord($itemId, $dbArray);
+
+        // Riga rifiutata (0): niente importi da ricalcolare né preventivo da
+        // risommare su una riga che non esiste.
+        if ($itemId === 0) {
+            return 0;
+        }
 
         (new QuoteItemAmountModel())->calculate($itemId);
 

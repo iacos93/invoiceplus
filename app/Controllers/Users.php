@@ -60,8 +60,22 @@ class Users extends BaseController
                 // Booleano nativo: PostgreSQL rifiuta gli interi su colonne boolean.
                 $dbArray['user_active'] = !empty($post['user_active']);
 
-                $wasNew = $id === null;
-                $id     = (int) $this->userModel->saveRecord($id, $dbArray);
+                $wasNew  = $id === null;
+                $savedId = (int) $this->userModel->saveRecord($id, $dbArray);
+
+                // Nessuna riga scritta: niente campi personalizzati, niente
+                // clienti assegnati e nessun «Utente creato».
+                if ($savedId === 0) {
+                    session()->setFlashdata('alert_error', 'Utente non salvato: ' . $this->userModel->saveErrorSummary());
+                    $this->userModel->formValues = $post;
+
+                    $data           = $this->formViewData($id);
+                    $data['errors'] = $this->userModel->errors();
+
+                    return view('users/form', $data);
+                }
+
+                $id = $savedId;
 
                 // Campi personalizzati (ip_user_custom)
                 $custom = $post['custom'] ?? [];

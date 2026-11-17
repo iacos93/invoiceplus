@@ -94,10 +94,8 @@ class Suppliers extends BaseController
                 // Il modello ha rifiutato la scrittura (validazione o database):
                 // il form resta aperto con i dati inseriti e l'errore, invece di
                 // annunciare un salvataggio che non c'è stato.
-                $errori = $this->supplierModel->errors();
-
-                session()->setFlashdata('alert_error', 'Il fornitore non è stato salvato'
-                    . ($errori === [] ? '.' : ': ' . implode(' ', $errori)));
+                session()->setFlashdata('alert_error', 'Il fornitore non è stato salvato: '
+                    . $this->supplierModel->saveErrorSummary());
             }
 
             $this->supplierModel->formValues = $post;

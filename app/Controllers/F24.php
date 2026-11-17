@@ -111,10 +111,13 @@ class F24 extends BaseController
                     $dbArray['f24_receipt_file'] = $this->storeUpload($receipt);
                 }
 
-                $this->model->saveRecord($id, $dbArray);
-                session()->setFlashdata('alert_success', 'F24 salvato correttamente');
+                if ($this->model->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'F24 non salvato: ' . $this->model->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', 'F24 salvato correttamente');
 
-                return redirect()->to('/f24');
+                    return redirect()->to('/f24');
+                }
             }
 
             $this->model->formValues = $post;

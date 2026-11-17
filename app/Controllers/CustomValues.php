@@ -118,11 +118,14 @@ class CustomValues extends BaseController
 
             if ($this->customValueModel->validate($post)) {
                 $dbArray = $this->customValueModel->dbArrayFromPost($post);
-                $this->customValueModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', 'Valore personalizzato aggiornato correttamente');
+                if ($this->customValueModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Valore personalizzato non salvato: ' . $this->customValueModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', 'Valore personalizzato aggiornato correttamente');
 
-                return redirect()->to('/custom_values/field/' . $fieldId);
+                    return redirect()->to('/custom_values/field/' . $fieldId);
+                }
             }
 
             // Validazione fallita: ripopola i valori dal post per la view

@@ -102,6 +102,27 @@ class PaymentMethodModel extends IpBaseModel
         return $rules;
     }
 
+    /**
+     * In modifica il segnaposto {payment_method_id} va rimesso nella riga.
+     *
+     * Il controller lo mette nel POST perché la regola is_unique possa
+     * escludere la riga che si sta salvando, ma dbArrayFromPost() lo toglie
+     * (non è un campo da scrivere): il modello validava quindi con il
+     * segnaposto vuoto, confrontava il metodo con se stesso e rifiutava
+     * l'aggiornamento. Nessuno se ne accorgeva — il form diceva «aggiornato» e
+     * la riga restava com'era — finché saveRecord() non ha cominciato a
+     * tornare 0. Non è in allowedFields: serve alla validazione e viene
+     * scartato prima della scrittura.
+     */
+    public function saveRecord(?int $id, array $dbArray)
+    {
+        if ($id) {
+            $dbArray['payment_method_id'] = $id;
+        }
+
+        return parent::saveRecord($id, $dbArray);
+    }
+
     public function getAllOrdered(?int $perPage = null, int $page = 1): array
     {
         $this->orderBy('payment_method_name', 'ASC');

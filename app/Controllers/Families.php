@@ -51,13 +51,16 @@ class Families extends BaseController
 
             if ($this->familyModel->validate($post)) {
                 $dbArray = $this->familyModel->dbArrayFromPost($post);
-                $this->familyModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', $id
-                    ? 'Famiglia aggiornata correttamente'
-                    : 'Famiglia creata correttamente');
+                if ($this->familyModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Famiglia non salvata: ' . $this->familyModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', $id
+                        ? 'Famiglia aggiornata correttamente'
+                        : 'Famiglia creata correttamente');
 
-                return redirect()->to('/families');
+                    return redirect()->to('/families');
+                }
             }
 
             // Validazione fallita: ripopola i valori dal post per la view

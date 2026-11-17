@@ -50,13 +50,16 @@ class InvoiceGroups extends BaseController
 
             if ($this->invoiceGroupModel->validate($post)) {
                 $dbArray = $this->invoiceGroupModel->dbArrayFromPost($post);
-                $this->invoiceGroupModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', $id
-                    ? 'Gruppo fatture aggiornato correttamente'
-                    : 'Gruppo fatture creato correttamente');
+                if ($this->invoiceGroupModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Gruppo fatture non salvato: ' . $this->invoiceGroupModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', $id
+                        ? 'Gruppo fatture aggiornato correttamente'
+                        : 'Gruppo fatture creato correttamente');
 
-                return redirect()->to('/invoice_groups');
+                    return redirect()->to('/invoice_groups');
+                }
             }
 
             $this->invoiceGroupModel->formValues = $post;

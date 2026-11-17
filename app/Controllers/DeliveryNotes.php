@@ -74,6 +74,15 @@ class DeliveryNotes extends BaseController
 
                 $noteId = (int) $this->model->saveRecord($id, $dbArray);
 
+                // Senza la testata non ci sono righe da salvare, e un
+                // documento annunciato ma assente è peggio di un errore.
+                if ($noteId === 0) {
+                    session()->setFlashdata('alert_error', 'Documento di trasporto non salvato: ' . $this->model->saveErrorSummary());
+                    $this->model->formValues = $post;
+
+                    return view('delivery_notes/form', $this->formData($id, $this->model->errors()));
+                }
+
                 (new DeliveryNoteItemModel())->replaceItems($noteId, $this->postedItems($post));
 
                 session()->setFlashdata('alert_success', 'Documento di trasporto salvato correttamente');

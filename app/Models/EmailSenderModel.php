@@ -67,7 +67,9 @@ class EmailSenderModel extends IpBaseModel
     {
         $savedId = (int) $this->saveRecord($id, $dbArray);
 
-        if (!empty($dbArray['sender_is_default'])) {
+        // Con un salvataggio rifiutato (0) questa riga non è la predefinita:
+        // togliere il flag a tutte le altre lascerebbe l'azienda senza casella.
+        if ($savedId !== 0 && !empty($dbArray['sender_is_default'])) {
             $builder = $this->builder()->where('sender_id !=', $savedId);
 
             if ($companyId = active_company_id()) {

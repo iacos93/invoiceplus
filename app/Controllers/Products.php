@@ -53,13 +53,16 @@ class Products extends BaseController
 
             if ($this->productModel->validate($post)) {
                 $dbArray = $this->productModel->dbArrayFromPost($post);
-                $this->productModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', $id
-                    ? 'Prodotto aggiornato correttamente'
-                    : 'Prodotto creato correttamente');
+                if ($this->productModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Prodotto non salvato: ' . $this->productModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', $id
+                        ? 'Prodotto aggiornato correttamente'
+                        : 'Prodotto creato correttamente');
 
-                return redirect()->to('/products');
+                    return redirect()->to('/products');
+                }
             }
 
             // Validazione fallita: ripopola i valori dal post per la view

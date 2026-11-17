@@ -421,7 +421,9 @@ class BankAccountModel extends IpBaseModel
     {
         $savedId = (int) $this->saveRecord($id, $dbArray);
 
-        if (!empty($dbArray['bank_account_is_default'])) {
+        // Con un salvataggio rifiutato (0) il conto non esiste e azzerare il
+        // predefinito di tutti gli altri lascerebbe nessun conto predefinito.
+        if ($savedId !== 0 && !empty($dbArray['bank_account_is_default'])) {
             $this->companyBuilder()
                  ->where('bank_account_id !=', $savedId)
                  ->update(['bank_account_is_default' => false]);

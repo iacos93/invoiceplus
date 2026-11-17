@@ -135,7 +135,9 @@ class CompanyModel extends IpBaseModel
 
         $savedId = (int) $this->saveRecord($id, $dbArray);
 
-        if (!empty($dbArray['company_is_default'])) {
+        // Con un salvataggio rifiutato (0) nessuna azienda è la predefinita:
+        // togliere il flag alle altre lascerebbe l'installazione senza.
+        if ($savedId !== 0 && !empty($dbArray['company_is_default'])) {
             $this->builder()->where('company_id !=', $savedId)
                  ->update(['company_is_default' => false]);
         }

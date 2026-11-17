@@ -76,13 +76,16 @@ class Tasks extends BaseController
 
             if ($this->taskModel->validate($post)) {
                 $dbArray = $this->taskModel->dbArrayFromPost($post);
-                $this->taskModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', $id
-                    ? "Attivita' aggiornata correttamente"
-                    : "Attivita' creata correttamente");
+                if ($this->taskModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', "Attivita' non salvata: " . $this->taskModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', $id
+                        ? "Attivita' aggiornata correttamente"
+                        : "Attivita' creata correttamente");
 
-                return redirect()->to('/tasks');
+                    return redirect()->to('/tasks');
+                }
             }
 
             // Validazione fallita: ripopola i valori dal post per la view

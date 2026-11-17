@@ -37,10 +37,13 @@ class ExpenseCategories extends BaseController
             $post['expense_category_deductible'] = !empty($post['expense_category_deductible']);
 
             if ($this->model->validate($post)) {
-                $this->model->saveRecord($id, $this->model->dbArrayFromPost($post));
-                session()->setFlashdata('alert_success', 'Categoria salvata correttamente');
+                if ($this->model->saveRecord($id, $this->model->dbArrayFromPost($post)) === 0) {
+                    session()->setFlashdata('alert_error', 'Categoria non salvata: ' . $this->model->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', 'Categoria salvata correttamente');
 
-                return redirect()->to('/expense_categories');
+                    return redirect()->to('/expense_categories');
+                }
             }
 
             $this->model->formValues = $post;

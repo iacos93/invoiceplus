@@ -55,13 +55,16 @@ class Projects extends BaseController
 
             if ($this->projectModel->validate($post)) {
                 $dbArray = $this->projectModel->dbArrayFromPost($post);
-                $this->projectModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', $id
-                    ? 'Progetto aggiornato correttamente'
-                    : 'Progetto creato correttamente');
+                if ($this->projectModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Progetto non salvato: ' . $this->projectModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', $id
+                        ? 'Progetto aggiornato correttamente'
+                        : 'Progetto creato correttamente');
 
-                return redirect()->to('/projects');
+                    return redirect()->to('/projects');
+                }
             }
 
             // Validazione fallita: ripopola i valori dal post per la view

@@ -51,13 +51,16 @@ class Units extends BaseController
 
             if ($this->unitModel->validate($post)) {
                 $dbArray = $this->unitModel->dbArrayFromPost($post);
-                $this->unitModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', $id
-                    ? 'Unita\' aggiornata correttamente'
-                    : 'Unita\' creata correttamente');
+                if ($this->unitModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Unita\' non salvata: ' . $this->unitModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', $id
+                        ? 'Unita\' aggiornata correttamente'
+                        : 'Unita\' creata correttamente');
 
-                return redirect()->to('/units');
+                    return redirect()->to('/units');
+                }
             }
 
             // Validazione fallita: ripopola i valori dal post per la view

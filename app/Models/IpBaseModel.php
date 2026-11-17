@@ -325,20 +325,43 @@ class IpBaseModel extends Model
     }
 
     /**
-     * Salva (insert o update) e ritorna l'id.
+     * Salva (insert o update) e ritorna l'id, oppure 0 se non ha scritto nulla.
      * Equivalente di Response_Model::save() + MY_Model::save() in CI3.
+     *
+     * insert()/update() di CI4 non lanciano: quando la validazione rifiuta la
+     * riga tornano false e il motivo finisce in errors(). Il ramo update
+     * ignorava quell'esito e restituiva comunque l'id, quindi ogni form che si
+     * fida del valore — e sono quasi tutti — annunciava «salvato
+     * correttamente» su una riga rimasta com'era, e in modifica riportava
+     * l'utente sulla scheda come se avesse scritto. Lo zero è il segnale:
+     * nessun id valido è zero, e serve un int anche per l'insert, altrimenti
+     * false non si distingue con === 0.
      */
     public function saveRecord(?int $id, array $dbArray)
     {
         if ($id) {
-            $this->update($id, $dbArray);
-            return $id;
+            return $this->update($id, $dbArray) ? $id : 0;
         }
 
         // Solo in creazione: in aggiornamento riscrivere company_id
         // sposterebbe un documento da un'azienda all'altra a ogni salvataggio
         // fatto mentre si è posizionati su un'altra.
-        return $this->insert($this->withCompany($dbArray), true);
+        return (int) $this->insert($this->withCompany($dbArray), true);
+    }
+
+    /**
+     * Motivo leggibile dell'ultimo salvataggio rifiutato.
+     *
+     * saveRecord() torna 0 e le regole che hanno bloccato la riga stanno in
+     * errors(): i form lo mostrano senza dover conoscere il modello. Se non
+     * c'è un errore di validazione è stato il database a rifiutare, e va detto
+     * senza inventare un dettaglio che non abbiamo.
+     */
+    public function saveErrorSummary(): string
+    {
+        $errori = $this->errors();
+
+        return $errori === [] ? 'salvataggio rifiutato dal database' : implode(' ', $errori);
     }
 
     /**

@@ -219,10 +219,13 @@ class Expenses extends BaseController
                     $dbArray['supplier_id'] = $this->resolveSupplier($dbArray);
                 }
 
-                $this->expenseModel->saveRecord($id, $dbArray);
-                session()->setFlashdata('alert_success', $id ? 'Spesa aggiornata correttamente' : 'Spesa registrata correttamente');
+                if ($this->expenseModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Spesa non salvata: ' . $this->expenseModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', $id ? 'Spesa aggiornata correttamente' : 'Spesa registrata correttamente');
 
-                return redirect()->to('/expenses');
+                    return redirect()->to('/expenses');
+                }
             }
 
             $this->expenseModel->formValues = $post;

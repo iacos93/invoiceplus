@@ -52,13 +52,16 @@ class TaxRates extends BaseController
 
             if ($this->taxRateModel->validate($post)) {
                 $dbArray = $this->taxRateModel->dbArrayFromPost($post);
-                $this->taxRateModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', $id
-                    ? 'Aliquota aggiornata correttamente'
-                    : 'Aliquota creata correttamente');
+                if ($this->taxRateModel->saveRecord($id, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Aliquota non salvata: ' . $this->taxRateModel->saveErrorSummary());
+                } else {
+                    session()->setFlashdata('alert_success', $id
+                        ? 'Aliquota aggiornata correttamente'
+                        : 'Aliquota creata correttamente');
 
-                return redirect()->to('/tax_rates');
+                    return redirect()->to('/tax_rates');
+                }
             }
 
             // Validazione fallita: ripopola i valori dal post per la view

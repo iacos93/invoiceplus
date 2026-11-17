@@ -149,6 +149,12 @@ class ItemModel extends IpBaseModel
     {
         $savedId = (int) $this->saveRecord($id, is_object($dbArray) ? (array) $dbArray : $dbArray);
 
+        // Riga rifiutata (0): niente importi da ricalcolare e niente fattura
+        // da sommare, il calcolo andrebbe su una riga che non esiste.
+        if ($savedId === 0) {
+            return 0;
+        }
+
         (new ItemAmountModel())->calculate($savedId);
 
         if (!$recalculateInvoice) {

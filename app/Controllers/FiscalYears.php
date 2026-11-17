@@ -94,7 +94,13 @@ class FiscalYears extends BaseController
                     $dbArray['company_id'] = $companyId ?: null;
                 }
 
-                $this->model->saveRecord($targetId, $dbArray);
+                // Rifiutati dal modello: nemmeno gli scaglioni vanno scritti,
+                // o resterebbero agganciati a una testata mai salvata.
+                if ($this->model->saveRecord($targetId, $dbArray) === 0) {
+                    session()->setFlashdata('alert_error', 'Parametri fiscali non salvati: ' . $this->model->saveErrorSummary());
+
+                    return $this->renderForm($id, $post, $this->collectBrackets($post), $this->model->errors());
+                }
 
                 $bracketCompany = $targetId === null
                     ? ($companyId ?: null)

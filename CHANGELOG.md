@@ -9,6 +9,25 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- `IpBaseModel::saveRecord()` restituiva l'id anche quando `update()` falliva,
+  quindi ogni form che si fida del valore — fornitori a parte, corretto nella
+  v0.14.2 — annunciava «salvato correttamente» su una riga rimasta com'era. Ora
+  torna `0` quando non scrive, e i form di clienti, spese, F24, fatture,
+  preventivi e documenti di trasporto, e quelli dei vocabolari (unità, famiglie,
+  aliquote, prodotti, attività, progetti, metodi e categorie) restano aperti con
+  il messaggio dell'errore invece di dichiarare il salvataggio.
+- La modifica di un metodo di pagamento non veniva mai scritta: la regola
+  `is_unique` con segnaposto arrivava al modello senza l'id della riga, così
+  confrontava il metodo con se stesso e rifiutava l'aggiornamento in silenzio.
+  Prima lo si scopriva solo perché il nome non cambiava; ora il modello rimette
+  l'id nella riga da validare e il salvataggio passa.
+- Con un salvataggio rifiutato il conto, la casella e l'azienda predefiniti
+  venivano tolti a **tutte** le altre righe, lasciando nessun predefinito: il
+  flag ora si aggiorna solo se la riga è stata scritta. Le righe di fattura e
+  preventivo non ricalcolano gli importi su un id che non esiste.
+
 ## [v0.14.2] — 2026-11-17
 
 ### Corretto
