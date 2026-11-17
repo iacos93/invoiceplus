@@ -9,6 +9,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- Un prodotto in omaggio si può salvare: il prezzo 0,00 veniva trattato come
+  un campo vuoto, quindi il salvataggio si fermava con «Il prezzo è
+  obbligatorio». Vale anche per il prezzo d'acquisto, che a zero restava
+  vuoto in tabella invece di dire zero.
+
 ## [v0.15.0] — 2026-11-17
 
 ### Aggiunto

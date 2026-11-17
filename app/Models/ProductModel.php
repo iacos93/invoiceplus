@@ -118,6 +118,20 @@ class ProductModel extends IpBaseModel
     }
 
     /**
+     * Importo dal POST: NULL se il campo è vuoto, altrimenti il valore
+     * normalizzato secondo i separatori di sistema. Lo zero resta zero, che è
+     * il motivo per cui non si usa empty().
+     */
+    private function amountFromPost(mixed $valore): ?string
+    {
+        if (! is_scalar($valore) || trim((string) $valore) === '') {
+            return null;
+        }
+
+        return $this->standardizeAmount((string) $valore);
+    }
+
+    /**
      * Costruisce l'array da salvare su DB a partire dal POST,
      * con la stessa normalizzazione del db_array() originale CI3:
      * importi standardizzati, foreign key vuote convertite a NULL.
@@ -129,13 +143,12 @@ class ProductModel extends IpBaseModel
         // L'azienda la decide withCompany() in creazione, mai il form.
         unset($dbArray['company_id']);
 
-        $dbArray['product_price'] = empty($dbArray['product_price'])
-            ? null
-            : $this->standardizeAmount($dbArray['product_price']);
-
-        $dbArray['purchase_price'] = empty($dbArray['purchase_price'] ?? null)
-            ? null
-            : $this->standardizeAmount($dbArray['purchase_price']);
+        // Vuoto è «prezzo non impostato» e va a NULL; zero no. Con empty()
+        // anche '0' risultava vuoto, quindi un prodotto in omaggio partiva
+        // come NULL e la validazione lo rifiutava con «Il prezzo e'
+        // obbligatorio»: 0,00 è un prezzo come gli altri.
+        $dbArray['product_price']  = $this->amountFromPost($dbArray['product_price'] ?? null);
+        $dbArray['purchase_price'] = $this->amountFromPost($dbArray['purchase_price'] ?? null);
 
         $dbArray['family_id']   = empty($dbArray['family_id'] ?? null) ? null : $dbArray['family_id'];
         $dbArray['unit_id']     = empty($dbArray['unit_id'] ?? null) ? null : $dbArray['unit_id'];

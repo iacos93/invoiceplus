@@ -556,17 +556,13 @@ final class CrudFormsSaveTest extends CIUnitTestCase
     }
 
     /**
-     * Lo stesso rifiuto, ma da un modello vero: nessun controller di prova.
+     * Un prodotto in omaggio: 0,00 è un prezzo come gli altri e si salva.
      *
-     * Prezzo «0»: la validazione del controller lo accetta — guarda il POST
-     * com'è arrivato, e per la regola required «0» è un valore — mentre
-     * dbArrayFromPost() lo trasforma in NULL, perché empty() considera vuoto
-     * anche lo zero, e insert() rivalida l'array che sta per scrivere e
-     * rifiuta. È il caso 0 di saveFormRecord() raggiungibile con dati veri di
-     * un form convertito: il form deve riaprirsi con l'avviso e il motivo,
-     * senza annunciare il salvataggio.
+     * Prima dbArrayFromPost() lo trattava come campo vuoto — empty('0') è vero
+     * — lo mandava a NULL e la validazione rifiutava il salvataggio con «Il
+     * prezzo e' obbligatorio».
      */
-    public function testPrezzoZeroTieneApertoIlFormSenzaAnnunciare(): void
+    public function testPrezzoZeroSiSalva(): void
     {
         // Il provider incapsula ogni entità per PHPUnit 13: qui serve la riga.
         $entita = self::entitaScriventi()['prodotti'][0];
@@ -574,18 +570,46 @@ final class CrudFormsSaveTest extends CIUnitTestCase
         $dati = $this->datiDelForm($entita, 'Collaudo Prezzo Zero', true);
         $dati['product_price'] = '0';
 
+        $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
+
+        $this->assertSame(302, $risposta->response()->getStatusCode(), 'Prezzo zero: il prodotto deve salvarsi e tornare alla lista');
+
+        $riga = $this->testDb->query(
+            'SELECT product_price FROM ip_products WHERE product_name = ?',
+            ['Collaudo Prezzo Zero']
+        )->getRowArray();
+
+        $this->assertNotNull($riga, 'Prezzo zero: riga non creata');
+        $this->assertSame(0.0, (float) $riga['product_price'], 'Prezzo zero: il prezzo salvato non è zero');
+    }
+
+    /**
+     * Il caso 0 di saveFormRecord() con un modello vero: nessun controller di
+     * prova, il rifiuto arriva dalla validazione del modello.
+     *
+     * Una data di fine «0» passa la validazione del controller — per la regola
+     * required «0» è un valore — e la conversione della data la manda a NULL,
+     * dove required la rifiuta. Il form deve riaprirsi con l'avviso, senza
+     * annunciare il salvataggio.
+     */
+    public function testDataImpossibileTieneApertoIlFormSenzaAnnunciare(): void
+    {
+        $entita = self::entitaScriventi()['attivita'][0];
+
+        $dati = $this->datiDelForm($entita, 'Collaudo Data Impossibile', true);
+        $dati['task_finish_date'] = '0';
+
         $prima = $this->contaRighe($entita);
 
         $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
 
-        $this->assertSame(200, $risposta->response()->getStatusCode(), 'Prezzo zero: il form deve riaprirsi, non tornare alla lista');
+        $this->assertSame(200, $risposta->response()->getStatusCode(), 'Data impossibile: il form deve riaprirsi');
 
         $html = (string) $risposta->response()->getBody();
 
-        $this->assertStringContainsString(esc($entita['errore']), $html, 'Prezzo zero: manca l\'avviso del rifiuto');
-        $this->assertStringContainsString(esc("Il prezzo e' obbligatorio"), $html, 'Prezzo zero: manca il motivo che il modello ha scritto');
-        $this->assertStringNotContainsString(esc($entita['successo']), $html, 'Prezzo zero: non deve annunciare il salvataggio');
-        $this->assertSame($prima, $this->contaRighe($entita), 'Prezzo zero: nessuna riga deve nascere');
+        $this->assertStringContainsString(esc($entita['errore']), $html, 'Data impossibile: manca l\'avviso del rifiuto');
+        $this->assertStringNotContainsString(esc($entita['successo']), $html, 'Data impossibile: non deve annunciare il salvataggio');
+        $this->assertSame($prima, $this->contaRighe($entita), 'Data impossibile: nessuna riga deve nascere');
     }
 
     /**
