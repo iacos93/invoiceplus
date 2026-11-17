@@ -113,6 +113,11 @@ jobs:
         env:
           PGPASSWORD: postgres
 
+      # pdftotext (poppler-utils) serve ai test che leggono il testo del PDF
+      # generato: senza, si saltano, e un salto fa fallire il passo dei test.
+      - name: Installa pdftotext
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
       # Un test che si salta non fa fallire PHPUnit, e per mesi i test
       # d'integrazione sono stati "verdi" senza aver verificato niente. PHPUnit
       # 13 non ha un --fail-on-skipped, quindi la guardia sta qui: se il
@@ -199,6 +204,11 @@ jobs:
       # stessi; ci_seed_mysql.sql va aggiornata insieme all'altra.
       - name: Popola i dati di prova
         run: mysql -h 127.0.0.1 -u invoiceplus -pinvoiceplus --default-character-set=utf8mb4 invoiceplus_test < tests/fixtures/ci_seed_mysql.sql
+
+      # pdftotext (poppler-utils) serve ai test che leggono il testo del PDF
+      # generato: senza, si saltano, e un salto fa fallire il passo dei test.
+      - name: Installa pdftotext
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
 
       - name: Esegue i test
         run: |
@@ -403,6 +413,11 @@ jobs:
         run: psql -h 127.0.0.1 -U postgres -d invoiceplus_test -v ON_ERROR_STOP=1 -f tests/fixtures/ci_seed.sql
         env:
           PGPASSWORD: postgres
+
+      # pdftotext (poppler-utils) serve ai test che leggono il testo del PDF
+      # generato: senza, si saltano, e un salto fa fallire il passo dei test.
+      - name: Installa pdftotext
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
 
       - name: Esegue i test con la copertura
         run: |
