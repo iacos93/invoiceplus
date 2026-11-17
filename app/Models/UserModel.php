@@ -272,7 +272,13 @@ class UserModel extends IpBaseModel
         // non veniva mai creato -- nemmeno dal form Utenti.
         $this->skipValidation(true);
 
-        return parent::saveRecord($id, $dbArray);
+        try {
+            return parent::saveRecord($id, $dbArray);
+        } finally {
+            // La deroga vale per questa scrittura sola: lasciarla accesa
+            // salterebbe i controlli della successiva sullo stesso modello.
+            $this->skipValidation(false);
+        }
     }
 
     /**

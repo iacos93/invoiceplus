@@ -54,6 +54,22 @@ final class UserModelSaveChangePasswordTest extends CIUnitTestCase
 
         $this->assertFalse($model->skipValidation, 'skipValidation è rimasto acceso dopo il cambio password');
     }
+
+    /**
+     * Anche saveRecord() deroga alla validazione interna (la conferma password
+     * non le arriva), e con lo stesso difetto se la deroga restasse accesa:
+     * la scrittura successiva sullo stesso modello salterebbe i controlli.
+     */
+    public function testSaveRecordSpegneLaDerogaAllaValidazione(): void
+    {
+        $model = new UserModelSpia();
+        $model->esito = true;
+
+        $this->assertSame(7, $model->saveRecord(7, ['user_name' => 'Amministratore']));
+
+        $this->assertTrue($model->derogaAllaScrittura, 'La scrittura deve poter contare sulla deroga');
+        $this->assertFalse($model->skipValidation, 'skipValidation è rimasto acceso dopo il salvataggio');
+    }
 }
 
 /**
@@ -66,9 +82,13 @@ final class UserModelSpia extends UserModel
 
     public bool $esito = true;
 
+    /** Deroga alla validazione com'era al momento della scrittura. */
+    public bool $derogaAllaScrittura = false;
+
     public function update($id = null, $row = null): bool
     {
-        $this->scritto = ['id' => $id, 'row' => (array) $row];
+        $this->scritto              = ['id' => $id, 'row' => (array) $row];
+        $this->derogaAllaScrittura  = $this->skipValidation;
 
         return $this->esito;
     }
