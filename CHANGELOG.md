@@ -9,6 +9,18 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.7] — 2026-11-17
+
+### Modificato
+
+- Il pulsante «Altre azioni» di fatture e preventivi non mostra più i tre
+  puntini accanto all'etichetta, che ripetevano la freccia del menu; restano
+  solo su schermo stretto, dove l'etichetta è nascosta.
+
+- «Altre azioni» ha lo stesso aspetto di «Visualizza»: bianco con bordo,
+  come gli altri pulsanti secondari. Prima era trasparente e sulla barra
+  grigia sembrava un pulsante disattivato.
+
 ## [v0.14.6] — 2026-11-17
 
 ### Corretto

@@ -1219,34 +1219,10 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
 /* Le voci che sono form POST (CSRF) dentro il menu: niente margine che
    spaccherebbe la riga, la voce (il button) gestisce larghezza e hover. */
 .ip-doc-actions .dropdown-menu form { margin: 0; }
-/* Pulsante "Altro": stile ghost per creare la gerarchia visiva
-   Salva (pieno verde) > Visualizza (pieno primario) > Altro (trasparente).
-   Il bottone secondario pieno competeva con l'azione primaria; il ghost
-   lo arretra senza nasconderlo, e l'icona ellipsis resta il segnale
-   che indica "qui c'è di più". */
-.ip-doc-actions .dropdown > .btn-secondary.dropdown-toggle {
-  background: transparent;
-  border: 1px solid var(--ip-border-strong);
-  color: var(--ip-text-muted);
-  box-shadow: none;
-  transition: background-color var(--ip-transition), border-color var(--ip-transition), color var(--ip-transition);
-}
-.ip-doc-actions .dropdown > .btn-secondary.dropdown-toggle:hover,
-.ip-doc-actions .dropdown > .btn-secondary.dropdown-toggle:focus-visible {
-  background: var(--ip-hover);
-  border-color: var(--ip-border-strong-hover);
-  color: var(--ip-text);
-}
-.ip-doc-actions .dropdown > .btn-secondary.dropdown-toggle:focus-visible {
-  box-shadow: var(--ip-shadow-focus);
-}
-.ip-doc-actions .dropdown > .btn-secondary.dropdown-toggle .fa {
-  opacity: 0.7;
-  transition: opacity var(--ip-transition);
-}
-.ip-doc-actions .dropdown > .btn-secondary.dropdown-toggle:hover .fa {
-  opacity: 1;
-}
+/* Pulsante "Altro": stesso stile secondario di Visualizza ed Esporta.
+   Era un ghost trasparente pensato per arretrarlo, ma sulla barra grigia
+   risultava un terzo stile accanto agli altri due, e sembrava disattivato.
+   La gerarchia la danno già Salva pieno e la freccia del menu. */
 
 .ip-email-config-form {
   margin-bottom: 20px;

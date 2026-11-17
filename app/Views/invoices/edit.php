@@ -51,7 +51,7 @@ endif;
 
 $actions .= '<div class="dropdown">'
     . '<button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="' . esc(trans('more_actions', '', 'Altre azioni')) . '">'
-    . '<i class="fa fa-solid fa-ellipsis-h" aria-hidden="true"></i> <span class="d-none d-md-inline">' . esc(trans('more_actions', '', 'Altro')) . '</span>'
+    . '<i class="fa fa-solid fa-ellipsis-h d-md-none" aria-hidden="true"></i><span class="d-none d-md-inline">' . esc(trans('more_actions', '', 'Altro')) . '</span>'
     . '</button>'
     . '<ul class="dropdown-menu dropdown-menu-end">' . $more . '</ul>'
     . '</div>';

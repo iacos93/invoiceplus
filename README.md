@@ -303,7 +303,9 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.6`, che tiene
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.7`, che dà a «Altre azioni» di
+fatture e preventivi lo stesso aspetto degli altri pulsanti secondari, senza
+i tre puntini accanto all'etichetta. La `v0.14.6` tiene
 la banda del mese dentro il grafico dell'Indice di redditività e non annuncia
 più un cambio password che il database ha rifiutato. La `v0.14.5` fa
 partire l'Indice di redditività da gennaio dell'anno scelto invece che dal
