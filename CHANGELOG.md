@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.5] — 2026-11-17
+
 ### Corretto
 
 - Con un anno scelto l'Indice di redditività cominciava con il dicembre

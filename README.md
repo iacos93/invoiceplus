@@ -303,10 +303,11 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.4`, che toglie
-le bozze dalla numerazione: una fattura in preparazione non consuma il
-progressivo e in elenco si legge «Bozza #id» invece del solo id, che
-sembrava un numero assegnato. La `v0.14.3` fa restituire `0` anche a
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.5`, che fa
+partire l'Indice di redditività da gennaio dell'anno scelto invece che dal
+dicembre dell'anno prima. La `v0.14.4` toglie le bozze dalla numerazione:
+una fattura in preparazione non consuma il progressivo e in elenco si legge
+«Bozza #id». La `v0.14.3` fa restituire `0` anche a
 `IpBaseModel::saveRecord()` quando il database non salva, così i form non
 annunciano salvataggi mai avvenuti. La `v0.14.2` aveva corretto lo stesso difetto sul solo modello fornitori. La `v0.14.1` chiude un difetto dell'arricchimento: una
 fattura con due indirizzi email nello stesso nodo lasciava il fornitore
