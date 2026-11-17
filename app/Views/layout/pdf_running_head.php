@@ -31,3 +31,21 @@ echo pdf_running_head_marker([
     'name'    => $name,
     'details' => implode(' · ', $details),
 ]);
+
+// La stessa fascia per l'anteprima a schermo, dove i fogli li compone
+// layout/preview_sheet.php e non dompdf: il blocco è nascosto ovunque tranne
+// che dentro un .doc-page dopo il primo, quindi nel PDF non compare (lì la
+// disegna pdf_create()) e non si duplica.
+$_logoSrc = logo_data_uri(document_logo('invoice_logo', $document));
+?>
+<div class="doc-running-head">
+    <table class="layout doc-running-head__row">
+        <tr>
+            <td class="doc-running-head__logo"><?php if ($_logoSrc !== ''): ?><img src="<?= $_logoSrc ?>" alt=""><?php endif; ?></td>
+            <td class="doc-running-head__text">
+                <?php if ($name !== ''): ?><div class="doc-running-head__name"><?= htmlsc($name) ?></div><?php endif; ?>
+                <?php if ($details !== []): ?><div class="doc-running-head__details"><?= htmlsc(implode(' · ', $details)) ?></div><?php endif; ?>
+            </td>
+        </tr>
+    </table>
+</div>

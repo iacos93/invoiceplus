@@ -186,6 +186,28 @@ html.ip-sheet-embedded body.doc-paged {
    testo, altrimenti lo coprirebbe. */
 .doc-page.is-tall .doc-footer { position: static; margin-top: 10px; }
 
+/* Carta intestata dei fogli dopo il primo (layout/pdf_running_head.php):
+   stesse misure di quella che pdf_create() disegna nel PDF, cioè fascia nei
+   primi 24 mm e corpo che riparte a 30 mm. Fuori dai fogli dell'anteprima il
+   blocco non si vede mai: nel PDF la fascia è disegnata, non impaginata. */
+.doc-running-head { display: none; }
+.doc-page.has-head { padding-top: 30mm; }
+.doc-page.has-head .doc-page__body { height: 245mm; }
+.doc-page .doc-running-head {
+    display: block;
+    position: absolute;
+    left: 15mm;
+    right: 15mm;
+    top: 10mm;
+    height: 14mm;
+    border-bottom: 0.5pt solid #ccc;
+}
+table.layout.doc-running-head__row td { vertical-align: top; }
+.doc-running-head__logo img { max-height: 11mm; max-width: 55mm; }
+table.layout.doc-running-head__row td.doc-running-head__text { text-align: right; }
+.doc-running-head__name { font-size: 9pt; font-weight: bold; line-height: 1.3; }
+.doc-running-head__details { font-size: 7pt; color: #6b6b6b; line-height: 1.6; }
+
 /* Numerazione per foglio: "1 / 3", come in calce al PDF. Il "numero /" lo
    compone counter(page) solo in stampa; qui il conteggio è noto e lo scrive
    lo script, quindi il pseudo-elemento va spento. */

@@ -49,9 +49,12 @@
         body.style.zoom = '';
 
         var footer = body.querySelector('.doc-footer');
+        // Carta intestata: non scorre con il testo, si ripete in cima ai
+        // fogli dopo il primo (come nel PDF, vedi layout/pdf_running_head).
+        var head = body.querySelector('.doc-running-head');
         var flow = [];
         for (var i = 0; i < body.children.length; i++) {
-            if (body.children[i] !== footer) { flow.push(body.children[i]); }
+            if (body.children[i] !== footer && body.children[i] !== head) { flow.push(body.children[i]); }
         }
         if (!flow.length) { return; }
 
@@ -73,9 +76,13 @@
         probeBody.className = 'doc-page__body';
         probe.appendChild(probeBody);
         wrap.appendChild(probe);
-        var limit = probeBody.clientHeight;
+        var firstLimit = probeBody.clientHeight;
+        // I fogli con la carta intestata hanno meno spazio per il corpo.
+        probe.classList.add('has-head');
+        var headLimit = head ? probeBody.clientHeight : firstLimit;
         wrap.removeChild(probe);
-        if (!limit) { body.removeChild(wrap); return; }
+        if (!firstLimit || !headLimit) { body.removeChild(wrap); return; }
+        var limit = firstLimit;
 
         var content = null;  // .doc-page__body della pagina in corso
 
@@ -86,6 +93,11 @@
             inner.className = 'doc-page__body';
             page.appendChild(inner);
             if (footer) { page.appendChild(footer.cloneNode(true)); }
+            if (head && wrap.querySelector('.doc-page')) {
+                page.classList.add('has-head');
+                page.appendChild(head.cloneNode(true));
+                limit = headLimit;
+            }
             wrap.appendChild(page);
             content = inner;
             return inner;

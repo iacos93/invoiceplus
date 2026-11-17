@@ -9,7 +9,14 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.15.1] — 2026-11-17
+
 ### Corretto
+
+- La carta intestata delle pagine dopo la prima compare anche
+  nell'anteprima a schermo di fatture, preventivi e DDT, non solo nel PDF
+  scaricato: i fogli dal secondo in poi hanno in alto logo e dati
+  dell'azienda e il corpo riparte sotto, come su carta.
 
 - Il form dell'F24 non validava niente: una scadenza vuota arrivava al
   database e su PostgreSQL si chiudeva con una pagina d'errore, invece di

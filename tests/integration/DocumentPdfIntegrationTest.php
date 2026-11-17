@@ -229,6 +229,10 @@ final class DocumentPdfIntegrationTest extends CIUnitTestCase
 
         $pdf  = pdf_render($html);
         $file = getenv('IP_PDF_DUMP') ?: tempnam(sys_get_temp_dir(), 'ip-lunga-') . '.pdf';
+        if (getenv('IP_PDF_DUMP')) {
+            // Accanto al PDF l'HTML dell'anteprima, come lo serve preview_sheet.
+            file_put_contents(preg_replace('/\.pdf$/', '', $file) . '.html', str_replace('<html ', '<html class="ip-sheet-embedded" ', $html));
+        }
         file_put_contents($file, $pdf);
 
         $pagine = explode("\f", rtrim((string) shell_exec(escapeshellarg($pdftotext) . ' ' . escapeshellarg($file) . ' -'), "\f"));
