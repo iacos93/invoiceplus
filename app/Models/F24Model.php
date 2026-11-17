@@ -24,18 +24,81 @@ class F24Model extends IpBaseModel
         'f24_date_created',
     ];
 
+    /**
+     * Le regole vere della delega, non solo l'elenco dei campi scrivibili.
+     *
+     * Mancavano del tutto: il controller chiamava validate() su un modello
+     * senza regole, quindi qualsiasi cosa passava e una scadenza vuota
+     * arrivava all'INSERT di una colonna NOT NULL — su PostgreSQL una pagina
+     * d'errore al posto dell'avviso sul campo.
+     *
+     * Le date sono già convertite in Y-m-d dal controller prima di arrivare
+     * qui, e la regola è stretta su quel formato: date_to_mysql() lascia
+     * passare intatta una stringa che non riesce a interpretare, e senza il
+     * formato scritto valid_date() accetterebbe anche «domani» (usa
+     * strtotime()). L'importo è già normalizzato, quindi il controllo è solo
+     * che sia un numero.
+     */
+    protected $validationRules = [
+        'f24_due_date'         => 'required|valid_date[Y-m-d]',
+        'f24_amount'           => 'permit_empty|numeric',
+        'f24_period'           => 'permit_empty|max_length[20]',
+        'f24_paid_date'        => 'permit_empty|valid_date[Y-m-d]',
+        'bank_account_id'      => 'permit_empty|is_natural',
+        'f24_note'             => 'permit_empty',
+        'f24_file'             => 'permit_empty',
+        'f24_receipt_protocol' => 'permit_empty|max_length[60]',
+    ];
+
+    protected $validationMessages = [
+        'f24_due_date' => [
+            'required'   => 'La scadenza è obbligatoria',
+            'valid_date' => 'La scadenza non è una data valida',
+        ],
+        'f24_amount' => [
+            'numeric' => "L'importo deve essere un numero",
+        ],
+        'f24_period' => [
+            'max_length' => 'Il periodo non può superare i 20 caratteri',
+        ],
+        'f24_paid_date' => [
+            'valid_date' => 'La data di pagamento non è una data valida',
+        ],
+        'bank_account_id' => [
+            'is_natural' => 'Il conto di addebito scelto non è valido',
+        ],
+        'f24_receipt_protocol' => [
+            'max_length' => 'Il protocollo della quietanza non può superare i 60 caratteri',
+        ],
+    ];
+
+    /**
+     * L'elenco dei campi scrivibili è lo stesso delle regole: una seconda
+     * lista da tenere allineata è il modo in cui i due elenchi divergono.
+     */
     public function validationRulesLegacy(): array
     {
-        return [
-            'f24_due_date'    => 'required',
-            'f24_amount'      => 'required',
-            'f24_period'      => 'permit_empty|max_length[20]',
-            'f24_paid_date'   => 'permit_empty',
-            'bank_account_id' => 'permit_empty',
-            'f24_note'        => 'permit_empty',
-            'f24_file'        => 'permit_empty',
-            'f24_receipt_protocol' => 'permit_empty|max_length[60]',
-        ];
+        return $this->validationRules;
+    }
+
+    /**
+     * Il form manda la stringa vuota per «nessun conto».
+     *
+     * La colonna è un intero e il campo accetta il vuoto, quindi il vuoto va
+     * scritto come NULL. Su PostgreSQL ci pensa già coerceForColumns(), ma
+     * solo lì: su MariaDB la stringa arriva al database così com'è e la
+     * riga viene rifiutata («Incorrect integer value: ''»). Convertirla qui
+     * la rende uguale sui due motori, prima che la differenza si veda.
+     */
+    public function dbArrayFromPost(array $post): array
+    {
+        $dbArray = parent::dbArrayFromPost($post);
+
+        if (array_key_exists('bank_account_id', $dbArray) && $dbArray['bank_account_id'] === '') {
+            $dbArray['bank_account_id'] = null;
+        }
+
+        return $dbArray;
     }
 
     /**

@@ -727,6 +727,61 @@ final class CrudFormsSaveTest extends CIUnitTestCase
     }
 
     /**
+     * Il form F24 valida davvero: senza scadenza la riga non arriva al
+     * database.
+     *
+     * ip_f24.f24_due_date non ammette NULL e non ha un valore predefinito,
+     * quindi quel salvataggio si fermava sull'INSERT: su PostgreSQL una pagina
+     * d'errore al posto del form con l'avviso sul campo.
+     */
+    public function testF24SenzaScadenzaRestaNelFormConAvvisoSulCampo(): void
+    {
+        $entita = self::entitaScriventi()['f24'][0];
+
+        $dati = $this->datiDelForm($entita, 'Collaudo Scadenza', true);
+        $dati['f24_due_date'] = '';
+
+        $prima = $this->contaRighe($entita);
+
+        $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
+
+        $this->assertSame(200, $risposta->response()->getStatusCode(), 'Scadenza vuota: il form deve riaprirsi');
+
+        $html = (string) $risposta->response()->getBody();
+
+        $this->assertStringContainsString(esc('La scadenza è obbligatoria'), $html, 'Scadenza vuota: manca l\'avviso sul campo');
+        $this->assertStringNotContainsString(esc($entita['successo']), $html, 'Scadenza vuota: non deve annunciare il salvataggio');
+        $this->assertSame($prima, $this->contaRighe($entita), 'Scadenza vuota: nessuna riga deve nascere');
+    }
+
+    /**
+     * «Nessun conto» si salva come NULL.
+     *
+     * La colonna è un intero e il form manda la stringa vuota: PostgreSQL la
+     * rifiuta con una pagina d'errore, MariaDB la converte in 0 — un conto che
+     * non esiste, che poi l'abbinamento bancario prova a usare.
+     */
+    public function testF24SenzaContoDiAddebitoSiSalva(): void
+    {
+        $entita = self::entitaScriventi()['f24'][0];
+
+        $dati = $this->datiDelForm($entita, 'Collaudo Senza Conto', true);
+        $dati['bank_account_id'] = '';
+
+        $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
+
+        $this->assertSame(302, $risposta->response()->getStatusCode(), 'Senza conto: la delega deve salvarsi');
+
+        $riga = $this->testDb->query(
+            'SELECT bank_account_id FROM ip_f24 WHERE f24_note = ?',
+            ['Collaudo Senza Conto']
+        )->getRowArray();
+
+        $this->assertNotNull($riga, 'Senza conto: riga non creata');
+        $this->assertNull($riga['bank_account_id'], 'Senza conto: il conto deve restare vuoto, non zero');
+    }
+
+    /**
      * I dati del form presi da una riga vera con il campo sotto esame cambiato:
      * così il POST passa la validazione del controller senza dover elencare a
      * mano i campi obbligatori di ogni entità.

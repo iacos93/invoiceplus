@@ -263,7 +263,14 @@ class F24 extends BaseController
 
                 // Se il pagamento era già registrato (dall'estratto conto) la
                 // sua data resta: la quietanza si allega, non la riscrive.
+                //
+                // Scadenza e importo non cambiano, ma vanno nell'array:
+                // update() rivalida la riga che riceve, e senza di loro la
+                // scadenza obbligatoria mancherebbe — l'abbinamento non
+                // scriverebbe niente pur risultando riuscito.
                 $this->model->update($f24Id, [
+                    'f24_due_date'         => $current['f24_due_date'],
+                    'f24_amount'           => $current['f24_amount'],
                     'f24_paid_date'        => $current['f24_paid_date'] ?: $data['date'],
                     'f24_receipt_file'     => $stored,
                     'f24_receipt_protocol' => $data['protocol'],

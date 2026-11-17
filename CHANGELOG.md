@@ -11,6 +11,14 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Il form dell'F24 non validava niente: una scadenza vuota arrivava al
+  database e su PostgreSQL si chiudeva con una pagina d'errore, invece di
+  dire cosa mancava. Il modello ora ha le sue regole — scadenza obbligatoria
+  e in formato data, importo numerico, periodo e protocollo della quietanza
+  entro la lunghezza della colonna — e il form si riapre con l'avviso sul
+  campo. Si salva anche la delega senza conto di addebito: «Nessuno» mandava
+  la stringa vuota in una colonna intera, che il database rifiutava.
+
 - Creando un valore personalizzato la pagina annunciava «Valore
   personalizzato creato correttamente» anche quando la riga non era stata
   scritta: il valore non c'era e non si sapeva perché. Ora l'annuncio arriva
