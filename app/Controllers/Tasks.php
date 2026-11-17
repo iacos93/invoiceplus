@@ -74,6 +74,20 @@ class Tasks extends BaseController
                 }
             }
 
+            // Il progetto deve essere dell'azienda attiva: il perimetro
+            // dell'attività passa da progetto e cliente, quindi un id pescato
+            // altrove farebbe comparire l'attività nella lista di un'altra
+            // azienda. Un id inesistente lo scarta la stessa ricerca.
+            $projectId = (int) ($post['project_id'] ?? 0);
+
+            if ($projectId > 0 && !(new ProjectModel())->findScoped($projectId)) {
+                $this->taskModel->formValues = $post;
+
+                return $this->renderForm($id, [
+                    'project_id' => 'Il progetto scelto non esiste o non è di questa azienda',
+                ]);
+            }
+
             if ($this->taskModel->validate($post)) {
                 $dbArray = $this->taskModel->dbArrayFromPost($post);
 

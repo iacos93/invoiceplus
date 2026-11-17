@@ -589,6 +589,46 @@ final class CrudFormsSaveTest extends CIUnitTestCase
     }
 
     /**
+     * Un'attività senza progetto non si salva.
+     *
+     * Il form offriva «Nessun progetto», ma ip_tasks.project_id non ammette
+     * NULL: quel salvataggio si fermava sul database (su PostgreSQL con una
+     * pagina di errore) e, anche se la colonna lo accettasse, una riga senza
+     * progetto non apparterrebbe a nessuna azienda e la vedrebbero tutte. Qui
+     * il form non lo offre più e il server rifiuta sia il campo vuoto sia un
+     * progetto che non è di questa azienda.
+     */
+    public function testAttivitaSenzaProgettoRestaNelFormSenzaSalvare(): void
+    {
+        $entita = self::entitaScriventi()['attivita'][0];
+
+        $prima = $this->contaRighe($entita);
+
+        $ultimaPagina = null;
+
+        foreach ([
+            ''       => 'Il progetto è obbligatorio',
+            '999999' => 'Il progetto scelto non esiste o non è di questa azienda',
+        ] as $progetto => $atteso) {
+            $dati = $this->datiDelForm($entita, 'Collaudo Senza Progetto', true);
+            $dati['project_id'] = (string) $progetto;
+
+            $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
+            $ultimaPagina = (string) $risposta->response()->getBody();
+
+            $this->assertSame(200, $risposta->response()->getStatusCode(), 'Progetto «' . $progetto . '»: il form deve riaprirsi');
+            $this->assertStringContainsString(esc($atteso), $ultimaPagina, 'Progetto «' . $progetto . '»: manca il motivo');
+            $this->assertStringNotContainsString(esc($entita['successo']), $ultimaPagina, 'Progetto «' . $progetto . '»: non deve annunciare il salvataggio');
+        }
+
+        // La scelta è obbligatoria anche nella pagina: niente più opzione
+        // vuota, e il campo è segnato required.
+        $this->assertMatchesRegularExpression('/name="project_id"[^>]*required/', (string) $ultimaPagina, 'Il selettore del progetto deve essere obbligatorio');
+        $this->assertStringNotContainsString('<option value="">', (string) $ultimaPagina, 'Il form non deve più offrire «Nessun progetto»');
+        $this->assertSame($prima, $this->contaRighe($entita), 'Nessuna attività deve nascere senza progetto');
+    }
+
+    /**
      * I dati del form presi da una riga vera con il campo sotto esame cambiato:
      * così il POST passa la validazione del controller senza dover elencare a
      * mano i campi obbligatori di ogni entità.

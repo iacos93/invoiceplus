@@ -49,7 +49,10 @@ Se l'opzione `projects_enabled` è attiva (Impostazioni > Generali), la sidebar
 mostra **Attività** con progetti e task. Le attività hanno stato (non iniziata,
 in corso, completata, in attesa), prezzo, aliquota e data di fine, e si
 collegano a un progetto (e quindi al cliente del progetto); servono a tenere
-traccia del lavoro da fatturare, non generano documenti da sole.
+traccia del lavoro da fatturare, non generano documenti da sole. Il progetto
+è obbligatorio: senza, l'attività non apparterrebbe a nessun cliente e quindi
+nemmeno a un'azienda. Se non c'è ancora nessun progetto, il form lo dice
+invece di far compilare un'attività che non si può salvare.
 
 ## Campi personalizzati
 

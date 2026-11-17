@@ -650,6 +650,7 @@ return array (
   'task_price' => 'Prezzo attività',
   'new_task' => 'Nuova attività',
   'select_project' => 'Seleziona il progetto',
+  'task_project_needed' => 'Non ci sono progetti: creane uno prima di salvare l\'attività.',
   'task_finish_date' => 'Data fine',
   'alert_no_client_assigned' => 'Nessun cliente associato a questo progetto.',
   'not_started' => 'Non iniziata',

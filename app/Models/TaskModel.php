@@ -20,14 +20,28 @@ class TaskModel extends IpBaseModel
         'tax_rate_id',
     ];
 
+    // Il progetto è obbligatorio, nonostante il form offrisse «Nessun
+    // progetto»: ip_tasks.project_id non ammette NULL, quindi quel salvataggio
+    // si fermava sul database (su PostgreSQL con una pagina di errore). E
+    // nemmeno avrebbe senso ammetterlo, perché il perimetro dell'attività
+    // passa da progetto e cliente: una riga senza progetto non appartiene a
+    // nessuna azienda, e per la regola delle righe con company_id NULL la
+    // vedrebbero tutte.
     protected $validationRules = [
         'task_name'        => 'required',
         'task_description' => 'permit_empty',
         'task_price'       => 'required',
         'task_finish_date' => 'required',
-        'project_id'       => 'permit_empty',
+        'project_id'       => 'required|is_natural_no_zero',
         'task_status'      => 'permit_empty',
         'tax_rate_id'      => 'permit_empty',
+    ];
+
+    protected $validationMessages = [
+        'project_id' => [
+            'required'           => 'Il progetto è obbligatorio',
+            'is_natural_no_zero' => 'Il progetto è obbligatorio',
+        ],
     ];
 
     public function validationRulesLegacy(): array

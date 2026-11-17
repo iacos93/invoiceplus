@@ -91,15 +91,27 @@
 
                         <div class="ip-doc-field">
                             <label class="ip-doc-label" for="project_id"><?= trans('project') ?></label>
-                            <select name="project_id" id="project_id" class="form-control simple-select"<?= $disabled ?>>
-                                <option value=""><?= trans('select_project') ?></option>
-                                <?php foreach ($projects as $project): ?>
-                                    <option value="<?= esc($project['project_id']) ?>"
-                                        <?= (string) $model->formValue('project_id') === (string) $project['project_id'] ? 'selected' : '' ?>>
-                                        <?= esc($project['project_name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <?php if ($projects === []): ?>
+                                <p class="ip-field-hint">
+                                    <?= trans('task_project_needed', '', 'Non ci sono progetti: creane uno prima di salvare l\'attività.') ?>
+                                </p>
+                            <?php else: ?>
+                                <?php // Niente «Nessun progetto»: la colonna non ammette NULL,
+                                      // e un'attività senza progetto non sarebbe di nessuna
+                                      // azienda. ?> 
+                                <select name="project_id" id="project_id" class="form-control simple-select" required<?= $disabled ?>
+                                        data-placeholder="<?= esc(trans('select_project'), 'attr') ?>">
+                                    <?php foreach ($projects as $project): ?>
+                                        <option value="<?= esc($project['project_id']) ?>"
+                                            <?= (string) $model->formValue('project_id') === (string) $project['project_id'] ? 'selected' : '' ?>>
+                                            <?= esc($project['project_name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            <?php endif; ?>
+                            <?php if (!empty($errors['project_id'])): ?>
+                                <span class="ip-field-error"><?= esc($errors['project_id']) ?></span>
+                            <?php endif; ?>
                         </div>
 
                         <div class="ip-doc-field">

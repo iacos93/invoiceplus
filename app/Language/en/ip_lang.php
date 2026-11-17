@@ -623,6 +623,7 @@ return array (
   'task_price' => 'Task price',
   'new_task' => 'New task',
   'select_project' => 'Select project',
+  'task_project_needed' => 'There are no projects: create one before saving the task.',
   'task_finish_date' => 'Finish date',
   'alert_no_client_assigned' => 'No client assigned to this project.',
   'not_started' => 'Not started',

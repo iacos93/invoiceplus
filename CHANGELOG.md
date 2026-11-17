@@ -11,6 +11,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Il form dell'attività non offre più «Nessun progetto»: la colonna del
+  progetto non ammette un valore vuoto, quindi quel salvataggio si fermava sul
+  database e su PostgreSQL si chiudeva con una pagina di errore invece di dire
+  cosa mancava. Il progetto ora è obbligatorio e deve essere dell'azienda
+  attiva; se non ce n'è ancora nessuno, il form lo dice invece di far
+  compilare un'attività che non si può salvare.
+
 - Nelle liste di fatture, preventivi e spese la barra dei mesi somma un anno
   solo anche con «Tutti gli anni» in topbar: gli importi sotto i mesi sono
   quelli dell'anno in corso, non il totale di quel mese su tutti gli anni.
