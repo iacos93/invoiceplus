@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.4] — 2026-11-17
+
 ### Corretto
 
 - Una fattura in bozza senza numero lo mostrava come id: in elenco, in

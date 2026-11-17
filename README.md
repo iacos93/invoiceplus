@@ -303,11 +303,12 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.3`, che fa
-restituire `0` anche a `IpBaseModel::saveRecord()` quando il database non ha
-salvato: prima ogni form annunciava salvataggi mai avvenuti, e così è emerso
-che la modifica di un metodo di pagamento non veniva scritta affatto. La
-`v0.14.2` aveva corretto lo stesso difetto sul solo modello fornitori. La `v0.14.1` chiude un difetto dell'arricchimento: una
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.4`, che toglie
+le bozze dalla numerazione: una fattura in preparazione non consuma il
+progressivo e in elenco si legge «Bozza #id» invece del solo id, che
+sembrava un numero assegnato. La `v0.14.3` fa restituire `0` anche a
+`IpBaseModel::saveRecord()` quando il database non salva, così i form non
+annunciano salvataggi mai avvenuti. La `v0.14.2` aveva corretto lo stesso difetto sul solo modello fornitori. La `v0.14.1` chiude un difetto dell'arricchimento: una
 fattura con due indirizzi email nello stesso nodo lasciava il fornitore
 senza indirizzo e CAP. La `v0.14.0` riempie l'anagrafica fornitori con indirizzo, contatti e IBAN letti
 dalle fatture elettroniche ricevute, senza mai sovrascrivere un campo già
