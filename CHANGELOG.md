@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.1] — 2026-11-17
+
 ### Corretto
 
 - Un fornitore la cui fattura riporta due indirizzi email nello stesso nodo
