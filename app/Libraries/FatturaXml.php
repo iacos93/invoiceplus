@@ -763,25 +763,6 @@ class FatturaXml
         $t   = static fn($node): string => trim((string) ($node ?? ''));
         $num = static fn($node): float => (float) str_replace(',', '.', trim((string) ($node ?? '0')));
 
-        $party = static function ($node) use ($t): array {
-            $anag = $node->DatiAnagrafici->Anagrafica ?? null;
-            $sede = $node->Sede ?? null;
-
-            return [
-                'vat'      => $t($node->DatiAnagrafici->IdFiscaleIVA->IdCodice ?? null),
-                'country'  => $t($node->DatiAnagrafici->IdFiscaleIVA->IdPaese ?? null) ?: $t($sede->Nazione ?? null),
-                'tax_code' => $t($node->DatiAnagrafici->CodiceFiscale ?? null),
-                'name'     => $t($anag->Denominazione ?? null),
-                'first'    => $t($anag->Nome ?? null),
-                'last'     => $t($anag->Cognome ?? null),
-                'address'  => trim($t($sede->Indirizzo ?? null) . ' ' . $t($sede->NumeroCivico ?? null)),
-                'zip'      => $t($sede->CAP ?? null),
-                'city'     => $t($sede->Comune ?? null),
-                'state'    => $t($sede->Provincia ?? null),
-                'nation'   => $t($sede->Nazione ?? null),
-            ];
-        };
-
         $lines = [];
         foreach ($body->DatiBeniServizi->DettaglioLinee ?? [] as $line) {
             $discountPercent = 0.0;
@@ -856,8 +837,8 @@ class FatturaXml
             'format'        => strtoupper($t($flat['versione'] ?? null) ?: $t($header->DatiTrasmissione->FormatoTrasmissione ?? null)),
             'sdi_code'      => $t($header->DatiTrasmissione->CodiceDestinatario ?? null),
             'sdi_pec'       => $t($header->DatiTrasmissione->PECDestinatario ?? null),
-            'supplier'      => $party($header->CedentePrestatore),
-            'customer'      => $party($header->CessionarioCommittente),
+            'supplier'      => $this->party($header->CedentePrestatore) + ['iban' => $this->paymentIban($body)],
+            'customer'      => $this->party($header->CessionarioCommittente),
             'document_type' => strtoupper($t($general->TipoDocumento)) ?: 'TD01',
             'number'        => $t($general->Numero),
             'date'          => $t($general->Data),
@@ -911,6 +892,65 @@ class FatturaXml
      *     number: string, date: string, amount: float, tax: float, total: float
      * }|null
      */
+    /**
+     * Dati anagrafici di una parte del tracciato: identificativi, sede e
+     * contatti.
+     *
+     * Sta in un metodo solo perché le due letture — parseIssued() per una
+     * fattura emessa, parse() per una ricevuta — devono dire la stessa cosa.
+     * Quando ognuna aveva il suo estratto, la seconda si fermava a nome e
+     * P.IVA: indirizzo, CAP, comune, provincia, email e telefono venivano letti
+     * dal file e buttati, e ogni fornitore nasceva senza coordinate pur avendo
+     * in archivio le sue fatture.
+     *
+     * @return array<string, string>
+     */
+    private function party($node): array
+    {
+        $anag     = $node->DatiAnagrafici->Anagrafica ?? null;
+        $sede     = $node->Sede ?? null;
+        $contatti = $node->Contatti ?? null;
+        $t        = static fn($value): string => trim((string) ($value ?? ''));
+
+        return [
+            'vat'      => $t($node->DatiAnagrafici->IdFiscaleIVA->IdCodice ?? null),
+            'country'  => $t($node->DatiAnagrafici->IdFiscaleIVA->IdPaese ?? null) ?: $t($sede->Nazione ?? null),
+            'tax_code' => $t($node->DatiAnagrafici->CodiceFiscale ?? null),
+            'name'     => $t($anag->Denominazione ?? null),
+            'first'    => $t($anag->Nome ?? null),
+            'last'     => $t($anag->Cognome ?? null),
+            'address'  => trim($t($sede->Indirizzo ?? null) . ' ' . $t($sede->NumeroCivico ?? null)),
+            'zip'      => $t($sede->CAP ?? null),
+            'city'     => $t($sede->Comune ?? null),
+            'state'    => $t($sede->Provincia ?? null),
+            'nation'   => $t($sede->Nazione ?? null),
+            'email'    => $t($contatti->Email ?? null),
+            'phone'    => $t($contatti->Telefono ?? null),
+        ];
+    }
+
+    /**
+     * IBAN su cui è stato disposto il pagamento del documento.
+     *
+     * Non sta nella parte anagrafica ma in DatiPagamento, ed è l'unica traccia
+     * delle coordinate del fornitore dentro una fattura ricevuta: senza questa
+     * lettura un bonifico va ricomposto a mano dall'anteprima.
+     */
+    private function paymentIban($body): string
+    {
+        foreach ($body->DatiPagamento ?? [] as $pagamento) {
+            foreach ($pagamento->DettaglioPagamento ?? [] as $dettaglio) {
+                $iban = trim((string) ($dettaglio->IBAN ?? ''));
+
+                if ($iban !== '') {
+                    return $iban;
+                }
+            }
+        }
+
+        return '';
+    }
+
     public function parse(string $xml): ?array
     {
         $xml = $this->stripBom($xml);
@@ -1001,11 +1041,23 @@ class FatturaXml
 
         $date = trim((string) ($general->Data ?? ''));
 
+        // Sede e contatti del cedente: servono all'anagrafica del fornitore, e
+        // fino a ieri venivano letti e persi (vedi party()).
+        $parte = $this->party($header->CedentePrestatore);
+
         return [
             'document_type'     => $type !== '' ? $type : 'TD01',
             'supplier_name'     => $name !== '' ? $name : 'Fornitore sconosciuto',
             'supplier_vat'      => $vat,
             'supplier_tax_code' => trim((string) ($supplier->CodiceFiscale ?? '')),
+            'supplier_address'  => $parte['address'],
+            'supplier_zip'      => $parte['zip'],
+            'supplier_city'     => $parte['city'],
+            'supplier_state'    => $parte['state'],
+            'supplier_country'  => $parte['nation'] !== '' ? $parte['nation'] : $parte['country'],
+            'supplier_email'    => $parte['email'],
+            'supplier_phone'    => $parte['phone'],
+            'supplier_iban'     => $this->paymentIban($body),
             'customer_vat'      => $customerVat,
             'customer_tax_code' => trim((string) ($customerIds->CodiceFiscale ?? '')),
             'number'            => trim((string) ($general->Numero ?? '')),

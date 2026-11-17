@@ -182,14 +182,37 @@ class PurchaseInvoiceImporter
             $supplier        = $this->supplierModel->findExisting($parsed['supplier_vat'], $parsed['supplier_name']);
             $createdSupplier = !$supplier;
 
-            $supplierId = $supplier
-                ? (int) $supplier['supplier_id']
-                : $this->supplierModel->saveRecord(null, [
-                    'supplier_name'     => $parsed['supplier_name'],
-                    'supplier_vat_id'   => $parsed['supplier_vat'],
-                    'supplier_tax_code' => $parsed['supplier_tax_code'],
-                    'supplier_active'   => true,
-                ]);
+            // La fattura porta anche sede e contatti del cedente: finora venivano
+            // letti e buttati, e ogni fornitore nasceva senza indirizzo. Si
+            // riempiono solo i campi vuoti (emptyFields): una fattura arrivata
+            // dallo stabilimento non deve riscrivere la sede dell'anagrafica.
+            $anagrafica = [
+                'supplier_name'      => $parsed['supplier_name'],
+                'supplier_vat_id'    => $parsed['supplier_vat'],
+                'supplier_tax_code'  => $parsed['supplier_tax_code'],
+                'supplier_address_1' => $parsed['supplier_address'] ?? '',
+                'supplier_city'      => $parsed['supplier_city'] ?? '',
+                'supplier_state'     => $parsed['supplier_state'] ?? '',
+                'supplier_zip'       => $parsed['supplier_zip'] ?? '',
+                'supplier_country'   => $parsed['supplier_country'] ?? '',
+                'supplier_email'     => $parsed['supplier_email'] ?? '',
+                'supplier_phone'     => $parsed['supplier_phone'] ?? '',
+                'supplier_iban'      => $parsed['supplier_iban'] ?? '',
+            ];
+
+            if ($supplier) {
+                $supplierId = (int) $supplier['supplier_id'];
+                $patch      = SupplierModel::emptyFields($supplier, $anagrafica);
+
+                if ($patch !== []) {
+                    $this->supplierModel->saveRecord($supplierId, $patch);
+                }
+            } else {
+                $supplierId = $this->supplierModel->saveRecord(
+                    null,
+                    SupplierModel::emptyFields([], $anagrafica) + ['supplier_active' => true]
+                );
+            }
 
             // 'xml' e non un'altra etichetta: la lista spese e il form leggono
             // esattamente questo valore per mostrare il badge "XML" e la voce

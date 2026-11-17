@@ -9,6 +9,22 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Aggiunto
+
+- Il comando `suppliers:enrich` riempie i campi vuoti dell'anagrafica fornitori
+  — indirizzo, CAP, comune, provincia, nazione, email, telefono, IBAN — leggendo
+  gli XML delle fatture elettroniche già importate; con `--dry-run` mostra il
+  diff e non scrive niente. Vince il documento più recente, e un campo già
+  compilato non viene mai toccato.
+
+### Modificato
+
+- L'importazione di una fattura elettronica di acquisto riempie l'anagrafica del
+  fornitore con la sede e i contatti che il documento riporta, invece di fermarsi
+  a nome, P.IVA e codice fiscale: prima ogni fornitore nuovo nasceva senza
+  indirizzo pur essendo il dato dentro il file appena letto, e un fornitore
+  esistente non veniva aggiornato nemmeno nei campi vuoti.
+
 ## [v0.13.1] — 2026-11-16
 
 ### Corretto

@@ -56,6 +56,92 @@ final class FatturaXmlTest extends CodeIgniter\Test\CIUnitTestCase
 XML;
     }
 
+    public function testParseKeepsSupplierAddressContactsAndIban(): void
+    {
+        $xml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<p:FatturaElettronica xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2" versione="FPR12">
+  <FatturaElettronicaHeader>
+    <CedentePrestatore>
+      <DatiAnagrafici>
+        <IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>01234567890</IdCodice></IdFiscaleIVA>
+        <Anagrafica><Denominazione>Fornitore Srl</Denominazione></Anagrafica>
+      </DatiAnagrafici>
+      <Sede>
+        <Indirizzo>Via del Lavoro</Indirizzo>
+        <NumeroCivico>40</NumeroCivico>
+        <CAP>20010</CAP>
+        <Comune>Baranzate</Comune>
+        <Provincia>MI</Provincia>
+        <Nazione>IT</Nazione>
+      </Sede>
+      <Contatti>
+        <Telefono>0212345678</Telefono>
+        <Email>amministrazione@fornitore.it</Email>
+      </Contatti>
+    </CedentePrestatore>
+    <CessionarioCommittente>
+      <DatiAnagrafici>
+        <IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>02369560038</IdCodice></IdFiscaleIVA>
+        <Anagrafica><Denominazione>Cliente</Denominazione></Anagrafica>
+      </DatiAnagrafici>
+    </CessionarioCommittente>
+  </FatturaElettronicaHeader>
+  <FatturaElettronicaBody>
+    <DatiGenerali>
+      <DatiGeneraliDocumento>
+        <TipoDocumento>TD01</TipoDocumento>
+        <Data>2026-05-07</Data>
+        <Numero>12</Numero>
+      </DatiGeneraliDocumento>
+    </DatiGenerali>
+    <DatiBeniServizi>
+      <DatiRiepilogo>
+        <AliquotaIVA>22.00</AliquotaIVA>
+        <ImponibileImporto>100.00</ImponibileImporto>
+        <Imposta>22.00</Imposta>
+      </DatiRiepilogo>
+    </DatiBeniServizi>
+    <DatiPagamento>
+      <CondizioniPagamento>TP02</CondizioniPagamento>
+      <DettaglioPagamento>
+        <ModalitaPagamento>MP05</ModalitaPagamento>
+        <IBAN>IT39C0326822300052205863520</IBAN>
+      </DettaglioPagamento>
+    </DatiPagamento>
+  </FatturaElettronicaBody>
+</p:FatturaElettronica>
+XML;
+
+        $parsed = (new FatturaXml())->parse($xml);
+
+        $this->assertIsArray($parsed);
+        // Sede e contatti del cedente: vengono dallo stesso documento e servono
+        // all'anagrafica del fornitore, che prima restava senza indirizzo.
+        $this->assertSame('Via del Lavoro 40', $parsed['supplier_address']);
+        $this->assertSame('20010', $parsed['supplier_zip']);
+        $this->assertSame('Baranzate', $parsed['supplier_city']);
+        $this->assertSame('MI', $parsed['supplier_state']);
+        $this->assertSame('IT', $parsed['supplier_country']);
+        $this->assertSame('amministrazione@fornitore.it', $parsed['supplier_email']);
+        $this->assertSame('0212345678', $parsed['supplier_phone']);
+        $this->assertSame('IT39C0326822300052205863520', $parsed['supplier_iban']);
+    }
+
+    public function testParseWithoutSedeLeavesSupplierFieldsEmpty(): void
+    {
+        // Documenti vecchi o minimi: niente Sede, niente Contatti, niente
+        // DatiPagamento. I campi devono restare stringa vuota, non null, perché
+        // l'importazione li passa così come sono al modello.
+        $parsed = (new FatturaXml())->parse($this->xml('TD01'));
+
+        $this->assertIsArray($parsed);
+        $this->assertSame('', $parsed['supplier_address']);
+        $this->assertSame('', $parsed['supplier_city']);
+        $this->assertSame('', $parsed['supplier_email']);
+        $this->assertSame('', $parsed['supplier_iban']);
+    }
+
     public function testFatturaOrdinariaRestaPositiva(): void
     {
         $parsed = (new FatturaXml())->parse($this->xml('TD01'));

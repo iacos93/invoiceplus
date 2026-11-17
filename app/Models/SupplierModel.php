@@ -197,6 +197,45 @@ class SupplierModel extends IpBaseModel
         return $this->scopeToCompany()->where('supplier_name', $name)->first();
     }
 
+    /**
+     * Campi da riempire su un fornitore a partire dai dati di una fattura.
+     *
+     * Si scrive solo dove il campo è vuoto: quello già compilato — a mano o da
+     * un'importazione precedente — resta com'è. È la differenza che tiene in
+     * piedi l'arricchimento automatico, perché un fornitore con più sedi manda
+     * la fattura dallo stabilimento e non dalla sede legale: sovrascrivendo,
+     * ogni import sposterebbe l'anagrafica, e le fatture emesse con
+     * l'indirizzo giusto finirebbero per contraddire l'anagrafica.
+     *
+     * Puro di proposito: niente database, così la regola si prova senza
+     * scrivere niente.
+     *
+     * @param array<string, mixed> $existing  riga di ip_suppliers (o [] in creazione)
+     * @param array<string, mixed> $candidate colonna => valore proposto
+     *
+     * @return array<string, mixed> solo le colonne da scrivere
+     */
+    public static function emptyFields(array $existing, array $candidate): array
+    {
+        $patch = [];
+
+        foreach ($candidate as $field => $value) {
+            $value = is_string($value) ? trim($value) : $value;
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            if (trim((string) ($existing[$field] ?? '')) !== '') {
+                continue;
+            }
+
+            $patch[$field] = $value;
+        }
+
+        return $patch;
+    }
+
     public function saveRecord(?int $id, array $data): int
     {
         $now = date('Y-m-d H:i:s');
