@@ -118,12 +118,10 @@ class SuppliersEnrich extends BaseCommand
         $falliti = [];
 
         foreach ($updates as $supplierId => $patch) {
-            $model->saveRecord($supplierId, $patch);
-
-            // Il modello non lancia: se una validazione fallisce il salvataggio
-            // resta indietro e l'errore finisce in errors(). Contarlo come
-            // riuscito farebbe dire al comando una cosa che non è successa.
-            if ($model->errors() !== []) {
+            // saveRecord() torna 0 quando il modello rifiuta la scrittura:
+            // contarlo come riuscito farebbe dire al comando una cosa che non
+            // è successa.
+            if ($model->saveRecord($supplierId, $patch) === 0) {
                 $falliti[$supplierId] = $model->errors();
 
                 continue;
@@ -140,7 +138,7 @@ class SuppliersEnrich extends BaseCommand
                 '#%d %s: non salvato (%s)',
                 $supplierId,
                 $byId[$supplierId]['supplier_name'],
-                implode(' ', $errori)
+                $errori === [] ? 'scrittura rifiutata dal database' : implode(' ', $errori)
             ));
         }
 

@@ -281,6 +281,14 @@ class Expenses extends BaseController
             'supplier_active'   => true,
         ]);
 
+        if ($id === 0) {
+            // La spesa va avanti con il solo nome in chiaro (il campo di testo
+            // resta valorizzato), ma l'errore va lasciato scritto: prima il
+            // fornitore mancava all'appello senza che nessuno sapesse perché.
+            log_message('error', 'Spesa: fornitore "' . $name . '" non creato in anagrafica ('
+                . implode(' ', $suppliers->errors()) . ')');
+        }
+
         return $id ?: null;
     }
 

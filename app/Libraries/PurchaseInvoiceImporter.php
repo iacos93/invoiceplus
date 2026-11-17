@@ -205,13 +205,27 @@ class PurchaseInvoiceImporter
                 $patch      = SupplierModel::emptyFields($supplier, $anagrafica);
 
                 if ($patch !== []) {
-                    $this->supplierModel->saveRecord($supplierId, $patch);
+                    // Un aggiornamento rifiutato non ferma l'import — la spesa
+                    // è il documento, l'anagrafica resta com'era — ma resta
+                    // scritto: prima spariva senza traccia.
+                    if ($this->supplierModel->saveRecord($supplierId, $patch) === 0) {
+                        log_message('warning', 'Import fattura passiva ' . $fileName . ': fornitore #'
+                            . $supplierId . ' non aggiornato (' . implode(' ', $this->supplierModel->errors()) . ')');
+                    }
                 }
             } else {
                 $supplierId = $this->supplierModel->saveRecord(
                     null,
                     SupplierModel::emptyFields([], $anagrafica) + ['supplier_active' => true]
                 );
+
+                // Senza fornitore la spesa resterebbe appesa a supplier_id 0,
+                // fuori da ogni scheda e da ogni totale: meglio non registrarla
+                // e dire perché (la transazione qui sotto annulla tutto).
+                if ($supplierId === 0) {
+                    throw new \RuntimeException('fornitore non salvato ('
+                        . implode(' ', $this->supplierModel->errors()) . ')');
+                }
             }
 
             // 'xml' e non un'altra etichetta: la lista spese e il form leggono

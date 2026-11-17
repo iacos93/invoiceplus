@@ -9,6 +9,17 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- `SupplierModel::saveRecord()` restituiva l'id anche quando non aveva scritto
+  niente, per esempio con un'email non valida: il form fornitori annunciava
+  «Fornitore aggiornato correttamente» su una riga rimasta com'era, l'import
+  delle fatture passive collegava la spesa a un fornitore mai creato e l'errore
+  di validazione restava solo in `errors()`, che nessuno leggeva. Ora torna `0`
+  quando non salva: il form resta aperto con il messaggio, l'import annulla la
+  transazione e la spesa non viene registrata, `suppliers:enrich` dichiara i
+  fornitori non salvati.
+
 ## [v0.14.1] — 2026-11-17
 
 ### Corretto

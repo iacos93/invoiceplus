@@ -259,15 +259,24 @@ class SupplierModel extends IpBaseModel
         return '';
     }
 
+    /**
+     * Salva (insert o update) e ritorna l'id, oppure 0 se non ha scritto nulla.
+     *
+     * insert()/update() di CI4 non lanciano: quando la validazione fallisce
+     * tornano false e il messaggio finisce in errors(). Prima questa classe li
+     * ignorava e restituiva comunque l'id, così il chiamante — il form
+     * fornitori, l'import delle fatture passive, suppliers:enrich — annunciava
+     * un salvataggio che non c'era stato, mentre l'unica traccia dell'errore
+     * restava in errors(), che nessuno leggeva. Lo zero è il segnale: nessun id
+     * valido è zero, e i chiamanti distinguono i due esiti.
+     */
     public function saveRecord(?int $id, array $data): int
     {
         $now = date('Y-m-d H:i:s');
         $data['supplier_date_modified'] = $now;
 
         if ($id) {
-            $this->update($id, $data);
-
-            return $id;
+            return $this->update($id, $data) ? $id : 0;
         }
 
         $data['supplier_date_created'] = $now;

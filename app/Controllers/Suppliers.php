@@ -83,11 +83,21 @@ class Suppliers extends BaseController
 
                 $supplierId = $this->supplierModel->saveRecord($id, $dbArray);
 
-                session()->setFlashdata('alert_success', $id
-                    ? 'Fornitore aggiornato correttamente'
-                    : 'Fornitore creato correttamente');
+                if ($supplierId > 0) {
+                    session()->setFlashdata('alert_success', $id
+                        ? 'Fornitore aggiornato correttamente'
+                        : 'Fornitore creato correttamente');
 
-                return redirect()->to('/suppliers/view/' . $supplierId);
+                    return redirect()->to('/suppliers/view/' . $supplierId);
+                }
+
+                // Il modello ha rifiutato la scrittura (validazione o database):
+                // il form resta aperto con i dati inseriti e l'errore, invece di
+                // annunciare un salvataggio che non c'è stato.
+                $errori = $this->supplierModel->errors();
+
+                session()->setFlashdata('alert_error', 'Il fornitore non è stato salvato'
+                    . ($errori === [] ? '.' : ': ' . implode(' ', $errori)));
             }
 
             $this->supplierModel->formValues = $post;
