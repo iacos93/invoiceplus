@@ -40,6 +40,7 @@
                         <label class="ip-doc-label" for="f24_paid_date"><?= trans('paid_on', '', 'Pagato il') ?></label>
                         <input type="text" name="f24_paid_date" id="f24_paid_date" class="form-control datepicker"
                                value="<?= esc($model->formValue('f24_paid_date') ? date_from_mysql($model->formValue('f24_paid_date')) : '') ?>">
+                        <?php if (!empty($errors['f24_paid_date'])): ?><span class="ip-field-error"><?= esc($errors['f24_paid_date']) ?></span><?php endif; ?>
                     </div>
                     <?php if (!empty($bank_accounts)): ?>
                         <div class="ip-doc-field">
@@ -52,6 +53,7 @@
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <?php if (!empty($errors['bank_account_id'])): ?><span class="ip-field-error"><?= esc($errors['bank_account_id']) ?></span><?php endif; ?>
                         </div>
                     <?php endif; ?>
                     <div class="ip-doc-field">

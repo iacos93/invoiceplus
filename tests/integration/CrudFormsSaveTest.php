@@ -866,6 +866,37 @@ final class CrudFormsSaveTest extends CIUnitTestCase
     }
 
     /**
+     * Anche data di pagamento e conto di addebito hanno una regola e un
+     * messaggio: l'avviso deve arrivare sul campo, non restare nel modello.
+     *
+     * La data illeggibile non viene convertita da date_to_mysql(), che la
+     * lascia passare com'è: è la regola valid_date[Y-m-d] a fermarla.
+     */
+    public function testF24DataPagamentoEContoNonValidiAvvisanoSulCampo(): void
+    {
+        $entita = self::entitaScriventi()['f24'][0];
+
+        $prima = $this->contaRighe($entita);
+
+        foreach ([
+            'f24_paid_date'   => ['non-una-data', 'La data di pagamento non è una data valida'],
+            'bank_account_id' => ['abc', 'Il conto di addebito scelto non è valido'],
+        ] as $campo => [$valore, $atteso]) {
+            $dati         = $this->datiDelForm($entita, 'Collaudo ' . $campo, true);
+            $dati[$campo] = $valore;
+
+            $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
+            $html     = (string) $risposta->response()->getBody();
+
+            $this->assertSame(200, $risposta->response()->getStatusCode(), $campo . ': il form deve riaprirsi');
+            $this->assertStringContainsString(esc($atteso), $html, $campo . ': manca l\'avviso sul campo');
+            $this->assertStringNotContainsString(esc($entita['successo']), $html, $campo . ': non deve annunciare il salvataggio');
+        }
+
+        $this->assertSame($prima, $this->contaRighe($entita), 'Nessuna delega deve nascere con data o conto non validi');
+    }
+
+    /**
      * «Nessun conto» si salva come NULL.
      *
      * La colonna è un intero e il form manda la stringa vuota: PostgreSQL la
