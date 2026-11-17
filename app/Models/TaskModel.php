@@ -40,7 +40,7 @@ class TaskModel extends IpBaseModel
     protected $validationMessages = [
         'project_id' => [
             'required'           => 'Il progetto è obbligatorio',
-            'is_natural_no_zero' => 'Il progetto è obbligatorio',
+            'is_natural_no_zero' => 'Il progetto scelto non è valido',
         ],
     ];
 

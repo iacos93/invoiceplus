@@ -9,6 +9,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- Il selettore del progetto nell'attività mostra solo i progetti
+  dell'azienda attiva — prima l'elenco comprendeva anche quelli delle
+  altre e la scelta veniva poi rifiutata — e una nuova attività parte
+  senza progetto scelto invece che sul primo dell'elenco.
+
 ## [v0.15.1] — 2026-11-17
 
 ### Corretto

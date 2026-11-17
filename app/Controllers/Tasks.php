@@ -139,7 +139,17 @@ class Tasks extends BaseController
             'task_id'       => $id,
             'errors'        => $errors,
             'model'         => $this->taskModel,
-            'projects'      => (new ProjectModel())->orderBy('project_name', 'ASC')->findAll(),
+            // Solo i progetti dell'azienda attiva: l'elenco completo offriva
+            // anche quelli di un'altra, e il POST li rifiuta (il perimetro
+            // dell'attività passa da progetto e cliente). ip_projects non ha
+            // company_id — il progetto è dell'azienda del suo cliente — quindi
+            // il perimetro va chiesto alla tabella dei clienti.
+            'projects'      => (new ProjectModel())
+                ->select('ip_projects.*', false)
+                ->join('ip_clients', 'ip_clients.client_id = ip_projects.client_id', 'left')
+                ->scopeToCompany(null, 'ip_clients')
+                ->orderBy('ip_projects.project_name', 'ASC')
+                ->findAll(),
             'tax_rates'     => (new TaxRateModel())->findAll(),
             'task_statuses' => $this->taskModel->statuses(),
         ];

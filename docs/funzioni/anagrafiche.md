@@ -51,8 +51,10 @@ in corso, completata, in attesa), prezzo, aliquota e data di fine, e si
 collegano a un progetto (e quindi al cliente del progetto); servono a tenere
 traccia del lavoro da fatturare, non generano documenti da sole. Il progetto
 è obbligatorio: senza, l'attività non apparterrebbe a nessun cliente e quindi
-nemmeno a un'azienda. Se non c'è ancora nessun progetto, il form lo dice
-invece di far compilare un'attività che non si può salvare.
+nemmeno a un'azienda. L'elenco dei progetti è quello dell'azienda attiva, e
+una nuova attività parte senza progetto scelto: se non ce n'è ancora
+nessuno, il form lo dice invece di far compilare un'attività che non si
+può salvare.
 
 ## Campi personalizzati
 

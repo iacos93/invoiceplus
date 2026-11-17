@@ -96,11 +96,13 @@
                                     <?= trans('task_project_needed', '', 'Non ci sono progetti: creane uno prima di salvare l\'attività.') ?>
                                 </p>
                             <?php else: ?>
-                                <?php // Niente «Nessun progetto»: la colonna non ammette NULL,
-                                      // e un'attività senza progetto non sarebbe di nessuna
-                                      // azienda. ?> 
+                                <?php // L'opzione vuota resta, ma è il segnaposto: con
+                                      // data-placeholder IPSelect la scarta come scelta, e il
+                                      // campo parte vuoto invece che sul primo progetto
+                                      // dell'elenco, che nessuno ha scelto. ?> 
                                 <select name="project_id" id="project_id" class="form-control simple-select" required<?= $disabled ?>
                                         data-placeholder="<?= esc(trans('select_project'), 'attr') ?>">
+                                    <option value=""><?= trans('select_project') ?></option>
                                     <?php foreach ($projects as $project): ?>
                                         <option value="<?= esc($project['project_id']) ?>"
                                             <?= (string) $model->formValue('project_id') === (string) $project['project_id'] ? 'selected' : '' ?>>

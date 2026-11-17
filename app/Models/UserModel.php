@@ -270,6 +270,10 @@ class UserModel extends IpBaseModel
         // punta a un campo che questa stessa funzione ha appena tolto
         // dall'array, quindi insert() tornava false in silenzio e l'utente
         // non veniva mai creato -- nemmeno dal form Utenti.
+        // Com'era prima: se un chiamante l'aveva già accesa per un gruppo
+        // di scritture, alla fine va rimessa accesa, non spenta.
+        $derogaPrecedente = $this->skipValidation;
+
         $this->skipValidation(true);
 
         try {
@@ -277,7 +281,7 @@ class UserModel extends IpBaseModel
         } finally {
             // La deroga vale per questa scrittura sola: lasciarla accesa
             // salterebbe i controlli della successiva sullo stesso modello.
-            $this->skipValidation(false);
+            $this->skipValidation($derogaPrecedente);
         }
     }
 
@@ -302,6 +306,10 @@ class UserModel extends IpBaseModel
         // silenzio: il cambio password dalla scheda utente e il reset
         // sembravano riusciti e non salvavano niente, lasciando la vecchia
         // password valida.
+        // Com'era prima: se un chiamante l'aveva già accesa per un gruppo
+        // di scritture, alla fine va rimessa accesa, non spenta.
+        $derogaPrecedente = $this->skipValidation;
+
         $this->skipValidation(true);
 
         try {
@@ -309,7 +317,7 @@ class UserModel extends IpBaseModel
         } finally {
             // La deroga vale per questa scrittura sola: lasciarla accesa
             // salterebbe i controlli della successiva sullo stesso modello.
-            $this->skipValidation(false);
+            $this->skipValidation($derogaPrecedente);
         }
     }
 

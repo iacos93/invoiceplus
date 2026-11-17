@@ -70,6 +70,25 @@ final class UserModelSaveChangePasswordTest extends CIUnitTestCase
         $this->assertTrue($model->derogaAllaScrittura, 'La scrittura deve poter contare sulla deroga');
         $this->assertFalse($model->skipValidation, 'skipValidation è rimasto acceso dopo il salvataggio');
     }
+
+    /**
+     * Chi chiama può aver acceso la deroga per un gruppo di scritture: alla
+     * fine deve ritrovarla accesa, non spenta da una scrittura interna.
+     */
+    public function testUnaDerogaGiaAccesaDalChiamanteRestaAccesa(): void
+    {
+        $model = new UserModelSpia();
+        $model->esito = true;
+        $model->skipValidation(true);
+
+        $model->saveRecord(7, ['user_name' => 'Amministratore']);
+
+        $this->assertTrue($model->skipValidation, 'saveRecord() ha spento una deroga che non aveva acceso');
+
+        $model->saveChangePassword(7, 'NuovaPassword1!');
+
+        $this->assertTrue($model->skipValidation, 'saveChangePassword() ha spento una deroga che non aveva acceso');
+    }
 }
 
 /**

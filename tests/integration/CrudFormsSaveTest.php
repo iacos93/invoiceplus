@@ -645,11 +645,42 @@ final class CrudFormsSaveTest extends CIUnitTestCase
             $this->assertStringNotContainsString(esc($entita['successo']), $ultimaPagina, 'Progetto «' . $progetto . '»: non deve annunciare il salvataggio');
         }
 
-        // La scelta è obbligatoria anche nella pagina: niente più opzione
-        // vuota, e il campo è segnato required.
+        // La scelta è obbligatoria anche nella pagina: il campo è required e
+        // l'opzione vuota è solo il segnaposto di IPSelect (con
+        // data-placeholder la scarta come scelta), così una nuova attività non
+        // parte sul primo progetto dell'elenco senza che nessuno l'abbia
+        // scelto.
         $this->assertMatchesRegularExpression('/name="project_id"[^>]*required/', (string) $ultimaPagina, 'Il selettore del progetto deve essere obbligatorio');
-        $this->assertStringNotContainsString('<option value="">', (string) $ultimaPagina, 'Il form non deve più offrire «Nessun progetto»');
+        $this->assertStringContainsString('data-placeholder=', (string) $ultimaPagina, 'Senza data-placeholder l\'opzione vuota tornerebbe una scelta');
+        $this->assertStringContainsString('<option value="">', (string) $ultimaPagina, 'Manca l\'opzione segnaposto del selettore');
         $this->assertSame($prima, $this->contaRighe($entita), 'Nessuna attività deve nascere senza progetto');
+    }
+
+    /**
+     * Il selettore non propone i progetti di un'altra azienda.
+     *
+     * L'elenco arrivava da findAll() su tutti i progetti: sceglierne uno
+     * altrui si poteva, e il salvataggio veniva poi rifiutato con un messaggio
+     * che sembrava un errore di chi compila.
+     */
+    public function testAttivitaNonProponeProgettiDiAltreAziende(): void
+    {
+        // ip_projects non ha company_id: il progetto sta nell'azienda del suo
+        // cliente, quindi serve un cliente dell'altra.
+        $this->testDb->query(
+            'INSERT INTO ip_clients (client_name, company_id) VALUES (?, 2)',
+            ['Cliente di altra azienda']
+        );
+
+        $this->testDb->query(
+            'INSERT INTO ip_projects (project_name, client_id) VALUES (?, ?)',
+            ['Progetto di altra azienda', (int) $this->testDb->insertID()]
+        );
+
+        $entita = self::entitaScriventi()['attivita'][0];
+        $pagina = (string) $this->withSession($this->sessione())->get($entita['form'])->response()->getBody();
+
+        $this->assertStringNotContainsString(esc('Progetto di altra azienda'), $pagina, 'Il selettore propone un progetto di un\'altra azienda');
     }
 
     /**
