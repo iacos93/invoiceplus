@@ -85,6 +85,18 @@ final class CrudFormsSaveTest extends CIUnitTestCase
             $this->testDb->transRollback();
         }
 
+        // La connessione si chiude qui e non si lascia al garbage collector:
+        // ogni prova ne apre una nuova, e su MariaDB il contatore delle
+        // connessioni aperte resta alto finché gli oggetti non vengono
+        // liberati. Con le altre prove del file la suite intera arrivava a
+        // «Too many connections», e i test che venivano dopo — fornitori,
+        // stato del sistema, anno — si saltavano da soli: in CI un salto vale
+        // come un guasto, quindi il rosso finiva su prove che non c'entravano.
+        if ($this->testDb !== null) {
+            $this->testDb->close();
+            $this->testDb = null;
+        }
+
         $this->restoreConnections();
 
         parent::tearDown();
@@ -618,6 +630,21 @@ final class CrudFormsSaveTest extends CIUnitTestCase
     private function ritocchiPerEntita(string $tabella, array $dati, bool $creazione): array
     {
         switch ($tabella) {
+            case 'ip_clients':
+                // Nel database la colonna è un flag (0/1), nel form sono le
+                // tre scelte auto/yes/no: copiando il valore grezzo la
+                // validazione rifiuta un form che il browser non invierebbe
+                // mai (e il messaggio finisce su un campo che la vista non
+                // mostra, quindi la pagina torna senza dire niente).
+                $dati['client_split_payment'] = 'no';
+
+                // La data di nascita è in tabella ma non ha un campo nel form:
+                // copiarla vuota la manderebbe come stringa '' in una colonna
+                // DATE, che MariaDB rifiuta (PostgreSQL no, quindi il guasto
+                // comparirebbe su un motore solo).
+                unset($dati['client_birthdate']);
+                break;
+
             case 'ip_users':
                 $dati['user_email']      = 'collaudo.' . bin2hex(random_bytes(4)) . '@example.test';
                 $dati['user_password']   = $creazione ? 'Collaudo123!' : '';
@@ -663,12 +690,31 @@ final class CrudFormsSaveTest extends CIUnitTestCase
                 'task_name'        => 'Collaudo',
                 'task_description' => '',
                 'task_price'       => '1.00',
-                'task_finish_date' => $oggi,
+                // La data si manda come la mostra il form (formato impostato
+                // nelle impostazioni), non in ISO: il controller la converte
+                // con date_to_mysql() prima di salvare.
+                'task_finish_date' => date_from_mysql($oggi),
                 'task_status'      => 1,
                 // project_id è NOT NULL nel database: l'attività va agganciata
                 // a un progetto vero, non basta il permesso della validazione.
                 'project_id'       => $this->progettoDiCollaudo(),
-                'tax_rate_id'      => '',
+                // Un id vero e non la stringa vuota: la colonna è intera e
+                // MariaDB rifiuta '' invece di convertirlo (PostgreSQL no,
+                // quindi il problema si vede su un motore solo).
+                'tax_rate_id'      => $this->primoId('ip_tax_rates', 'tax_rate_id'),
+            ],
+            'ip_f24' => [
+                // La tabella è vuota nel seed del CI: senza questi valori il
+                // form ripescherebbe solo stringhe vuote e l'INSERT violerebbe
+                // il NOT NULL di f24_due_date.
+                'f24_due_date'  => date_from_mysql($oggi),
+                'f24_amount'    => '100,00',
+                'f24_period'    => '2 trimestre 2026',
+                'f24_paid_date' => '',
+                'bank_account_id' => $this->primoId('ip_bank_accounts', 'bank_account_id'),
+                'f24_note'      => 'Collaudo',
+                'f24_file'      => '',
+                'f24_receipt_protocol' => '',
             ],
             'ip_projects' => [
                 'project_name' => 'Collaudo',
