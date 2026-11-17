@@ -180,8 +180,11 @@ class Invoices extends BaseController
         $periodTotals = $this->invoiceModel->getPeriodTotals($status, $year, $months, $favourite, $sign);
 
         // Valore di ogni mese sotto il nome nella barra periodo: stesso
-        // perimetro di stato e preferiti della lista.
-        $monthTotals = $this->invoiceModel->getMonthlyTotals($status, $year, $favourite, $sign);
+        // perimetro di stato e preferiti della lista, ma su un anno solo —
+        // quello scelto o, con «Tutti gli anni», l'anno in corso (vedi
+        // period_month_year()).
+        $monthYear   = period_month_year($year);
+        $monthTotals = $this->invoiceModel->getMonthlyTotals($status, $monthYear, $favourite, $sign);
 
         $data = [
             'invoices'         => $invoices,
@@ -195,6 +198,7 @@ class Invoices extends BaseController
             'sign'             => $sign,
             'period_totals'    => $periodTotals,
             'month_totals'     => $monthTotals,
+            'month_year'       => $monthYear,
             'sdi_map'          => (new \App\Models\SdiTransmissionModel())
                 ->latestMap(array_column($invoices, 'invoice_id')),
             // Ultimo invio per riga: la lista mostra se l'email è stata aperta

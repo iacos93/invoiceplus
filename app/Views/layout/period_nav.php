@@ -6,8 +6,15 @@
  * L'anno arriva dal filtro globale in topbar; qui si sceglie solo il mese (o
  * l'intero periodo). I due filtri sono indipendenti — come lo sono già nei
  * modelli, che applicano YEAR() e MONTH() come condizioni separate — quindi
- * la riga dei mesi resta visibile anche con "tutti gli anni" in topbar: in
- * quel caso il mese vale su tutti gli anni in archivio.
+ * la riga dei mesi resta visibile anche con "tutti gli anni" in topbar.
+ *
+ * Gli importi sotto i mesi però appartengono a un anno solo: quello scelto, o
+ * quello in corso con "tutti gli anni" (period_month_year()). Sommati per anno
+ * com'erano prima, il dicembre mostrato era la somma dei dicembre di tutti gli
+ * anni scritta accanto a mesi che si leggono come quelli dell'anno in corso.
+ * Perché il numero e il clic dicano la stessa cosa, il mese porta con sé
+ * quest'anno ($month_year) mentre la voce "tutti i mesi" resta sull'anno del
+ * filtro: con "tutti gli anni" è il modo per tornare all'archivio intero.
  *
  * Selezione multipla: un clic sceglie un mese solo, shift+clic estende
  * l'intervallo dall'ultimo mese scelto, ctrl/cmd+clic aggiunge o toglie un
@@ -17,6 +24,7 @@
  * Parametri attesi:
  *   $base_url           string  rotta della lista, es. 'invoices/status/all'
  *   $year               int     anno selezionato (0 = tutti)
+ *   $month_year         int     anno degli importi dei mesi (0 = quello in corso)
  *   $months             list<int> mesi selezionati (vuoto = tutto l'anno)
  *   $totals             array   ['count','net','tax','total','balance']
  *   $month_totals       array   [mese => ['net','tax','total','balance']]
@@ -27,6 +35,13 @@ $_pn = (array) ($this->renderVars['options'] ?? []);
 
 $base_url = $_pn['base_url'] ?? ($base_url ?? '');
 $year     = (int) ($_pn['year'] ?? ($year ?? 0));
+
+// L'anno degli importi: se il chiamante non lo passa, si ricava dall'anno del
+// filtro con lo stesso criterio dei controller.
+$month_year = (int) ($_pn['month_year'] ?? ($month_year ?? 0));
+if ($month_year <= 0) {
+    $month_year = period_month_year($year);
+}
 
 $months = $_pn['months'] ?? ($months ?? []);
 $months = is_array($months) ? $months : [(int) $months];
@@ -53,13 +68,12 @@ for ($m = 1; $m <= 12; $m++) {
     $monthNames[$m] = month_label(mktime(0, 0, 0, $m, 1, 2000));
 }
 
-// year sempre esplicito nella query string, anche a 0 ("Tutti"): il
-// controller usa il filtro anno globale (topbar) come default SOLO quando
-// year non compare affatto nell'URL. Senza year=0 esplicito qui, il link
-// "Tutti" di questa barra sarebbe silenziosamente riscavalcato dall'anno
-// scelto in topbar invece di mostrare davvero tutti gli anni.
-$urlFor = static function (array $selected) use ($base_url, $year, $extra): string {
-    $query = array_merge(['year' => $year], $extra, ip_month_query($selected));
+// year sempre esplicito nella query string: il controller usa il filtro anno
+// globale (topbar) come default SOLO quando year non compare affatto
+// nell'URL. Un mese porta l'anno dei suoi importi ($month_year), la voce
+// "tutti i mesi" l'anno del filtro ($year, anche 0).
+$urlFor = static function (array $selected, ?int $forYear = null) use ($base_url, $year, $month_year, $extra): string {
+    $query = array_merge(['year' => $forYear ?? $month_year], $extra, ip_month_query($selected));
 
     return site_url($base_url) . '?' . http_build_query($query);
 };
@@ -98,13 +112,13 @@ $navBase = site_url($base_url);
          aria-label="<?= esc(trans('period', '', 'Periodo'), 'attr') ?>"
          data-ip-month-nav
          data-base="<?= esc($navBase, 'attr') ?>"
-         data-year="<?= (int) $year ?>"
+         data-year="<?= (int) $month_year ?>"
          data-extra="<?= esc(json_encode((object) $extra), 'attr') ?>"
          data-selected="<?= esc(implode(',', $months), 'attr') ?>"
          aria-describedby="ip-period-hint">
         <a class="ip-period-month ip-period-month--all <?= $isAllSelected ? 'is-active' : '' ?>"
            data-month="0"
-           href="<?= esc($urlFor($allMonths)) ?>"
+           href="<?= esc($urlFor($allMonths, $year)) ?>"
            aria-pressed="<?= $isAllSelected ? 'true' : 'false' ?>"
            title="<?= esc($year > 0
                ? trans('all_year', '', 'Anno intero')
@@ -125,13 +139,17 @@ $navBase = site_url($base_url);
             $hasAmount = abs($amount) >= 0.005
                       || abs((float) ($month_totals[$m]['net'] ?? 0)) >= 0.005
                       || abs((float) ($month_totals[$m]['tax'] ?? 0)) >= 0.005;
+            // Con «Tutti gli anni» il mese porta l'anno degli importi: nel
+            // suggerimento va detto, o "Dicembre" sembrerebbe un mese
+            // qualsiasi dell'archivio.
+            $monthTitle = $monthNames[$m] . ($year !== $month_year ? ' ' . $month_year : '');
             ?>
             <a class="ip-period-month <?= $isActive ? 'is-active' : '' ?>"
                data-month="<?= $m ?>"
                href="<?= esc($urlFor([$m])) ?>"
                title="<?= esc($hasAmount
-                   ? $monthNames[$m] . ': ' . $month_total_label . ' ' . format_currency($amount)
-                   : $monthNames[$m], 'attr') ?>"
+                   ? $monthTitle . ': ' . $month_total_label . ' ' . format_currency($amount)
+                   : $monthTitle, 'attr') ?>"
                aria-pressed="<?= $isActive ? 'true' : 'false' ?>">
                 <span class="ip-period-month-name"><?= esc($monthNames[$m]) ?></span>
                 <?php if ($hasAmount): ?>

@@ -386,7 +386,17 @@
             // L'azienda compare solo se ce n'è più di una: altrimenti sarebbe
             // un comando con una sola scelta possibile.
             $ip_companies = available_companies();
-            $currentYear  = selected_year();
+
+            // L'anno della pagina vince su quello di sessione quando è
+            // nell'URL: la barra periodo delle liste porta con sé l'anno dei
+            // mesi, e con «Tutti gli anni» sono i mesi dell'anno in corso. Il
+            // selettore deve dire l'anno che si sta guardando, non quello
+            // salvato, o dopo quel clic mostrerebbe «Tutti gli anni» sopra
+            // una lista di un anno solo.
+            $ip_year_in_url = service('request')->getGet('year');
+            $currentYear    = is_scalar($ip_year_in_url) && $ip_year_in_url !== ''
+                ? (int) $ip_year_in_url
+                : selected_year();
             // Codice destinatario SdI dell'azienda attiva. Sta sotto il
             // selettore perché è un dato dell'azienda e non un filtro: serve
             // a farsi mandare le fatture, e averlo sempre in vista evita di

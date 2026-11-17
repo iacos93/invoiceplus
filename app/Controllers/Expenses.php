@@ -35,6 +35,11 @@ class Expenses extends BaseController
         $yearGet = $request->getGet('year');
         $year    = $yearGet !== null ? (int) $yearGet : selected_year();
         $months  = request_months();
+
+        // L'anno degli importi sotto i mesi della barra periodo: uno solo,
+        // quello scelto o l'anno in corso con «Tutti gli anni».
+        $monthYear = period_month_year($year);
+
         $paid    = (string) ($request->getGet('paid') ?? '');
         $paid    = in_array($paid, ['open', 'paid'], true) ? $paid : '';
 
@@ -65,7 +70,8 @@ class Expenses extends BaseController
             'paid'          => $paid,
             'sign'          => $sign,
             'period_totals' => $periodTotals,
-            'month_totals'  => $this->expenseModel->getMonthlyTotals($year, $paid, $sign),
+            'month_totals'  => $this->expenseModel->getMonthlyTotals($monthYear, $paid, $sign),
+            'month_year'    => $monthYear,
         ]);
     }
 

@@ -45,6 +45,10 @@ class Quotes extends BaseController
         $year    = $yearGet !== null ? (int) $yearGet : selected_year();
         $months  = request_months();
 
+        // L'anno degli importi sotto i mesi della barra periodo: uno solo,
+        // quello scelto o l'anno in corso con «Tutti gli anni».
+        $monthYear = period_month_year($year);
+
         // Preferiti: '' tutti, '1' solo preferiti, '0' solo non preferiti.
         $favourite = (string) ($request->getGet('fav') ?? '');
         $favourite = in_array($favourite, ['0', '1'], true) ? $favourite : '';
@@ -70,7 +74,10 @@ class Quotes extends BaseController
             // Aggregati in SQL come per fatture e spese, così la barra periodo
             // parla dello stesso perimetro della lista.
             'period_totals'  => $this->quoteModel->getPeriodTotals($status, $year, $months, $favourite),
-            'month_totals'   => $this->quoteModel->getMonthlyTotals($status, $year, $favourite),
+            // Un anno solo per i dodici importi: quello scelto, altrimenti
+            // l'anno in corso (vedi period_month_year()).
+            'month_totals'   => $this->quoteModel->getMonthlyTotals($status, $monthYear, $favourite),
+            'month_year'     => $monthYear,
             // Ultimo invio per riga: la lista dice se l'email è stata aperta,
             // con una sola query per pagina (vedi email_track_note()).
             'email_map'      => (new \App\Models\EmailTrackModel())

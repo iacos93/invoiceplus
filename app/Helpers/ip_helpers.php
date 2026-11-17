@@ -192,6 +192,23 @@ if (!function_exists('remember_selected_year')) {
     }
 }
 
+if (!function_exists('period_month_year')) {
+    /**
+     * L'anno a cui si riferiscono i dodici mesi della barra periodo: quello
+     * scelto in topbar, altrimenti quello in corso.
+     *
+     * Con «Tutti gli anni» la lista attraversa più anni, ma gli importi sotto
+     * i mesi devono appartenere a un anno solo: prima erano la somma per anno
+     * di ciascun mese, e il dicembre mostrato era la somma dei dicembre di
+     * tutti gli anni accanto a mesi che si leggevano come quelli dell'anno in
+     * corso. Stesso criterio del riepilogo a dodici mesi della bacheca.
+     */
+    function period_month_year(int $year = 0): int
+    {
+        return $year > 0 ? $year : (int) date('Y');
+    }
+}
+
 if (!function_exists('request_months')) {
     /**
      * Mesi selezionati nella query string, come lista ordinata 1-12.

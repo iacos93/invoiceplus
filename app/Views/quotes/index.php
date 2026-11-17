@@ -127,6 +127,9 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
     'months'            => $months,
     'totals'            => $period_totals ?? [],
     'month_totals'      => $month_totals ?? [],
+    // L'anno a cui si riferiscono gli importi dei mesi (scelto, o quello in
+    // corso con «Tutti gli anni»): il clic su un mese porta con sé quest'anno.
+    'month_year'        => $month_year ?? 0,
     'month_total_label' => trans('quoted', '', 'Preventivato'),
     // La barra periodo ricostruisce l'URL da zero: ogni filtro che non
     // viaggia in extra_query sparisce al primo clic su un mese.

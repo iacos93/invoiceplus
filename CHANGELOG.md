@@ -9,6 +9,17 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- Nelle liste di fatture, preventivi e spese la barra dei mesi somma un anno
+  solo anche con «Tutti gli anni» in topbar: gli importi sotto i mesi sono
+  quelli dell'anno in corso, non il totale di quel mese su tutti gli anni.
+  Prima il dicembre mostrava un importo che era la somma dei dicembre
+  dell'archivio (compreso quello dell'anno prima) accanto ai mesi dell'anno in
+  corso. Il clic su un mese porta con sé l'anno a cui l'importo si riferisce,
+  e il selettore dell'anno in topbar dice l'anno che la pagina sta mostrando
+  anche quando arriva dall'URL invece che dalla scelta salvata.
+
 ## [v0.14.9] — 2026-11-17
 
 ### Corretto
