@@ -28,6 +28,7 @@
                         <input type="text" name="f24_period" id="f24_period" class="form-control"
                                placeholder="<?= esc(trans('f24_period_hint', '', 'Es. 2° trimestre 2026'), 'attr') ?>"
                                value="<?= esc(old('f24_period', $model->formValue('f24_period'))) ?>">
+                        <?php if (!empty($errors['f24_period'])): ?><span class="ip-field-error"><?= esc($errors['f24_period']) ?></span><?php endif; ?>
                     </div>
                     <div class="ip-doc-field">
                         <label class="ip-doc-label" for="f24_amount"><?= trans('amount', '', 'Importo') ?></label>
@@ -88,6 +89,7 @@
                                 <a href="<?= site_url('f24/receipt/' . (int) $f24_id) ?>"><?= trans('download', '', 'Download') ?></a>
                             </p>
                         <?php endif; ?>
+                        <?php if (!empty($errors['f24_receipt_protocol'])): ?><span class="ip-field-error"><?= esc($errors['f24_receipt_protocol']) ?></span><?php endif; ?>
                     </div>
                 </div>
                 <div class="ip-doc-field" style="margin-top:16px">

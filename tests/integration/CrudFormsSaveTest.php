@@ -834,6 +834,38 @@ final class CrudFormsSaveTest extends CIUnitTestCase
     }
 
     /**
+     * Periodo e protocollo della quietanza: il modello li rifiuta e l'avviso
+     * arriva sul campo, non solo nel modello.
+     *
+     * Le due regole c'erano già (max_length sulle colonne), ma la vista
+     * stampava gli errori solo di scadenza e importo: chi compilava vedeva il
+     * form riaperto senza sapere cosa non andava.
+     */
+    public function testF24PeriodoEProtocolloFuoriMisuraAvvisanoSulCampo(): void
+    {
+        $entita = self::entitaScriventi()['f24'][0];
+
+        $prima = $this->contaRighe($entita);
+
+        foreach ([
+            'f24_period'           => [str_repeat('9', 21), 'Il periodo non può superare i 20 caratteri'],
+            'f24_receipt_protocol' => [str_repeat('9', 61), 'Il protocollo della quietanza non può superare i 60 caratteri'],
+        ] as $campo => [$valore, $atteso]) {
+            $dati          = $this->datiDelForm($entita, 'Collaudo ' . $campo, true);
+            $dati[$campo]  = $valore;
+
+            $risposta = $this->inviaConToken($entita['form'], $dati, $entita['form']);
+            $html     = (string) $risposta->response()->getBody();
+
+            $this->assertSame(200, $risposta->response()->getStatusCode(), $campo . ': il form deve riaprirsi');
+            $this->assertStringContainsString(esc($atteso), $html, $campo . ': manca l\'avviso sul campo');
+            $this->assertStringNotContainsString(esc($entita['successo']), $html, $campo . ': non deve annunciare il salvataggio');
+        }
+
+        $this->assertSame($prima, $this->contaRighe($entita), 'Nessuna delega deve nascere con periodo o protocollo fuori misura');
+    }
+
+    /**
      * «Nessun conto» si salva come NULL.
      *
      * La colonna è un intero e il form manda la stringa vuota: PostgreSQL la
