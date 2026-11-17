@@ -381,12 +381,15 @@ $areaChart = static function (array $values, array $labels, string $colorVar, ar
     $bandW = $n > 1 ? $plotW / ($n - 1) : $plotW;
     foreach ($values as $i => $v) {
         $cx    = $xOf($i);
+        // Banda centrata sul punto, ritagliata ai bordi del grafico (primo/ultimo mese).
+        $bx0   = max($padL, $cx - $bandW / 2);
+        $bx1   = min($padL + $plotW, $cx + $bandW / 2);
         $title = (string) ($labels[$i] ?? '');
         $href  = $monthHref($meta[$i]['base'] ?? '', $meta[$i]['ym'] ?? null, (bool) ($meta[$i]['month'] ?? true));
         $bands .= '<g class="ip-chart-month" tabindex="0" role="img" aria-label="' . esc($title . ': ' . strip_tags(format_currency($v)), 'attr') . '"'
             . $tipAttr($title, [[$meta[$i]['row'] ?? trans('dashboard_profit_label', '', 'Utile di impresa'), format_currency($v), $v < 0 ? 'loss' : 'profit']], $href !== '' ? $openHint : '')
             . $href . '>'
-            . '<rect class="ip-chart-col" x="' . round(max($padL, $cx - $bandW / 2), 1) . '" y="' . ($padT - 6) . '" width="' . round($bandW, 1)
+            . '<rect class="ip-chart-col" x="' . round($bx0, 1) . '" y="' . ($padT - 6) . '" width="' . round($bx1 - $bx0, 1)
             . '" height="' . ($H - $padT) . '" rx="6" />'
             . '<circle class="ip-area-dot" cx="' . round($cx, 1) . '" cy="' . round($yOf($v), 1) . '" r="3.5" fill="' . $colorVar . '" />'
             . '</g>';
