@@ -86,12 +86,15 @@ class Clients extends BaseController
 
             if ($this->clientModel->validate($post)) {
                 $dbArray  = $this->clientModel->dbArrayFromPost($post);
-                $clientId = $this->clientModel->saveRecord($id, $dbArray);
+                $clientId = $this->saveFormRecord($this->clientModel, $id, $dbArray, [
+                    'errore'     => 'Cliente non salvato',
+                    'creato'     => 'Cliente creato correttamente',
+                    'aggiornato' => 'Cliente aggiornato correttamente',
+                ]);
 
                 // Nessuna riga scritta: niente campi personalizzati da salvare
                 // e nessuna scheda da aprire (la /clients/view/0 è un 404).
                 if ($clientId === 0) {
-                    session()->setFlashdata('alert_error', 'Cliente non salvato: ' . $this->clientModel->saveErrorSummary());
                     $this->clientModel->formValues = $post;
 
                     return $this->renderForm($id, $this->clientModel->errors());
@@ -104,10 +107,6 @@ class Clients extends BaseController
                 if (!empty($post['custom'])) {
                     (new ClientCustomModel())->saveCustom($clientId, $post['custom']);
                 }
-
-                session()->setFlashdata('alert_success', $id
-                    ? 'Cliente aggiornato correttamente'
-                    : 'Cliente creato correttamente');
 
                 return redirect()->to('/clients/view/' . $clientId);
             }

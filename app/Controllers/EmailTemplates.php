@@ -54,13 +54,13 @@ class EmailTemplates extends BaseController
             if ($this->emailTemplateModel->validate($post)) {
                 $dbArray = $this->emailTemplateModel->dbArrayFromPost($post);
 
-                if ($this->emailTemplateModel->saveRecord($id, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', 'Modello email non salvato: ' . $this->emailTemplateModel->saveErrorSummary());
-                } else {
-                    session()->setFlashdata('alert_success', $id
-                        ? 'Modello email aggiornato correttamente'
-                        : 'Modello email creato correttamente');
+                $savedId = $this->saveFormRecord($this->emailTemplateModel, $id, $dbArray, [
+                    'errore'     => 'Modello email non salvato',
+                    'creato'     => 'Modello email creato correttamente',
+                    'aggiornato' => 'Modello email aggiornato correttamente',
+                ]);
 
+                if ($savedId > 0) {
                     return redirect()->to('/email_templates');
                 }
             }

@@ -81,21 +81,19 @@ class Suppliers extends BaseController
                 // Booleano nativo: PostgreSQL rifiuta gli interi su colonne boolean.
                 $dbArray['supplier_active'] = !empty($post['supplier_active']);
 
-                $supplierId = $this->supplierModel->saveRecord($id, $dbArray);
+                // Il modello può rifiutare la scrittura (validazione o
+                // database): il form resta aperto con i dati inseriti e
+                // l'errore, invece di annunciare un salvataggio che non c'è
+                // stato.
+                $supplierId = $this->saveFormRecord($this->supplierModel, $id, $dbArray, [
+                    'errore'     => 'Il fornitore non è stato salvato',
+                    'creato'     => 'Fornitore creato correttamente',
+                    'aggiornato' => 'Fornitore aggiornato correttamente',
+                ]);
 
                 if ($supplierId > 0) {
-                    session()->setFlashdata('alert_success', $id
-                        ? 'Fornitore aggiornato correttamente'
-                        : 'Fornitore creato correttamente');
-
                     return redirect()->to('/suppliers/view/' . $supplierId);
                 }
-
-                // Il modello ha rifiutato la scrittura (validazione o database):
-                // il form resta aperto con i dati inseriti e l'errore, invece di
-                // annunciare un salvataggio che non c'è stato.
-                session()->setFlashdata('alert_error', 'Il fornitore non è stato salvato: '
-                    . $this->supplierModel->saveErrorSummary());
             }
 
             $this->supplierModel->formValues = $post;

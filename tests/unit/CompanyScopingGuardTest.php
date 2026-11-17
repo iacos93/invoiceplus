@@ -18,6 +18,11 @@ use CodeIgniter\Test\CIUnitTestCase;
  * La verifica è testuale di proposito: una prova end-to-end servirebbe un
  * database con due aziende popolate, mentre la dimenticanza da prevenire è
  * esattamente "manca la riga nel ramo POST".
+ *
+ * Il salvataggio passa ora da BaseController::saveFormRecord(), che chiama
+ * saveRecord() per conto del controller: il riconoscimento copre anche quella
+ * forma, altrimenti le chiamate sparirebbero dal conteggio e il test
+ * passerebbe controllando zero righe.
  */
 final class CompanyScopingGuardTest extends CIUnitTestCase
 {
@@ -50,7 +55,7 @@ final class CompanyScopingGuardTest extends CIUnitTestCase
             $source = (string) file_get_contents($file);
 
             preg_match_all(
-                '/\$this->\w+->(?:saveRecord|saveSender)\(\$id\b/',
+                '/\$this->\w+->(?:saveRecord|saveSender)\(\$id\b|\$this->saveFormRecord\([^\n]*\$id\b/',
                 $source,
                 $matches,
                 PREG_OFFSET_CAPTURE

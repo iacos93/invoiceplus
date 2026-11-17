@@ -60,13 +60,18 @@ class Users extends BaseController
                 // Booleano nativo: PostgreSQL rifiuta gli interi su colonne boolean.
                 $dbArray['user_active'] = !empty($post['user_active']);
 
-                $wasNew  = $id === null;
-                $savedId = (int) $this->userModel->saveRecord($id, $dbArray);
-
                 // Nessuna riga scritta: niente campi personalizzati, niente
-                // clienti assegnati e nessun «Utente creato».
+                // clienti assegnati e nessun «Utente creato». Il messaggio di
+                // successo lo mette saveFormRecord(), e distingue creazione e
+                // modifica sull'id com'era prima che qui sotto diventasse
+                // quello nuovo.
+                $savedId = $this->saveFormRecord($this->userModel, $id, $dbArray, [
+                    'errore'     => 'Utente non salvato',
+                    'creato'     => 'Utente creato correttamente',
+                    'aggiornato' => 'Utente aggiornato correttamente',
+                ]);
+
                 if ($savedId === 0) {
-                    session()->setFlashdata('alert_error', 'Utente non salvato: ' . $this->userModel->saveErrorSummary());
                     $this->userModel->formValues = $post;
 
                     $data           = $this->formViewData($id);
@@ -111,10 +116,6 @@ class Users extends BaseController
                 }
 
                 session()->remove('user_clients');
-
-                session()->setFlashdata('alert_success', $wasNew
-                    ? 'Utente creato correttamente'
-                    : 'Utente aggiornato correttamente');
 
                 return redirect()->to('/users');
             }

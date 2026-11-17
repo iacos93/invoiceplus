@@ -77,13 +77,13 @@ class Tasks extends BaseController
             if ($this->taskModel->validate($post)) {
                 $dbArray = $this->taskModel->dbArrayFromPost($post);
 
-                if ($this->taskModel->saveRecord($id, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', "Attivita' non salvata: " . $this->taskModel->saveErrorSummary());
-                } else {
-                    session()->setFlashdata('alert_success', $id
-                        ? "Attivita' aggiornata correttamente"
-                        : "Attivita' creata correttamente");
+                $savedId = $this->saveFormRecord($this->taskModel, $id, $dbArray, [
+                    'errore'     => "Attivita' non salvata",
+                    'creato'     => "Attivita' creata correttamente",
+                    'aggiornato' => "Attivita' aggiornata correttamente",
+                ]);
 
+                if ($savedId > 0) {
                     return redirect()->to('/tasks');
                 }
             }

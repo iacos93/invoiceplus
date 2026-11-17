@@ -56,13 +56,13 @@ class Projects extends BaseController
             if ($this->projectModel->validate($post)) {
                 $dbArray = $this->projectModel->dbArrayFromPost($post);
 
-                if ($this->projectModel->saveRecord($id, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', 'Progetto non salvato: ' . $this->projectModel->saveErrorSummary());
-                } else {
-                    session()->setFlashdata('alert_success', $id
-                        ? 'Progetto aggiornato correttamente'
-                        : 'Progetto creato correttamente');
+                $savedId = $this->saveFormRecord($this->projectModel, $id, $dbArray, [
+                    'errore'     => 'Progetto non salvato',
+                    'creato'     => 'Progetto creato correttamente',
+                    'aggiornato' => 'Progetto aggiornato correttamente',
+                ]);
 
+                if ($savedId > 0) {
                     return redirect()->to('/projects');
                 }
             }

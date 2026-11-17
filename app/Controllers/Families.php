@@ -52,13 +52,13 @@ class Families extends BaseController
             if ($this->familyModel->validate($post)) {
                 $dbArray = $this->familyModel->dbArrayFromPost($post);
 
-                if ($this->familyModel->saveRecord($id, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', 'Famiglia non salvata: ' . $this->familyModel->saveErrorSummary());
-                } else {
-                    session()->setFlashdata('alert_success', $id
-                        ? 'Famiglia aggiornata correttamente'
-                        : 'Famiglia creata correttamente');
+                $savedId = $this->saveFormRecord($this->familyModel, $id, $dbArray, [
+                    'errore'     => 'Famiglia non salvata',
+                    'creato'     => 'Famiglia creata correttamente',
+                    'aggiornato' => 'Famiglia aggiornata correttamente',
+                ]);
 
+                if ($savedId > 0) {
                     return redirect()->to('/families');
                 }
             }

@@ -52,13 +52,13 @@ class Units extends BaseController
             if ($this->unitModel->validate($post)) {
                 $dbArray = $this->unitModel->dbArrayFromPost($post);
 
-                if ($this->unitModel->saveRecord($id, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', 'Unita\' non salvata: ' . $this->unitModel->saveErrorSummary());
-                } else {
-                    session()->setFlashdata('alert_success', $id
-                        ? 'Unita\' aggiornata correttamente'
-                        : 'Unita\' creata correttamente');
+                $savedId = $this->saveFormRecord($this->unitModel, $id, $dbArray, [
+                    'errore'     => 'Unita\' non salvata',
+                    'creato'     => 'Unita\' creata correttamente',
+                    'aggiornato' => 'Unita\' aggiornata correttamente',
+                ]);
 
+                if ($savedId > 0) {
                     return redirect()->to('/units');
                 }
             }

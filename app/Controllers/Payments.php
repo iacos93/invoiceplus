@@ -151,14 +151,22 @@ class Payments extends BaseController
 
             if ($this->paymentModel->validate($post)) {
                 $dbArray   = $this->paymentModel->dbArrayFromPost($post);
-                $paymentId = $this->paymentModel->saveRecord($id, $dbArray);
 
-                // saveRecord() torna false se l'insert/update non va a buon
-                // fine: prima il messaggio era "creato correttamente" in ogni
-                // caso, e il pagamento mancante lo si scopriva solo dal saldo.
-                if (! $paymentId) {
+                // Il messaggio di questo form dice cosa fare, non perché il
+                // database ha rifiutato: «dettaglio» spento, o si leggerebbe
+                // «… prova: salvataggio rifiutato dal database».
+                $paymentId = $this->saveFormRecord($this->paymentModel, $id, $dbArray, [
+                    'errore'     => trans('payment_not_saved', '', 'Pagamento non salvato: controlla i dati e riprova'),
+                    'creato'     => 'Pagamento creato correttamente',
+                    'aggiornato' => 'Pagamento aggiornato correttamente',
+                    'dettaglio'  => false,
+                ]);
+
+                // saveRecord() torna 0 se l'insert/update non va a buon fine:
+                // prima il messaggio era "creato correttamente" in ogni caso, e
+                // il pagamento mancante lo si scopriva solo dal saldo.
+                if ($paymentId === 0) {
                     $this->paymentModel->formValues = $rawPost;
-                    session()->setFlashdata('alert_error', trans('payment_not_saved', '', 'Pagamento non salvato: controlla i dati e riprova'));
 
                     return $this->renderForm($id, $this->paymentModel->errors());
                 }
@@ -166,10 +174,6 @@ class Payments extends BaseController
                 if (! empty($post['custom'])) {
                     (new PaymentCustomModel())->saveCustom((int) $paymentId, $post['custom']);
                 }
-
-                session()->setFlashdata('alert_success', $id
-                    ? 'Pagamento aggiornato correttamente'
-                    : 'Pagamento creato correttamente');
 
                 return redirect()->to('/payments');
             }

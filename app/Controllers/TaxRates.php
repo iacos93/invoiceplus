@@ -53,13 +53,13 @@ class TaxRates extends BaseController
             if ($this->taxRateModel->validate($post)) {
                 $dbArray = $this->taxRateModel->dbArrayFromPost($post);
 
-                if ($this->taxRateModel->saveRecord($id, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', 'Aliquota non salvata: ' . $this->taxRateModel->saveErrorSummary());
-                } else {
-                    session()->setFlashdata('alert_success', $id
-                        ? 'Aliquota aggiornata correttamente'
-                        : 'Aliquota creata correttamente');
+                $savedId = $this->saveFormRecord($this->taxRateModel, $id, $dbArray, [
+                    'errore'     => 'Aliquota non salvata',
+                    'creato'     => 'Aliquota creata correttamente',
+                    'aggiornato' => 'Aliquota aggiornata correttamente',
+                ]);
 
+                if ($savedId > 0) {
                     return redirect()->to('/tax_rates');
                 }
             }

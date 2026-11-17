@@ -54,13 +54,13 @@ class Products extends BaseController
             if ($this->productModel->validate($post)) {
                 $dbArray = $this->productModel->dbArrayFromPost($post);
 
-                if ($this->productModel->saveRecord($id, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', 'Prodotto non salvato: ' . $this->productModel->saveErrorSummary());
-                } else {
-                    session()->setFlashdata('alert_success', $id
-                        ? 'Prodotto aggiornato correttamente'
-                        : 'Prodotto creato correttamente');
+                $savedId = $this->saveFormRecord($this->productModel, $id, $dbArray, [
+                    'errore'     => 'Prodotto non salvato',
+                    'creato'     => 'Prodotto creato correttamente',
+                    'aggiornato' => 'Prodotto aggiornato correttamente',
+                ]);
 
+                if ($savedId > 0) {
                     return redirect()->to('/products');
                 }
             }

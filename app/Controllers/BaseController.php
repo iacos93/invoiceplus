@@ -6,6 +6,7 @@ use CodeIgniter\Controller;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use App\Models\IpBaseModel;
 use App\Models\SettingModel;
 
 /**
@@ -47,5 +48,51 @@ abstract class BaseController extends Controller
             $request->setLocale($locale);
             \Config\Services::language()->setLocale($locale);
         }
+    }
+
+    /**
+     * Salva il form e mette in flashdata il messaggio che gli spetta.
+     *
+     * Diciannove controller ripetevano lo stesso blocco: se saveRecord() torna
+     * 0 metti alert_error con il riepilogo del modello, altrimenti
+     * alert_success con «creato» o «aggiornato». Le uniche differenze erano i
+     * testi, che restano qui in chiamata; la regola invece sta in un posto
+     * solo, così un form nuovo non può più dimenticare il caso 0 e annunciare
+     * un salvataggio che non c'è stato — che è il difetto che aveva reso
+     * necessaria la correzione di saveRecord(). Torna l'id scritto (0 se il
+     * database ha rifiutato), perché chi deve fare altro dopo il salvataggio
+     * — campi personalizzati, righe del documento — lo usa per continuare.
+     *
+     * @param array{errore: string, creato: string, aggiornato?: string, dettaglio?: bool} $messaggi
+     *        errore: prefisso del messaggio d'errore, senza i due punti;
+     *        creato/aggiornato: testi di successo (con uno solo vale per
+     *        entrambi, per i form che dicono la stessa cosa nei due casi);
+     *        dettaglio: false per non accodare il riepilogo del modello a un
+     *        errore che dice già cosa fare (es. «controlla i dati e riprova»).
+     *
+     * @return int l'id salvato, 0 se il database non ha scritto
+     */
+    protected function saveFormRecord(IpBaseModel $model, ?int $id, array $dbArray, array $messaggi): int
+    {
+        $savedId = (int) $model->saveRecord($id, $dbArray);
+
+        if ($savedId === 0) {
+            $errore = (string) $messaggi['errore'];
+
+            if ($messaggi['dettaglio'] ?? true) {
+                $errore .= ': ' . $model->saveErrorSummary();
+            }
+
+            session()->setFlashdata('alert_error', $errore);
+
+            return 0;
+        }
+
+        session()->setFlashdata(
+            'alert_success',
+            $messaggi[$id ? 'aggiornato' : 'creato'] ?? (string) $messaggi['creato']
+        );
+
+        return $savedId;
     }
 }

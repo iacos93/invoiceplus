@@ -50,13 +50,13 @@ class CustomFields extends BaseController
                 $dbArray = $this->customFieldModel->dbArrayFromPost($post);
 
                 try {
-                    if ($this->customFieldModel->saveRecord($id, $dbArray) === 0) {
-                        session()->setFlashdata('alert_error', 'Campo personalizzato non salvato: ' . $this->customFieldModel->saveErrorSummary());
-                    } else {
-                        session()->setFlashdata('alert_success', $id
-                            ? 'Campo personalizzato aggiornato correttamente'
-                            : 'Campo personalizzato creato correttamente');
+                    $savedId = $this->saveFormRecord($this->customFieldModel, $id, $dbArray, [
+                        'errore'     => 'Campo personalizzato non salvato',
+                        'creato'     => 'Campo personalizzato creato correttamente',
+                        'aggiornato' => 'Campo personalizzato aggiornato correttamente',
+                    ]);
 
+                    if ($savedId > 0) {
                         return redirect()->to('/custom_fields');
                     }
                 } catch (DatabaseException $e) {

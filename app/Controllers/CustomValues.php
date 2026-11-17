@@ -119,11 +119,12 @@ class CustomValues extends BaseController
             if ($this->customValueModel->validate($post)) {
                 $dbArray = $this->customValueModel->dbArrayFromPost($post);
 
-                if ($this->customValueModel->saveRecord($id, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', 'Valore personalizzato non salvato: ' . $this->customValueModel->saveErrorSummary());
-                } else {
-                    session()->setFlashdata('alert_success', 'Valore personalizzato aggiornato correttamente');
+                $savedId = $this->saveFormRecord($this->customValueModel, $id, $dbArray, [
+                    'errore' => 'Valore personalizzato non salvato',
+                    'creato' => 'Valore personalizzato aggiornato correttamente',
+                ]);
 
+                if ($savedId > 0) {
                     return redirect()->to('/custom_values/field/' . $fieldId);
                 }
             }

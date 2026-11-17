@@ -61,13 +61,13 @@ class PaymentMethods extends BaseController
             if ($this->paymentMethodModel->validate($post)) {
                 $dbArray = $this->paymentMethodModel->dbArrayFromPost($post);
 
-                if ($this->paymentMethodModel->saveRecord($id, $dbArray) === 0) {
-                    session()->setFlashdata('alert_error', 'Metodo di pagamento non salvato: ' . $this->paymentMethodModel->saveErrorSummary());
-                } else {
-                    session()->setFlashdata('alert_success', $id
-                        ? 'Metodo di pagamento aggiornato correttamente'
-                        : 'Metodo di pagamento creato correttamente');
+                $savedId = $this->saveFormRecord($this->paymentMethodModel, $id, $dbArray, [
+                    'errore'     => 'Metodo di pagamento non salvato',
+                    'creato'     => 'Metodo di pagamento creato correttamente',
+                    'aggiornato' => 'Metodo di pagamento aggiornato correttamente',
+                ]);
 
+                if ($savedId > 0) {
                     return redirect()->to('/payment_methods');
                 }
             }
