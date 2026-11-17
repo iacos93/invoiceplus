@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\ClientModel;
+use App\Models\CompanyModel;
+use App\Models\InvoiceGroupModel;
 use App\Models\InvoiceModel;
 use App\Models\SettingModel;
 use CodeIgniter\Database\BaseConnection;
@@ -14,6 +17,10 @@ use CodeIgniter\Test\FeatureTestTrait;
  * muove prima. In lista e in anteprima una bozza senza numero si legge
  * «Bozza #id»: prima al suo posto compariva il solo id, che ha la forma di un
  * numero e veniva letto — e citato — come tale.
+ *
+ * L'azienda del test si crea qui: quella seminata punta la serie bozze alla
+ * serie ufficiale, è il caso che il codice deve neutralizzare e non un
+ * prerequisito di cui fidarsi (in CI mancava e il test saltava).
  *
  * Ogni test gira in una transazione chiusa con rollback.
  *
@@ -30,7 +37,13 @@ final class DraftNumberingIntegrationTest extends CIUnitTestCase
     /** @var array<string, mixed> */
     private array $originalTests = [];
 
-    private int $utente = 1;
+    private int $azienda = 0;
+
+    private int $gruppoUfficiale = 0;
+
+    private int $serieBozze = 0;
+
+    private int $cliente = 0;
 
     protected function setUp(): void
     {
@@ -53,14 +66,15 @@ final class DraftNumberingIntegrationTest extends CIUnitTestCase
             $this->markTestSkipped('Copia del database non disponibile: ' . $config->tests['database']);
         }
 
-        (new ReflectionClass(SettingModel::class))->getProperty('settingsCache')->setValue(null, null);
-
-        $_SESSION['active_company_id'] = 1;
-
-        $row          = $this->testDb->query('SELECT user_id FROM ip_users ORDER BY user_id LIMIT 1')->getRow();
-        $this->utente = (int) ($row->user_id ?? 1);
+        $this->resetCacheImpostazioni();
 
         $this->testDb->transBegin();
+
+        // La copia di sviluppo ha "numero anche per le bozze" attivo; qui si
+        // prova la configurazione di produzione, dove la bozza non prende il
+        // progressivo ufficiale.
+        (new SettingModel())->setSetting('generate_invoice_number_for_draft', 0);
+        $this->resetCacheImpostazioni();
     }
 
     protected function tearDown(): void
@@ -80,49 +94,28 @@ final class DraftNumberingIntegrationTest extends CIUnitTestCase
      */
     public function testBozzaNonConsumaIlProgressivoUfficiale(): void
     {
-        // La copia di sviluppo ha "numero anche per le bozze" attivo: qui si
-        // prova la configurazione di produzione, dove la bozza non prende il
-        // progressivo ufficiale.
-        (new SettingModel())->setSetting('generate_invoice_number_for_draft', 0);
-        (new ReflectionClass(SettingModel::class))->getProperty('settingsCache')->setValue(null, null);
-
-        $ufficiale = $this->gruppoUfficiale();
-        $bozze     = $this->serieBozze();
-
-        if ($ufficiale === null || $bozze === null) {
-            $this->markTestSkipped('Servono una serie ufficiale e una serie bozze distinte');
-        }
-
-        $primaUfficiale = $this->nextId($ufficiale);
-        $primaBozze     = $this->nextId($bozze);
+        $this->preparaAzienda();
 
         $draftId = (new InvoiceModel())->create([
-            'client_id'         => $this->unCliente(),
+            'client_id'         => $this->cliente,
             'invoice_status_id' => 1,
         ]);
 
         $this->assertGreaterThan(0, $draftId);
 
-        $bozza = $this->testDb->query(
-            'SELECT invoice_number, invoice_number_is_draft FROM ip_invoices WHERE invoice_id = ?',
-            [$draftId]
-        )->getRowArray();
+        $bozza = $this->riga($draftId);
 
-        $this->assertSame($primaUfficiale, $this->nextId($ufficiale), 'La serie ufficiale non deve muoversi per una bozza');
-        $this->assertSame($primaBozze + 1, $this->nextId($bozze), 'La bozza consuma un numero dalla serie bozze');
-        $this->assertStringStartsWith('T-', (string) $bozza['invoice_number'], 'La bozza prende il numero dalla serie bozze');
+        $this->assertSame(41, $this->nextId($this->gruppoUfficiale), 'La serie ufficiale non deve muoversi per una bozza');
+        $this->assertSame(2, $this->nextId($this->serieBozze), 'La bozza consuma un numero dalla serie bozze');
+        $this->assertSame('T-0001', (string) $bozza['invoice_number'], 'La bozza prende il numero dalla serie bozze');
         $this->assertTrue(db_bool($bozza['invoice_number_is_draft']), 'Il numero della bozza va marcato come provvisorio');
 
         (new InvoiceModel())->finalizeNumber($draftId);
 
-        $definitivo = $this->testDb->query(
-            'SELECT invoice_number, invoice_number_is_draft FROM ip_invoices WHERE invoice_id = ?',
-            [$draftId]
-        )->getRowArray();
+        $definitivo = $this->riga($draftId);
 
-        $this->assertSame($primaUfficiale + 1, $this->nextId($ufficiale), 'Uscendo dalla bozza si consuma un solo progressivo');
-        $this->assertNotSame('', (string) $definitivo['invoice_number']);
-        $this->assertStringStartsNotWith('T-', (string) $definitivo['invoice_number'], 'Il numero definitivo viene dalla serie ufficiale');
+        $this->assertSame(42, $this->nextId($this->gruppoUfficiale), 'Uscendo dalla bozza si consuma un solo progressivo');
+        $this->assertSame('0041', (string) $definitivo['invoice_number'], 'Il numero definitivo viene dalla serie ufficiale');
         $this->assertFalse(db_bool($definitivo['invoice_number_is_draft']));
     }
 
@@ -132,11 +125,10 @@ final class DraftNumberingIntegrationTest extends CIUnitTestCase
      */
     public function testLaBozzaSenzaNumeroSiLeggeComeTale(): void
     {
-        (new SettingModel())->setSetting('generate_invoice_number_for_draft', 0);
-        (new ReflectionClass(SettingModel::class))->getProperty('settingsCache')->setValue(null, null);
+        $this->preparaAzienda();
 
         $draftId = (new InvoiceModel())->create([
-            'client_id'         => $this->unCliente(),
+            'client_id'         => $this->cliente,
             'invoice_status_id' => 1,
         ]);
 
@@ -145,12 +137,7 @@ final class DraftNumberingIntegrationTest extends CIUnitTestCase
             'invoice_number_is_draft' => false,
         ]);
 
-        $sessione = [
-            'user_id'           => $this->utente,
-            'user_type'         => 1,
-            'user_name'         => 'Admin',
-            'active_company_id' => 1,
-        ];
+        $sessione = $this->sessione();
 
         $anteprima = $this->withSession($sessione)->get('/invoices/view/' . $draftId);
 
@@ -167,29 +154,67 @@ final class DraftNumberingIntegrationTest extends CIUnitTestCase
 
         $htmlLista = (string) $lista->response()->getBody();
 
+        $this->assertStringContainsString('Bozza #' . $draftId, $htmlLista, 'Lista: la bozza senza numero si legge come tale');
         $this->assertStringNotContainsString('<span class="ip-num">' . $draftId . '</span>', $htmlLista, 'Lista: il solo id non deve passare per un numero');
     }
 
-    private function gruppoUfficiale(): ?int
+    /**
+     * Azienda usa-e-getta con due serie distinte, così il test non dipende
+     * dalla configurazione seminata (bolzze = serie ufficiale) né da cache.
+     */
+    private function preparaAzienda(): void
     {
-        $row = $this->testDb->query(
-            'SELECT default_invoice_group FROM ip_companies WHERE company_id = 1'
-        )->getRowArray();
+        $companies = new CompanyModel();
 
-        $id = (int) ($row['default_invoice_group'] ?? 0);
+        $this->azienda = (int) $companies->insert([
+            'company_name'         => 'Azienda bozze di prova',
+            'company_country'      => 'IT',
+            'company_is_default'   => false,
+            'company_is_active'    => true,
+            'company_date_created' => date('Y-m-d H:i:s'),
+        ]);
 
-        return $id > 0 ? $id : null;
+        $gruppi = new InvoiceGroupModel();
+
+        $this->gruppoUfficiale = (int) $gruppi->insert([
+            'invoice_group_name'              => 'Fatture di prova',
+            'invoice_group_identifier_format' => '{{{id}}}',
+            'invoice_group_next_id'           => 41,
+            'invoice_group_left_pad'          => 4,
+            'company_id'                      => $this->azienda,
+        ]);
+
+        $this->serieBozze = (int) $gruppi->insert([
+            'invoice_group_name'              => 'Bozze di prova',
+            'invoice_group_identifier_format' => 'T-{{{id}}}',
+            'invoice_group_next_id'           => 1,
+            'invoice_group_left_pad'          => 4,
+            'company_id'                      => $this->azienda,
+        ]);
+
+        $companies->update($this->azienda, [
+            'default_invoice_group' => $this->gruppoUfficiale,
+            'draft_invoice_group'   => $this->serieBozze,
+        ]);
+
+        $this->cliente = (int) (new ClientModel())->insert([
+            'client_name'         => 'Cliente bozze di prova',
+            'client_active'       => true,
+            'client_date_created' => date('Y-m-d H:i:s'),
+            'company_id'          => $this->azienda,
+        ]);
+
+        $_SESSION['active_company_id'] = $this->azienda;
+        session()->set('active_company_id', $this->azienda);
     }
 
-    private function serieBozze(): ?int
+    /** @return array<string, mixed> */
+    private function riga(int $invoiceId): array
     {
-        $row = $this->testDb->query(
-            'SELECT draft_invoice_group FROM ip_companies WHERE company_id = 1'
+        return (array) $this->testDb->query(
+            'SELECT invoice_number, invoice_number_is_draft FROM ip_invoices WHERE invoice_id = ?',
+            [$invoiceId]
         )->getRowArray();
-
-        $id = (int) ($row['draft_invoice_group'] ?? 0);
-
-        return $id > 0 && $id !== $this->gruppoUfficiale() ? $id : null;
     }
 
     private function nextId(int $groupId): int
@@ -202,15 +227,20 @@ final class DraftNumberingIntegrationTest extends CIUnitTestCase
         return (int) ($row['invoice_group_next_id'] ?? -1);
     }
 
-    private function unCliente(): int
+    /** @return array<string, mixed> */
+    private function sessione(): array
     {
-        $row = $this->testDb->query('SELECT client_id FROM ip_clients WHERE company_id = 1 ORDER BY client_id LIMIT 1')->getRowArray();
+        return [
+            'user_id'           => 1,
+            'user_type'         => 1,
+            'user_name'         => 'Admin',
+            'active_company_id' => $this->azienda,
+        ];
+    }
 
-        if ($row === null) {
-            $this->markTestSkipped('Serve un cliente nell\'azienda 1');
-        }
-
-        return (int) $row['client_id'];
+    private function resetCacheImpostazioni(): void
+    {
+        (new ReflectionClass(SettingModel::class))->getProperty('settingsCache')->setValue(null, null);
     }
 
     private function resetConnections(): void
