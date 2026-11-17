@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.0] — 2026-11-16
+
 ### Aggiunto
 
 - Il comando `suppliers:enrich` riempie i campi vuoti dell'anagrafica fornitori
