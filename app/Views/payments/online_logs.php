@@ -32,7 +32,7 @@
                     <td data-label="<?= esc(trans('date')) ?>"><?= esc(date_from_mysql($log['merchant_response_date'])) ?></td>
                     <td data-label="<?= esc(trans('invoice')) ?>">
                         <a href="<?= site_url('invoices/view/' . $log['invoice_id']) ?>">
-                            <?= esc($log['invoice_number'] ?: $log['invoice_id']) ?>
+                            <?= esc(invoice_number_label($log)) ?>
                         </a>
                     </td>
                     <td data-label="<?= esc(trans('status')) ?>">

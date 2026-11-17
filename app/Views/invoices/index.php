@@ -303,7 +303,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                             <label class="ip-bulk-hit">
                                 <input type="checkbox" class="form-check-input ip-bulk-check" form="ip-bulk-form"
                                        name="ids[]" value="<?= (int) $invoice['invoice_id'] ?>"
-                                       aria-label="<?= esc(trans('bulk_select_row', '', 'Seleziona la fattura') . ' ' . ($invoice['invoice_number'] ?: '#' . $invoice['invoice_id']), 'attr') ?>">
+                                       aria-label="<?= esc(trans('bulk_select_row', '', 'Seleziona la fattura') . ' ' . invoice_number_label($invoice), 'attr') ?>">
                             </label>
                         </td>
                         <td class="ip-fav-col ip-hide-on-mobile" data-label="<?= esc(trans('favourite', '', 'Preferito')) ?>">
@@ -342,7 +342,7 @@ $actions = '<button type="button" class="btn btn-secondary btn-sm submenu-toggle
                         <td data-cell="number" data-label="<?= esc(trans('invoice', '', 'Fattura')) ?>">
                             <a href="<?= site_url('invoices/view/' . (int) $invoice['invoice_id']) ?>"
                                title="<?= trans('edit', '', 'Modifica') ?>">
-                                <span class="ip-num"><?= esc($invoice['invoice_number'] ?: ('#' . $invoice['invoice_id'])) ?></span>
+                                <span class="ip-num"><?= esc(invoice_number_label($invoice)) ?></span>
                             </a>
                             <?php if (isset($sdi_map[$invoice['invoice_id']])): ?>
                                 <?php $sdi = $sdi_map[$invoice['invoice_id']]; ?>

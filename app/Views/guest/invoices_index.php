@@ -75,7 +75,7 @@ $status_label_class = [
                 <tr>
                     <td data-cell="number">
                         <a href="<?= site_url('guest/invoices/view/' . (int) $invoice['invoice_id']) ?>">
-                            <span class="ip-num"><?= esc($invoice['invoice_number'] ?: ('#' . $invoice['invoice_id'])) ?></span>
+                            <span class="ip-num"><?= esc(invoice_number_label($invoice)) ?></span>
                         </a>
                     </td>
                     <?php // Scheda mobile come nelle fatture dell'area riservata. ?>

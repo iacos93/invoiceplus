@@ -36,7 +36,7 @@ $status_label_class = [
                 </td>
                 <td>
                     <a href="<?= site_url('invoices/view/' . (int) $invoice['invoice_id']) ?>">
-                        <?= esc($invoice['invoice_number'] ?: ('#' . $invoice['invoice_id'])) ?>
+                        <?= esc(invoice_number_label($invoice)) ?>
                     </a>
                 </td>
                 <td><?= date_from_mysql($invoice['invoice_date_created']) ?></td>

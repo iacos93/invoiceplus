@@ -39,7 +39,7 @@
                 <td><?= date_from_mysql($payment['invoice_date_created'] ?? '') ?></td>
                 <td>
                     <a href="<?= site_url('invoices/view/' . (int) $payment['invoice_id']) ?>">
-                        <?= esc($payment['invoice_number'] ?: ('#' . $payment['invoice_id'])) ?>
+                        <?= esc(invoice_number_label($payment)) ?>
                     </a>
                 </td>
                 <td><?= esc(format_client($payment)) ?></td>

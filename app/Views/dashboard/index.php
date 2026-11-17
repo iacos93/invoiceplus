@@ -992,7 +992,7 @@ $windowsToggle .= '</div></div>';
                                         </td>
                                         <td data-label="<?= esc(trans('invoice')) ?>">
                                             <a href="<?= site_url('invoices/view/' . $invoice['invoice_id']) ?>">
-                                                <span class="ip-num"><?= esc($invoice['invoice_number'] ?: $invoice['invoice_id']) ?></span>
+                                                <span class="ip-num"><?= esc(invoice_number_label($invoice)) ?></span>
                                             </a>
                                         </td>
                                         <td data-label="<?= esc(trans('client')) ?>"><?= $clientChip($invoice) ?></td>
@@ -1118,7 +1118,7 @@ $windowsToggle .= '</div></div>';
                                         <td data-label="<?= esc(trans('invoice', '', 'Fattura')) ?>">
                                             <?php if (!empty($note['invoice_id'])): ?>
                                                 <a href="<?= site_url('invoices/view/' . $note['invoice_id']) ?>">
-                                                    <span class="ip-num"><?= esc($note['invoice_number'] ?: ('#' . $note['invoice_id'])) ?></span>
+                                                    <span class="ip-num"><?= esc(invoice_number_label($note)) ?></span>
                                                 </a>
                                             <?php else: ?>
                                                 <span class="text-muted">—</span>

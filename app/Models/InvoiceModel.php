@@ -617,7 +617,7 @@ class InvoiceModel extends IpBaseModel
         } elseif ((int) $dbArray['invoice_status_id'] === 1 && $generateInvoiceNumber === 1) {
             $dbArray['invoice_number'] = $this->generateInvoiceNumber((int) $dbArray['invoice_group_id']);
         } elseif ((int) $dbArray['invoice_status_id'] === 1) {
-            [$draftNum, $isDraftFlag] = $this->draftNumber();
+            [$draftNum, $isDraftFlag] = $this->draftNumber((int) $dbArray['invoice_group_id']);
             if ($draftNum) {
                 $dbArray['invoice_number']          = $draftNum;
                 $dbArray['invoice_number_is_draft'] = (bool) $isDraftFlag;
@@ -924,15 +924,34 @@ class InvoiceModel extends IpBaseModel
     }
 
     /**
-     * Numero provvisorio dalla serie bozze, se configurata.
+     * La serie bozze è davvero un'altra serie?
+     *
+     * Un numero provvisorio preso dalla serie ufficiale non è provvisorio: è
+     * il progressivo vero, che all'uscita dalla bozza finalizeNumber()
+     * sostituisce con un altro, bruciandolo. Con la serie bozze uguale a quella
+     * dei documenti (configurazione che capita di trovare, e che c'era in
+     * produzione) meglio una bozza senza numero.
+     */
+    public static function isSeparateDraftSeries(int $draftGroupId, int $officialGroupId): bool
+    {
+        return $draftGroupId > 0 && $draftGroupId !== $officialGroupId;
+    }
+
+    /**
+     * Numero provvisorio dalla serie bozze, se configurata e distinta.
+     *
+     * @param int|null $officialGroupId serie del documento: se coincide con la
+     *                                 serie bozze non c'è nessun numero provvisorio da dare
      *
      * @return array{0: string|null, 1: int} numero (null se nessuna serie) e flag "provvisorio"
      */
-    public function draftNumber(): array
+    public function draftNumber(?int $officialGroupId = null): array
     {
-        $draftGroupId = (int) company_setting('draft_invoice_group', 0);
+        $draftGroupId    = (int) company_setting('draft_invoice_group', 0);
+        $officialGroupId = $officialGroupId
+            ?: (new InvoiceGroupModel())->defaultGroupId(0, 'default_invoice_group');
 
-        if ($draftGroupId <= 0) {
+        if (!self::isSeparateDraftSeries($draftGroupId, (int) $officialGroupId)) {
             return [null, 0];
         }
 

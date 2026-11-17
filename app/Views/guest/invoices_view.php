@@ -5,7 +5,7 @@
 ?>
 <?= $this->extend('layout/guest') ?>
 <?= $this->section('content') ?>
-<?php $this->setVar('pageTitle', trans('invoice', '', 'Fattura') . ' #' . ($invoice['invoice_number'] ?: $invoice['invoice_id'])); ?>
+<?php $this->setVar('pageTitle', trans('invoice', '', 'Fattura') . ' ' . invoice_number_label((array) $invoice)); ?>
 
 <?php
 // Mappa classi Bootstrap 3 per i badge di stato (stile CI3)
@@ -48,7 +48,7 @@ $status_class_label = $status_label_class[$statusInfo['class']] ?? 'text-bg-seco
 
 <?php
     $title = trans('invoice', '', 'Fattura')
-        . ' #' . esc($invoice['invoice_number'] ?: $invoice['invoice_id'])
+        . ' ' . esc(invoice_number_label((array) $invoice))
         . ' <span class="badge ip-status ' . $status_class_label . '">' . esc($statusInfo['label']) . '</span>';
     $actions = '<div class="options btn-group btn-group-sm">';
     if (!empty($public_view)):
@@ -89,7 +89,7 @@ $status_class_label = $status_label_class[$statusInfo['class']] ?? 'text-bg-seco
                         <table class="table table-sm">
                             <tr>
                                 <td><strong><?= trans('invoice', '', 'Fattura') ?> #</strong></td>
-                                <td><?= esc($invoice['invoice_number'] ?: $invoice['invoice_id']) ?></td>
+                                <td><?= esc(invoice_number_label((array) $invoice)) ?></td>
                             </tr>
                             <tr>
                                 <td><strong><?= trans('date', '', 'Data') ?></strong></td>

@@ -1,6 +1,6 @@
 <?= $this->extend('layout/base') ?>
 <?= $this->section('content') ?>
-<?php $this->setVar('pageTitle', trans('invoice', '', 'Fattura') . ' ' . ($invoice['invoice_number'] ?: ('#' . $invoice['invoice_id']))); ?>
+<?php $this->setVar('pageTitle', trans('invoice', '', 'Fattura') . ' ' . invoice_number_label((array) $invoice)); ?>
 
 <?php
 // Mappa classi Bootstrap 3 per i badge di stato (stile CI3)
@@ -19,7 +19,7 @@ $is_credit            = !empty($invoice['creditinvoice_parent_id']) || (int) ($i
 ?>
 
 <?php
-$title = trans('invoice', '', 'Fattura') . ' ' . esc($invoice['invoice_number'] ?: ('#' . $invoice['invoice_id']))
+$title = trans('invoice', '', 'Fattura') . ' ' . esc(invoice_number_label((array) $invoice))
     . ' <span class="badge ip-status ' . ($status_label_class[$invoice_status_class] ?? 'text-bg-secondary') . '">'
     . esc($invoice_statuses[$invoice['invoice_status_id']]['label'] ?? trans('draft'))
     . '</span>';

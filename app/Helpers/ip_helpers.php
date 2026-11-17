@@ -1936,6 +1936,29 @@ if (!function_exists('available_companies')) {
     }
 }
 
+if (!function_exists('invoice_number_label')) {
+    /**
+     * Etichetta del numero di una fattura: il numero quando c'è, altrimenti la
+     * bozza con il suo riferimento interno.
+     *
+     * Una bozza senza numero non ne ha uno, e prima al suo posto compariva
+     * l'id: quattro cifre che sembrano un progressivo appena assegnato,
+     * tanto da farlo citare al cliente come se fosse il numero. La parola
+     * «Bozza» e il cancelletto tolgono l'equivoco, e il riferimento resta
+     * perché serve a ritrovare il documento nell'elenco.
+     *
+     * @param array<string, mixed> $invoice riga di ip_invoices (o di un documento che la imita)
+     */
+    function invoice_number_label(array $invoice): string
+    {
+        $numero = trim((string) ($invoice['invoice_number'] ?? ''));
+
+        return $numero !== ''
+            ? $numero
+            : trans('draft', '', 'Bozza') . ' #' . (int) ($invoice['invoice_id'] ?? 0);
+    }
+}
+
 if (!function_exists('company_setting')) {
     /**
      * Impostazione che appartiene all'azienda, non all'installazione.

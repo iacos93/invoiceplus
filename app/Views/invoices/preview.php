@@ -22,11 +22,11 @@ $is_draft             = (int) $invoice['invoice_status_id'] === 1;
 $is_credit            = !empty($invoice['creditinvoice_parent_id']);
 $invoice_id           = (int) $invoice['invoice_id'];
 
-$this->setVar('pageTitle', trans('invoice', '', 'Fattura') . ' ' . ($invoice['invoice_number'] ?: ('#' . $invoice_id)));
+$this->setVar('pageTitle', trans('invoice', '', 'Fattura') . ' ' . invoice_number_label((array) $invoice));
 
 $is_draft_number = db_bool($invoice['invoice_number_is_draft'] ?? false);
 
-$title = trans('invoice', '', 'Fattura') . ' ' . esc($invoice['invoice_number'] ?: ('#' . $invoice_id))
+$title = trans('invoice', '', 'Fattura') . ' ' . esc(invoice_number_label((array) $invoice))
     . ' <span class="badge ip-status ' . ($status_label_class[$invoice_status_class] ?? 'text-bg-secondary') . '">'
     . esc($statuses[$invoice['invoice_status_id']]['label'] ?? trans('draft'))
     . '</span>';

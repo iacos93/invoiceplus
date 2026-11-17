@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 
 <?php
-$number = $invoice['invoice_number'] ?: ('#' . (int) $invoice['invoice_id']);
+$number = invoice_number_label((array) $invoice);
 $this->setVar('pageTitle', trans('validate_xml', '', 'Verifica tracciato') . ' ' . $number);
 
 $actions = '<div class="ip-doc-actions">'

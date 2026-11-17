@@ -9,6 +9,20 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- Una fattura in bozza senza numero lo mostrava come id: in elenco, in
+  dashboard e in anteprima compariva `220` al posto del numero, che si legge
+  come un progressivo appena assegnato e si finisce per citarlo al cliente. Ora
+  si legge `Bozza #220` — il numero quando c'è, altrimenti lo stato con il
+  riferimento interno, in un unico punto (`invoice_number_label()`) usato da
+  elenco, dashboard, anteprima, scheda, area cliente e registro pagamenti.
+- La serie bozze puntata alla serie ufficiale avrebbe dato alle bozze un numero
+  provvisorio che provvisorio non è: all'uscita dalla bozza il numero
+  definitivo lo sostituisce, quindi il progressivo veniva consumato e perso.
+  Ora una serie bozze uguale a quella del documento viene ignorata e la bozza
+  resta senza numero, finché non ne esce.
+
 ## [v0.14.3] — 2026-11-17
 
 ### Corretto
