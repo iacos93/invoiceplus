@@ -37,7 +37,11 @@ $accentColor = [
    dichiararlo qui rende il foglio corretto anche se il PDF viene generato
    da un altro punto (es. report) senza quel setPaper. I margini restano
    ampi per dare respiro e per lasciare spazio al piede fisso (bottom -14mm). */
-@page { size: A4; margin: 16mm 15mm 22mm 15mm; }
+@page { size: A4; margin: 30mm 15mm 22mm 15mm; }
+/* Dalla seconda pagina i 30mm in alto ospitano la carta intestata, che
+   pdf_create() disegna lì (layout/pdf_running_head.php). La prima ha logo ed
+   emittente nel corpo e resta con il margine stretto di sempre. */
+@page :first { margin-top: 16mm; }
 
 body {
     font-family: Arial, Helvetica, sans-serif;

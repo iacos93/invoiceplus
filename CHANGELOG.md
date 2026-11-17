@@ -9,6 +9,16 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.15.0] — 2026-11-17
+
+### Aggiunto
+
+- Fatture, preventivi e DDT di più pagine hanno la carta intestata dalla
+  seconda pagina in poi: in alto il logo dell'azienda, la ragione sociale,
+  la partita IVA e l'indirizzo, separati dal corpo da un filo. La prima
+  pagina resta com'era, perché logo ed emittente li ha già per esteso. Prima
+  un foglio staccato da un documento lungo non diceva di chi fosse.
+
 ### Corretto
 
 - Il form dell'attività non offre più «Nessun progetto»: la colonna del

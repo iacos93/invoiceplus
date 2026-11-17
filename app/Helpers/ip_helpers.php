@@ -1191,18 +1191,7 @@ if (!function_exists('pdf_create')) {
      */
     function pdf_create(string $html, string $filename = 'document.pdf', bool $stream = true, ?string $path = null)
     {
-        $pdf = (new \App\Libraries\PdfCache())->remember($html, static function (string $html): string {
-            $html   = pdf_page_total($html);
-            $dompdf = new \Dompdf\Dompdf();
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4');
-            // Media "print": le regole @media screen (es. il padding d'anteprima)
-            // non si applicano, così il PDF resta governato dai soli margini @page.
-            $dompdf->getOptions()->setDefaultMediaType('print');
-            $dompdf->render();
-
-            return $dompdf->output();
-        });
+        $pdf = (new \App\Libraries\PdfCache())->remember($html, 'pdf_render');
 
         if ($path !== null) {
             file_put_contents($path, $pdf);
@@ -1215,6 +1204,163 @@ if (!function_exists('pdf_create')) {
         }
 
         return $pdf;
+    }
+}
+
+if (!function_exists('pdf_render')) {
+    /**
+     * HTML → byte del PDF, senza cache: è il lavoro che pdf_create() fa solo
+     * quando la cache non ha già il documento, separato perché i test lo
+     * possano chiamare.
+     */
+    function pdf_render(string $html): string
+    {
+        $html   = pdf_page_total($html);
+        $dompdf = new \Dompdf\Dompdf();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4');
+        // Media "print": le regole @media screen (es. il padding d'anteprima)
+        // non si applicano, così il PDF resta governato dai soli margini @page.
+        $dompdf->getOptions()->setDefaultMediaType('print');
+        $dompdf->render();
+
+        $head = pdf_running_head_parse($html);
+        if ($head !== null) {
+            pdf_running_head_draw($dompdf->getCanvas(), $head);
+        }
+
+        return (string) $dompdf->output();
+    }
+}
+
+if (!function_exists('pdf_running_head_marker')) {
+    /**
+     * Marcatore della carta intestata (vedi layout/pdf_running_head.php): un
+     * commento HTML, invisibile nell'anteprima, che pdf_create() rilegge.
+     * Base64 perché nome e indirizzo possono contenere "--", che chiuderebbe
+     * il commento.
+     *
+     * @param array{logo: string, name: string, details: string} $head
+     */
+    function pdf_running_head_marker(array $head): string
+    {
+        return '<!--ip-running-head:' . base64_encode((string) json_encode($head)) . '-->';
+    }
+}
+
+if (!function_exists('pdf_running_head_parse')) {
+    /**
+     * Dati della carta intestata dal marcatore, o null se il documento non ne
+     * ha (report, F24…) o se non c'è niente da stampare.
+     *
+     * @return array{logo: string, name: string, details: string}|null
+     */
+    function pdf_running_head_parse(string $html): ?array
+    {
+        if (!preg_match('/<!--ip-running-head:([A-Za-z0-9+\/=]+)-->/', $html, $m)) {
+            return null;
+        }
+
+        $data = json_decode((string) base64_decode($m[1], true), true);
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $head = [
+            'logo'    => (string) ($data['logo'] ?? ''),
+            'name'    => (string) ($data['name'] ?? ''),
+            'details' => (string) ($data['details'] ?? ''),
+        ];
+
+        // Il logo deve stare fra i caricamenti: il percorso viene da un
+        // commento nell'HTML, e un HTML qualunque non deve poter far leggere
+        // a dompdf un file del server.
+        if ($head['logo'] !== '' && dirname($head['logo']) !== rtrim(WRITEPATH . 'uploads', '/')) {
+            $head['logo'] = '';
+        }
+
+        return ($head['logo'] === '' && $head['name'] === '' && $head['details'] === '') ? null : $head;
+    }
+}
+
+if (!function_exists('pdf_running_head_draw')) {
+    /**
+     * Disegna la carta intestata in cima alle pagine dopo la prima: logo a
+     * sinistra, ragione sociale e dati a destra, un filo sotto.
+     *
+     * Le misure seguono pdf_styles: margini laterali 15mm e, dalla seconda
+     * pagina, margine superiore 30mm; la fascia sta nei primi 24mm, così il
+     * corpo riparte sotto il filo senza toccarlo.
+     *
+     * @param array{logo: string, name: string, details: string} $head
+     */
+    function pdf_running_head_draw(\Dompdf\Canvas $canvas, array $head): void
+    {
+        $mm    = 72 / 25.4;
+        $left  = 15 * $mm;
+        $right = $canvas->get_width() - 15 * $mm;
+        $top   = 10 * $mm;
+        $band  = 11 * $mm;
+        $rule  = 24 * $mm;
+
+        // Un SVG con width/height diversi dal viewBox dompdf lo disegna in un
+        // angolo del riquadro: è lo stesso difetto per cui logo_data_uri()
+        // passa da svg_size_from_viewbox(), e la cura è la stessa, su una
+        // copia temporanea perché il canvas vuole un file.
+        $tmpLogo = null;
+        if ($head['logo'] !== '' && strtolower(pathinfo($head['logo'], PATHINFO_EXTENSION)) === 'svg') {
+            $svg = @file_get_contents($head['logo']);
+            $tmp = $svg === false ? false : tempnam(sys_get_temp_dir(), 'ip-logo-');
+            if ($tmp !== false) {
+                $tmpLogo = $tmp . '.svg';
+                rename($tmp, $tmpLogo);
+                file_put_contents($tmpLogo, svg_size_from_viewbox((string) $svg));
+                $head['logo'] = $tmpLogo;
+            }
+        }
+
+        $canvas->page_script(static function (int $page, int $total, \Dompdf\Canvas $pdf, \Dompdf\FontMetrics $fm) use ($head, $mm, $left, $right, $top, $band, $rule): void {
+            if ($page < 2) {
+                return;
+            }
+
+            $textLeft = $left;
+
+            if ($head['logo'] !== '' && is_file($head['logo'])) {
+                [$w, $h] = \Dompdf\Helpers::dompdf_getimagesize($head['logo']);
+                if ($w > 0 && $h > 0) {
+                    // Altezza della fascia, ma mai più largo di 55mm: un logo
+                    // orizzontale lungo invaderebbe i dati a destra.
+                    $scale = min($band / $h, (55 * $mm) / $w);
+                    $pdf->image($head['logo'], $left, $top + ($band - $h * $scale) / 2, $w * $scale, $h * $scale);
+                    $textLeft = $left + $w * $scale + 6 * $mm;
+                }
+            }
+
+            $bold    = $fm->getFont('Helvetica', 'bold');
+            $regular = $fm->getFont('Helvetica', 'normal');
+            $grey    = [0.42, 0.42, 0.42];
+
+            if ($head['name'] !== '') {
+                $size = 9;
+                $w    = $fm->getTextWidth($head['name'], $bold, $size);
+                $pdf->text(max($textLeft, $right - $w), $top + 1 * $mm, $head['name'], $bold, $size, [0.1, 0.1, 0.1]);
+            }
+
+            if ($head['details'] !== '') {
+                $size = 7;
+                $w    = $fm->getTextWidth($head['details'], $regular, $size);
+                $pdf->text(max($textLeft, $right - $w), $top + 6 * $mm, $head['details'], $regular, $size, $grey);
+            }
+
+            $pdf->line($left, $rule, $right, $rule, [0.8, 0.8, 0.8], 0.5);
+        });
+
+        // page_script lavora subito sulle pagine già impaginate: a questo punto
+        // il logo è nel PDF e la copia non serve più.
+        if ($tmpLogo !== null) {
+            @unlink($tmpLogo);
+        }
     }
 }
 

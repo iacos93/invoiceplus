@@ -199,6 +199,49 @@ final class DocumentPdfIntegrationTest extends CIUnitTestCase
         $this->assertNotSame($primo, $dopo);
     }
 
+    /**
+     * Fattura vera allungata a più pagine: dalla seconda in alto c'è la
+     * ragione sociale dell'emittente, e la prima resta com'era. Con
+     * IP_PDF_DUMP il PDF resta su disco per guardarlo.
+     */
+    public function testLaFatturaLungaPortaLaCartaIntestataDallaSecondaPagina(): void
+    {
+        $pdftotext = trim((string) shell_exec('command -v pdftotext'));
+        if ($pdftotext === '') {
+            $this->markTestSkipped('pdftotext non disponibile');
+        }
+
+        $invoice = (new InvoiceModel())->getById($this->ultimaFatturaConRighe());
+        $this->assertIsArray($invoice);
+
+        $html = (new DocumentPdfBuilder())->invoice($invoice);
+        $head = pdf_running_head_parse($html);
+        $this->assertNotNull($head, 'Il template della fattura deve lasciare il marcatore');
+        $this->assertNotSame('', $head['name']);
+
+        // Le righe vere ripetute finché il documento non passa la pagina.
+        $html = (string) preg_replace_callback(
+            '/(<tbody>)(.*?)(<\/tbody>)/s',
+            static fn (array $m): string => $m[1] . str_repeat($m[2], 40) . $m[3],
+            $html,
+            1
+        );
+
+        $pdf  = pdf_render($html);
+        $file = getenv('IP_PDF_DUMP') ?: tempnam(sys_get_temp_dir(), 'ip-lunga-') . '.pdf';
+        file_put_contents($file, $pdf);
+
+        $pagine = explode("\f", rtrim((string) shell_exec(escapeshellarg($pdftotext) . ' ' . escapeshellarg($file) . ' -'), "\f"));
+        if (!getenv('IP_PDF_DUMP')) {
+            unlink($file);
+        }
+
+        $this->assertGreaterThan(1, count($pagine));
+        foreach (array_slice($pagine, 1) as $i => $pagina) {
+            $this->assertStringContainsString($head['name'], $pagina, 'Pagina ' . ($i + 2) . ' senza carta intestata');
+        }
+    }
+
     private function ultimaFatturaConRighe(): int
     {
         $row = $this->testDb->query(

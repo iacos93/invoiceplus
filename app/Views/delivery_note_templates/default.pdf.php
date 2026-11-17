@@ -197,6 +197,14 @@ $badge = $invoiced
     </tr>
 </table>
 
+<?= $this->include('layout/pdf_running_head', [
+    'document' => $note ?? null,
+    'name'     => $company['company_name'] ?? '',
+    'details'  => [
+        !empty($company['company_vat_id']) ? trans('vat_id_short') . ': ' . $company['company_vat_id'] : '',
+        trim(($company['company_address_1'] ?? '') . ' ' . $cityLine($company['company_city'] ?? '', $company['company_zip'] ?? '', $company['company_state'] ?? '')),
+    ],
+]) ?>
 <?= $this->include('layout/pdf_footer', ['footerKey' => 'pdf_invoice_footer', 'document' => $note ?? null]) ?>
 
 </body>

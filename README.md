@@ -303,7 +303,9 @@ Il server di sviluppo risponde su <http://localhost:8080>.
 
 ## Versioni
 
-La prima versione pubblica è la `v0.1`; l'ultima è la `v0.14.9`, che dà la serie bozze anche alla fattura nata da
+La prima versione pubblica è la `v0.1`; l'ultima è la `v0.15.0`, che dà la carta intestata (logo e dati
+dell'azienda) alle pagine dopo la prima di fatture, preventivi e DDT. La
+`v0.14.9` dà la serie bozze anche alla fattura nata da
 un preventivo e in bozza spiega che il numero della fattura
 arriva da solo all'emissione. La `v0.14.8` nasconde davvero i tre puntini di «Altre
 azioni» su desktop. La `v0.14.7` dà a «Altre azioni» di

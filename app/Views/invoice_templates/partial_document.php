@@ -292,6 +292,14 @@ $has_item_code = array_filter(array_map($itemCode, $items)) !== [];
     </div>
 <?php endif; ?>
 
+<?= $this->include('layout/pdf_running_head', [
+    'document' => $invoice ?? null,
+    'name'     => $company_name !== '' ? $company_name : $person_name,
+    'details'  => [
+        !empty($invoice->emitter_vat_id) ? trans('vat_id_short') . ': ' . $invoice->emitter_vat_id : '',
+        trim(($invoice->emitter_address_1 ?? '') . ' ' . $cityLine($invoice->emitter_city ?? '', $invoice->emitter_zip ?? '', $invoice->emitter_state ?? '')),
+    ],
+]) ?>
 <?= $this->include('layout/pdf_footer', ['footerKey' => 'pdf_invoice_footer', 'document' => $invoice ?? null]) ?>
 
 </body>

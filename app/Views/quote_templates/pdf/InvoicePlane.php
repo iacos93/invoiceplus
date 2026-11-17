@@ -238,6 +238,14 @@ $has_item_code = array_filter(array_map($itemCode, $items)) !== [];
     </div>
 <?php endif; ?>
 
+<?= $this->include('layout/pdf_running_head', [
+    'document' => $quote ?? null,
+    'name'     => $company_name !== '' ? $company_name : $person_name,
+    'details'  => [
+        !empty($user['emitter_vat_id']) ? trans('vat_id_short') . ': ' . $user['emitter_vat_id'] : '',
+        trim(($user['emitter_address_1'] ?? '') . ' ' . $cityLine($user['emitter_city'] ?? '', $user['emitter_zip'] ?? '', $user['emitter_state'] ?? '')),
+    ],
+]) ?>
 <?= $this->include('layout/pdf_footer', ['footerKey' => 'pdf_quote_footer', 'document' => $quote ?? null]) ?>
 
 </body>
