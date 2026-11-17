@@ -9,6 +9,14 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.8] — 2026-11-17
+
+### Corretto
+
+- I tre puntini di «Altre azioni» comparivano ancora su desktop, attaccati
+  all'etichetta: la classe che li nasconde su schermo largo mancava dal
+  Bootstrap ridotto che l'app serve.
+
 ## [v0.14.7] — 2026-11-17
 
 ### Modificato
