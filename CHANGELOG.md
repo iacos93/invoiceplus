@@ -9,6 +9,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.3] — 2026-11-17
+
 ### Corretto
 
 - `IpBaseModel::saveRecord()` restituiva l'id anche quando `update()` falliva,
