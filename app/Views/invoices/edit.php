@@ -149,7 +149,11 @@ $actions .= '</div>';
                         <label class="ip-doc-label" for="invoice_number"><?= trans('invoice', '', 'Fattura') ?> #</label>
                         <input type="text" name="invoice_number" id="invoice_number" class="form-control"
                                value="<?= esc($invoice['invoice_number']) ?>"
-                               placeholder="<?= esc(trans('not_set', '', 'Non impostato'), 'attr') ?>">
+                               placeholder="<?= esc($is_draft
+                                   // Il numero lo assegna finalizeNumber() all'uscita dalla bozza: «Non
+                                   // impostato» faceva credere di doverlo scrivere a mano.
+                                   ? trans('invoice_number_auto', '', 'Assegnato automaticamente all\'emissione')
+                                   : trans('not_set', '', 'Non impostato'), 'attr') ?>">
                     </div>
                     <div class="ip-doc-field">
                         <label class="ip-doc-label" for="invoice_status_id"><?= trans('status', '', 'Stato') ?></label>

@@ -554,6 +554,16 @@ class QuotesAjax extends BaseController
 
         if ((int) get_setting('generate_invoice_number_for_draft') === 1) {
             $dbArray['invoice_number'] = (new InvoiceGroupModel())->generateInvoiceNumber($invoiceGroupId);
+        } else {
+            // Stessa regola di InvoiceModel::create(): la bozza prende il numero
+            // provvisorio dalla serie bozze dell'azienda. Senza questo ramo la
+            // fattura nata da un preventivo restava senza numero mentre quella
+            // creata a mano riceveva il T-, e le due strade numeravano diverso.
+            [$draftNum, $isDraftFlag] = (new \App\Models\InvoiceModel())->draftNumber($invoiceGroupId);
+            if ($draftNum) {
+                $dbArray['invoice_number']          = $draftNum;
+                $dbArray['invoice_number_is_draft'] = (bool) $isDraftFlag;
+            }
         }
 
         // Transazione: la sequenza fattura + importi + righe + tasse e' fatta

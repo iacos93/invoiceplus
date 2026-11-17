@@ -382,6 +382,7 @@ return array (
   'none' => 'None',
   'note' => 'Note',
   'notes' => 'Notes',
+  'invoice_number_auto' => 'Assigned automatically when issued',
   'not_set' => 'Not set yet',
   'number_format' => 'Number Format',
   'open' => 'Open',

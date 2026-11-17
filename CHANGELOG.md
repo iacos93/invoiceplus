@@ -9,6 +9,22 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+## [v0.14.9] — 2026-11-17
+
+### Corretto
+
+- La fattura creata da un preventivo prende il numero provvisorio dalla
+  serie «Bozze fatture» (T-0001, T-0002…), come quella creata a mano. Prima
+  la conversione la lasciava senza numero, e in testata compariva «Bozza
+  #id».
+
+### Modificato
+
+- In una fattura in bozza il campo «Fattura #» dice «Assegnato
+  automaticamente all'emissione» invece di «Non ancora impostato», che
+  faceva pensare di dover scrivere il numero a mano: il progressivo lo dà il
+  programma quando la fattura esce dalla bozza.
+
 ## [v0.14.8] — 2026-11-17
 
 ### Corretto

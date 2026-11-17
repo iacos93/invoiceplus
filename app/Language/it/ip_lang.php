@@ -391,6 +391,7 @@ return array (
   'none' => 'Nessuno',
   'note' => 'Nota',
   'notes' => 'Note',
+  'invoice_number_auto' => 'Assegnato automaticamente all\'emissione',
   'not_set' => 'Non ancora impostato',
   'open' => 'Aperto',
   'open_invoices' => 'Fatture aperte',
