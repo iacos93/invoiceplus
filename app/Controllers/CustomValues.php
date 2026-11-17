@@ -119,6 +119,9 @@ class CustomValues extends BaseController
             if ($this->customValueModel->validate($post)) {
                 $dbArray = $this->customValueModel->dbArrayFromPost($post);
 
+                // Questo form è solo di modifica (la creazione sta in create(),
+                // con il suo messaggio): il testo vale per l'unico caso che
+                // passa di qui, come quando il blocco era scritto a mano.
                 $savedId = $this->saveFormRecord($this->customValueModel, $id, $dbArray, [
                     'errore' => 'Valore personalizzato non salvato',
                     'creato' => 'Valore personalizzato aggiornato correttamente',

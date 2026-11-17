@@ -53,8 +53,8 @@ abstract class BaseController extends Controller
     /**
      * Salva il form e mette in flashdata il messaggio che gli spetta.
      *
-     * Diciannove controller ripetevano lo stesso blocco: se saveRecord() torna
-     * 0 metti alert_error con il riepilogo del modello, altrimenti
+     * Ogni controller con un form ripeteva lo stesso blocco: se saveRecord()
+     * torna 0 metti alert_error con il riepilogo del modello, altrimenti
      * alert_success con «creato» o «aggiornato». Le uniche differenze erano i
      * testi, che restano qui in chiamata; la regola invece sta in un posto
      * solo, così un form nuovo non può più dimenticare il caso 0 e annunciare

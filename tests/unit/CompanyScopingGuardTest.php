@@ -44,6 +44,10 @@ final class CompanyScopingGuardTest extends CIUnitTestCase
         'Projects',
         'Tasks',
         'Payments',
+        // I parametri fiscali hanno una riga condivisa (company_id NULL) che
+        // non si riscrive sul posto: il perimetro lo controlla findEffective(),
+        // che riconosce anche quella condivisa e ne fa una copia dell'azienda.
+        'FiscalYears',
     ];
 
     public function testOgniSalvataggioPerIdHaIlGuardAzienda(): void
@@ -54,8 +58,13 @@ final class CompanyScopingGuardTest extends CIUnitTestCase
             $this->assertFileExists($file);
             $source = (string) file_get_contents($file);
 
+            // Il salvataggio può ricevere l'id con un altro nome (FiscalYears
+            // passa $targetId, che è null quando la riga condivisa diventa una
+            // copia dell'azienda): il riconoscimento accetta qualunque
+            // variabile che finisca per «id», o quelle chiamate sparirebbero
+            // dal conteggio e il test passerebbe controllando meno righe.
             preg_match_all(
-                '/\$this->\w+->(?:saveRecord|saveSender)\(\$id\b|\$this->saveFormRecord\([^\n]*\$id\b/',
+                '/\$this->\w+->(?:saveRecord|saveSender)\(\$id\b|\$this->saveFormRecord\([^\n]*\$\w*[Ii]d\b/',
                 $source,
                 $matches,
                 PREG_OFFSET_CAPTURE
@@ -72,8 +81,10 @@ final class CompanyScopingGuardTest extends CIUnitTestCase
             foreach ($matches[0] as [$call, $offset]) {
                 $before = substr($source, 0, $offset);
 
+                // findEffective() è la variante dei parametri fiscali: tiene
+                // dentro la riga condivisa e fuori quelle delle altre aziende.
                 $this->assertMatchesRegularExpression(
-                    '/findScoped\(\$id\)/',
+                    '/find(?:Scoped|Effective)\(\$id\)/',
                     $before,
                     $controller . ': il ramo POST esegue ' . $call . ' senza findScoped($id). '
                     . 'La GET controlla l\'azienda ma il POST la scavalca: un id di un\'altra '
