@@ -94,7 +94,7 @@ $status_label_class = [
                                     <li>
                                         <form method="post" action="<?= site_url('guest/quotes/approve/' . (int) $quote['quote_id']) ?>">
                                             <?= csrf_field() ?>
-                                            <button type="submit" class="dropdown-item">
+                                            <button type="submit" class="dropdown-item dropdown-button">
                                                 <i class="fa fa-solid fa-check fa-margin" aria-hidden="true"></i> <?= trans('approve', '', 'Approva') ?>
                                             </button>
                                         </form>
@@ -102,7 +102,7 @@ $status_label_class = [
                                     <li>
                                         <form method="post" action="<?= site_url('guest/quotes/reject/' . (int) $quote['quote_id']) ?>">
                                             <?= csrf_field() ?>
-                                            <button type="submit" class="dropdown-item">
+                                            <button type="submit" class="dropdown-item dropdown-button">
                                                 <i class="fa fa-solid fa-times fa-margin" aria-hidden="true"></i> <?= trans('reject', '', 'Rifiuta') ?>
                                             </button>
                                         </form>

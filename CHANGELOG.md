@@ -43,6 +43,14 @@ Le regole per scrivere le voci e preparare una release sono in
   per esempio dallo stesso preventivo, riprende lo stesso numero invece di
   lasciare un buco. Un numero in mezzo alla serie non viene riusato.
 
+- Le voci di menu che inviano un modulo — «Logout» nel menu utente, «Approva»
+  e «Rifiuta» sui preventivi, «Sospendi»/«Attiva» sulle aziende — hanno lo
+  stesso aspetto delle altre voci. Il pulsante sta dentro un `<form>`, quindi
+  non era figlio diretto del `<li>` e restava con il padding di Bootstrap:
+  riga più bassa, nessuno spazio fra icona e testo, hover senza angoli
+  arrotondati. Ora usa `dropdown-button`, la classe già prevista per i
+  pulsanti dentro i menu.
+
 ## [v0.15.1] — 2026-11-17
 
 ### Corretto

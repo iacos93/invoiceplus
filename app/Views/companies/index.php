@@ -76,7 +76,7 @@ $deleteModals = [];
                                             <li>
                                                 <form method="POST" action="<?= site_url('companies/toggle/' . (int) $c['company_id']) ?>">
                                                     <?= csrf_field() ?>
-                                                    <button type="submit" class="dropdown-item <?= db_bool($c['company_is_active']) ? 'text-warning' : 'text-success' ?>">
+                                                    <button type="submit" class="dropdown-item dropdown-button <?= db_bool($c['company_is_active']) ? 'text-warning' : 'text-success' ?>">
                                                         <i class="fa <?= db_bool($c['company_is_active']) ? 'fa-solid fa-pause' : 'fa-solid fa-play' ?>" aria-hidden="true"></i>
                                                         <?= db_bool($c['company_is_active']) ? trans('suspend', '', 'Sospendi') : trans('activate', '', 'Attiva') ?>
                                                     </button>

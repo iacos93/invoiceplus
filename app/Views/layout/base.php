@@ -236,7 +236,12 @@
                                  link di terzi (o un prefetch) senza un clic vero. */ ?>
                         <form method="post" action="<?= site_url('sessions/logout') ?>" class="m-0">
                             <?= csrf_field() ?>
-                            <button type="submit" class="dropdown-item text-danger">
+                            <?php /* dropdown-button: il <button> sta dentro <form>, non
+                                     e' figlio diretto del <li>, e senza la classe restava
+                                     con il padding di Bootstrap (4px 16px, nessun gap,
+                                     niente hover arrotondato) disallineato dalle voci
+                                     sopra. Vedi la nota sui menu in 02-base-componenti. */ ?>
+                            <button type="submit" class="dropdown-item dropdown-button text-danger">
                                 <i class="fa fa-solid fa-power-off fa-margin" aria-hidden="true"></i><?= trans('logout') ?>
                             </button>
                         </form>
