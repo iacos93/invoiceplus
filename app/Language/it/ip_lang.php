@@ -871,6 +871,7 @@ return array (
   'dashboard_6_months_until' => '6 mesi fino a %s',
   'dashboard_last_12_months' => 'ultimi 12 mesi',
   'dashboard_12_months_until' => '12 mesi fino a %s',
+  'dashboard_12_months_of_year' => '12 mesi del %d',
   'chart_open_month' => 'Clic per aprire i dettagli',
   'chart_open_status' => 'Clic per aprire questo stato',
   'dashboard_profit_net_label' => 'Utile al netto IVA',

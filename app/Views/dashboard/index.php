@@ -191,9 +191,15 @@ $monthHref = static function (string $base, ?string $ym, bool $withMonth = true)
 };
 $openHint = trans('chart_open_month', '', 'Clic per aprire i dettagli');
 
-$windowLabel12 = date('Y-m', $windowEnd) === date('Y-m')
-    ? trans('dashboard_last_12_months', '', 'ultimi 12 mesi')
-    : sprintf(trans('dashboard_12_months_until', '', '12 mesi fino a %s'), date('m/Y', $windowEnd));
+// Con un anno scelto i 12 mesi sono quelli dell'anno (gennaio-dicembre), non
+// una finestra che scivola indietro fino al dicembre dell'anno prima: dirlo
+// con il nome dell'anno evita di leggere il primo mese come questo dicembre.
+$windowYear    = selected_year();
+$windowLabel12 = $windowYear > 0
+    ? sprintf(trans('dashboard_12_months_of_year', '', '12 mesi del %d'), $windowYear)
+    : (date('Y-m', $windowEnd) === date('Y-m')
+        ? trans('dashboard_last_12_months', '', 'ultimi 12 mesi')
+        : sprintf(trans('dashboard_12_months_until', '', '12 mesi fino a %s'), date('m/Y', $windowEnd)));
 
 $sparkline = static function (array $values, string $colorVar = 'var(--ip-primary)'): string {
     $values = array_values(array_map('floatval', $values));

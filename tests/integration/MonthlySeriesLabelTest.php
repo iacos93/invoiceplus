@@ -5,6 +5,7 @@ use App\Models\InvoiceAmountModel;
 use App\Models\QuoteAmountModel;
 use App\Models\SettingModel;
 use CodeIgniter\Test\CIUnitTestCase;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 
 /**
  * Le serie mensili di dashboard e report etichettano i mesi con
@@ -60,6 +61,31 @@ final class MonthlySeriesLabelTest extends CIUnitTestCase
         $this->restoreConnections();
 
         parent::tearDown();
+    }
+
+    /**
+     * Con un anno scelto la finestra a 12 mesi è l'anno, da gennaio a
+     * dicembre: prima finiva a questo mese e a novembre cominciava con il
+     * dicembre dell'anno prima — un mese di un altro anno, per giunta il
+     * primo della serie, dentro un grafico che parla dell'anno scelto.
+     *
+     * In un processo a parte: l'àncora è in una cache statica che vale per la
+     * richiesta (giusto in produzione, scomodo qui), e un'altra prova della
+     * stessa classe la riempirebbe prima.
+     */
+    #[RunInSeparateProcess]
+    public function testConUnAnnoSceltoIDodiciMesiSonoQuelliDellAnno(): void
+    {
+        $anno = (int) date('Y');
+        $_SESSION['selected_years'] = [1 => $anno];
+
+        $this->assertSame($anno, selected_year(), 'L\'anno scelto deve arrivare a selected_year()');
+        $this->assertSame($anno . '-12-01 00:00:00', chart_window_anchor(12));
+
+        $serie = (new InvoiceAmountModel())->getMonthlySeries(12);
+
+        $this->assertSame($anno . '-01', $serie[0]['ym'], 'La serie comincia a gennaio dell\'anno scelto');
+        $this->assertSame($anno . '-12', $serie[11]['ym'], 'La serie finisce a dicembre dello stesso anno');
     }
 
     public function testLeEtichetteSonoNomiDiMese(): void

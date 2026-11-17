@@ -9,6 +9,15 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Corretto
+
+- Con un anno scelto l'Indice di redditività cominciava con il dicembre
+  dell'anno prima: la finestra a 12 mesi finiva a questo mese, quindi a
+  novembre 2026 la serie era dicembre 2025 – novembre 2026 e il primo mese del
+  grafico apparteneva a un altro anno. Ora i 12 mesi sono quelli dell'anno
+  scelto, da gennaio a dicembre, e l'etichetta dice «12 mesi del 2026». Le
+  finestre a 6 mesi continuano a scorrere fino a oggi.
+
 ## [v0.14.4] — 2026-11-17
 
 ### Corretto

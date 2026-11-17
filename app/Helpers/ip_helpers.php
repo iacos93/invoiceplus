@@ -2375,11 +2375,10 @@ if (!function_exists('chart_window_anchor')) {
     {
         static $cache = [];
 
-        // L'àncora si decide sempre sulla finestra di riferimento a 6 mesi:
-        // se ogni lunghezza decidesse per conto suo, la serie a 12 mesi
-        // finirebbe a questo mese mentre quella a 6 finisce a gennaio, e le
-        // due finestre della stessa pagina non sarebbero confrontabili.
-        $months = 6;
+        // Due sole lunghezze in uso: 6 mesi (finestre scorrevoli) e 12
+        // (Indice di redditività). Una lunghezza diversa ricade sulla più
+        // vicina, così le due finestre della stessa pagina restano confrontabili.
+        $months = $months >= 12 ? 12 : 6;
 
         if (isset($cache[$months])) {
             return $cache[$months];
@@ -2389,10 +2388,20 @@ if (!function_exists('chart_window_anchor')) {
         $year    = selected_year();
 
         if ($year > 0) {
+            // Con un anno scelto la finestra è l'anno: i 12 mesi vanno da
+            // gennaio a dicembre di quell'anno, anche quando è quello in
+            // corso. Finché l'Indice finiva a questo mese, a novembre 2026
+            // cominciava con il dicembre 2025: un mese di un altro anno dentro
+            // un grafico che parla dell'anno scelto, e per giunta il primo
+            // della serie, dove sembrava l'inizio dell'anno sbagliato.
+            if ($months >= 12) {
+                return $cache[$months] = $year . '-12-01 00:00:00';
+            }
+
             return $cache[$months] = $year < (int) date('Y') ? $year . '-12-01 00:00:00' : $current;
         }
 
-        $from = date('Y-m-01', strtotime('-' . (max(1, $months) - 1) . ' month', strtotime($current)));
+        $from = date('Y-m-01', strtotime('-5 month', strtotime($current)));
         $db   = \Config\Database::connect();
 
         $row = $db->query(

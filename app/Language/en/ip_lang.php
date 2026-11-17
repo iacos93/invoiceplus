@@ -850,6 +850,7 @@ return array (
   'dashboard_6_months_until' => '6 months to %s',
   'dashboard_last_12_months' => 'last 12 months',
   'dashboard_12_months_until' => '12 months to %s',
+  'dashboard_12_months_of_year' => '12 months of %d',
   'chart_open_month' => 'Click to open the details',
   'chart_open_status' => 'Click to open this status',
   'dashboard_profit_net_label' => 'Profit net of VAT',
