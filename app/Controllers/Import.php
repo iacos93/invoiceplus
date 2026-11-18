@@ -30,8 +30,18 @@ class Import extends BaseController
 
     public function index()
     {
+        $imports = $this->importModel->getAllOrdered();
+
+        // Senza importazioni la cronologia era una pagina vuota con un solo
+        // pulsante che portava al form: un passaggio in più per arrivare dove
+        // chi apre "Importa dati" voleva andare. Si va direttamente al form; la
+        // cronologia compare dalla prima importazione in poi.
+        if ($imports === []) {
+            return redirect()->to('/import/form');
+        }
+
         return view('import/index', [
-            'imports' => $this->importModel->getAllOrdered(),
+            'imports' => $imports,
         ]);
     }
 
@@ -56,7 +66,12 @@ class Import extends BaseController
             ];
         }
 
-        return view('import/import_index', ['files' => $files]);
+        return view('import/import_index', [
+            'files'      => $files,
+            // La cronologia non ha più una pagina propria finché è vuota: il
+            // collegamento compare solo quando c'è qualcosa da vedere.
+            'hasHistory' => $this->importModel->scopeToCompany()->countAllResults() > 0,
+        ]);
     }
 
     /**

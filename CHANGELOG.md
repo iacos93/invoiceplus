@@ -9,6 +9,20 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Modificato
+
+- La pagina Importa / Esporta è più semplice: due card, una per importare
+  e una per esportare, ognuna con una frase, i file in gioco e il pulsante
+  principale, più l'elenco delle anagrafiche importabili dalla loro pagina.
+  Usa le stesse card delle altre pagine.
+- Importa dati ed Esportazione aprono con una riga di istruzioni invece di
+  occhiello e slogan, e i passi non hanno più il binario numerato a
+  sinistra. Su telefono i tipi di esportazione stanno su due colonne con il
+  solo titolo, così Periodo e Formato arrivano senza scorrere tre schermate.
+- "Importa dati" porta direttamente al form finché non c'è nessuna
+  importazione, invece che a una cronologia vuota con un solo pulsante. Il
+  collegamento "Cronologia importazioni" compare dalla prima importazione.
+
 ### Corretto
 
 - Il selettore del progetto nell'attività mostra solo i progetti

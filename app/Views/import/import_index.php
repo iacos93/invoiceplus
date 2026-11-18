@@ -4,7 +4,10 @@
 <?php /* Una sola uscita: qui c'era anche un "Annulla" che portava allo storico,
          la stessa destinazione del link qui sopra e del pulsante in fondo al
          form. Tre comandi per la stessa scelta su una pagina sola. */
-$actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_exports') . '"><i class="fa fa-solid fa-arrow-left" aria-hidden="true"></i> ' . esc(trans('imports_exports', '', 'Importa / Esporta')) . '</a>'; ?>
+$actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_exports') . '"><i class="fa fa-solid fa-arrow-left" aria-hidden="true"></i> ' . esc(trans('imports_exports', '', 'Importa / Esporta')) . '</a>';
+if (! empty($hasHistory)) {
+    $actions .= ' <a class="btn btn-sm btn-secondary" href="' . site_url('import') . '"><i class="fa fa-solid fa-clock-rotate-left" aria-hidden="true"></i> ' . esc(trans('ie_history', '', 'Cronologia importazioni')) . '</a>';
+} ?>
 <?= $this->include('layout/headerbar', ['title' => trans('import_data'), 'actions' => $actions]) ?>
 
 <div id="content" class="ip-import-page">
@@ -14,13 +17,9 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_expo
              scollegati dalle card, e l'utente doveva ricostruire da solo quale file
              dipendesse da quale. Ora la dipendenza è scritta sul passo stesso. */ ?>
     <div class="ip-import-intro">
-        <p class="ip-import-intro__eyebrow">Importa dati · CSV</p>
-        <h2 class="ip-import-intro__title">Parti dal modello, non dal foglio che hai.</h2>
         <p class="ip-import-intro__desc">
-            Per ogni archivio scarica il modello, compilalo e caricalo nel suo passo. Puoi importare anche un solo file.</p>
-        <p class="ip-import-intro__desc">
-            Come separatore va bene il punto e virgola o la virgola, e la codifica viene riconosciuta da sola.
-            Date in formato <span class="ip-mono-inline">gg/mm/aaaa</span> e importi con la virgola decimale vengono convertiti automaticamente.
+            Per ogni archivio scarica il modello, compilalo e caricalo nel suo passo: anche un solo file va bene.
+            Separatore, codifica, date <span class="ip-mono-inline">gg/mm/aaaa</span> e importi con la virgola vengono riconosciuti da soli.
         </p>
     </div>
 
@@ -43,7 +42,6 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_expo
                 $fid  = $file['field'];
             ?>
             <section role="listitem" aria-label="Passo <?= $i + 1 ?>: <?= esc($meta['label'], 'attr') ?>" class="ip-import-card <?= esc($meta['class']) ?><?= $file['exists'] ? ' is-ready' : '' ?>" data-import-card>
-                <span class="ip-import-card__n" aria-hidden="true"><?= $i + 1 ?></span>
 
                 <div class="ip-import-card__head">
                     <div class="ip-import-card__left">
@@ -113,7 +111,6 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_expo
                  l'ultima riga (la zona di caricamento dei pagamenti). In fondo al
                  flusso è il passo conclusivo, con il riepilogo di cosa entrerà. */ ?>
         <div class="ip-import-actions">
-            <span class="ip-import-card__n ip-import-card__n--final" aria-hidden="true"><i class="fa fa-solid fa-check"></i></span>
             <div class="ip-import-actions__summary">
                 <p class="ip-import-actions__title">Importa</p>
                 <p class="ip-import-actions__hint" id="ip-import-summary" aria-live="polite">
@@ -121,7 +118,7 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_expo
                 </p>
             </div>
             <div class="ip-import-actions__buttons">
-                <a href="<?= site_url('import') ?>" class="btn btn-sm btn-secondary"><?= esc(trans('cancel', '', 'Annulla')) ?></a>
+                <a href="<?= site_url('imports_exports') ?>" class="btn btn-sm btn-secondary"><?= esc(trans('cancel', '', 'Annulla')) ?></a>
                 <button type="submit" name="btn_submit" class="btn btn-sm btn-success" id="ip-import-submit">
                     <i class="fa fa-solid fa-upload fa-margin" aria-hidden="true"></i> <?= trans('import', '', 'Importa') ?>
                 </button>

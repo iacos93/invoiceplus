@@ -10,9 +10,7 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_expo
 <div id="content" class="ip-import-page">
 
     <div class="ip-import-intro">
-        <p class="ip-import-intro__eyebrow">Esportazione · CSV · ZIP</p>
-        <h2 class="ip-import-intro__title">Scegli cosa, quando e come.</h2>
-        <p class="ip-import-intro__desc">Tre scelte in ordine: il contenuto, il periodo, il formato. I prospetti annuali usano l’anno della data iniziale; PDF e XML esistono solo per le fatture.</p>
+        <p class="ip-import-intro__desc">Scegli contenuto, periodo e formato. I prospetti annuali usano l’anno della data iniziale; PDF e XML esistono solo per le fatture.</p>
     </div>
 
     <form method="POST" action="<?= site_url('exports/run') ?>" id="export_form">
@@ -27,7 +25,6 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_expo
 
         <!-- ① Cosa esportare -->
             <section role="listitem" aria-label="Passo 1: <?= esc(strip_tags(trans('export_what', '', 'Cosa esportare')), 'attr') ?>" class="ip-import-card ip-import-card--clients is-active">
-                <span class="ip-import-card__n" aria-hidden="true">1</span>
                 <div class="ip-import-card__head">
                     <div class="ip-import-card__left">
                         <div class="ip-import-card__icon" aria-hidden="true"><i class="fa fa-solid fa-layer-group"></i></div>
@@ -107,7 +104,6 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_expo
 
         <!-- ② Periodo -->
             <section role="listitem" aria-label="Passo 2: <?= esc(strip_tags(trans('period', '', 'Periodo')), 'attr') ?>" class="ip-import-card ip-import-card--invoices is-active">
-                <span class="ip-import-card__n" aria-hidden="true">2</span>
                 <div class="ip-import-card__head">
                     <div class="ip-import-card__left">
                         <div class="ip-import-card__icon" aria-hidden="true"><i class="fa fa-regular fa-calendar"></i></div>
@@ -171,7 +167,6 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_expo
 
         <!-- ③ Formato -->
             <section role="listitem" aria-label="Passo 3: <?= esc(strip_tags(trans('format', '', 'Formato')), 'attr') ?>" class="ip-import-card ip-import-card--items is-active">
-                <span class="ip-import-card__n" aria-hidden="true">3</span>
                 <div class="ip-import-card__head">
                     <div class="ip-import-card__left">
                         <div class="ip-import-card__icon" aria-hidden="true"><i class="fa fa-solid fa-file-export"></i></div>
@@ -220,7 +215,6 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('imports_expo
         </div>
 
         <div class="ip-import-actions">
-            <span class="ip-import-card__n ip-import-card__n--final" aria-hidden="true"><i class="fa fa-solid fa-check"></i></span>
             <div class="ip-import-actions__summary">
                 <p class="ip-import-actions__title"><?= esc(trans('export_download', '', 'Scarica')) ?></p>
                 <p class="ip-import-actions__hint" aria-live="polite"><?= esc(trans('format', '', 'Formato')) ?>: <strong id="export_summary">CSV</strong></p>

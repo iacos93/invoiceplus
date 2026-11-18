@@ -1214,36 +1214,6 @@
 
 
 /* -----------------------------------------------------------------------------
-   Importa / Esporta — pagina di smistamento ristrutturata
-   ----------------------------------------------------------------------------- */
-/* Nota di formato dentro la card a cui si riferisce (prima una riga unica in
-   fondo alla pagina, larga quanto lo schermo: oltre 200 caratteri per riga).
-   Misura da testo di lettura e un filetto a sinistra che la stacca dai punti
-   elenco senza farne un avviso. */
-.ip-ie-card__note {
-  max-width: 62ch;
-  margin: 14px 0 0;
-  padding-left: 10px;
-  border-left: 2px solid var(--ip-border);
-  font-size: var(--ip-text-sm);
-  line-height: 1.5;
-  color: var(--ip-text-muted);
-}
-/* Senza occhiello il titolo dell'introduzione parte dal bordo. */
-.ip-ie-intro { margin-top: 0; }
-/* Scorciatoie: titolo e spiegazione su due righe, non ai due capi di una riga
-   larga (la spiegazione finiva a destra, lontana da ciò che spiegava). */
-.ip-ie-shortcuts__head {
-  display: block;
-}
-.ip-ie-shortcuts__hint {
-  max-width: 70ch;
-  margin: 2px 0 0;
-  text-align: left;
-}
-
-
-/* -----------------------------------------------------------------------------
    Campi "segreto" delle Impostazioni (chiave cron, URL del feed)
    ----------------------------------------------------------------------------- */
 /* I due pulsanti accanto al campo erano a misura piena di Bootstrap (16px) e

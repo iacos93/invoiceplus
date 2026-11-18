@@ -15,6 +15,10 @@ class ImportsExports extends BaseController
 {
     public function index()
     {
-        return view('imports_exports/index');
+        // Il pulsante "Cronologia" porta a una pagina che, vuota, rimanda al
+        // form: senza importazioni sarebbe un secondo "Nuova importazione".
+        $hasHistory = model(\App\Models\ImportModel::class)->scopeToCompany()->countAllResults() > 0;
+
+        return view('imports_exports/index', ['hasHistory' => $hasHistory]);
     }
 }
