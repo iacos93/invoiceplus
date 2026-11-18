@@ -306,12 +306,22 @@ class DeliveryNotes extends BaseController
         // Il perimetro azienda si verifica prima di cancellare: con l'id nel
         // POST si distruggeva il record di un altro soggetto giuridico, e una
         // cancellazione non si annulla.
-        if (!$this->model->findScoped($id)) {
+        $note = $this->model->findScoped($id);
+
+        if (!$note) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
         (new DeliveryNoteItemModel())->where('delivery_note_id', $id)->delete();
-        $this->model->delete($id);
+
+        // Il numero dell'ultimo DDT eliminato torna alla serie, come per
+        // fatture e preventivi: il documento rifatto riprende lo stesso.
+        if ($this->model->delete($id) && !empty($note['delivery_note_number'])) {
+            (new InvoiceGroupModel())->releaseNumber(
+                (int) ($note['invoice_group_id'] ?? 0),
+                (string) $note['delivery_note_number']
+            );
+        }
 
         session()->setFlashdata('alert_success', 'Documento di trasporto eliminato correttamente');
 

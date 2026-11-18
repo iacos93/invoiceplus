@@ -1023,6 +1023,8 @@ class QuoteModel extends IpBaseModel
             return false;
         }
 
+        $quote = $this->find($id);
+
         $this->db->table('ip_quote_item_amounts')
             ->whereIn('item_id', $this->db->table('ip_quote_items')->select('item_id')->where('quote_id', $id))
             ->delete();
@@ -1032,6 +1034,18 @@ class QuoteModel extends IpBaseModel
         $this->db->table('ip_quote_tax_rates')->where('quote_id', $id)->delete();
         $this->db->table('ip_quote_custom')->where('quote_id', $id)->delete();
 
-        return parent::delete($id, $purge);
+        $result = parent::delete($id, $purge);
+
+        // Come per le fatture: il numero torna alla serie da cui e' uscito,
+        // se era l'ultimo, cosi' il preventivo rifatto riprende lo stesso.
+        if ($result && $quote && !empty($quote['quote_number'])) {
+            $groupId = db_bool($quote['quote_number_is_draft'] ?? false)
+                ? (int) company_setting('draft_quote_group', 0)
+                : (int) ($quote['invoice_group_id'] ?? 0);
+
+            (new InvoiceGroupModel())->releaseNumber($groupId, (string) $quote['quote_number']);
+        }
+
+        return $result;
     }
 }

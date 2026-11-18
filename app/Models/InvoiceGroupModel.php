@@ -233,6 +233,46 @@ class InvoiceGroupModel extends IpBaseModel
         return $identifierFormat;
     }
 
+    /**
+     * Restituisce alla serie il numero di un documento eliminato, se era
+     * l'ultimo emesso.
+     *
+     * Eliminare una bozza (o l'ultima fattura, con la cancellazione abilitata)
+     * lasciava il contatore avanti: la fattura successiva, per esempio quella
+     * ricreata dallo stesso preventivo, prendeva il numero dopo e la serie
+     * restava con un buco. Si torna indietro solo se il numero coincide con
+     * quello che il contatore ha prodotto per ultimo: un numero in mezzo alla
+     * serie non si riusa, perche' il contatore ha gia' emesso quelli dopo.
+     */
+    public function releaseNumber(int $invoiceGroupId, string $number): void
+    {
+        if ($invoiceGroupId <= 0 || trim($number) === '') {
+            return;
+        }
+
+        $this->db->transStart();
+
+        $group = $this->db->query(
+            'SELECT * FROM ' . $this->table . ' WHERE ' . $this->primaryKey . ' = ? FOR UPDATE',
+            [$invoiceGroupId]
+        )->getRowArray();
+
+        $nextId = (int) ($group['invoice_group_next_id'] ?? 1);
+
+        if ($group && $nextId > 1 && $this->parseIdentifierFormat(
+            (string) ($group['invoice_group_identifier_format'] ?? ''),
+            $nextId - 1,
+            (int) ($group['invoice_group_left_pad'] ?? 0)
+        ) === $number) {
+            $this->builder()
+                 ->set('invoice_group_next_id', $nextId - 1)
+                 ->where($this->primaryKey, $invoiceGroupId)
+                 ->update();
+        }
+
+        $this->db->transComplete();
+    }
+
     public function setNextInvoiceNumber(int $invoiceGroupId): void
     {
         // NOTA: si usa il Query Builder diretto (builder()) e non

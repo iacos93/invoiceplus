@@ -1266,6 +1266,16 @@ class InvoiceModel extends IpBaseModel
 
         $invoiceId = (int) $invoice['invoice_id'];
 
+        // Il numero torna alla serie da cui e' uscito: quella bozze per un
+        // numero provvisorio, la serie del documento per uno definitivo.
+        if ($result && !empty($invoice['invoice_number'])) {
+            $groupId = db_bool($invoice['invoice_number_is_draft'] ?? false)
+                ? (int) company_setting('draft_invoice_group', 0)
+                : (int) ($invoice['invoice_group_id'] ?? 0);
+
+            (new InvoiceGroupModel())->releaseNumber($groupId, (string) $invoice['invoice_number']);
+        }
+
         $this->db->table('ip_invoice_items')->where('invoice_id', $invoiceId)->delete();
         $this->db->table('ip_invoice_item_amounts')->where(
             'item_id IN (SELECT item_id FROM ip_invoice_items WHERE invoice_id = ' . $invoiceId . ')',

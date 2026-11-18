@@ -15,6 +15,10 @@ Le regole per scrivere le voci e preparare una release sono in
   dell'azienda attiva — prima l'elenco comprendeva anche quelli delle
   altre e la scelta veniva poi rifiutata — e una nuova attività parte
   senza progetto scelto invece che sul primo dell'elenco.
+- Eliminare l'ultima fattura, l'ultimo preventivo o l'ultimo DDT numerato
+  (anche una bozza con numero provvisorio) restituisce il numero alla sua serie: ricreando la fattura,
+  per esempio dallo stesso preventivo, riprende lo stesso numero invece di
+  lasciare un buco. Un numero in mezzo alla serie non viene riusato.
 
 ## [v0.15.1] — 2026-11-17
 
