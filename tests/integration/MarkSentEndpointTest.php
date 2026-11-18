@@ -287,6 +287,13 @@ final class MarkSentEndpointTest extends CIUnitTestCase
     {
         $ref = new ReflectionClass(\CodeIgniter\Database\Config::class);
 
+        // Le connessioni si chiudono prima di dimenticarle: lasciate aperte
+        // restano vive fino alla fine della suite, e su MariaDB, con un test
+        // in piu', esauriscono max_connections e gli ultimi test si saltano.
+        foreach ($ref->getProperty('instances')->getValue() as $connection) {
+            $connection->close();
+        }
+
         $ref->getProperty('instances')->setValue(null, []);
         $ref->getProperty('factory')->setValue(null, null);
     }
