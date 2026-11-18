@@ -25,6 +25,10 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Un utente eliminato o disattivato da Impostazioni > Account utente non
+  resta più dentro con la sessione già aperta: alla richiesta successiva
+  l'area admin e il portale cliente distruggono la sessione e rimandano al
+  login. Vale anche per un amministratore declassato a cliente.
 - Negli elenchi su schermi sotto i 1200 px il menu Opzioni delle ultime
   righe non resta più tagliato dal bordo della tabella: prima voci come
   "Elimina" erano nascoste e non si potevano cliccare.
