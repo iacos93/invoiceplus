@@ -25,6 +25,7 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Bacheca: la finestra "Indice di redditività" ora porta a "Utile e imposte" dal titolo e dall'importo, come le altre finestre; prima cliccandola non succedeva nulla.
 - Nella scheda utente il pulsante "Cambia password" ha la stessa
   dimensione compatta degli altri pulsanti della pagina.
 - Un utente eliminato o disattivato da Impostazioni > Account utente non

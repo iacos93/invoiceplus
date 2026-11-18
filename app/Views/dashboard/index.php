@@ -472,13 +472,16 @@ $windowsToggle .= '</div></div>';
              il ragioniere traccia sotto il totale quando chiude una pagina
              del mastro). -->
         <section class="ip-window ip-window--wide<?= $profit_total < 0 ? ' ip-window--alert' : '' ?>" data-window="indice">
-            <?= $winHead('indice', trans('dashboard_profit_label', '', 'Indice di redditività'), null, 'fa-solid fa-chart-line') ?>
+            <?= $winHead('indice', trans('dashboard_profit_label', '', 'Indice di redditività'), site_url('finance'), 'fa-solid fa-chart-line') ?>
             <div class="ip-window-body ip-indice">
                 <div class="ip-indice-summary">
                     <div class="card-label"><?= esc($overview_year_label) ?></div>
-                    <div class="card-value<?= $profit_total < 0 ? ' card-value-danger' : '' ?>">
+                    <?php /* Come le altre finestre, titolo e cifra portano al
+                             dettaglio: "Utile e imposte" è la pagina che
+                             scompone questo utile e il margine dell'anno. */ ?>
+                    <a class="card-value<?= $profit_total < 0 ? ' card-value-danger' : '' ?>" href="<?= site_url('finance') ?>">
                         <?= format_currency($profit_total) ?>
-                    </div>
+                    </a>
                     <span class="ip-ledger-rule" aria-hidden="true"></span>
                     <div class="card-subtext">
                         <span class="ip-kpi-count"><?= trans('dashboard_margin_label', '', 'Margine') ?>: <?= number_format($profit_margin, 1, ',', '.') ?>%</span>
