@@ -25,6 +25,9 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Negli elenchi su schermi sotto i 1200 px il menu Opzioni delle ultime
+  righe non resta più tagliato dal bordo della tabella: prima voci come
+  "Elimina" erano nascoste e non si potevano cliccare.
 - Il selettore del progetto nell'attività mostra solo i progetti
   dell'azienda attiva — prima l'elenco comprendeva anche quelli delle
   altre e la scelta veniva poi rifiutata — e una nuova attività parte

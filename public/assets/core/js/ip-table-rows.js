@@ -90,6 +90,26 @@
         }
     });
 
+    // Menu Opzioni dentro una tabella che scorre. Sotto i 1200px
+    // .table-responsive torna a overflow-x:auto (le liste non ci stanno) e,
+    // per la spec CSS, scorre anche in verticale: il menu dell'ultima riga
+    // restava tagliato dal bordo della tabella, con "Elimina" irraggiungibile.
+    // Con la strategia "fixed" Popper posiziona il menu rispetto alla
+    // finestra e il contenitore non lo taglia più. Bootstrap non offre un
+    // modo pubblico di cambiarla per un solo dropdown dopo la creazione, ma
+    // legge _config.popperConfig solo dopo l'evento show: lo si imposta qui.
+    // Il listener sta in un bundle caricato una volta, fuori da #main-content,
+    // quindi la navigazione parziale non lo duplica.
+    document.addEventListener("show.bs.dropdown", function (e) {
+        var toggle = e.target;
+        if (!toggle || !toggle.closest || !toggle.closest(".table-responsive")) { return; }
+        var dd = window.bootstrap && window.bootstrap.Dropdown
+            ? window.bootstrap.Dropdown.getInstance(toggle) : null;
+        if (dd && dd._config) {
+            dd._config.popperConfig = { strategy: "fixed" };
+        }
+    });
+
     document.addEventListener("DOMContentLoaded", function () {
         markRows(document);
 
