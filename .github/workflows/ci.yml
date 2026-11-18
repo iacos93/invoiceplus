@@ -57,14 +57,14 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
       # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
       # job» è in testa al file, col motivo per cui i pacchetti di sistema non
       # si cacheano.
       - name: Recupera le dipendenze dalla cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
           key: vendor-${{ runner.os }}-php${{ matrix.php }}-${{ hashFiles('composer.lock') }}
@@ -157,14 +157,14 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
       # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
       # job» è in testa al file, col motivo per cui i pacchetti di sistema non
       # si cacheano.
       - name: Recupera le dipendenze dalla cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
           key: vendor-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
@@ -229,14 +229,14 @@ jobs:
     name: Analisi statica / PHP 8.5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
       # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
       # job» è in testa al file, col motivo per cui i pacchetti di sistema non
       # si cacheano.
       - name: Recupera le dipendenze dalla cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
           key: vendor-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
@@ -299,14 +299,14 @@ jobs:
     name: Intestazioni Apache / PHP 8.4
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
       # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
       # job» è in testa al file, col motivo per cui i pacchetti di sistema non
       # si cacheano.
       - name: Recupera le dipendenze dalla cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
           key: vendor-${{ runner.os }}-php8.4-${{ hashFiles('composer.lock') }}
@@ -367,14 +367,14 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
       # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
       # job» è in testa al file, col motivo per cui i pacchetti di sistema non
       # si cacheano.
       - name: Recupera le dipendenze dalla cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
           key: vendor-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
@@ -436,7 +436,7 @@ jobs:
         run: php tools/coverage_gate.php 45
 
       - name: Conserva il report di copertura
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: copertura
           path: build/logs/clover.xml
@@ -478,14 +478,14 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Cache delle dipendenze: la chiave porta il lock e la versione di PHP,
       # quindi una dipendenza cambiata la invalida da sola. La nota «Cache dei
       # job» è in testa al file, col motivo per cui i pacchetti di sistema non
       # si cacheano.
       - name: Recupera le dipendenze dalla cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
           key: vendor-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
@@ -538,7 +538,7 @@ jobs:
           PGPASSWORD: postgres
 
       - name: Installa Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -556,7 +556,7 @@ jobs:
       # compagne): finiscono in /usr e non si cacheano. Vedi la nota in testa al
       # file.
       - name: Recupera i browser di Playwright dalla cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('tests/browser/package-lock.json') }}
@@ -578,7 +578,7 @@ jobs:
 
       - name: Conserva il report in caso di errore
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report
           path: tests/browser/playwright-report/
