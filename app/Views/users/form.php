@@ -141,7 +141,7 @@ $legacyIban = trim((string) old('user_iban', $model->formValue('user_iban')));
                                          delle righe vicine: ora ha la sua, come gli altri controlli. */ ?>
                                 <div class="ip-doc-field">
                                     <span class="ip-doc-label"><?= trans('password') ?></span>
-                                    <a href="<?= site_url('users/change_password/' . $id) ?>" class="btn btn-secondary">
+                                    <a href="<?= site_url('users/change_password/' . $id) ?>" class="btn btn-sm btn-secondary">
                                         <i class="fa fa-solid fa-key fa-margin" aria-hidden="true"></i> <?= trans('change_password') ?>
                                     </a>
                                 </div>

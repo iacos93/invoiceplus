@@ -25,6 +25,8 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Nella scheda utente il pulsante "Cambia password" ha la stessa
+  dimensione compatta degli altri pulsanti della pagina.
 - Un utente eliminato o disattivato da Impostazioni > Account utente non
   resta più dentro con la sessione già aperta: alla richiesta successiva
   l'area admin e il portale cliente distruggono la sessione e rimandano al
