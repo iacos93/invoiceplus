@@ -289,6 +289,7 @@ final class F24ReceiptImportTest extends CIUnitTestCase
 
         F24ModelConcorrente::$vintaDa       = $f24Id;
         F24ModelConcorrente::$dataDellAltra = $altraData;
+        F24ModelConcorrente::$elimina       = false;
 
         $this->withRoutes([
             ['GET', 'f24/import', '\F24ImportazioneConcorrente::import'],
@@ -303,7 +304,9 @@ final class F24ReceiptImportTest extends CIUnitTestCase
 
         $this->assertStringContainsString('0 / 1', $html, 'La quietanza non allegata è contata come registrata');
         $this->assertStringContainsString(esc('Da abbinare a mano'), $html, 'La quietanza non allegata risulta abbinata');
-        $this->assertStringContainsString('abbinata nel frattempo', $html, 'L\'esito non dice che la delega era già presa');
+        $this->assertStringContainsString('La delega scelta non è più disponibile', $html, 'L\'esito non dice che la delega non era più libera');
+        $this->assertStringContainsString(site_url('f24/form/' . $f24Id) . '"', $html, 'L\'esito non collega la delega che ha preso la quietanza');
+        $this->assertStringContainsString('scadenza ' . date_from_mysql(date('Y-m-d')), $html, 'L\'esito non dice quale delega era in gioco');
 
         $riga = $this->riga($f24Id);
 
@@ -316,6 +319,43 @@ final class F24ReceiptImportTest extends CIUnitTestCase
             0,
             array_diff($this->allegatiSalvati(), $this->allegatiPrima),
             'La quietanza lasciata fuori è rimasta orfana in writable/uploads/f24'
+        );
+    }
+
+    /**
+     * Zero righe toccate può voler dire anche che la delega non esiste più:
+     * il messaggio resta neutro e non si collega una pagina che non c'è.
+     */
+    public function testDelegaEliminataNelFrattempoRestaSenzaCollegamento(): void
+    {
+        $importo = 8765.43;
+        $f24Id   = $this->delegaAperta($importo, date('Y-m-d'));
+
+        F24ModelConcorrente::$vintaDa = $f24Id;
+        F24ModelConcorrente::$elimina = true;
+
+        $this->withRoutes([
+            ['GET', 'f24/import', '\F24ImportazioneConcorrente::import'],
+            ['POST', 'f24/import', '\F24ImportazioneConcorrente::import'],
+        ]);
+
+        F24ImportazioneDiProva::$file = [
+            $this->uploadDiProva($this->quietanzaPdf($importo, date('Y-m-d', strtotime('-3 days')), '24051612345678905-000005')),
+        ];
+
+        $html = (string) $this->postImport()->response()->getBody();
+
+        $this->assertStringContainsString('0 / 1', $html, 'La quietanza senza delega è contata come registrata');
+        $this->assertStringContainsString(esc('Da abbinare a mano'), $html, 'La quietanza senza delega risulta abbinata');
+        $this->assertStringContainsString('La delega scelta non è più disponibile', $html, 'L\'esito non spiega perché la quietanza è rimasta fuori');
+        $this->assertStringNotContainsString(site_url('f24/form/' . $f24Id) . '"', $html, 'L\'esito collega una delega che non esiste più');
+
+        $this->assertNull($this->riga($f24Id), 'La delega eliminata è ricomparsa');
+
+        $this->assertCount(
+            0,
+            array_diff($this->allegatiSalvati(), $this->allegatiPrima),
+            'La quietanza rimasta senza delega ha lasciato un file orfano in writable/uploads/f24'
         );
     }
 
@@ -511,9 +551,18 @@ final class F24ModelConcorrente extends F24Model
     /** La data di versamento che scrive l'altra importazione. */
     public static string $dataDellAltra = '';
 
+    /** true per l'altro esito possibile: la delega sparisce invece di essere presa. */
+    public static bool $elimina = false;
+
     public function withoutReceipt(): array
     {
         $elenco = parent::withoutReceipt();
+
+        if (self::$elimina) {
+            $this->db->table($this->table)->where('f24_id', self::$vintaDa)->delete();
+
+            return $elenco;
+        }
 
         $this->db->table($this->table)
             ->where('f24_id', self::$vintaDa)

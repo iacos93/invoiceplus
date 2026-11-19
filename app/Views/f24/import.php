@@ -52,6 +52,12 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('f24') . '">'
                                 <?php elseif (!empty($r['reason'])): ?>
                                     <small class="text-muted"><?= esc($r['reason']) ?></small>
                                 <?php endif; ?>
+                                <?php if (!empty($r['delega'])): ?>
+                                    <?php /* La delega persa per un conflitto: si
+                                           apre per vedere quale quietanza l'ha
+                                           presa. */ ?>
+                                    <div class="small"><a href="<?= site_url('f24/form/' . (int) $r['f24_id']) ?>"><?= esc($r['delega']) ?></a></div>
+                                <?php endif; ?>
                                 <?php if (!empty($r['candidates'])): ?>
                                     <?php /* Le deleghe possibili, ciascuna apribile:
                                            da lì si allega la quietanza a quella

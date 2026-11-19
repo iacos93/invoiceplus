@@ -305,9 +305,24 @@ class F24 extends BaseController
                     @unlink(WRITEPATH . 'uploads/f24/' . $stored);
 
                     if ($scritto === 'taken') {
-                        $results[] = array_merge($row, [
-                            'reason' => 'Delega abbinata nel frattempo da un\'altra importazione: quietanza non allegata',
-                        ]);
+                        // Zero righe toccate non dice il perché: un'altra
+                        // importazione può aver abbinato la delega, oppure la
+                        // delega è stata eliminata fra la lettura e la
+                        // scrittura. Il messaggio resta neutro; il
+                        // collegamento c'è solo se la delega esiste ancora,
+                        // altrimenti porterebbe a una pagina che non c'è.
+                        $risultato = [
+                            'reason' => 'La delega scelta non è più disponibile: abbinata da un\'altra importazione o eliminata nel frattempo',
+                        ];
+
+                        $viva = $this->model->findScoped($f24Id);
+
+                        if ($viva !== null) {
+                            $risultato['f24_id'] = $f24Id;
+                            $risultato['delega'] = $this->delegaLabel($viva);
+                        }
+
+                        $results[] = array_merge($row, $risultato);
                     } else {
                         $results[] = $this->nonRegistrata($row, 'Abbinamento non registrato');
                     }
@@ -387,15 +402,30 @@ class F24 extends BaseController
      */
     private function candidateLabels(array $candidati): array
     {
-        return array_map(static function (array $candidato): array {
-            $etichetta = 'scadenza ' . date_from_mysql((string) $candidato['f24_due_date']);
+        return array_map(fn (array $candidato): array => [
+            'id'    => (int) $candidato['f24_id'],
+            'label' => $this->delegaLabel($candidato),
+        ], $candidati);
+    }
 
-            if (!empty($candidato['f24_period'])) {
-                $etichetta .= ' · ' . $candidato['f24_period'];
-            }
+    /**
+     * La delega in una riga: la scadenza, e il periodo quando c'è.
+     *
+     * La stessa forma sia per le candidate dell'abbinamento ambiguo sia per
+     * la delega persa per un conflitto: chi legge l'esito deve poterle
+     * riconoscere e aprire con un clic.
+     *
+     * @param array<string, mixed> $delega
+     */
+    private function delegaLabel(array $delega): string
+    {
+        $etichetta = 'scadenza ' . date_from_mysql((string) $delega['f24_due_date']);
 
-            return ['id' => (int) $candidato['f24_id'], 'label' => $etichetta];
-        }, $candidati);
+        if (!empty($delega['f24_period'])) {
+            $etichetta .= ' · ' . $delega['f24_period'];
+        }
+
+        return $etichetta;
     }
 
     /**

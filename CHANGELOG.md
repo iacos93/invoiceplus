@@ -28,7 +28,9 @@ Le regole per scrivere le voci e preparare una release sono in
 - Importazione delle quietanze F24: se due importazioni scelgono la stessa
   delega nello stesso momento, la seconda non la sovrascrive più — la
   quietanza resta su quella presa per prima e l'altra finisce «Da abbinare a
-  mano» con il motivo, senza lasciare il file in writable/.
+  mano» con il motivo e il collegamento alla delega, senza lasciare il file
+  in writable/. Se la delega nel frattempo è stata eliminata, il messaggio lo
+  dice senza offrire un collegamento a una pagina che non c'è.
 - Importazione delle quietanze F24: quando più deleghe hanno lo stesso
   importo e la data del versamento non basta a scegliere, la quietanza resta
   «Da abbinare a mano» con l'elenco delle deleghe candidate. Prima ne veniva
