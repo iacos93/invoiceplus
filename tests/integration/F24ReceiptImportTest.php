@@ -15,7 +15,10 @@ use CodeIgniter\Test\FeatureTestTrait;
  * allegato. Quella scrittura passa dalle regole del modello, che richiedono
  * scadenza e importo: se l'update non li ricevesse — com'era prima — sarebbe
  * rifiutato in silenzio e la quietanza risulterebbe abbinata senza essere
- * allegata. Il test guarda la riga, non il solo esito dichiarato.
+ * allegata. Il test guarda la riga, non il solo esito dichiarato. Lo stesso
+ * vale per la delega creata dalla quietanza quando nessuna corrisponde:
+ * saveRecord() torna 0 se l'INSERT è rifiutato, e l'esito deve dirlo invece
+ * di annunciare un F24 creato con un id 0.
  *
  * Un upload HTTP vero da CLI non esiste: is_uploaded_file() risponde sempre
  * no, e quindi nemmeno isValid() e move() funzionano su un file creato qui.
@@ -201,6 +204,49 @@ final class F24ReceiptImportTest extends CIUnitTestCase
         );
     }
 
+    /**
+     * Se la creazione dell'F24 dalla quietanza viene rifiutata, l'esito non
+     * deve dire «F24 creato» con un collegamento a un id 0: la quietanza
+     * resta da abbinare a mano, con il motivo, e il file appena salvato non
+     * rimane orfano in writable/.
+     */
+    public function testCreazioneRifiutataRestaNonAbbinataConIlMotivo(): void
+    {
+        // Importo che nessuna delega della copia può avere: la quietanza non
+        // trova un F24 corrispondente e passa dal ramo di creazione.
+        $importo = 998877.61;
+
+        $this->withRoutes([
+            ['GET', 'f24/import', '\F24ImportazioneCreazioneRifiutata::import'],
+            ['POST', 'f24/import', '\F24ImportazioneCreazioneRifiutata::import'],
+        ]);
+
+        F24ImportazioneDiProva::$file = [
+            $this->uploadDiProva($this->quietanzaPdf($importo, date('Y-m-d', strtotime('-3 days')), '24051612345678902-000002')),
+        ];
+
+        $html = (string) $this->postImport()->response()->getBody();
+
+        $this->assertStringContainsString(esc('Da abbinare a mano'), $html, 'La quietanza non registrata risulta creata');
+        $this->assertStringNotContainsString(esc('F24 creato'), $html, 'La quietanza non registrata porta il badge della creazione');
+        $this->assertStringContainsString('La scadenza non è una data valida', $html, 'L\'esito non spiega perché la quietanza è rimasta fuori');
+        $this->assertStringContainsString('0 / 1', $html, 'L\'esito conta come registrata una quietanza che non lo è');
+        $this->assertStringNotContainsString('f24/form/0', $html, 'L\'esito collega un id 0');
+
+        $righe = (int) $this->testDb->query(
+            'SELECT COUNT(*) AS n FROM ip_f24 WHERE f24_amount = ?',
+            [$importo]
+        )->getRow()->n;
+
+        $this->assertSame(0, $righe, 'La quietanza rifiutata ha comunque creato un F24');
+
+        $this->assertSame(
+            [],
+            array_values(array_diff($this->allegatiSalvati(), $this->allegatiPrima)),
+            'La quietanza non registrata ha lasciato un file orfano in writable/uploads/f24'
+        );
+    }
+
     /** Una delega aperta, senza quietanza, con l'importo e la scadenza dati. */
     private function delegaAperta(float $importo, string $scadenza): int
     {
@@ -325,6 +371,33 @@ final class F24ModelCheRifiuta extends F24Model
     public function errors(bool $forceDB = false): array
     {
         return ['f24_receipt_protocol' => 'Protocollo troppo lungo'];
+    }
+}
+
+/**
+ * Il controller dell'importazione con un modello che rifiuta la creazione,
+ * come farebbe una regola di validazione sulla riga nuova.
+ */
+final class F24ImportazioneCreazioneRifiutata extends F24ImportazioneDiProva
+{
+    public function __construct()
+    {
+        $this->model = new F24ModelCheRifiutaLaCreazione();
+    }
+}
+
+/** Il modello che non inserisce: saveRecord() torna 0 e un errore lo spiega. */
+final class F24ModelCheRifiutaLaCreazione extends F24Model
+{
+    public function insert($row = null, bool $returnID = true)
+    {
+        return false;
+    }
+
+    /** Come quando una regola di validazione rifiuta la riga. */
+    public function errors(bool $forceDB = false): array
+    {
+        return ['f24_due_date' => 'La scadenza non è una data valida'];
     }
 }
 

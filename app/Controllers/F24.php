@@ -284,12 +284,7 @@ class F24 extends BaseController
                 if (!$scritto) {
                     @unlink(WRITEPATH . 'uploads/f24/' . $stored);
 
-                    $motivo = $this->model->errors();
-
-                    $results[] = array_merge($row, [
-                        'reason' => 'Abbinamento non registrato'
-                            . ($motivo === [] ? '' : ': ' . implode(' ', $motivo)),
-                    ]);
+                    $results[] = $this->nonRegistrata($row, 'Abbinamento non registrato');
                     continue;
                 }
 
@@ -312,6 +307,17 @@ class F24 extends BaseController
                 'f24_receipt_protocol' => $data['protocol'],
                 'f24_date_created'     => date('Y-m-d H:i:s'),
             ]);
+
+            // saveRecord() torna 0 anche quando l'INSERT è rifiutato: senza
+            // guardare l'esito l'elenco direbbe «F24 creato» con un
+            // collegamento a un id 0, e l'allegato appena scritto resterebbe
+            // orfano in writable/.
+            if ($f24Id === 0) {
+                @unlink(WRITEPATH . 'uploads/f24/' . $stored);
+
+                $results[] = $this->nonRegistrata($row, 'F24 non creato dalla quietanza');
+                continue;
+            }
 
             $results[] = array_merge($row, ['status' => 'created', 'f24_id' => $f24Id, 'reason' => null]);
         }
@@ -341,6 +347,27 @@ class F24 extends BaseController
     protected function receiptFiles(): array
     {
         return service('request')->getFileMultiple('receipts') ?? [];
+    }
+
+    /**
+     * Esito di una quietanza che non si è potuta registrare, con il motivo
+     * del rifiuto.
+     *
+     * Il motivo sono i messaggi delle regole che hanno bloccato la riga;
+     * quando non ce ne sono è stato il database a rifiutare, e non si
+     * inventa un dettaglio che non abbiamo.
+     *
+     * @param array<string, mixed> $row
+     *
+     * @return array<string, mixed>
+     */
+    private function nonRegistrata(array $row, string $premessa): array
+    {
+        $motivo = $this->model->errors();
+
+        return array_merge($row, [
+            'reason' => $premessa . ($motivo === [] ? '' : ': ' . implode(' ', $motivo)),
+        ]);
     }
 
     /**
