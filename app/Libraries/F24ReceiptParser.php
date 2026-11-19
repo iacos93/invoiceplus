@@ -29,8 +29,15 @@ class F24ReceiptParser
         'importo\s+delega',
         'importo\s+totale',
         'totale\s+delega',
-        'importo',
     ];
+
+    /**
+     * Distanza massima fra scadenza della delega e data del versamento perché
+     * l'abbinamento valga. Un anno basta a coprire i ravvedimenti; oltre, una
+     * delega vecchia rimasta aperta per dimenticanza si prenderebbe il
+     * versamento di quella dell'anno, di pari importo.
+     */
+    private const MAX_DAYS_FROM_DUE = 366;
 
     private const DATE_LABELS = [
         'data\s+(?:del\s+)?versamento',
@@ -72,12 +79,20 @@ class F24ReceiptParser
 
         // Le etichette sono in ordine di specificità: "importo" da solo è
         // l'ultima spiaggia perché compare anche sulle righe dei tributi.
-        foreach (self::AMOUNT_LABELS as $label) {
-            $re = '/' . $label . '[^0-9]{0,40}?(\d{1,3}(?:[.\s]\d{3})*,\d{2}|\d+,\d{2}|\d+\.\d{2}(?!\d))/iu';
+        $number = '[^0-9]{0,40}?(\d{1,3}(?:[.\s]\d{3})*,\d{2}|\d+,\d{2}|\d+\.\d{2}(?!\d))';
 
-            if (preg_match($re, $text, $m)) {
+        foreach (self::AMOUNT_LABELS as $label) {
+            if (preg_match('/\b' . $label . $number . '/iu', $text, $m)) {
                 return self::toFloat($m[1]);
             }
+        }
+
+        // «Importo» da solo compare anche sulle righe dei singoli tributi: lo
+        // si prende solo se nella pagina ce n'è uno, perché allora non può
+        // che essere il totale. Con più occorrenze la prima era la prima riga
+        // dei tributi, e la quietanza finiva sulla delega di quell'importo.
+        if (preg_match_all('/\bimporto\b' . $number . '/iu', $text, $all) === 1) {
+            return self::toFloat($all[1][0]);
         }
 
         return null;
@@ -118,8 +133,11 @@ class F24ReceiptParser
         // Il protocollo telematico dell'Agenzia è numerico con trattini
         // (es. 24051612345678901-000001); le banche usano codici alfanumerici
         // (CRO/TRN). Si accetta entrambi purché lunghi abbastanza da non
-        // scambiare per protocollo un numero di pagina.
-        if (preg_match('/(?:protocollo(?:\s+telematico)?|n\.?\s*protocollo|cro|trn|riferimento\s+operazione)[\s:n°.]*([A-Z0-9][A-Z0-9\-\/]{7,58})/iu', $text, $m)) {
+        // scambiare per protocollo un numero di pagina. Le etichette vanno
+        // cercate come parole intere: senza \b «Microsoftware» dava il
+        // protocollo SOFTWARE, uguale per ogni quietanza di quella banca, e
+        // dalla seconda in poi l'importazione le scartava come già importate.
+        if (preg_match('/\b(?:protocollo(?:\s+telematico)?|n\.?\s*protocollo|cro|trn|riferimento\s+operazione)\b[\s:n°.]*([A-Z0-9][A-Z0-9\-\/]{7,58})/iu', $text, $m)) {
             return strtoupper($m[1]);
         }
 
@@ -152,9 +170,13 @@ class F24ReceiptParser
             return self::noCandidate();
         }
 
+        $paidAt = !empty($receipt['date']) ? strtotime($receipt['date']) : false;
+
         $candidates = array_values(array_filter(
             $open,
             static fn ($f) => abs((float) $f['f24_amount'] - $receipt['amount']) < 0.005
+                && ($paidAt === false
+                    || abs(strtotime((string) $f['f24_due_date']) - $paidAt) <= self::MAX_DAYS_FROM_DUE * 86400)
         ));
 
         if ($candidates === []) {

@@ -112,6 +112,46 @@ final class F24ReceiptImportTest extends CIUnitTestCase
     }
 
     /**
+     * Una quietanza senza protocollo leggibile, importata due volte: la
+     * seconda è un doppione e non deve diventare un secondo F24 pagato. Senza
+     * protocollo il vecchio controllo non aveva niente da confrontare, e la
+     * delega appena abbinata non era più fra le candidate.
+     */
+    public function testQuietanzaSenzaProtocolloReimportataNonCreaUnSecondoF24(): void
+    {
+        $importo    = 4321.09;
+        $versamento = date('Y-m-d', strtotime('-2 days'));
+        $pdf        = $this->quietanzaPdf($importo, $versamento, '');
+
+        $this->delegaAperta($importo, date('Y-m-d'));
+
+        $this->withRoutes([
+            ['GET', 'f24/import', '\F24ImportazioneDiProva::import'],
+            ['POST', 'f24/import', '\F24ImportazioneDiProva::import'],
+        ]);
+
+        $conta = fn (): int => (int) $this->testDb->query(
+            'SELECT COUNT(*) AS n FROM ip_f24 WHERE f24_amount = ?',
+            [$importo]
+        )->getRow()->n;
+
+        F24ImportazioneDiProva::$file = [$this->uploadDiProva($pdf)];
+        $this->postImport();
+
+        $this->assertSame(1, $conta(), 'La prima importazione doveva abbinare la delega, non crearne una');
+
+        $copia = tempnam(sys_get_temp_dir(), 'quietanza');
+        copy($pdf, $copia);
+        $this->daCancellare[] = $copia;
+
+        F24ImportazioneDiProva::$file = [$this->uploadDiProva($copia)];
+        $html = (string) $this->postImport()->response()->getBody();
+
+        $this->assertSame(1, $conta(), 'La reimportazione ha creato un secondo F24 pagato');
+        $this->assertStringContainsString(esc('Quietanza già importata'), $html, 'L\'esito non segnala il doppione');
+    }
+
+    /**
      * La quietanza di una delega aperta: data di versamento, protocollo e file
      * finiscono sulla riga giusta, e scadenza e importo restano com'erano.
      */

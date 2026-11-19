@@ -107,12 +107,21 @@ class F24 extends BaseController
                     return redirect()->to($id ? '/f24/form/' . $id : '/f24/form');
                 }
 
+                // I file sostituiti si cancellano solo a salvataggio riuscito:
+                // se la scrittura fallisce la riga punta ancora ai vecchi, e i
+                // nuovi appena scritti sono quelli da togliere.
+                $previous = $id ? $this->model->findScoped($id) : null;
+                $replaced = [];
+                $written  = [];
+
                 if ($file instanceof UploadedFile && $file->isValid() && !$file->hasMoved()) {
-                    $dbArray['f24_file'] = $this->storeUpload($file);
+                    $dbArray['f24_file'] = $written[] = $this->storeUpload($file);
+                    $replaced[]          = $previous['f24_file'] ?? null;
                 }
 
                 if ($receipt instanceof UploadedFile && $receipt->isValid() && !$receipt->hasMoved()) {
-                    $dbArray['f24_receipt_file'] = $this->storeUpload($receipt);
+                    $dbArray['f24_receipt_file'] = $written[] = $this->storeUpload($receipt);
+                    $replaced[]                  = $previous['f24_receipt_file'] ?? null;
                 }
 
                 $savedId = $this->saveFormRecord($this->model, $id, $dbArray, [
@@ -121,8 +130,12 @@ class F24 extends BaseController
                 ]);
 
                 if ($savedId > 0) {
+                    $this->removeStored($replaced);
+
                     return redirect()->to('/f24');
                 }
+
+                $this->removeStored($written);
             }
 
             $this->model->formValues = $post;
@@ -252,6 +265,11 @@ class F24 extends BaseController
 
             if ($data['amount'] === null || $data['date'] === null) {
                 $results[] = $row + ['reason' => 'Importo o data del versamento non riconosciuti nel PDF'];
+                continue;
+            }
+
+            if (!$data['protocol'] && $this->model->receiptExistsFor($data['amount'], $data['date'])) {
+                $results[] = $row + ['status' => 'duplicate', 'reason' => 'Quietanza già importata: c\'è già un versamento con lo stesso importo e la stessa data'];
                 continue;
             }
 
@@ -478,6 +496,20 @@ class F24 extends BaseController
         return $name;
     }
 
+    /**
+     * Cancella dalla cartella degli F24 i file indicati; i vuoti si saltano.
+     *
+     * @param array<int, mixed> $names
+     */
+    private function removeStored(array $names): void
+    {
+        foreach ($names as $name) {
+            if (is_string($name) && $name !== '') {
+                @unlink(WRITEPATH . 'uploads/f24/' . basename($name));
+            }
+        }
+    }
+
     public function delete(int $id)
     {
         if (service('request')->getMethod() !== 'POST') {
@@ -487,11 +519,18 @@ class F24 extends BaseController
         // Il perimetro azienda si verifica prima di cancellare: con l'id nel
         // POST si distruggeva il record di un altro soggetto giuridico, e una
         // cancellazione non si annulla.
-        if (!$this->model->findScoped($id)) {
+        $item = $this->model->findScoped($id);
+
+        if (!$item) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $this->model->delete($id);
+        // Modello e quietanza stanno in writable/ e nessun'altra riga li
+        // riferisce: cancellata la delega resterebbero file orfani, e il
+        // backup notturno di writable/uploads continuerebbe a portarseli.
+        if ($this->model->delete($id)) {
+            $this->removeStored([$item['f24_file'] ?? null, $item['f24_receipt_file'] ?? null]);
+        }
         session()->setFlashdata('alert_success', 'F24 eliminato correttamente');
 
         return redirect()->to('/f24');

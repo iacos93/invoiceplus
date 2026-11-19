@@ -25,6 +25,15 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- F24: reimportare una quietanza senza protocollo leggibile non crea più un
+  secondo F24 già pagato; viene segnalata come già importata.
+- F24: il protocollo delle quietanze non si legge più dentro altre parole
+  (es. «cro» in «Microsoftware»), che faceva scartare come doppioni
+  quietanze diverse della stessa banca.
+- F24: una quietanza si abbina solo a deleghe con scadenza entro un anno dal
+  versamento, e l'importo generico «Importo» si usa solo se compare una volta.
+- F24: cancellando una delega o sostituendone gli allegati, i file vecchi
+  vengono rimossi da `writable/uploads/f24`.
 - Importazione delle quietanze F24: se due importazioni scelgono la stessa
   delega nello stesso momento, la seconda non la sovrascrive più — la
   quietanza resta su quella presa per prima e l'altra finisce «Da abbinare a

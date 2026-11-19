@@ -198,6 +198,27 @@ class F24Model extends IpBaseModel
     }
 
     /**
+     * Esiste già una quietanza registrata con questo importo e questa data di
+     * versamento? È il controllo dei doppioni per le quietanze senza
+     * protocollo leggibile: lì receiptProtocolExists() non ha niente da
+     * confrontare, la delega già abbinata non è più fra le candidate e la
+     * reimportazione dello stesso PDF creava un secondo F24 pagato.
+     *
+     * L'importo si confronta con una tolleranza sotto il centesimo e non con
+     * l'uguaglianza: la colonna è decimale, il valore letto un float.
+     */
+    public function receiptExistsFor(float $amount, string $paidDate): bool
+    {
+        return $this->where('f24_paid_date', $paidDate)
+            ->where('f24_amount >=', round($amount - 0.004, 3))
+            ->where('f24_amount <=', round($amount + 0.004, 3))
+            ->where('f24_receipt_file IS NOT NULL', null, false)
+            ->where('f24_receipt_file !=', '')
+            ->scopeToCompany()
+            ->countAllResults() > 0;
+    }
+
+    /**
      * Deleghe che aspettano ancora la quietanza, pagate o no. Quelle già
      * pagate contano: spesso il pagamento si registra dall'estratto conto
      * e la quietanza arriva dopo, e restavano fuori dall'abbinamento.

@@ -117,4 +117,33 @@ final class F24ReceiptParserTest extends CIUnitTestCase
 
         $this->assertSame([1, 2], $ids, 'L\'esito deve restituire le deleghe fra cui scegliere');
     }
+
+    public function testEtichettaProtocolloSoloComeParolaIntera(): void
+    {
+        $r = (new F24ReceiptParser())->parse('Banca Microsoftware SPA Importo addebitato 1.234,56 Data addebito 16/06/2026');
+
+        $this->assertNull($r['protocol'], '«cro» dentro una parola non è l\'etichetta CRO');
+        $this->assertSame(1234.56, $r['amount']);
+    }
+
+    public function testImportoGenericoSoloSeUnico(): void
+    {
+        $parser = new F24ReceiptParser();
+
+        $this->assertSame(250.0, $parser->parse('F24 Importo 250,00')['amount']);
+        $this->assertNull(
+            $parser->parse('Codice 1040 importo 120,00 Codice 1001 importo 130,00')['amount'],
+            'Con più «importo» il primo è una riga dei tributi, non il totale'
+        );
+    }
+
+    public function testDelegaTroppoLontanaNonVieneAbbinata(): void
+    {
+        $open = [
+            ['f24_id' => 1, 'f24_amount' => '500.00', 'f24_due_date' => '2023-06-16'],
+        ];
+
+        $this->assertSame('none', F24ReceiptParser::resolve(['amount' => 500.0, 'date' => '2026-06-16'], $open)['status']);
+        $this->assertSame('matched', F24ReceiptParser::resolve(['amount' => 500.0, 'date' => '2023-12-01'], $open)['status']);
+    }
 }
