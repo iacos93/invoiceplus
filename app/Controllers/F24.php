@@ -224,7 +224,7 @@ class F24 extends BaseController
 
         $parser  = new F24ReceiptParser();
         $results = [];
-        $files   = $request->getFileMultiple('receipts') ?? [];
+        $files   = $this->receiptFiles();
 
         foreach ($files as $file) {
             if (!$file instanceof UploadedFile || $file->getError() === UPLOAD_ERR_NO_FILE) {
@@ -268,13 +268,10 @@ class F24 extends BaseController
                 // Se il pagamento era già registrato (dall'estratto conto) la
                 // sua data resta: la quietanza si allega, non la riscrive.
                 //
-                // Scadenza e importo non cambiano, ma vanno nell'array:
-                // update() rivalida la riga che riceve, e senza di loro la
-                // scadenza obbligatoria mancherebbe — l'abbinamento non
-                // scriverebbe niente pur risultando riuscito.
+                // Solo i campi che cambiano: update() valida i soli campi che
+                // riceve (cleanValidationRules), quindi la scadenza
+                // obbligatoria non entra in gioco e non serve ripassarla.
                 $this->model->update($f24Id, [
-                    'f24_due_date'         => $current['f24_due_date'],
-                    'f24_amount'           => $current['f24_amount'],
                     'f24_paid_date'        => $current['f24_paid_date'] ?: $data['date'],
                     'f24_receipt_file'     => $stored,
                     'f24_receipt_protocol' => $data['protocol'],
@@ -310,6 +307,24 @@ class F24 extends BaseController
         }
 
         return view('f24/import', ['results' => $results, 'matched' => $matched]);
+    }
+
+    /**
+     * I file allegati al POST.
+     *
+     * Estratto perché l'importazione si possa provare con un PDF vero: in CLI
+     * is_uploaded_file() risponde sempre no, quindi un upload HTTP non si può
+     * simulare. Il test sostituisce solo questa lettura; parser, abbinamento e
+     * scrittura restano quelli veri.
+     *
+     * mixed e non UploadedFile: il controllo instanceof nel chiamante resta,
+     * perché è quello che protegge dai dati della richiesta.
+     *
+     * @return array<int, mixed>
+     */
+    protected function receiptFiles(): array
+    {
+        return service('request')->getFileMultiple('receipts') ?? [];
     }
 
     /**
