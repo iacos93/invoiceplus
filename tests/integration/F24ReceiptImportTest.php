@@ -216,6 +216,65 @@ final class F24ReceiptImportTest extends CIUnitTestCase
         );
     }
 
+    /**
+     * Due deleghe con lo stesso importo e scadenze equidistanti dalla data del
+     * versamento: non c'è un criterio per scegliere. La quietanza resta da
+     * abbinare a mano con l'elenco delle candidate, e non nasce un terzo F24
+     * — che segnerebbe pagato un debito in più lasciando aperte le due vere.
+     */
+    public function testRateEquidistantiRestanoDaAbbinareSenzaCrearneUnaNuova(): void
+    {
+        $importo    = 4321.98;
+        $versamento = date('Y-m-d', strtotime('-1 day'));
+
+        $prima   = $this->delegaAperta($importo, date('Y-m-d', strtotime('-11 days')));
+        $seconda = $this->delegaAperta($importo, date('Y-m-d', strtotime('+9 days')));
+
+        $this->withRoutes([
+            ['GET', 'f24/import', '\F24ImportazioneDiProva::import'],
+            ['POST', 'f24/import', '\F24ImportazioneDiProva::import'],
+        ]);
+
+        F24ImportazioneDiProva::$file = [
+            $this->uploadDiProva($this->quietanzaPdf($importo, $versamento, '24051612345678903-000003')),
+        ];
+
+        $html = (string) $this->postImport()->response()->getBody();
+
+        $this->assertStringContainsString('0 / 1', $html, 'La quietanza ambigua è contata come registrata');
+        $this->assertStringContainsString(esc('Da abbinare a mano'), $html, 'La quietanza ambigua non risulta da abbinare');
+        $this->assertStringContainsString('Più deleghe con lo stesso importo', $html, 'L\'esito non dice perché la quietanza non è stata abbinata');
+        $this->assertStringContainsString(site_url('f24/form/' . $prima), $html, 'L\'esito non elenca la prima delega candidata');
+        $this->assertStringContainsString(site_url('f24/form/' . $seconda), $html, 'L\'esito non elenca la seconda delega candidata');
+        $this->assertStringContainsString(
+            'scadenza ' . date_from_mysql(date('Y-m-d', strtotime('-11 days'))),
+            $html,
+            'L\'elenco delle candidate non dice quale scadenza hanno le deleghe'
+        );
+        $this->assertStringNotContainsString('f24/form/0', $html, 'L\'esito collega un F24 che non esiste');
+
+        $righe = (int) $this->testDb->query(
+            'SELECT COUNT(*) AS n FROM ip_f24 WHERE f24_amount = ?',
+            [$importo]
+        )->getRow()->n;
+
+        $this->assertSame(2, $righe, 'La quietanza ambigua ha creato un terzo F24');
+
+        foreach ([$prima, $seconda] as $f24Id) {
+            $riga = $this->riga($f24Id);
+
+            $this->assertNotNull($riga, 'Una delle deleghe candidate non esiste più');
+            $this->assertNull($riga['f24_receipt_file'], 'La quietanza è finita su una delega scelta a caso');
+            $this->assertNull($riga['f24_receipt_protocol'], 'Il protocollo è finito su una delega scelta a caso');
+        }
+
+        $this->assertCount(
+            0,
+            array_diff($this->allegatiSalvati(), $this->allegatiPrima),
+            'La quietanza ambigua ha lasciato un file in writable/uploads/f24'
+        );
+    }
+
     /** I campi della quietanza di una delega, per le asserzioni sul rifiuto. */
     private function riga(int $f24Id): ?array
     {

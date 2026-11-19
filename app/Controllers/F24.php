@@ -259,11 +259,26 @@ class F24 extends BaseController
             // abbinata esce dall'insieme, e la successiva di pari importo
             // deve trovare la delega seguente, non la stessa.
             $candidates = $this->model->withoutReceipt();
-            $f24Id      = F24ReceiptParser::match($data, $candidates);
-            $stored     = $this->storeUpload($file);
+            $esito      = F24ReceiptParser::resolve($data, $candidates);
 
-            if ($f24Id !== null) {
-                $current = array_values(array_filter($candidates, static fn ($c) => (int) $c['f24_id'] === $f24Id))[0];
+            // Più deleghe con lo stesso importo e nessuna più vicina alla data
+            // del versamento: non si sceglie a caso e non si crea un F24 — ne
+            // resterebbe uno pagato in più, con le deleghe vere ancora aperte.
+            // Il file non si scrive nemmeno: la quietanza si allega a mano a
+            // quella giusta, scegliendola dall'elenco che si mostra.
+            if ($esito['status'] === 'ambiguous') {
+                $results[] = array_merge($row, [
+                    'reason'     => 'Più deleghe con lo stesso importo, nessuna più vicina alla data del versamento',
+                    'candidates' => $this->candidateLabels($esito['candidates']),
+                ]);
+                continue;
+            }
+
+            $stored = $this->storeUpload($file);
+
+            if ($esito['id'] !== null) {
+                $f24Id   = (int) $esito['id'];
+                $current = $esito['candidates'][0];
 
                 // Se il pagamento era già registrato (dall'estratto conto) la
                 // sua data resta: la quietanza si allega, non la riscrive.
@@ -348,6 +363,28 @@ class F24 extends BaseController
     protected function receiptFiles(): array
     {
         return service('request')->getFileMultiple('receipts') ?? [];
+    }
+
+    /**
+     * Le deleghe fra cui scegliere, come vanno mostrate sotto la quietanza da
+     * abbinare: la scadenza distingue le rate di pari importo, il periodo
+     * aiuta quando le scadenze sono vicine.
+     *
+     * @param array<int, array<string, mixed>> $candidati
+     *
+     * @return array<int, array{id: int, label: string}>
+     */
+    private function candidateLabels(array $candidati): array
+    {
+        return array_map(static function (array $candidato): array {
+            $etichetta = 'scadenza ' . date_from_mysql((string) $candidato['f24_due_date']);
+
+            if (!empty($candidato['f24_period'])) {
+                $etichetta .= ' · ' . $candidato['f24_period'];
+            }
+
+            return ['id' => (int) $candidato['f24_id'], 'label' => $etichetta];
+        }, $candidati);
     }
 
     /**

@@ -25,6 +25,11 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Importazione delle quietanze F24: quando più deleghe hanno lo stesso
+  importo e la data del versamento non basta a scegliere, la quietanza resta
+  «Da abbinare a mano» con l'elenco delle deleghe candidate. Prima ne veniva
+  creata una nuova: un debito pagato in più, con le deleghe vere ancora
+  aperte.
 - Importazione delle quietanze F24: se la scrittura viene rifiutata,
   l'esito ora la mostra come «Da abbinare a mano» con il motivo e cancella il
   file appena salvato, invece di dichiararla abbinata lasciandola senza

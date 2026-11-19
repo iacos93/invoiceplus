@@ -73,8 +73,12 @@ final class F24ReceiptParserTest extends CIUnitTestCase
             ['f24_id' => 2, 'f24_amount' => '980.00', 'f24_due_date' => '2025-06-30'],
         ];
 
-        $this->assertSame(2, F24ReceiptParser::match(['amount' => 980.0, 'date' => null], $open));
-        $this->assertNull(F24ReceiptParser::match(['amount' => 981.0, 'date' => null], $open));
+        $esito = F24ReceiptParser::resolve(['amount' => 980.0, 'date' => null], $open);
+
+        $this->assertSame('matched', $esito['status']);
+        $this->assertSame(2, $esito['id']);
+
+        $this->assertSame('none', F24ReceiptParser::resolve(['amount' => 981.0, 'date' => null], $open)['status']);
     }
 
     public function testRateUgualiDecideLaScadenzaPiuVicina(): void
@@ -84,8 +88,33 @@ final class F24ReceiptParserTest extends CIUnitTestCase
             ['f24_id' => 2, 'f24_amount' => '300.00', 'f24_due_date' => '2025-08-20'],
         ];
 
-        $this->assertSame(2, F24ReceiptParser::match(['amount' => 300.0, 'date' => '2025-08-19'], $open));
-        // Senza data non si sceglie a caso.
-        $this->assertNull(F24ReceiptParser::match(['amount' => 300.0, 'date' => null], $open));
+        $esito = F24ReceiptParser::resolve(['amount' => 300.0, 'date' => '2025-08-19'], $open);
+
+        $this->assertSame('matched', $esito['status']);
+        $this->assertSame(2, $esito['id']);
+
+        // Senza data non si sceglie a caso: è un'ambiguità, non «nessuna».
+        $senzaData = F24ReceiptParser::resolve(['amount' => 300.0, 'date' => null], $open);
+
+        $this->assertSame('ambiguous', $senzaData['status']);
+        $this->assertNull($senzaData['id']);
+    }
+
+    public function testRateEquidistantiRestanoAmbigue(): void
+    {
+        $open = [
+            ['f24_id' => 1, 'f24_amount' => '300.00', 'f24_due_date' => '2025-08-09'],
+            ['f24_id' => 2, 'f24_amount' => '300.00', 'f24_due_date' => '2025-08-29'],
+        ];
+
+        $esito = F24ReceiptParser::resolve(['amount' => 300.0, 'date' => '2025-08-19'], $open);
+
+        $this->assertSame('ambiguous', $esito['status'], 'Due scadenze equidistanti sono un\'ambiguità, non l\'assenza di deleghe');
+        $this->assertNull($esito['id'], 'Con due candidate equidistanti non si sceglie');
+
+        $ids = array_column($esito['candidates'], 'f24_id');
+        sort($ids);
+
+        $this->assertSame([1, 2], $ids, 'L\'esito deve restituire le deleghe fra cui scegliere');
     }
 }

@@ -127,20 +127,29 @@ class F24ReceiptParser
     }
 
     /**
-     * Sceglie l'F24 aperto a cui appartiene la quietanza.
+     * Sceglie l'F24 aperto a cui appartiene la quietanza, o dice perché non
+     * si può.
      *
      * L'importo deve coincidere al centesimo: è l'unico dato che la quietanza
      * e la delega hanno sicuramente in comune. Se più deleghe hanno lo stesso
      * importo (capita con gli acconti a rate uguali) decide la scadenza più
-     * vicina alla data di versamento; se anche così resta un pareggio, o la
-     * data manca, non si sceglie a caso e si restituisce null.
+     * vicina alla data di versamento.
      *
-     * @param array<int, array{f24_id: int|string, f24_amount: mixed, f24_due_date: ?string}> $open
+     * Tre esiti e non uno: «nessuna delega» e «più deleghe possibili» sono
+     * situazioni diverse per chi importa. Con il solo null il chiamante creava
+     * l'F24 mancante in entrambi i casi, e con le rate equidistanti ne nasceva
+     * uno pagato in più mentre le due deleghe vere restavano aperte. Quando
+     * non si può scegliere lo dice, e le candidate tornano al chiamante.
+     *
+     * @param array{amount: ?float, date: ?string} $receipt
+     * @param array<int, array<string, mixed>>     $open
+     *
+     * @return array{status: 'matched'|'none'|'ambiguous', id: ?int, candidates: array<int, array<string, mixed>>}
      */
-    public static function match(array $receipt, array $open): ?int
+    public static function resolve(array $receipt, array $open): array
     {
         if ($receipt['amount'] === null) {
-            return null;
+            return self::noCandidate();
         }
 
         $candidates = array_values(array_filter(
@@ -148,12 +157,18 @@ class F24ReceiptParser
             static fn ($f) => abs((float) $f['f24_amount'] - $receipt['amount']) < 0.005
         ));
 
-        if (count($candidates) === 1) {
-            return (int) $candidates[0]['f24_id'];
+        if ($candidates === []) {
+            return self::noCandidate();
         }
 
-        if ($candidates === [] || empty($receipt['date'])) {
-            return null;
+        if (count($candidates) === 1) {
+            return ['status' => 'matched', 'id' => (int) $candidates[0]['f24_id'], 'candidates' => $candidates];
+        }
+
+        // Senza data di versamento non c'è un criterio per scegliere fra le
+        // rate: si restituiscono tutte, non la prima dell'elenco.
+        if (empty($receipt['date'])) {
+            return ['status' => 'ambiguous', 'id' => null, 'candidates' => $candidates];
         }
 
         $paid = strtotime($receipt['date']);
@@ -163,7 +178,19 @@ class F24ReceiptParser
         $first  = abs(strtotime((string) $candidates[0]['f24_due_date']) - $paid);
         $second = abs(strtotime((string) $candidates[1]['f24_due_date']) - $paid);
 
-        return $first < $second ? (int) $candidates[0]['f24_id'] : null;
+        return $first < $second
+            ? ['status' => 'matched', 'id' => (int) $candidates[0]['f24_id'], 'candidates' => $candidates]
+            : ['status' => 'ambiguous', 'id' => null, 'candidates' => $candidates];
+    }
+
+    /**
+     * Nessuna delega con quell'importo: la quietanza può diventare un F24.
+     *
+     * @return array{status: 'none', id: null, candidates: array<int, array<string, mixed>>}
+     */
+    private static function noCandidate(): array
+    {
+        return ['status' => 'none', 'id' => null, 'candidates' => []];
     }
 
     public static function toFloat(string $raw): float

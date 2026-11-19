@@ -52,6 +52,16 @@ $actions = '<a class="btn btn-sm btn-secondary" href="' . site_url('f24') . '">'
                                 <?php elseif (!empty($r['reason'])): ?>
                                     <small class="text-muted"><?= esc($r['reason']) ?></small>
                                 <?php endif; ?>
+                                <?php if (!empty($r['candidates'])): ?>
+                                    <?php /* Le deleghe possibili, ciascuna apribile:
+                                           da lì si allega la quietanza a quella
+                                           giusta. */ ?>
+                                    <ul class="mb-0 small">
+                                        <?php foreach ($r['candidates'] as $candidata): ?>
+                                            <li><a href="<?= site_url('f24/form/' . (int) $candidata['id']) ?>"><?= esc($candidata['label']) ?></a></li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
