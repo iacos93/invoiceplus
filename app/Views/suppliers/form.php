@@ -68,22 +68,19 @@ $field = function (string $name, string $label, array $opts = []) use ($model, $
                     </div>
 
                     <div class="card-body">
-                        <div class="ip-doc-duo">
-                            <!-- Denominazione: mezza larghezza come nel form cliente -->
-                            <div class="ip-doc-field">
-                                <label class="ip-doc-label" for="supplier_name">
-                                    <?= trans('supplier_name', '', 'Ragione sociale / Denominazione') ?>
-                                </label>
-                                <input type="text" name="supplier_name" id="supplier_name" class="form-control"
-                                       autofocus required
-                                       value="<?= esc(old('supplier_name', $model->formValue('supplier_name'))) ?>">
-                                <?php if (!empty($errors['supplier_name'])): ?>
-                                    <span class="ip-field-error"><?= esc($errors['supplier_name']) ?></span>
-                                <?php endif; ?>
-                            </div>
-
-                            <!-- Colonna destra vuota — simmetria visiva con la form cliente -->
-                            <div class="ip-doc-field" style="visibility:hidden;" aria-hidden="true"></div>
+                        <!-- Denominazione a tutta larghezza, come la ragione sociale
+                             del form cliente: la metà vuota accanto sembrava un
+                             campo mancante. -->
+                        <div class="ip-doc-field">
+                            <label class="ip-doc-label" for="supplier_name">
+                                <?= trans('supplier_name', '', 'Ragione sociale / Denominazione') ?>
+                            </label>
+                            <input type="text" name="supplier_name" id="supplier_name" class="form-control"
+                                   autofocus required
+                                   value="<?= esc(old('supplier_name', $model->formValue('supplier_name'))) ?>">
+                            <?php if (!empty($errors['supplier_name'])): ?>
+                                <span class="ip-field-error"><?= esc($errors['supplier_name']) ?></span>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
