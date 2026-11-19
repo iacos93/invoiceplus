@@ -325,8 +325,18 @@
 }
 
 /* La spunta "cliente attivo" vive nella testata della prima card del form:
-   resetta il margin-bottom di .form-badge per allinearsi alla riga icona+label. */
-.ip-table-card-header > .form-badge.ip-card-header-badge { margin: 0; }
+   resetta il margin-bottom di .form-badge per allinearsi alla riga icona+label.
+   Flex con gap e non lo spazio fra testo e input: il bianco del sorgente
+   dipende dall'indentazione della view e rendeva la casella attaccata alla
+   parola «Attivo». */
+.ip-table-card-header > .form-badge.ip-card-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ip-space-4);
+  margin: 0;
+  cursor: pointer;
+}
+.ip-card-header-badge input[type="checkbox"] { margin: 0; }
 
 /* In colonna stretta le piastrelle tornano a 2, la tessera si impila. */
 @media (max-width: 767.98px) {
