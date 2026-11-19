@@ -132,6 +132,54 @@ class F24Model extends IpBaseModel
     }
 
     /**
+     * Allega la quietanza a una delega, purché sia ancora senza.
+     *
+     * Due importazioni possono leggere lo stesso elenco di deleghe libere e
+     * scegliere la stessa: con un update() per sola chiave la seconda
+     * sovrascriveva la quietanza della prima, che restava orfana in
+     * writable/, e l'esito la diceva abbinata a entrambe. La condizione sulla
+     * colonna vuota sta nell'UPDATE e non in una lettura precedente, perché
+     * fra la lettura e la scrittura l'altra importazione può arrivare; zero
+     * righe toccate vuol dire che la delega è già occupata, non che la
+     * scrittura è riuscita.
+     *
+     * Le regole del modello valgono come in update(): un rifiuto per
+     * validazione resta distinguibile da un conflitto, e il motivo finisce in
+     * errors() per chi lo deve mostrare.
+     *
+     * I campi si filtrano su $allowedFields e non su dbArrayFromPost():
+     * quest'ultimo tiene solo le chiavi che hanno una regola, e
+     * f24_receipt_file non ne ha (arriva da un upload, non dal POST) — con
+     * quel filtro la quietanza non sarebbe stata scritta affatto.
+     *
+     * @param array<string, mixed> $row
+     *
+     * @return 'written'|'taken'|'rejected' scritto, delega già occupata, scrittura rifiutata
+     */
+    public function attachReceipt(int $f24Id, array $row): string
+    {
+        $row = array_intersect_key($row, array_flip($this->allowedFields));
+
+        if ($row === [] || !$this->validate($row)) {
+            return 'rejected';
+        }
+
+        $scritto = $this->builder()
+            ->where('f24_id', $f24Id)
+            ->groupStart()
+                ->where('f24_receipt_file IS NULL', null, false)
+                ->orWhere('f24_receipt_file', '')
+            ->groupEnd()
+            ->update($row);
+
+        if (!$scritto) {
+            return 'rejected';
+        }
+
+        return $this->db->affectedRows() > 0 ? 'written' : 'taken';
+    }
+
+    /**
      * Esiste già una quietanza con questo protocollo nell'azienda attiva?
      * Reimportare lo stesso PDF non deve segnare pagata una seconda delega
      * di pari importo.

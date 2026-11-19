@@ -283,24 +283,35 @@ class F24 extends BaseController
                 // Se il pagamento era già registrato (dall'estratto conto) la
                 // sua data resta: la quietanza si allega, non la riscrive.
                 //
-                // Solo i campi che cambiano: update() valida i soli campi che
-                // riceve (cleanValidationRules), quindi la scadenza
+                // Solo i campi che cambiano: le regole valgono sui soli campi
+                // che riceve (cleanValidationRules), quindi la scadenza
                 // obbligatoria non entra in gioco e non serve ripassarla.
-                $scritto = $this->model->update($f24Id, [
+                //
+                // attachReceipt() scrive solo se la delega è ancora senza
+                // quietanza: un'altra importazione può aver scelto la stessa
+                // delega nello stesso momento.
+                $scritto = $this->model->attachReceipt($f24Id, [
                     'f24_paid_date'        => $current['f24_paid_date'] ?: $data['date'],
                     'f24_receipt_file'     => $stored,
                     'f24_receipt_protocol' => $data['protocol'],
                 ]);
 
-                // update() torna false quando la riga non si può scrivere —
-                // una regola non torna, o è il database a rifiutare: senza
+                // Nessuna scrittura — una regola non torna, il database
+                // rifiuta, o la delega è stata presa nel frattempo: senza
                 // guardare l'esito l'elenco direbbe «Abbinata» su una delega
-                // rimasta senza allegato, e nessuno saprebbe perché. Il file
-                // appena scritto resterebbe orfano: si cancella.
-                if (!$scritto) {
+                // rimasta senza la nostra quietanza. Il file appena scritto
+                // resterebbe orfano: si cancella.
+                if ($scritto !== 'written') {
                     @unlink(WRITEPATH . 'uploads/f24/' . $stored);
 
-                    $results[] = $this->nonRegistrata($row, 'Abbinamento non registrato');
+                    if ($scritto === 'taken') {
+                        $results[] = array_merge($row, [
+                            'reason' => 'Delega abbinata nel frattempo da un\'altra importazione: quietanza non allegata',
+                        ]);
+                    } else {
+                        $results[] = $this->nonRegistrata($row, 'Abbinamento non registrato');
+                    }
+
                     continue;
                 }
 

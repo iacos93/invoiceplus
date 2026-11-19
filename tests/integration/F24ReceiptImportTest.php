@@ -275,6 +275,50 @@ final class F24ReceiptImportTest extends CIUnitTestCase
         );
     }
 
+    /**
+     * Due importazioni che scelgono la stessa delega: la seconda non la
+     * sovrascrive. La delega resta con la quietanza della prima e l'esito
+     * della seconda dice che è stata presa nel frattempo, senza lasciare il
+     * proprio file in writable/.
+     */
+    public function testDelegaAbbinataNelFrattempoNonVieneSovrascritta(): void
+    {
+        $importo   = 7654.32;
+        $altraData = date('Y-m-d', strtotime('-40 days'));
+        $f24Id     = $this->delegaAperta($importo, date('Y-m-d'));
+
+        F24ModelConcorrente::$vintaDa       = $f24Id;
+        F24ModelConcorrente::$dataDellAltra = $altraData;
+
+        $this->withRoutes([
+            ['GET', 'f24/import', '\F24ImportazioneConcorrente::import'],
+            ['POST', 'f24/import', '\F24ImportazioneConcorrente::import'],
+        ]);
+
+        F24ImportazioneDiProva::$file = [
+            $this->uploadDiProva($this->quietanzaPdf($importo, date('Y-m-d', strtotime('-3 days')), '24051612345678904-000004')),
+        ];
+
+        $html = (string) $this->postImport()->response()->getBody();
+
+        $this->assertStringContainsString('0 / 1', $html, 'La quietanza non allegata è contata come registrata');
+        $this->assertStringContainsString(esc('Da abbinare a mano'), $html, 'La quietanza non allegata risulta abbinata');
+        $this->assertStringContainsString('abbinata nel frattempo', $html, 'L\'esito non dice che la delega era già presa');
+
+        $riga = $this->riga($f24Id);
+
+        $this->assertNotNull($riga, 'La delega non esiste più');
+        $this->assertSame('quietanza-dell-altra.pdf', $riga['f24_receipt_file'], 'La seconda importazione ha sovrascritto la quietanza della prima');
+        $this->assertSame('24051612345678909-000009', $riga['f24_receipt_protocol'], 'Il protocollo della prima importazione è stato sovrascritto');
+        $this->assertSame($altraData, substr((string) $riga['f24_paid_date'], 0, 10), 'La data di versamento della prima importazione è stata sovrascritta');
+
+        $this->assertCount(
+            0,
+            array_diff($this->allegatiSalvati(), $this->allegatiPrima),
+            'La quietanza lasciata fuori è rimasta orfana in writable/uploads/f24'
+        );
+    }
+
     /** I campi della quietanza di una delega, per le asserzioni sul rifiuto. */
     private function riga(int $f24Id): ?array
     {
@@ -443,6 +487,47 @@ final class F24ImportazioneRifiutata extends F24ImportazioneDiProva
 }
 
 /**
+ * Il controller dell'importazione in cui un'altra importazione abbina la
+ * delega mentre questa la sta ancora elaborando.
+ */
+final class F24ImportazioneConcorrente extends F24ImportazioneDiProva
+{
+    public function __construct()
+    {
+        $this->model = new F24ModelConcorrente();
+    }
+}
+
+/**
+ * Il modello che simula l'altra importazione: l'elenco delle deleghe libere
+ * viene letto, poi la delega scelta riceve la quietanza dell'altra mentre
+ * questa importazione ha già in mano il proprio file.
+ */
+final class F24ModelConcorrente extends F24Model
+{
+    /** La delega che l'altra importazione si aggiudica. */
+    public static int $vintaDa = 0;
+
+    /** La data di versamento che scrive l'altra importazione. */
+    public static string $dataDellAltra = '';
+
+    public function withoutReceipt(): array
+    {
+        $elenco = parent::withoutReceipt();
+
+        $this->db->table($this->table)
+            ->where('f24_id', self::$vintaDa)
+            ->update([
+                'f24_receipt_file'     => 'quietanza-dell-altra.pdf',
+                'f24_receipt_protocol' => '24051612345678909-000009',
+                'f24_paid_date'        => self::$dataDellAltra,
+            ]);
+
+        return $elenco;
+    }
+}
+
+/**
  * Il modello che non scrive la quietanza con il protocollo indicato e lascia
  * passare le altre: così lo stesso caricamento contiene un rifiuto e un
  * successo, e si vede che il primo non ferma il secondo.
@@ -451,15 +536,13 @@ final class F24ModelCheRifiuta extends F24Model
 {
     public const PROTOCOLLO = '24051612345678901-000001';
 
-    public function update($id = null, $row = null): bool
+    public function attachReceipt(int $f24Id, array $row): string
     {
-        $row = (array) $row;
-
         if (($row['f24_receipt_protocol'] ?? null) === self::PROTOCOLLO) {
-            return false;
+            return 'rejected';
         }
 
-        return parent::update($id, $row);
+        return parent::attachReceipt($f24Id, $row);
     }
 }
 
