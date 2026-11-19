@@ -244,8 +244,10 @@ final class F24ReceiptImportTest extends CIUnitTestCase
         $this->assertStringContainsString('0 / 1', $html, 'La quietanza ambigua è contata come registrata');
         $this->assertStringContainsString(esc('Da abbinare a mano'), $html, 'La quietanza ambigua non risulta da abbinare');
         $this->assertStringContainsString('Più deleghe con lo stesso importo', $html, 'L\'esito non dice perché la quietanza non è stata abbinata');
-        $this->assertStringContainsString(site_url('f24/form/' . $prima), $html, 'L\'esito non elenca la prima delega candidata');
-        $this->assertStringContainsString(site_url('f24/form/' . $seconda), $html, 'L\'esito non elenca la seconda delega candidata');
+        // Il doppio apice ancora il collegamento all'id intero: senza,
+        // «f24/form/1» passerebbe anche con un id 10 o 12 in pagina.
+        $this->assertStringContainsString(site_url('f24/form/' . $prima) . '"', $html, 'L\'esito non elenca la prima delega candidata');
+        $this->assertStringContainsString(site_url('f24/form/' . $seconda) . '"', $html, 'L\'esito non elenca la seconda delega candidata');
         $this->assertStringContainsString(
             'scadenza ' . date_from_mysql(date('Y-m-d', strtotime('-11 days'))),
             $html,
@@ -285,7 +287,7 @@ final class F24ReceiptImportTest extends CIUnitTestCase
     {
         $importo   = 7654.32;
         $altraData = date('Y-m-d', strtotime('-40 days'));
-        $f24Id     = $this->delegaAperta($importo, date('Y-m-d'));
+        $f24Id     = $this->delegaAperta($importo, date('Y-m-d'), '06/2026');
 
         F24ModelConcorrente::$vintaDa       = $f24Id;
         F24ModelConcorrente::$dataDellAltra = $altraData;
@@ -306,7 +308,11 @@ final class F24ReceiptImportTest extends CIUnitTestCase
         $this->assertStringContainsString(esc('Da abbinare a mano'), $html, 'La quietanza non allegata risulta abbinata');
         $this->assertStringContainsString('La delega scelta non è più disponibile', $html, 'L\'esito non dice che la delega non era più libera');
         $this->assertStringContainsString(site_url('f24/form/' . $f24Id) . '"', $html, 'L\'esito non collega la delega che ha preso la quietanza');
-        $this->assertStringContainsString('scadenza ' . date_from_mysql(date('Y-m-d')), $html, 'L\'esito non dice quale delega era in gioco');
+        $this->assertStringContainsString(
+            'scadenza ' . date_from_mysql(date('Y-m-d')) . ' · 06/2026',
+            $html,
+            'L\'esito non dice quale delega era in gioco, con il suo periodo'
+        );
 
         $riga = $this->riga($f24Id);
 
@@ -411,12 +417,16 @@ final class F24ReceiptImportTest extends CIUnitTestCase
         );
     }
 
-    /** Una delega aperta, senza quietanza, con l'importo e la scadenza dati. */
-    private function delegaAperta(float $importo, string $scadenza): int
+    /**
+     * Una delega aperta, senza quietanza, con l'importo e la scadenza dati e,
+     * se serve, il periodo: è quello che compare accanto alla scadenza
+     * nell'esito.
+     */
+    private function delegaAperta(float $importo, string $scadenza, ?string $periodo = null): int
     {
         $this->testDb->query(
-            'INSERT INTO ip_f24 (company_id, f24_due_date, f24_amount, f24_note) VALUES (1, ?, ?, ?)',
-            [$scadenza, $importo, 'Collaudo quietanza']
+            'INSERT INTO ip_f24 (company_id, f24_due_date, f24_amount, f24_period, f24_note) VALUES (1, ?, ?, ?, ?)',
+            [$scadenza, $importo, $periodo, 'Collaudo quietanza']
         );
 
         return (int) $this->testDb->insertID();

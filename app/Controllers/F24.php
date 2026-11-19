@@ -304,7 +304,7 @@ class F24 extends BaseController
                 if ($scritto !== 'written') {
                     @unlink(WRITEPATH . 'uploads/f24/' . $stored);
 
-                    if ($scritto === 'taken') {
+                    if ($scritto === 'conflict') {
                         // Zero righe toccate non dice il perché: un'altra
                         // importazione può aver abbinato la delega, oppure la
                         // delega è stata eliminata fra la lettura e la

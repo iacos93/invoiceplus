@@ -154,7 +154,11 @@ class F24Model extends IpBaseModel
      *
      * @param array<string, mixed> $row
      *
-     * @return 'written'|'taken'|'rejected' scritto, delega già occupata, scrittura rifiutata
+     * Builder nuovo e non $this->builder(): quest'ultimo è condiviso dal
+     * modello e può portarsi dietro WHERE e ORDER BY delle letture appena
+     * fatte (su PostgreSQL un UPDATE con ORDER BY è un errore).
+     *
+     * @return 'written'|'conflict'|'rejected' scritto, delega non più scrivibile, scrittura rifiutata
      */
     public function attachReceipt(int $f24Id, array $row): string
     {
@@ -164,7 +168,7 @@ class F24Model extends IpBaseModel
             return 'rejected';
         }
 
-        $scritto = $this->builder()
+        $scritto = $this->db->table($this->table)
             ->where('f24_id', $f24Id)
             ->groupStart()
                 ->where('f24_receipt_file IS NULL', null, false)
@@ -176,7 +180,9 @@ class F24Model extends IpBaseModel
             return 'rejected';
         }
 
-        return $this->db->affectedRows() > 0 ? 'written' : 'taken';
+        // Zero righe: la delega non era più libera. Il motivo — già abbinata
+        // da un'altra importazione o eliminata — non si può dedurre da qui.
+        return $this->db->affectedRows() > 0 ? 'written' : 'conflict';
     }
 
     /**
