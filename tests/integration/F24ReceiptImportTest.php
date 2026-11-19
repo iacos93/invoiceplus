@@ -1,6 +1,7 @@
 <?php
 
 use App\Controllers\F24;
+use App\Models\F24Model;
 use App\Models\SettingModel;
 use CodeIgniter\Database\BaseConnection;
 use CodeIgniter\HTTP\Files\UploadedFile;
@@ -158,6 +159,48 @@ final class F24ReceiptImportTest extends CIUnitTestCase
         $this->assertStringContainsString($protocollo, $testo, 'L\'allegato salvato non è il PDF caricato');
     }
 
+    /**
+     * Se la delega rifiuta la scrittura la quietanza non è abbinata: la riga
+     * resta senza protocollo e senza allegato, l'esito dice perché, e il file
+     * appena salvato non resta orfano in writable/.
+     */
+    public function testAbbinamentoRifiutatoRestaNonAbbinatoConIlMotivo(): void
+    {
+        $f24Id = $this->delegaAperta(1234.56, date('Y-m-d'));
+
+        $this->withRoutes([
+            ['GET', 'f24/import', '\F24ImportazioneRifiutata::import'],
+            ['POST', 'f24/import', '\F24ImportazioneRifiutata::import'],
+        ]);
+
+        F24ImportazioneDiProva::$file = [
+            $this->uploadDiProva($this->quietanzaPdf(1234.56, date('Y-m-d', strtotime('-3 days')), '24051612345678901-000001')),
+        ];
+
+        $html = (string) $this->postImport()->response()->getBody();
+
+        $this->assertStringContainsString(esc('Da abbinare a mano'), $html, 'La quietanza rifiutata risulta abbinata');
+        $this->assertStringNotContainsString(esc('Abbinata'), $html, 'La quietanza rifiutata porta il badge delle abbinata');
+        $this->assertStringContainsString('Protocollo troppo lungo', $html, 'L\'esito non spiega perché la quietanza è rimasta fuori');
+        $this->assertStringContainsString('0 / 1', $html, 'L\'esito conta come registrata una quietanza rifiutata');
+
+        $riga = $this->testDb->query(
+            'SELECT f24_paid_date, f24_receipt_file, f24_receipt_protocol FROM ip_f24 WHERE f24_id = ?',
+            [$f24Id]
+        )->getRowArray();
+
+        $this->assertNotNull($riga, 'La delega non esiste più');
+        $this->assertNull($riga['f24_receipt_protocol'], 'Il protocollo è stato scritto nonostante il rifiuto');
+        $this->assertNull($riga['f24_receipt_file'], 'L\'allegato è stato scritto nonostante il rifiuto');
+        $this->assertNull($riga['f24_paid_date'], 'La data di versamento è stata scritta nonostante il rifiuto');
+
+        $this->assertSame(
+            [],
+            array_values(array_diff($this->allegatiSalvati(), $this->allegatiPrima)),
+            'La quietanza rifiutata ha lasciato un file orfano in writable/uploads/f24'
+        );
+    }
+
     /** Una delega aperta, senza quietanza, con l'importo e la scadenza dati. */
     private function delegaAperta(float $importo, string $scadenza): int
     {
@@ -247,7 +290,7 @@ final class F24ReceiptImportTest extends CIUnitTestCase
  * Il controller vero dell'importazione, con i file presi da qui invece che dal
  * POST: la sola cosa che un test CLI non può costruire è l'upload.
  */
-final class F24ImportazioneDiProva extends F24
+class F24ImportazioneDiProva extends F24
 {
     /** @var list<UploadedFile> */
     public static array $file = [];
@@ -255,6 +298,33 @@ final class F24ImportazioneDiProva extends F24
     protected function receiptFiles(): array
     {
         return self::$file;
+    }
+}
+
+/**
+ * Il controller dell'importazione con un modello che rifiuta la scrittura,
+ * come farebbe una regola di validazione sulla riga.
+ */
+final class F24ImportazioneRifiutata extends F24ImportazioneDiProva
+{
+    public function __construct()
+    {
+        $this->model = new F24ModelCheRifiuta();
+    }
+}
+
+/** Il modello che non scrive: restituisce false e un errore da mostrare. */
+final class F24ModelCheRifiuta extends F24Model
+{
+    public function update($id = null, $row = null): bool
+    {
+        return false;
+    }
+
+    /** Come quando una regola di validazione rifiuta la riga. */
+    public function errors(bool $forceDB = false): array
+    {
+        return ['f24_receipt_protocol' => 'Protocollo troppo lungo'];
     }
 }
 

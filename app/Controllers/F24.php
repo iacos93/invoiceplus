@@ -271,11 +271,27 @@ class F24 extends BaseController
                 // Solo i campi che cambiano: update() valida i soli campi che
                 // riceve (cleanValidationRules), quindi la scadenza
                 // obbligatoria non entra in gioco e non serve ripassarla.
-                $this->model->update($f24Id, [
+                $scritto = $this->model->update($f24Id, [
                     'f24_paid_date'        => $current['f24_paid_date'] ?: $data['date'],
                     'f24_receipt_file'     => $stored,
                     'f24_receipt_protocol' => $data['protocol'],
                 ]);
+
+                // update() rifiuta la riga quando una regola non torna:
+                // senza guardare l'esito l'elenco direbbe «Abbinata» su una
+                // delega rimasta senza allegato, e nessuno saprebbe perché.
+                // Il file appena scritto resterebbe orfano: si cancella.
+                if (!$scritto) {
+                    @unlink(WRITEPATH . 'uploads/f24/' . $stored);
+
+                    $motivo = $this->model->errors();
+
+                    $results[] = array_merge($row, [
+                        'reason' => 'Abbinamento non registrato'
+                            . ($motivo === [] ? '' : ': ' . implode(' ', $motivo)),
+                    ]);
+                    continue;
+                }
 
                 $results[] = array_merge($row, ['status' => 'matched', 'f24_id' => $f24Id, 'reason' => null]);
                 continue;

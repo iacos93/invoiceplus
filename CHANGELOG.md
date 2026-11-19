@@ -25,6 +25,10 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Importazione delle quietanze F24: se la delega non accetta la scrittura
+  (una regola di validazione sulla riga), l'esito ora la mostra come «Da
+  abbinare a mano» con il motivo e cancella il file appena salvato, invece di
+  dichiararla abbinata lasciandola senza protocollo né allegato.
 - Bacheca: la finestra "Indice di redditività" ora porta a "Utile e imposte" dal titolo e dall'importo, come le altre finestre; prima cliccandola non succedeva nulla.
 - Nella scheda utente il pulsante "Cambia password" ha la stessa
   dimensione compatta degli altri pulsanti della pagina.
