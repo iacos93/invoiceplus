@@ -163,13 +163,20 @@ final class F24ReceiptImportTest extends CIUnitTestCase
     }
 
     /**
-     * Se la delega rifiuta la scrittura la quietanza non è abbinata: la riga
-     * resta senza protocollo e senza allegato, l'esito dice perché, e il file
-     * appena salvato non resta orfano in writable/.
+     * Una quietanza rifiutata non ferma quelle caricate con lei: quella buona
+     * si scrive, quella rifiutata resta senza protocollo e senza allegato con
+     * il motivo in pagina, e il suo file viene cancellato.
+     *
+     * Le regole del modello non possono rifiutare questo update: il parser
+     * non produce protocolli oltre i 59 caratteri, quindi il limite di 60 non
+     * scatta mai. Il rifiuto che resta è quello del database, che non lascia
+     * messaggi di validazione: il motivo è quindi il riepilogo di ripiego.
      */
     public function testAbbinamentoRifiutatoRestaNonAbbinatoConIlMotivo(): void
     {
-        $f24Id = $this->delegaAperta(1234.56, date('Y-m-d'));
+        $rifiutataId = $this->delegaAperta(1234.56, date('Y-m-d'));
+        $accoltaId   = $this->delegaAperta(2345.67, date('Y-m-d', strtotime('+5 days')));
+        $versamento  = date('Y-m-d', strtotime('-3 days'));
 
         $this->withRoutes([
             ['GET', 'f24/import', '\F24ImportazioneRifiutata::import'],
@@ -177,31 +184,45 @@ final class F24ReceiptImportTest extends CIUnitTestCase
         ]);
 
         F24ImportazioneDiProva::$file = [
-            $this->uploadDiProva($this->quietanzaPdf(1234.56, date('Y-m-d', strtotime('-3 days')), '24051612345678901-000001')),
+            $this->uploadDiProva($this->quietanzaPdf(1234.56, $versamento, F24ModelCheRifiuta::PROTOCOLLO)),
+            $this->uploadDiProva($this->quietanzaPdf(2345.67, $versamento, '24051612345678901-000002')),
         ];
 
         $html = (string) $this->postImport()->response()->getBody();
 
+        $this->assertStringContainsString('1 / 2', $html, 'L\'esito conta come registrate le quietanze che non lo sono');
         $this->assertStringContainsString(esc('Da abbinare a mano'), $html, 'La quietanza rifiutata risulta abbinata');
-        $this->assertStringNotContainsString(esc('Abbinata'), $html, 'La quietanza rifiutata porta il badge delle abbinata');
-        $this->assertStringContainsString('Protocollo troppo lungo', $html, 'L\'esito non spiega perché la quietanza è rimasta fuori');
-        $this->assertStringContainsString('0 / 1', $html, 'L\'esito conta come registrata una quietanza rifiutata');
+        $this->assertStringContainsString('Abbinamento non registrato: salvataggio rifiutato dal database', $html, 'L\'esito non spiega perché la quietanza è rimasta fuori');
 
-        $riga = $this->testDb->query(
+        $rifiutata = $this->riga($rifiutataId);
+
+        $this->assertNotNull($rifiutata, 'La delega rifiutata non esiste più');
+        $this->assertNull($rifiutata['f24_receipt_protocol'], 'Il protocollo è stato scritto nonostante il rifiuto');
+        $this->assertNull($rifiutata['f24_receipt_file'], 'L\'allegato è stato scritto nonostante il rifiuto');
+        $this->assertNull($rifiutata['f24_paid_date'], 'La data di versamento è stata scritta nonostante il rifiuto');
+
+        $accolta = $this->riga($accoltaId);
+
+        $this->assertNotNull($accolta, 'La delega da abbinare non esiste più');
+        $this->assertSame('24051612345678901-000002', $accolta['f24_receipt_protocol'], 'La quietanza buona non è stata abbinata dopo quella rifiutata');
+        $this->assertSame($versamento, substr((string) $accolta['f24_paid_date'], 0, 10), 'La data di versamento della quietanza buona non è stata scritta');
+        $this->assertNotSame('', (string) $accolta['f24_receipt_file'], 'La quietanza buona risulta abbinata senza allegato');
+        $this->assertFileExists(WRITEPATH . 'uploads/f24/' . $accolta['f24_receipt_file'], 'L\'allegato della quietanza buona non c\'è');
+
+        $this->assertCount(
+            1,
+            array_diff($this->allegatiSalvati(), $this->allegatiPrima),
+            'In writable/uploads/f24 doveva restare il solo allegato della quietanza accolta'
+        );
+    }
+
+    /** I campi della quietanza di una delega, per le asserzioni sul rifiuto. */
+    private function riga(int $f24Id): ?array
+    {
+        return $this->testDb->query(
             'SELECT f24_paid_date, f24_receipt_file, f24_receipt_protocol FROM ip_f24 WHERE f24_id = ?',
             [$f24Id]
         )->getRowArray();
-
-        $this->assertNotNull($riga, 'La delega non esiste più');
-        $this->assertNull($riga['f24_receipt_protocol'], 'Il protocollo è stato scritto nonostante il rifiuto');
-        $this->assertNull($riga['f24_receipt_file'], 'L\'allegato è stato scritto nonostante il rifiuto');
-        $this->assertNull($riga['f24_paid_date'], 'La data di versamento è stata scritta nonostante il rifiuto');
-
-        $this->assertSame(
-            [],
-            array_values(array_diff($this->allegatiSalvati(), $this->allegatiPrima)),
-            'La quietanza rifiutata ha lasciato un file orfano in writable/uploads/f24'
-        );
     }
 
     /**
@@ -335,6 +356,9 @@ final class F24ReceiptImportTest extends CIUnitTestCase
 /**
  * Il controller vero dell'importazione, con i file presi da qui invece che dal
  * POST: la sola cosa che un test CLI non può costruire è l'upload.
+ *
+ * Non final: i controller di prova qui sotto lo estendono per sostituire il
+ * solo modello, lasciando intatta l'importazione.
  */
 class F24ImportazioneDiProva extends F24
 {
@@ -348,8 +372,8 @@ class F24ImportazioneDiProva extends F24
 }
 
 /**
- * Il controller dell'importazione con un modello che rifiuta la scrittura,
- * come farebbe una regola di validazione sulla riga.
+ * Il controller dell'importazione con un modello che rifiuta una quietanza
+ * sola, come il database che non scrive la riga.
  */
 final class F24ImportazioneRifiutata extends F24ImportazioneDiProva
 {
@@ -359,18 +383,24 @@ final class F24ImportazioneRifiutata extends F24ImportazioneDiProva
     }
 }
 
-/** Il modello che non scrive: restituisce false e un errore da mostrare. */
+/**
+ * Il modello che non scrive la quietanza con il protocollo indicato e lascia
+ * passare le altre: così lo stesso caricamento contiene un rifiuto e un
+ * successo, e si vede che il primo non ferma il secondo.
+ */
 final class F24ModelCheRifiuta extends F24Model
 {
+    public const PROTOCOLLO = '24051612345678901-000001';
+
     public function update($id = null, $row = null): bool
     {
-        return false;
-    }
+        $row = (array) $row;
 
-    /** Come quando una regola di validazione rifiuta la riga. */
-    public function errors(bool $forceDB = false): array
-    {
-        return ['f24_receipt_protocol' => 'Protocollo troppo lungo'];
+        if (($row['f24_receipt_protocol'] ?? null) === self::PROTOCOLLO) {
+            return false;
+        }
+
+        return parent::update($id, $row);
     }
 }
 

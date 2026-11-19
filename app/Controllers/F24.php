@@ -277,10 +277,11 @@ class F24 extends BaseController
                     'f24_receipt_protocol' => $data['protocol'],
                 ]);
 
-                // update() rifiuta la riga quando una regola non torna:
-                // senza guardare l'esito l'elenco direbbe «Abbinata» su una
-                // delega rimasta senza allegato, e nessuno saprebbe perché.
-                // Il file appena scritto resterebbe orfano: si cancella.
+                // update() torna false quando la riga non si può scrivere —
+                // una regola non torna, o è il database a rifiutare: senza
+                // guardare l'esito l'elenco direbbe «Abbinata» su una delega
+                // rimasta senza allegato, e nessuno saprebbe perché. Il file
+                // appena scritto resterebbe orfano: si cancella.
                 if (!$scritto) {
                     @unlink(WRITEPATH . 'uploads/f24/' . $stored);
 
@@ -353,9 +354,10 @@ class F24 extends BaseController
      * Esito di una quietanza che non si è potuta registrare, con il motivo
      * del rifiuto.
      *
-     * Il motivo sono i messaggi delle regole che hanno bloccato la riga;
-     * quando non ce ne sono è stato il database a rifiutare, e non si
-     * inventa un dettaglio che non abbiamo.
+     * Il motivo è il riepilogo del modello, lo stesso che i form mettono in
+     * flashdata: le regole che hanno bloccato la riga se ci sono, altrimenti
+     * il rifiuto del database. Composto qui perché le due strade che non
+     * scrivono — abbinamento e creazione — devono dirlo allo stesso modo.
      *
      * @param array<string, mixed> $row
      *
@@ -363,10 +365,8 @@ class F24 extends BaseController
      */
     private function nonRegistrata(array $row, string $premessa): array
     {
-        $motivo = $this->model->errors();
-
         return array_merge($row, [
-            'reason' => $premessa . ($motivo === [] ? '' : ': ' . implode(' ', $motivo)),
+            'reason' => $premessa . ': ' . $this->model->saveErrorSummary(),
         ]);
     }
 
