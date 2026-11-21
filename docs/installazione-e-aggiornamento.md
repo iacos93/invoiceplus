@@ -183,10 +183,12 @@ tools/deploy.sh
 
 Cosa fa, nell'ordine: controlla che l'albero sia pulito e che il ramo sia
 `main`, esegue il backup (dump del database e file caricati, passando
-dall'endpoint `cron/backup` con la chiave di `writable/cron-runner.conf`),
-aggiorna da `origin/main` con `--ff-only`, installa le dipendenze **solo** se
-`composer.lock` è cambiato, applica le migrazioni, svuota la cache delle
-configurazioni, ricarica il pool e chiede a Gotenberg se risponde. Usa `php8.4`
+dall'endpoint `cron/backup` con la chiave di `writable/cron-runner.conf`), crea
+la copia `release-pre` del commit di partenza senza i backup, aggiorna da
+`origin/main` con `--ff-only`, installa le dipendenze **solo** se
+`composer.lock` è cambiato, applica le migrazioni, svuota la cache
+dell'applicazione (Redis o file) e, se esiste, quella delle configurazioni,
+ricarica il pool e chiede a Gotenberg se risponde. Usa `php8.4`
 quando è nel PATH: è la versione del pool, mentre il `php` generico della
 macchina può essere un'altra.
 
@@ -288,8 +290,7 @@ rollback: nessun dump corrisponderebbe), verifica che
 `../release-pre-<sha del commit>` esista e contenga `.env`, controlla PHP 8.4
 (`PHP_BIN`, letto anche da `writable/cron-runner.conf`), fa il `git checkout`,
 riallinea `vendor/` **solo** se è cambiato `composer.lock`, svuota la cache
-delle configurazioni e ricorda il reload — che non esegue, perché richiede
-root:
+dell'applicazione e ricorda il reload — che non esegue, perché richiede root:
 
 ```console
 sudo systemctl reload php8.4-fpm    # da ubuntu

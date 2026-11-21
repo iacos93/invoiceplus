@@ -46,6 +46,7 @@ exit 0
 EOS
 chmod +x "$T/bin/php" "$T/bin/composer"
 
+
 # Un'app finta con due commit e la copia del primo: è lo stato che un deploy ha
 # lasciato dietro, quello che un rollback deve trovare.
 #   make_app <cartella> <plain|migration|lock> [nodump]
@@ -65,6 +66,9 @@ make_app() {
         printf 'dump\n' > writable/backups/backup_20260101_030000.dump
         if [ "$nodump" = "1" ]; then rm -f writable/backups/backup_*; fi
         printf 'lib\n' > vendor/lib.php
+        # Nel progetto vero writable/cache è ignorata: qui serve perché lo
+        # scenario 1 ci mette dentro la cache delle configurazioni.
+        printf 'writable/cache/\n' > .gitignore
         printf '<html>\n' > public/index.php
         printf '<?php // a\n' > app/Controllers/A.php
         cp "$REPO/tools/rollback.sh" tools/rollback.sh
@@ -100,6 +104,8 @@ run_rb() {
 echo "== 1. caso normale: nessuna migrazione, copia presente"
 d="$T/s1"; make_app "$d" plain
 pre=$(cat "$d.pre")
+mkdir -p "$d/writable/cache"
+printf "cache\n" > "$d/writable/cache/FactoriesCache_config"
 prev=$(git -C "$d" rev-parse HEAD~1)
 out=$(run_rb "$d" ""); rc=$?
 chk "1.1 exit" "$rc" 0
@@ -110,6 +116,7 @@ has "spark cache:clear" "$(cat "$d/php.log" 2>/dev/null)"
 miss "composer install" "$out"
 has "systemctl reload php8.4-fpm" "$out"
 has "$pre" "$out"
+chk "1.4 cache delle configurazioni rimossa" "$([ -e "$d/writable/cache/FactoriesCache_config" ] && echo presente || echo assente)" "assente"
 
 echo "== 2. copia release-pre assente"
 d="$T/s2"; make_app "$d" plain

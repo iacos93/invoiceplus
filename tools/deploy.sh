@@ -4,7 +4,7 @@
 # È la procedura di docs/installazione-e-aggiornamento.md messa in uno script
 # perché copiarla a mano ha tre punti dove si sbaglia: la versione di PHP (il
 # `php` del PATH non è detto sia quella del pool), l'ordine fra migrazioni e
-# cache delle configurazioni, e il backup, che si dimentica proprio quando
+# svuotamento della cache, e il backup, che si dimentica proprio quando
 # serve. Lo script si ferma al primo passo che fallisce: un aggiornamento a
 # metà è peggio di uno non iniziato.
 #
@@ -197,9 +197,8 @@ printf '%s\n' "$backup_text"
 
 # --- 1b. Copia di sicurezza ------------------------------------------------
 # Serve al rollback, che si rifiuta di partire senza: va fatta prima del pull,
-# perché il commit da copiare è quello che il pull porta via. Se la copia esiste
-# già per questo commit la riuso — è lo stesso contenuto — invece di sovrascriverla
-# con uno stato che nel frattempo è cambiato.
+# perché il commit da copiare è quello che il pull porta via. Se esiste già per
+# questo commit la riuso: rifarla non aggiungerebbe niente.
 say "Copia di sicurezza per il rollback"
 parent=$(CDPATH= cd -- "$APP_DIR/.." && pwd)
 short=$(git rev-parse --short HEAD)
@@ -211,9 +210,8 @@ elif [ -d "$copy" ]; then
     die "Esiste $copy ma non contiene .env: è una copia incompleta di un tentativo precedente.
    Eliminala (rm -rf $copy) e rilancia: senza una copia valida il rollback non partirebbe."
 elif command -v rsync >/dev/null 2>&1; then
-    # `writable/backups` resta fuori: con `cp` i dump si duplicherebbero a ogni
-    # deploy, e su un disco che ne conserva già quattordici sono i GB che
-    # crescono più in fretta.
+    # `writable/backups` resta fuori: sono i dump e gli zip dei file caricati, e
+    # copiarli a ogni deploy raddoppierebbe i GB che la rotazione già tiene.
     rsync -a --exclude 'writable/backups/' "$APP_DIR"/ "$copy"/ \
         || die "Copia di sicurezza non riuscita ($copy): il pull non è stato fatto.
    Controlla lo spazio disco e rilancia."
@@ -259,12 +257,15 @@ say "Migrazioni"
     || die "Migrazione fallita: fermati qui. Il codice è a $(git rev-parse --short HEAD), lo schema no.
    Leggi l'errore, ripristina il dump se serve e riapri la segnalazione con il nome della migrazione."
 
-# Le configurazioni sono cacheate (Config/*): dopo un aggiornamento che le
-# cambia, l'applicazione partirebbe con i valori vecchi.
-say "Cache delle configurazioni"
+# `cache:clear` svuota il gestore configurato — qui Redis, o i file dove Redis
+# non c'è — dove stanno valori calcolati dal codice precedente: impostazioni,
+# totali dei report. Non è la cache delle configurazioni: quella esiste solo
+# dopo `spark optimize` ed è un file, che `cache:clear` non tocca.
+say "Cache dell'applicazione"
 "$PHP_BIN" spark cache:clear \
-    || die "cache:clear non riuscito: le configurazioni potrebbero restare quelle vecchie.
+    || die "cache:clear non riuscito: l'applicazione potrebbe rileggere valori calcolati dal codice vecchio.
    Rilancia '$PHP_BIN spark cache:clear' e leggi writable/logs."
+rm -f writable/cache/FactoriesCache_config
 
 # --- 4. PHP-FPM ------------------------------------------------------------
 # L'opcache si carica all'avvio del pool: senza reload può continuare a
@@ -294,3 +295,4 @@ from_short=$(git rev-parse --short "$current")
 printf '\nFatto: %s → %s\n' "$from_short" "$(git rev-parse --short HEAD)"
 printf 'Per tornare indietro: tools/rollback.sh %s, poi il reload del pool e, se lo schema è cambiato, il ripristino del dump.\n' \
     "$from_short"
+printf "La copia di prima del pull è in %s: eliminala quando l'applicazione è confermata,\nperché contiene .env con la chiave di cifratura.\n" "$copy"

@@ -161,12 +161,15 @@ else
     say "composer.lock invariato: dipendenze non toccate"
 fi
 
-# Le configurazioni sono cacheate (Config/*): senza svuotarle l'applicazione
-# ripartirebbe con i valori del commit nuovo.
-say "Cache delle configurazioni"
+# La cache dell'applicazione (Redis, o file dove Redis non c'è) tiene valori
+# calcolati dal codice che si sta lasciando: impostazioni, totali dei report.
+# `cache:clear` svuota quel gestore; la cache delle configurazioni è un'altra
+# cosa — esiste solo dopo `spark optimize` — e va rimossa a parte.
+say "Cache dell'applicazione"
 "$PHP_BIN" spark cache:clear \
-    || die "cache:clear non riuscito: le configurazioni potrebbero restare quelle del commit nuovo.
+    || die "cache:clear non riuscito: l'applicazione potrebbe rileggere valori calcolati dal commit nuovo.
    Rilancia '$PHP_BIN spark cache:clear' e leggi writable/logs."
+rm -f writable/cache/FactoriesCache_config
 
 # --- 3. Reload del pool ----------------------------------------------------
 # Il reload richiede root e lo script non lo esegue: qui è un promemoria, il
