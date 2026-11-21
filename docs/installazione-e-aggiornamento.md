@@ -65,6 +65,69 @@ Dopo l'aggiornamento:
 - riattiva la riga di crontab;
 - passa la checklist qui sotto.
 
+### L'aggiornamento di questo server (invoice.novatech.cloud)
+
+L'installazione che serve `invoice.novatech.cloud` sta in
+`/home/invoiceplus/htdocs/invoice.novatech.cloud`, è dell'utente `invoiceplus`
+e ha `public/` come document root. Sull'host (`novatech-srv`) il login diretto
+di `root` è chiuso: si entra come `ubuntu` e da lì si passa all'utente del
+sito. L'indirizzo del server non è scritto qui perché questo file sta nel
+repository pubblico: sta nel gestore delle credenziali.
+
+Tre cose sono diverse dalla procedura generale e vanno sapute prima di
+toccare i file:
+
+- il pool PHP-FPM del sito è
+  `/etc/php/8.4/fpm/pool.d/invoice.novatech.cloud.conf`
+  (`listen = 127.0.0.1:19001`, `user = invoiceplus`): si ricarica **php8.4-fpm**,
+  non un'altra delle versioni installate sulla macchina;
+- l'aggiornamento segue `origin/main`, non un tag;
+- Gotenberg è già installato e ascolta su `127.0.0.1:3000`, che è il valore
+  predefinito di `pdf.gotenbergURL`: il `.env` non va toccato.
+
+```console
+ssh ubuntu@novatech-srv
+sudo -iu invoiceplus
+cd /home/invoiceplus/htdocs/invoice.novatech.cloud
+
+# 0. backup e fotografia dello schema (sezione Backup)
+php spark migrate:status
+
+# 1. codice
+PRIMA=$(git rev-parse HEAD)
+git pull --ff-only origin main
+
+# 2. dipendenze solo se il lock è cambiato rispetto al commit di partenza
+if git diff --name-only "$PRIMA" HEAD -- composer.lock | grep -q .; then
+  composer install --no-dev --prefer-dist --no-interaction
+fi
+
+# 3. schema e cache delle configurazioni
+php spark migrate
+php spark cache:clear
+```
+
+Poi, ancora come `invoiceplus`, i due controlli che dicono se l'aggiornamento
+è a posto:
+
+```console
+# se Gotenberg non risponde, ogni PDF esce da dompdf e nel log resta il motivo
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/health   # 200
+php spark migrate:status                                               # nessuna migrazione da applicare
+```
+
+Infine il reload del pool, che richiede root: si esce da `invoiceplus` (`exit`)
+e lo si fa dalla sessione di `ubuntu`.
+
+```console
+sudo systemctl reload php8.4-fpm
+```
+
+Il controllo che conta è un PDF di fattura vera: deve uscire da Chromium, con i
+margini del foglio e «Pagina n / totale» nel piede. Se il PDF arriva ma in
+`writable/logs` c'è «Stampa PDF con Gotenberg non riuscita», il ripiego ha
+funzionato e il guasto è nel servizio: il `curl` qui sopra dice se risponde.
+
 ### Tornare indietro
 
 Il codice si riporta al tag precedente con `git checkout <tag>` e
