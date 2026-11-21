@@ -159,6 +159,16 @@ script fa gli stessi passi con più controlli (albero pulito, `--ff-only`,
 backup obbligatorio, permesso del reload verificato prima di partire) e da lì
 anche la copia `release-pre` la crea lui.
 
+Lo stesso vale per il rollback. `tools/rollback.sh` è entrato nel repository
+con lo stesso commit di `deploy.sh`, quindi su un'installazione più vecchia di
+`bec3c4e` **non esiste nemmeno lui**: il primo ritorno indietro si fa a mano,
+come il primo aggiornamento — la copia `release-pre` se non c'è già (il blocco
+qui sopra la crea), `git checkout <commit>`, `composer install` solo se è
+cambiato `composer.lock`, `php8.4 spark cache:clear`, il reload del pool e il
+dump soltanto se le migrazioni fra i due commit lo richiedono. Dalla volta
+successiva il rollback è `tools/rollback.sh`, descritto nella sottosezione
+seguente.
+
 #### L'aggiornamento, dalla seconda volta in poi
 
 L'aggiornamento si fa con `tools/deploy.sh`, che esegue gli stessi passi nella
@@ -210,6 +220,11 @@ funzionato e il guasto è nel servizio: il `curl` qui sopra dice se risponde.
 Vale la procedura generale di [Tornare indietro](#tornare-indietro); qui c'è
 solo quello che cambia quando l'aggiornamento segue `origin/main` e c'è un pool
 da ricaricare.
+
+Su un'installazione più vecchia di `bec3c4e` `tools/rollback.sh` non esiste
+ancora — lo porta il pull, come `deploy.sh` — quindi il **primo** rollback va
+fatto a mano, con i passi descritti in «La prima volta: lo script non c'è
+ancora»; dalla volta successiva vale quello che segue.
 
 Lo script porta il codice a un commit nuovo; git sa tornare a quello
 precedente, lo schema no. Prima del pull `tools/deploy.sh` crea da solo la copia
