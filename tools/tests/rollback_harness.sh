@@ -286,6 +286,9 @@ out=$( cd "$d" && printf '' | PATH="$T/bin:$PATH" PHP_LOG="$d/php.log" KILL_LOG=
 chk "18.1 exit" "$rc" 0
 chk "18.2 HEAD al commit precedente" "$(git -C "$d" rev-parse HEAD)" "$prev"
 has "nessun worker è ripartito" "$out"
+# Attesa configurata a 1 s, ma il ciclo dorme a passi da 2: il messaggio deve
+# dire i secondi trascorsi (2), non il limite impostato (1).
+has "dopo 2 s nessun worker è ripartito" "$out"
 has "spark queue:status" "$out"
 
 echo

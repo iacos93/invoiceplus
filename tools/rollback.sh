@@ -215,11 +215,16 @@ else
                     break
                 fi
             done
+            # Il tempo riportato è quello trascorso davvero, non il limite
+            # configurato: il ciclo dorme a passi da 2 s e l'ultimo può cadere
+            # oltre l'attesa (con 3 s se ne contano 4), quindi dire il limite
+            # sarebbe una seconda imprecisione sopra quella che si sta
+            # segnalando.
             if [ "$back" = "1" ]; then
                 printf 'Worker di nuovo attivi dopo %s s.\n' "$waited"
             else
                 printf 'Attenzione: dopo %s s nessun worker è ripartito: le code restano ferme finché qualcuno non li avvia (crontab, supervisor, systemd). Controlla con: %s spark queue:status\n' \
-                    "$QUEUE_WAIT" "$PHP_BIN"
+                    "$waited" "$PHP_BIN"
             fi
         fi
     fi

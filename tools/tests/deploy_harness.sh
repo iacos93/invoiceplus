@@ -231,6 +231,9 @@ export PGREP_PIDS="321" PGREP_STATE="$T/pgrep8" KILL_LOG="$T/kill8.log" DEPLOY_Q
 out=$(run_deploy "$d" "$T/bin:$PATH"); rc=$?
 chk "8.1 exit" "$rc" 0
 has "nessun worker è ripartito" "$out"
+# Attesa configurata a 1 s, ma il ciclo dorme a passi da 2: il messaggio deve
+# dire i secondi trascorsi (2), non il limite impostato (1).
+has "dopo 2 s nessun worker è ripartito" "$out"
 has "spark queue:status" "$out"
 unset PGREP_PIDS PGREP_STATE KILL_LOG DEPLOY_QUEUE_RESTART_WAIT
 
