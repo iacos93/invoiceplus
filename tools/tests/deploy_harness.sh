@@ -72,6 +72,9 @@ n=$(cat "$state" 2>/dev/null || echo 0)
 n=$((n + 1))
 printf '%s' "$n" > "$state"
 if [ "$n" -eq 1 ] && [ -n "${PGREP_PIDS:-}" ]; then printf '%s\n' $PGREP_PIDS; exit 0; fi
+# Dopo lo stop i worker sono assenti per due chiamate (l'attesa e il controllo
+# finale) e ricompaiono dalla quarta: PGREP_AGAIN sono i processi riavviati.
+if [ "$n" -ge 4 ] && [ -n "${PGREP_AGAIN:-}" ]; then printf '%s\n' $PGREP_AGAIN; exit 0; fi
 exit 1
 EOS
 cat > "$T/bin/kill" <<'EOS'
@@ -192,7 +195,7 @@ chk "4.4 copia del commit di partenza" "$(git -C "$copy" rev-parse --short HEAD)
 
 echo "== 5. worker della coda: SIGTERM e attesa"
 d="$T/d5"; setup "$d"
-export PGREP_PIDS="123 456" PGREP_STATE="$T/pgrep5" KILL_LOG="$T/kill5.log"
+export PGREP_PIDS="123 456" PGREP_AGAIN="789" PGREP_STATE="$T/pgrep5" KILL_LOG="$T/kill5.log"
 : > "$KILL_LOG"
 out=$(run_deploy "$d" "$T/bin:$PATH"); rc=$?
 chk "5.1 exit" "$rc" 0
@@ -203,7 +206,8 @@ if grep -q TERM "$KILL_LOG" && grep -q 123 "$KILL_LOG" && grep -q 456 "$KILL_LOG
 else
     ko "5.2 SIGTERM ai due pid ($(cat "$KILL_LOG"))"
 fi
-unset PGREP_PIDS PGREP_STATE KILL_LOG
+has "Worker di nuovo attivi" "$out"
+unset PGREP_PIDS PGREP_AGAIN PGREP_STATE KILL_LOG
 
 echo "== 6. nessun worker in esecuzione"
 d="$T/d6"; setup "$d"
@@ -220,6 +224,15 @@ out=$(run_deploy "$d" "$T/bin:$PATH"); rc=$?
 chk "7.1 exit" "$rc" 0
 has "ancora attivo dopo 1 s" "$out"
 unset PGREP_PIDS PGREP_ALWAYS PGREP_STATE KILL_LOG DEPLOY_QUEUE_TIMEOUT
+
+echo "== 8. worker fermati che nessuno riavvia: avviso, non un «Fatto»"
+d="$T/d8"; setup "$d"
+export PGREP_PIDS="321" PGREP_STATE="$T/pgrep8" KILL_LOG="$T/kill8.log" DEPLOY_QUEUE_RESTART_WAIT=1
+out=$(run_deploy "$d" "$T/bin:$PATH"); rc=$?
+chk "8.1 exit" "$rc" 0
+has "nessun worker è ripartito" "$out"
+has "spark queue:status" "$out"
+unset PGREP_PIDS PGREP_STATE KILL_LOG DEPLOY_QUEUE_RESTART_WAIT
 
 echo
 echo "risultato: $PASS ok, $FAIL falliti"

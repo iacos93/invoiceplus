@@ -25,7 +25,7 @@
 # database ripristinato.
 #
 # Variabili per le installazioni diverse da questa: DEPLOY_FPM_SERVICE,
-# DEPLOY_QUEUE_TIMEOUT, PHP_BIN, COMPOSER_BIN.
+# DEPLOY_QUEUE_TIMEOUT, DEPLOY_QUEUE_RESTART_WAIT, PHP_BIN, COMPOSER_BIN.
 #
 # Esce 0 quando codice e cache sono tornati indietro; esce 1 anche quando il
 # checkout è riuscito ma il dump non è stato ripristinato, perché chi lo lancia
@@ -179,6 +179,7 @@ rm -f writable/cache/FactoriesCache_config
 # systemd), che è anche l'unico posto in cui si sa quanti devono essere.
 say "Worker della coda"
 QUEUE_TIMEOUT=${DEPLOY_QUEUE_TIMEOUT:-30}
+QUEUE_WAIT=${DEPLOY_QUEUE_RESTART_WAIT:-60}
 if ! command -v pgrep >/dev/null 2>&1; then
     printf 'pgrep non è nel PATH: ferma i worker di queue:work a mano.\n'
 else
@@ -199,6 +200,27 @@ else
                 "$QUEUE_TIMEOUT"
         else
             printf 'Worker fermi: li rilancia chi li aveva avviati.\n'
+            # Dopo un rollback le code ferme sono peggio del solito: il codice
+            # appena rimesso è quello che si crede funzionante, e niente lo
+            # mette alla prova. Si aspetta chi li riavvia — cron al minuto
+            # successivo, supervisor e systemd quasi subito — e se non tornano
+            # lo si dice, invece di chiudere con un «Fatto».
+            waited=0
+            back=0
+            while [ "$waited" -lt "$QUEUE_WAIT" ]; do
+                sleep 2
+                waited=$((waited + 2))
+                if pgrep -f "$APP_DIR/spark queue:work" >/dev/null 2>&1; then
+                    back=1
+                    break
+                fi
+            done
+            if [ "$back" = "1" ]; then
+                printf 'Worker di nuovo attivi dopo %s s.\n' "$waited"
+            else
+                printf 'Attenzione: dopo %s s nessun worker è ripartito: le code restano ferme finché qualcuno non li avvia (crontab, supervisor, systemd). Controlla con: %s spark queue:status\n' \
+                    "$QUEUE_WAIT" "$PHP_BIN"
+            fi
         fi
     fi
 fi

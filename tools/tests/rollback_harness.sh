@@ -54,6 +54,9 @@ n=$(cat "$state" 2>/dev/null || echo 0)
 n=$((n + 1))
 printf '%s' "$n" > "$state"
 if [ "$n" -eq 1 ] && [ -n "${PGREP_PIDS:-}" ]; then printf '%s\n' $PGREP_PIDS; exit 0; fi
+# Dopo lo stop i worker sono assenti per due chiamate (l'attesa e il controllo
+# finale) e ricompaiono dalla quarta: PGREP_AGAIN sono i processi riavviati.
+if [ "$n" -ge 4 ] && [ -n "${PGREP_AGAIN:-}" ]; then printf '%s\n' $PGREP_AGAIN; exit 0; fi
 exit 1
 EOS
 cat > "$T/bin/kill" <<'EOS'
@@ -266,12 +269,24 @@ kl="$T/kill17.log"
 : > "$kl"
 rc=0
 out=$( cd "$d" && printf '' | PATH="$T/bin:$PATH" PHP_LOG="$d/php.log" KILL_LOG="$kl" \
-        PGREP_PIDS="11 22" PGREP_STATE="$T/pgrep17" ./tools/rollback.sh 2>&1 ) || rc=$?
+        PGREP_PIDS="11 22" PGREP_AGAIN="33" PGREP_STATE="$T/pgrep17" ./tools/rollback.sh 2>&1 ) || rc=$?
 chk "17.1 exit" "$rc" 0
 chk "17.2 HEAD al commit precedente" "$(git -C "$d" rev-parse HEAD)" "$prev"
 has "Fermo 2 worker" "$out"
 has "Worker fermi" "$out"
 if grep -q TERM "$kl" && grep -q 11 "$kl" && grep -q 22 "$kl"; then ok "17.3 SIGTERM ai due pid"; else ko "17.3 SIGTERM ai due pid ($(cat "$kl"))"; fi
+has "Worker di nuovo attivi" "$out"
+
+echo "== 18. worker fermati che nessuno riavvia: avviso e uscita 0"
+d="$T/s18"; make_app "$d" plain
+prev=$(git -C "$d" rev-parse HEAD~1)
+rc=0
+out=$( cd "$d" && printf '' | PATH="$T/bin:$PATH" PHP_LOG="$d/php.log" KILL_LOG="$T/kill18.log" \
+        PGREP_PIDS="44" PGREP_STATE="$T/pgrep18" DEPLOY_QUEUE_RESTART_WAIT=1 ./tools/rollback.sh 2>&1 ) || rc=$?
+chk "18.1 exit" "$rc" 0
+chk "18.2 HEAD al commit precedente" "$(git -C "$d" rev-parse HEAD)" "$prev"
+has "nessun worker è ripartito" "$out"
+has "spark queue:status" "$out"
 
 echo
 echo "risultato: $PASS ok, $FAIL falliti"

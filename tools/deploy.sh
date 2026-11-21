@@ -30,7 +30,8 @@
 #
 # Variabili per le installazioni diverse da questa:
 #   DEPLOY_REMOTE, DEPLOY_BRANCH, DEPLOY_FPM_SERVICE, DEPLOY_GOTENBERG_HEALTH,
-#   DEPLOY_BACKUP_TIMEOUT, DEPLOY_QUEUE_TIMEOUT, PHP_BIN, COMPOSER_BIN.
+#   DEPLOY_BACKUP_TIMEOUT, DEPLOY_QUEUE_TIMEOUT, DEPLOY_QUEUE_RESTART_WAIT,
+#   PHP_BIN, COMPOSER_BIN.
 
 set -eu
 
@@ -289,6 +290,7 @@ fi
 # per coda girare, non qui.
 say "Worker della coda"
 QUEUE_TIMEOUT=${DEPLOY_QUEUE_TIMEOUT:-30}
+QUEUE_WAIT=${DEPLOY_QUEUE_RESTART_WAIT:-60}
 if ! command -v pgrep >/dev/null 2>&1; then
     printf 'pgrep non è nel PATH: ferma i worker di queue:work a mano.\n'
 else
@@ -312,6 +314,27 @@ else
                 "$QUEUE_TIMEOUT"
         else
             printf 'Worker fermi: li rilancia chi li aveva avviati.\n'
+            # Che siano fermi è il punto: che tornino no, e nessun altro lo
+            # controllerà. Il cron li riavvia al minuto successivo, supervisor
+            # e systemd quasi subito, quindi si aspetta — ma un «Fatto» senza
+            # questa attesa nasconderebbe code ferme, che non danno errori:
+            # solo lavoro che non avanza.
+            waited=0
+            back=0
+            while [ "$waited" -lt "$QUEUE_WAIT" ]; do
+                sleep 2
+                waited=$((waited + 2))
+                if pgrep -f "$APP_DIR/spark queue:work" >/dev/null 2>&1; then
+                    back=1
+                    break
+                fi
+            done
+            if [ "$back" = "1" ]; then
+                printf 'Worker di nuovo attivi dopo %s s.\n' "$waited"
+            else
+                printf 'Attenzione: dopo %s s nessun worker è ripartito: le code restano ferme finché qualcuno non li avvia (crontab, supervisor, systemd). Controlla con: %s spark queue:status\n' \
+                    "$QUEUE_WAIT" "$PHP_BIN"
+            fi
         fi
     fi
 fi
