@@ -30,7 +30,7 @@
 #
 # Variabili per le installazioni diverse da questa:
 #   DEPLOY_REMOTE, DEPLOY_BRANCH, DEPLOY_FPM_SERVICE, DEPLOY_GOTENBERG_HEALTH,
-#   DEPLOY_BACKUP_TIMEOUT, PHP_BIN, COMPOSER_BIN.
+#   DEPLOY_BACKUP_TIMEOUT, DEPLOY_QUEUE_TIMEOUT, PHP_BIN, COMPOSER_BIN.
 
 set -eu
 
@@ -277,6 +277,43 @@ if ! sudo -n "$SYSTEMCTL" reload "$FPM_SERVICE" 2>/dev/null; then
     die "Il pool $FPM_SERVICE non è stato ricaricato, benché il permesso risultasse presente.
    Il codice è a $(git rev-parse --short HEAD). Da un utente con sudo: sudo $SYSTEMCTL reload $FPM_SERVICE
    poi controlla Gotenberg e apri l'applicazione."
+fi
+
+# --- 4b. Worker della coda ------------------------------------------------
+# `queue:work` è un processo PHP di lunga durata: carica le classi all'avvio e
+# senza un riavvio continua a eseguire il codice di prima, in silenzio, con gli
+# errori che finiscono nei log come se fossero del codice nuovo. Si manda
+# SIGTERM, che il worker intercetta: finisce il job corrente e esce. A
+# riavviarlo è chi lo aveva avviato — la riga di crontab con `flock -n` entro un
+# minuto, supervisor o systemd subito — perché è lì che si decide quanti worker
+# per coda girare, non qui.
+say "Worker della coda"
+QUEUE_TIMEOUT=${DEPLOY_QUEUE_TIMEOUT:-30}
+if ! command -v pgrep >/dev/null 2>&1; then
+    printf 'pgrep non è nel PATH: ferma i worker di queue:work a mano.\n'
+else
+    # Il pattern è il percorso assoluto dello `spark` di questa installazione:
+    # un worker avviato con un percorso diverso (o da un'altra copia del sito)
+    # non si tocca, ed è meglio un worker vecchio che un worker altrui ucciso.
+    pids=$(pgrep -f "$APP_DIR/spark queue:work" 2>/dev/null || true)
+    if [ -z "$pids" ]; then
+        printf 'Nessun worker in esecuzione: niente da riavviare.\n'
+    else
+        printf 'Fermo %s worker (finiscono il job corrente).\n' "$(printf '%s\n' "$pids" | wc -l | tr -d ' ')"
+        printf '%s\n' "$pids" | xargs kill -TERM 2>/dev/null || true
+        waited=0
+        while [ "$waited" -lt "$QUEUE_TIMEOUT" ] \
+            && pgrep -f "$APP_DIR/spark queue:work" >/dev/null 2>&1; do
+            sleep 1
+            waited=$((waited + 1))
+        done
+        if pgrep -f "$APP_DIR/spark queue:work" >/dev/null 2>&1; then
+            printf 'Attenzione: un worker è ancora attivo dopo %s s (job lungo?): controllalo a mano.\n' \
+                "$QUEUE_TIMEOUT"
+        else
+            printf 'Worker fermi: li rilancia chi li aveva avviati.\n'
+        fi
+    fi
 fi
 
 # --- 5. Gotenberg ----------------------------------------------------------

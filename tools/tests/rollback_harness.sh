@@ -46,6 +46,22 @@ exit 0
 EOS
 chmod +x "$T/bin/php" "$T/bin/composer"
 
+cat > "$T/bin/pgrep" <<'EOS'
+#!/bin/sh
+if [ "${PGREP_ALWAYS:-0}" = "1" ]; then printf '%s\n' ${PGREP_PIDS:-}; exit 0; fi
+state="${PGREP_STATE:-/dev/null}"
+n=$(cat "$state" 2>/dev/null || echo 0)
+n=$((n + 1))
+printf '%s' "$n" > "$state"
+if [ "$n" -eq 1 ] && [ -n "${PGREP_PIDS:-}" ]; then printf '%s\n' $PGREP_PIDS; exit 0; fi
+exit 1
+EOS
+cat > "$T/bin/kill" <<'EOS'
+#!/bin/sh
+printf 'kill %s\n' "$*" >> "${KILL_LOG:-/dev/null}"
+exit 0
+EOS
+chmod +x "$T/bin/pgrep" "$T/bin/kill"
 
 # Un'app finta con due commit e la copia del primo: è lo stato che un deploy ha
 # lasciato dietro, quello che un rollback deve trovare.
@@ -242,6 +258,20 @@ chk "16.1 exit" "$rc" 1
 chk "16.2 HEAD al commit precedente" "$(git -C "$d" rev-parse HEAD)" "$prev"
 has "non c'è un dump" "$out"
 miss "Ripristinare il dump" "$out"
+
+echo "== 17. worker della coda: SIGTERM e attesa"
+d="$T/s17"; make_app "$d" plain
+prev=$(git -C "$d" rev-parse HEAD~1)
+kl="$T/kill17.log"
+: > "$kl"
+rc=0
+out=$( cd "$d" && printf '' | PATH="$T/bin:$PATH" PHP_LOG="$d/php.log" KILL_LOG="$kl" \
+        PGREP_PIDS="11 22" PGREP_STATE="$T/pgrep17" ./tools/rollback.sh 2>&1 ) || rc=$?
+chk "17.1 exit" "$rc" 0
+chk "17.2 HEAD al commit precedente" "$(git -C "$d" rev-parse HEAD)" "$prev"
+has "Fermo 2 worker" "$out"
+has "Worker fermi" "$out"
+if grep -q TERM "$kl" && grep -q 11 "$kl" && grep -q 22 "$kl"; then ok "17.3 SIGTERM ai due pid"; else ko "17.3 SIGTERM ai due pid ($(cat "$kl"))"; fi
 
 echo
 echo "risultato: $PASS ok, $FAIL falliti"

@@ -25,7 +25,7 @@
 # database ripristinato.
 #
 # Variabili per le installazioni diverse da questa: DEPLOY_FPM_SERVICE,
-# PHP_BIN, COMPOSER_BIN.
+# DEPLOY_QUEUE_TIMEOUT, PHP_BIN, COMPOSER_BIN.
 #
 # Esce 0 quando codice e cache sono tornati indietro; esce 1 anche quando il
 # checkout è riuscito ma il dump non è stato ripristinato, perché chi lo lancia
@@ -170,6 +170,38 @@ say "Cache dell'applicazione"
     || die "cache:clear non riuscito: l'applicazione potrebbe rileggere valori calcolati dal commit nuovo.
    Rilancia '$PHP_BIN spark cache:clear' e leggi writable/logs."
 rm -f writable/cache/FactoriesCache_config
+
+# --- 2b. Worker della coda -------------------------------------------------
+# I worker di `queue:work` hanno caricato le classi del commit che si sta
+# lasciando: finché non ripartono eseguono quel codice, con gli errori che
+# sembrano del codice nuovo. SIGTERM li ferma dopo il job corrente; a
+# riavviarli è chi li aveva avviati (crontab con `flock -n`, supervisor,
+# systemd), che è anche l'unico posto in cui si sa quanti devono essere.
+say "Worker della coda"
+QUEUE_TIMEOUT=${DEPLOY_QUEUE_TIMEOUT:-30}
+if ! command -v pgrep >/dev/null 2>&1; then
+    printf 'pgrep non è nel PATH: ferma i worker di queue:work a mano.\n'
+else
+    pids=$(pgrep -f "$APP_DIR/spark queue:work" 2>/dev/null || true)
+    if [ -z "$pids" ]; then
+        printf 'Nessun worker in esecuzione: niente da riavviare.\n'
+    else
+        printf 'Fermo %s worker (finiscono il job corrente).\n' "$(printf '%s\n' "$pids" | wc -l | tr -d ' ')"
+        printf '%s\n' "$pids" | xargs kill -TERM 2>/dev/null || true
+        waited=0
+        while [ "$waited" -lt "$QUEUE_TIMEOUT" ] \
+            && pgrep -f "$APP_DIR/spark queue:work" >/dev/null 2>&1; do
+            sleep 1
+            waited=$((waited + 1))
+        done
+        if pgrep -f "$APP_DIR/spark queue:work" >/dev/null 2>&1; then
+            printf 'Attenzione: un worker è ancora attivo dopo %s s (job lungo?): controllalo a mano.\n' \
+                "$QUEUE_TIMEOUT"
+        else
+            printf 'Worker fermi: li rilancia chi li aveva avviati.\n'
+        fi
+    fi
+fi
 
 # --- 3. Reload del pool ----------------------------------------------------
 # Il reload richiede root e lo script non lo esegue: qui è un promemoria, il
