@@ -85,43 +85,79 @@ toccare i file:
 - Gotenberg è già installato e ascolta su `127.0.0.1:3000`, che è il valore
   predefinito di `pdf.gotenbergURL`: il `.env` non va toccato.
 
+#### Il permesso per ricaricare il pool
+
+Il reload di PHP-FPM è l'unica operazione che richiede root. Su questo server
+non risulta che `invoiceplus` ne abbia il permesso: non è nel gruppo `sudo`
+(gid 27, che contiene solo `ubuntu`) e in `/etc/sudoers.d` non c'è nessun file
+dedicato a lui. I file di quella cartella sono `0440 root:root` e senza root
+non si leggono, quindi la conclusione si basa su questi due indizi e non sul
+loro contenuto; se una regola ci fosse, il comando di prova qui sotto lo
+direbbe. Senza una regola, `tools/deploy.sh` si ferma al primo passo.
+Serve un permesso che riguardi **solo** quel comando, con il percorso verificato
+del binario (`/usr/bin/systemctl`, systemd 255: `readlink -f` non scioglie
+niente, quindi è proprio quello).
+
+Da un utente che può usare sudo (per esempio `ubuntu`):
+
+```console
+sudo install -m 0440 -o root -g root /dev/stdin /etc/sudoers.d/invoiceplus-reload <<'EOF'
+invoiceplus ALL=(root) NOPASSWD: /usr/bin/systemctl reload php8.4-fpm
+EOF
+sudo visudo -cf /etc/sudoers.d/invoiceplus-reload
+```
+
+Percorso e argomenti devono essere quelli che lo script usa, prima nella
+simulazione e poi nell'esecuzione: il confronto è sulla riga di comando, non
+sul servizio. Si verifica subito, senza aspettare un aggiornamento:
+
+```console
+sudo -iu invoiceplus sudo -n -l /usr/bin/systemctl reload php8.4-fpm
+```
+
+Exit `0` e una riga con il comando consentito: il prerequisito c'è. Se risponde
+`1`, la regola non è stata letta: controlla i permessi del file (`0440`,
+`root:root`), il nome senza punti (`invoiceplus-reload`, non
+`invoiceplus.reload`) e che `/etc/sudoers` contenga `#includedir /etc/sudoers.d`.
+
+L'aggiornamento si fa con `tools/deploy.sh`, che esegue gli stessi passi nella
+stessa sequenza e si ferma al primo che fallisce:
+
 ```console
 ssh ubuntu@novatech-srv
 sudo -iu invoiceplus
 cd /home/invoiceplus/htdocs/invoice.novatech.cloud
-
-# 0. backup e fotografia dello schema (sezione Backup)
-php spark migrate:status
-
-# 1. codice
-PRIMA=$(git rev-parse HEAD)
-git pull --ff-only origin main
-
-# 2. dipendenze solo se il lock è cambiato rispetto al commit di partenza
-if git diff --name-only "$PRIMA" HEAD -- composer.lock | grep -q .; then
-  composer install --no-dev --prefer-dist --no-interaction
-fi
-
-# 3. schema e cache delle configurazioni
-php spark migrate
-php spark cache:clear
+tools/deploy.sh
 ```
 
-Poi, ancora come `invoiceplus`, i due controlli che dicono se l'aggiornamento
-è a posto:
+Cosa fa, nell'ordine: controlla che l'albero sia pulito e che il ramo sia
+`main`, esegue il backup (dump del database e file caricati, passando
+dall'endpoint `cron/backup` con la chiave di `writable/cron-runner.conf`),
+aggiorna da `origin/main` con `--ff-only`, installa le dipendenze **solo** se
+`composer.lock` è cambiato, applica le migrazioni, svuota la cache delle
+configurazioni, ricarica il pool e chiede a Gotenberg se risponde. Usa `php8.4`
+quando è nel PATH: è la versione del pool, mentre il `php` generico della
+macchina può essere un'altra.
 
-```console
-# se Gotenberg non risponde, ogni PDF esce da dompdf e nel log resta il motivo
-curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/health   # 200
-php spark migrate:status                                               # nessuna migrazione da applicare
-```
+Due cose lo script non può fare da solo:
 
-Infine il reload del pool, che richiede root: si esce da `invoiceplus` (`exit`)
-e lo si fa dalla sessione di `ubuntu`.
+- **il reload del pool richiede il permesso sudoers** descritto sopra. Lo
+  script lo verifica all'inizio, prima del backup, con `sudo -n -l` sul
+  percorso assoluto di `systemctl` (lo stesso che poi esegue); se il permesso
+  manca si ferma lì, senza aver toccato né codice né schema. Se `sudo -l` non
+  riesce nemmeno a elencare i comandi (password richiesta, utente fuori da
+  sudoers) lo dice, invece di tirare a indovinare;
+- **il backup passa da `writable/cron-runner.conf`.** Se il file manca, ha un
+  errore di sintassi o la chiave non è quella dell'applicazione, lo script si
+  ferma **prima** di toccare il codice: senza dump non c'è ritorno indietro. Lo
+  stesso file può indicare `PHP_BIN` (il binario del pool), utile quando il
+  `php` del PATH non è quello giusto: lo script lo legge da lì.
 
-```console
-sudo systemctl reload php8.4-fpm
-```
+Non va eseguito come root, ed è il motivo per cui si passa da `sudo -iu
+invoiceplus`: i file che l'applicazione crea in `writable/` restano dell'utente
+giusto. Per un'installazione diversa da questa, `DEPLOY_BRANCH`,
+`DEPLOY_REMOTE`, `DEPLOY_FPM_SERVICE`, `DEPLOY_GOTENBERG_HEALTH`, `PHP_BIN` e
+`COMPOSER_BIN` cambiano i valori predefiniti.
 
 Il controllo che conta è un PDF di fattura vera: deve uscire da Chromium, con i
 margini del foglio e «Pagina n / totale» nel piede. Se il PDF arriva ma in
