@@ -8,6 +8,11 @@
 # serve. Lo script si ferma al primo passo che fallisce: un aggiornamento a
 # metà è peggio di uno non iniziato.
 #
+# Prima del pull lascia la copia `release-pre-<commit di partenza>` accanto
+# all'applicazione: è quella che `tools/rollback.sh` pretende per ripartire. La
+# copia era un passo manuale, e un passo manuale lo si salta proprio nel deploy
+# da cui si vuole tornare indietro.
+#
 # Uso, dall'utente del sito:
 #
 #   tools/deploy.sh
@@ -190,6 +195,39 @@ case "$backup_status" in
 esac
 printf '%s\n' "$backup_text"
 
+# --- 1b. Copia di sicurezza ------------------------------------------------
+# Serve al rollback, che si rifiuta di partire senza: va fatta prima del pull,
+# perché il commit da copiare è quello che il pull porta via. Se la copia esiste
+# già per questo commit la riuso — è lo stesso contenuto — invece di sovrascriverla
+# con uno stato che nel frattempo è cambiato.
+say "Copia di sicurezza per il rollback"
+parent=$(CDPATH= cd -- "$APP_DIR/.." && pwd)
+short=$(git rev-parse --short HEAD)
+copy="$parent/release-pre-$short"
+
+if [ -d "$copy" ] && [ -f "$copy/.env" ]; then
+    printf 'Esiste già (%s): la riuso.\n' "$copy"
+elif [ -d "$copy" ]; then
+    die "Esiste $copy ma non contiene .env: è una copia incompleta di un tentativo precedente.
+   Eliminala (rm -rf $copy) e rilancia: senza una copia valida il rollback non partirebbe."
+elif command -v rsync >/dev/null 2>&1; then
+    # `writable/backups` resta fuori: con `cp` i dump si duplicherebbero a ogni
+    # deploy, e su un disco che ne conserva già quattordici sono i GB che
+    # crescono più in fretta.
+    rsync -a --exclude 'writable/backups/' "$APP_DIR"/ "$copy"/ \
+        || die "Copia di sicurezza non riuscita ($copy): il pull non è stato fatto.
+   Controlla lo spazio disco e rilancia."
+else
+    mkdir -p "$copy" \
+        || die "Non posso creare $copy: il pull non è stato fatto."
+    tar -C "$APP_DIR" -cf - --exclude=writable/backups . | tar -C "$copy" -xf - \
+        || die "Copia di sicurezza non riuscita ($copy): il pull non è stato fatto."
+fi
+
+[ -f "$copy/.env" ] \
+    || die "$copy non contiene .env: la copia non è utilizzabile, e senza una copia valida
+   tools/rollback.sh non partirebbe. Il codice non è stato toccato."
+
 # --- 2. Codice -------------------------------------------------------------
 say "Codice: $current → $target"
 git pull --ff-only "$REMOTE" "$BRANCH" \
@@ -254,5 +292,5 @@ fi
 
 from_short=$(git rev-parse --short "$current")
 printf '\nFatto: %s → %s\n' "$from_short" "$(git rev-parse --short HEAD)"
-printf 'Per tornare indietro: git checkout %s, reload del pool e, se lo schema è cambiato, ripristino del dump.\n' \
+printf 'Per tornare indietro: tools/rollback.sh %s, poi il reload del pool e, se lo schema è cambiato, il ripristino del dump.\n' \
     "$from_short"

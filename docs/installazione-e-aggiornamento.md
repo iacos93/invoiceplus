@@ -156,7 +156,8 @@ pool, altrimenti vale quello indicato da `PHP_BIN`.
 Dalla volta successiva lo script c'è e vale la procedura qui sotto: il percorso
 manuale serve solo a questa prima esecuzione e non va ripetuto, perché lo
 script fa gli stessi passi con più controlli (albero pulito, `--ff-only`,
-backup obbligatorio, permesso del reload verificato prima di partire).
+backup obbligatorio, permesso del reload verificato prima di partire) e da lì
+anche la copia `release-pre` la crea lui.
 
 #### L'aggiornamento, dalla seconda volta in poi
 
@@ -211,17 +212,19 @@ solo quello che cambia quando l'aggiornamento segue `origin/main` e c'è un pool
 da ricaricare.
 
 Lo script porta il codice a un commit nuovo; git sa tornare a quello
-precedente, lo schema no. La copia va fatta **prima di lanciare
-`tools/deploy.sh`**, non solo «prima del pull»: il pull lo fa lo script, quindi
-chi lancia lo script e poi cerca la copia non la trova. Servono quindi due cose
-prima di partire: il commit di partenza (`git rev-parse HEAD`) e la copia della
-cartella com'è adesso — `git checkout` non tocca `.env`, `writable/` e
-`vendor/`, e nella copia restano com'erano.
+precedente, lo schema no. Prima del pull `tools/deploy.sh` crea da solo la copia
+`release-pre-<commit di partenza>`, e `tools/rollback.sh` la pretende per
+partire: così la rete di sicurezza non dipende da un `rsync` che qualcuno deve
+ricordarsi di lanciare. Se la copia esiste già per quel commit la riusa, perché
+è lo stesso contenuto; se esiste ma le manca `.env` si ferma senza fare il pull.
+
+Quello che lo script esegue, se la copia va fatta a mano — per esempio nel primo
+aggiornamento, quando `tools/deploy.sh` non c'è ancora:
 
 ```console
 cd /home/invoiceplus/htdocs/invoice.novatech.cloud
 rsync -a --exclude 'writable/backups/' ./ \
-    "../release-pre-$(git rev-parse --short HEAD)/"   # prima di tools/deploy.sh
+    "../release-pre-$(git rev-parse --short HEAD)/"
 ```
 
 `cp -a` non sa escludere niente e `writable/backups` contiene i dump e gli zip

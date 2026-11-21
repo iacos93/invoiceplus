@@ -111,7 +111,8 @@ copy="$parent/release-pre-$target_short"
 say "Copia di sicurezza: $copy"
 [ -d "$copy" ] \
     || die "Manca la copia $copy.
-   Va fatta prima di ogni aggiornamento, con
+   `tools/deploy.sh` la crea da solo prima del pull: se non c'è, questo deploy
+   è stato fatto a mano (o la copia è già stata eliminata). Per rifarla a mano:
        rsync -a --exclude 'writable/backups/' ./ ../release-pre-\$(git rev-parse --short HEAD)/
    Senza, un .env o un vendor/ incoerente non ha da dove essere ripreso. $NOTHING_DONE"
 # Una copia interrotta passa il controllo della cartella: `.env` c'è sempre,
