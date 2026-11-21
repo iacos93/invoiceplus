@@ -131,7 +131,7 @@ con gli stessi passi che farà lui, nell'ordine in cui li farà:
 cd /home/invoiceplus/htdocs/invoice.novatech.cloud
 . writable/cron-runner.conf
 curl -fsS "$BASE_URL/cron/backup/$CRON_KEY"      # se non risponde, fermati qui
-cp -a . "../release-pre-$(git rev-parse --short HEAD)"
+rsync -a --exclude 'writable/backups/' ./ "../release-pre-$(git rev-parse --short HEAD)/"
 PRIMA=$(git rev-parse HEAD)
 git pull --ff-only origin main
 git diff --name-only "$PRIMA" HEAD -- composer.lock | grep -q . &&
@@ -294,6 +294,19 @@ affidabile, e i dati scritti nel frattempo (fatture, incassi) non sono nel
 codice. Se l'aggiornamento ha già modificato lo schema e qualcosa non va, il
 ripristino del dump è l'unica strada sicura — ed è per questo che il backup si
 fa **prima**.
+
+Se prima di aggiornare vuoi anche una copia della cartella, come nella
+procedura del VPS, falla senza i backup:
+
+```console
+rsync -a --exclude 'writable/backups/' ./ "../release-pre-$(git rev-parse --short HEAD)/"
+```
+
+I dump e gli zip dei file caricati restano in `writable/backups`, che è anche il
+posto da cui il ripristino prende il dump: la copia non li duplica e non serve
+per il database, solo per `.env`, `vendor/` e il resto di `writable/`. Va
+eliminata quando l'aggiornamento è confermato, perché contiene i segreti di
+`.env`.
 
 ## Backup
 
