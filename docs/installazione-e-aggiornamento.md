@@ -206,6 +206,10 @@ funzionato e il guasto è nel servizio: il `curl` qui sopra dice se risponde.
 
 #### Tornare indietro su questo server
 
+Vale la procedura generale di [Tornare indietro](#tornare-indietro); qui c'è
+solo quello che cambia quando l'aggiornamento segue `origin/main` e c'è un pool
+da ricaricare.
+
 Lo script porta il codice a un commit nuovo; git sa tornare a quello
 precedente, lo schema no. La copia va fatta **prima di lanciare
 `tools/deploy.sh`**, non solo «prima del pull»: il pull lo fa lo script, quindi
@@ -250,20 +254,27 @@ rollback col ripristino si decide subito; dopo qualche notte di backup il file
 che serve può non esserci più — `ls -lt writable/backups | head` dice cosa
 c'è.
 
-Per tornare al commit precedente:
+Per tornare indietro c'è `tools/rollback.sh`: fa in un comando quello che qui
+si faceva a mano, e controlla la copia **prima** di toccare il codice — il
+passo che a mano si scopriva mancante solo dopo il checkout.
 
 ```console
 cd /home/invoiceplus/htdocs/invoice.novatech.cloud
-git checkout <sha-precedente>     # HEAD staccato: è voluto
-php spark cache:clear             # le configurazioni in cache sono quelle nuove
+tools/rollback.sh              # torna al commit precedente (HEAD~1)
+tools/rollback.sh <commit>     # oppure al commit indicato, se sta nella storia di HEAD
 ```
 
-Se fra i due commit è cambiato `composer.lock`, un
-`composer install --no-dev --prefer-dist` riallinea `vendor/`. Poi il reload
-del pool, da `ubuntu`:
+Cosa fa, nell'ordine: rifiuta root e un albero sporco, risolve il commit e
+controlla che stia nella storia di `HEAD` (un salto a un altro ramo non è un
+rollback: nessun dump corrisponderebbe), verifica che
+`../release-pre-<sha del commit>` esista e contenga `.env`, controlla PHP 8.4
+(`PHP_BIN`, letto anche da `writable/cron-runner.conf`), fa il `git checkout`,
+riallinea `vendor/` **solo** se è cambiato `composer.lock`, svuota la cache
+delle configurazioni e ricorda il reload — che non esegue, perché richiede
+root:
 
 ```console
-sudo systemctl reload php8.4-fpm
+sudo systemctl reload php8.4-fpm    # da ubuntu
 ```
 
 Con `HEAD` staccato `tools/deploy.sh` si rifiuta di partire, perché controlla il
@@ -272,16 +283,24 @@ ramo: è voluto, un rollback non deve aggiornare da solo. Per risalire:
 
 **Il database non torna indietro con git.** Le migrazioni non hanno tutte una
 discesa affidabile — alcune aggiungono colonne, altre correggono dati — e i
-dati scritti nel frattempo (fatture, incassi) non sono nel codice. Quindi:
+dati scritti nel frattempo (fatture, incassi) non sono nel codice. Lo script
+confronta `app/Database/Migrations` fra i due commit e si comporta così:
 
-- se il commit nuovo non ha applicato migrazioni, il checkout basta;
-- se ne ha applicate e qualcosa non va, l'unica strada sicura è ripristinare il
-  dump fatto prima del pull (sezione Ripristino), che è quello in
-  `writable/backups` e non sta nella copia `release-pre`, tenendo il codice del
-  commit precedente; il dump è più vecchio dei documenti creati nel frattempo,
-  che vanno rifatti a mano o reimportati;
-- `php spark migrate:status` dice quali migrazioni risultano applicate: se ne
-  compaiono di nuove rispetto al dump, il ripristino è obbligatorio.
+- **nessuna migrazione**: lo dice e finisce con `0`, il database resta com'è;
+- **migrazioni presenti**: le elenca, indica il dump più recente con la sua data
+  — da controllare che sia precedente al deploy, perché i backup notturni
+  successivi hanno già lo schema nuovo — e chiede `Ripristinare il dump? [s/N]`.
+  Con `N` esce `1`, perché il codice è tornato indietro e lo schema no:
+  l'applicazione può non funzionare. Con `s` stampa la procedura di ripristino
+  per il motore letto da `.env` (`pg_restore` o `mysql`), che resta a mano:
+  va fermata l'applicazione e `.env` ripuntato al database ripristinato. Se in
+  `writable/backups` non c'è nessun dump si ferma subito, senza chiedere.
+
+Il ripristino si fa secondo la sezione [Ripristino](#ripristino); il dump è più
+vecchio dei documenti creati nel frattempo, che vanno rifatti a mano o
+reimportati. `php spark migrate:status` dice quali migrazioni risultano
+applicate: se ne compaiono di nuove rispetto al dump, il ripristino è
+obbligatorio.
 
 Dopo il ripristino si ricontrolla quello di sempre: login, una fattura con il
 PDF, e `writable/logs` senza errori nuovi.
@@ -295,8 +314,13 @@ codice. Se l'aggiornamento ha già modificato lo schema e qualcosa non va, il
 ripristino del dump è l'unica strada sicura — ed è per questo che il backup si
 fa **prima**.
 
+Su questo server la sequenza è più stretta, perché l'aggiornamento segue
+`origin/main` e il reload del pool richiede un permesso. La procedura è
+[Tornare indietro su questo server](#tornare-indietro-su-questo-server), con la
+copia da fare prima del pull e i casi in cui serve il ripristino.
+
 Se prima di aggiornare vuoi anche una copia della cartella, come nella
-procedura del VPS, falla senza i backup:
+[procedura del VPS](#tornare-indietro-su-questo-server), falla senza i backup:
 
 ```console
 rsync -a --exclude 'writable/backups/' ./ "../release-pre-$(git rev-parse --short HEAD)/"
