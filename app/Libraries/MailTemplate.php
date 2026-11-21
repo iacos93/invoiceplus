@@ -28,6 +28,31 @@ final class MailTemplate
     private const TAG_PATTERN = '/\{\{\{?([a-z0-9_]+)\}?\}\}/i';
 
     /**
+     * Corpo dell'email in HTML, dopo la sostituzione dei tag.
+     *
+     * Il corpo arriva da una textarea: se non contiene tag è testo semplice e
+     * va codificato prima di trasformare gli a capo in <br>, altrimenti un `&`
+     * o un `<` verrebbero letti come markup e le righe si perderebbero. Un
+     * corpo già scritto in HTML resta com'è. Il messaggio parte sempre in HTML
+     * perché il pixel di tracciamento è un'immagine: in modalità testo il
+     * client mostrerebbe il suo indirizzo.
+     *
+     * Vive qui e non nel controller Mailer perché anche l'anteprima dei
+     * modelli deve mostrare esattamente ciò che parte: due conversioni diverse
+     * farebbero vedere un messaggio che non è quello spedito.
+     */
+    public static function toHtml(string $body): string
+    {
+        $body = $body === '' ? ' ' : $body;
+
+        if (strlen($body) === strlen(strip_tags($body))) {
+            return nl2br(esc($body), false);
+        }
+
+        return $body;
+    }
+
+    /**
      * @param array<string, scalar|null> $data
      * @param bool                       $escape false per i campi che non sono
      *                                           HTML (oggetto, indirizzi,

@@ -7,7 +7,7 @@
 <form method="POST" action="<?= site_url('email_templates/form/' . ($email_template_id ?? '')) ?>">
     <?= csrf_field() ?>
 
-    <?= $this->include('layout/headerbar', ['title' => $title, 'actions' => header_actions()]) ?>
+    <?= $this->include('layout/headerbar', ['title' => $title, 'actions' => header_actions(['preview_url' => site_url('email_templates/preview')])]) ?>
 
     <div id="content">
         <div class="ip-form-pane">

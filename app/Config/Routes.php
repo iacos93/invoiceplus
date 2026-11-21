@@ -450,6 +450,9 @@ $routes->group('', ['filter' => 'auth'], static function ($routes) {
     $routes->get('email_templates/form', 'EmailTemplates::form');
     $routes->post('email_templates/form/(:num)', 'EmailTemplates::form/$1');
     $routes->post('email_templates/form', 'EmailTemplates::form');
+    // Anteprima del modello in lavorazione: POST perché il corpo non è
+    // ancora salvato, e si apre in una scheda a parte.
+    $routes->post('email_templates/preview', 'EmailTemplates::preview');
     $routes->post('email_templates/delete/(:num)', 'EmailTemplates::delete/$1');
     $routes->post('email_templates/ajax/get_content', 'EmailTemplatesAjax::getContent');
 

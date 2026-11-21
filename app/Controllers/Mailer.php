@@ -224,7 +224,7 @@ class Mailer extends BaseController
             $subject,
             active_company_id() ?: null
         );
-        $messageBody = $this->htmlBody($body, $tracking);
+        $messageBody = \App\Libraries\MailTemplate::toHtml($body);
 
         if ($track !== null) {
             $messageBody = $tracking->appendPixel($messageBody, $track);
@@ -382,7 +382,7 @@ class Mailer extends BaseController
             $subject,
             active_company_id() ?: null
         );
-        $messageBody = $this->htmlBody($body, $tracking);
+        $messageBody = \App\Libraries\MailTemplate::toHtml($body);
 
         if ($track !== null) {
             $messageBody = $tracking->appendPixel($messageBody, $track);
@@ -474,27 +474,6 @@ class Mailer extends BaseController
         // credenziali comprese: non solo un documento fuori perimetro, ma
         // l'identita' di un altro soggetto giuridico usata per spedire.
         return $senderId ? (new \App\Models\EmailSenderModel())->findScoped($senderId) : null;
-    }
-
-    /**
-     * Corpo dell'email in HTML.
-     *
-     * Il testo arriva da una textarea: se non contiene tag è testo semplice e
-     * va codificato (escape) prima di trasformare gli a capo in <br>, altrimenti
-     * un `&` o un `<` verrebbero letti come markup e le righe si perderebbero.
-     * Un corpo già scritto in HTML resta com'è. Il messaggio parte sempre in
-     * HTML perché il pixel di tracciamento è un'immagine: in modalità testo il
-     * client mostrerebbe il suo indirizzo.
-     */
-    private function htmlBody(string $body, EmailTracking $tracking): string
-    {
-        $body = $body === '' ? ' ' : $body;
-
-        if (strlen($body) === strlen(strip_tags($body))) {
-            return $tracking->textToHtml($body);
-        }
-
-        return $body;
     }
 
     /**

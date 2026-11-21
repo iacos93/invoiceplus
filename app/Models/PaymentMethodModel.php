@@ -88,6 +88,47 @@ class PaymentMethodModel extends IpBaseModel
     ];
 
     /**
+     * Elenco standard dei metodi di pagamento, uno per ogni modalità SdI.
+     *
+     * Sta accanto a SDI_CODES perché è la sua stessa tabella di riferimento:
+     * il seeding di una nuova azienda e la migrazione che completa le
+     * installazioni esistenti leggono questa lista, così non possono
+     * divergere. I nomi restano entro i 35 caratteri accettati dal form e
+     * riprendono le modalità del tracciato, con qualche abbreviazione dove
+     * il nome ufficiale sarebbe troppo lungo (MP15, MP22).
+     *
+     * @return list<array{name: string, sdi_code: string, requires_bank_account: bool}>
+     */
+    public static function standardMethods(): array
+    {
+        return [
+            ['name' => 'Contanti', 'sdi_code' => 'MP01', 'requires_bank_account' => false],
+            ['name' => 'Assegno', 'sdi_code' => 'MP02', 'requires_bank_account' => false],
+            ['name' => 'Assegno circolare', 'sdi_code' => 'MP03', 'requires_bank_account' => false],
+            ['name' => 'Contanti presso Tesoreria', 'sdi_code' => 'MP04', 'requires_bank_account' => false],
+            ['name' => 'Bonifico', 'sdi_code' => 'MP05', 'requires_bank_account' => true],
+            ['name' => 'Vaglia cambiario', 'sdi_code' => 'MP06', 'requires_bank_account' => false],
+            ['name' => 'Bollettino bancario', 'sdi_code' => 'MP07', 'requires_bank_account' => false],
+            ['name' => 'Carta di pagamento', 'sdi_code' => 'MP08', 'requires_bank_account' => false],
+            ['name' => 'RID', 'sdi_code' => 'MP09', 'requires_bank_account' => true],
+            ['name' => 'RID utenze', 'sdi_code' => 'MP10', 'requires_bank_account' => true],
+            ['name' => 'RID veloce', 'sdi_code' => 'MP11', 'requires_bank_account' => true],
+            ['name' => 'RIBA', 'sdi_code' => 'MP12', 'requires_bank_account' => true],
+            ['name' => 'MAV', 'sdi_code' => 'MP13', 'requires_bank_account' => false],
+            ['name' => 'Quietanza erario', 'sdi_code' => 'MP14', 'requires_bank_account' => false],
+            ['name' => 'Giroconto conti speciali', 'sdi_code' => 'MP15', 'requires_bank_account' => true],
+            ['name' => 'Domiciliazione bancaria', 'sdi_code' => 'MP16', 'requires_bank_account' => true],
+            ['name' => 'Domiciliazione postale', 'sdi_code' => 'MP17', 'requires_bank_account' => false],
+            ['name' => 'Bollettino c/c postale', 'sdi_code' => 'MP18', 'requires_bank_account' => false],
+            ['name' => 'SEPA Direct Debit', 'sdi_code' => 'MP19', 'requires_bank_account' => true],
+            ['name' => 'SEPA Direct Debit CORE', 'sdi_code' => 'MP20', 'requires_bank_account' => true],
+            ['name' => 'SEPA Direct Debit B2B', 'sdi_code' => 'MP21', 'requires_bank_account' => true],
+            ['name' => 'Trattenuta somme riscosse', 'sdi_code' => 'MP22', 'requires_bank_account' => false],
+            ['name' => 'PagoPA', 'sdi_code' => 'MP23', 'requires_bank_account' => false],
+        ];
+    }
+
+    /**
      * Campi scrivibili dal form (li filtra dbArrayFromPost).
      *
      * La chiave primaria e' esclusa: e' nel POST solo per il segnaposto di

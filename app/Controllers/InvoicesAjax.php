@@ -206,6 +206,17 @@ class InvoicesAjax extends BaseController
             return redirect()->to('/invoices/form_create')->withInput();
         }
 
+        // Il cliente arriva dal POST e dbArrayFromPost() lo copia così com'è:
+        // senza il perimetro, una fattura dell'azienda attiva poteva nascere
+        // intestata all'anagrafica di un altro soggetto giuridico -- e i join
+        // del dettaglio ne mostravano i dati. Stesso controllo di
+        // changeClient(), che il cliente lo verifica già.
+        if (! $this->model(ClientModel::class)->findScoped((int) $post['client_id'])) {
+            session()->setFlashdata('alert_error', trans('client_not_found', '', 'Cliente non valido o non appartenente all\'azienda attiva.'));
+
+            return redirect()->to('/invoices/form_create')->withInput();
+        }
+
         $dbArray   = array_merge(
             $this->invoiceModel->dbArrayFromPost($post),
             $this->einvoiceFieldsFromPost($post)
@@ -279,6 +290,17 @@ class InvoicesAjax extends BaseController
 
         if (!$this->invoiceModel->validate($post)) {
             session()->setFlashdata('alert_error', implode(' ', $this->invoiceModel->errors()));
+
+            return redirect()->to('/invoices/form_create')->withInput();
+        }
+
+        // Il cliente arriva dal POST e dbArrayFromPost() lo copia così com'è:
+        // senza il perimetro, una fattura dell'azienda attiva poteva nascere
+        // intestata all'anagrafica di un altro soggetto giuridico -- e i join
+        // del dettaglio ne mostravano i dati. Stesso controllo di
+        // changeClient(), che il cliente lo verifica già.
+        if (! $this->model(ClientModel::class)->findScoped((int) $post['client_id'])) {
+            session()->setFlashdata('alert_error', trans('client_not_found', '', 'Cliente non valido o non appartenente all\'azienda attiva.'));
 
             return redirect()->to('/invoices/form_create')->withInput();
         }

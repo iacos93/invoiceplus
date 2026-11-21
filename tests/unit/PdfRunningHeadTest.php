@@ -15,10 +15,30 @@ use CodeIgniter\Test\CIUnitTestCase;
  */
 final class PdfRunningHeadTest extends CIUnitTestCase
 {
+    /** @var string|null valore di pdf.engine prima del test */
+    private ?string $engineEnv = null;
+
     protected function setUp(): void
     {
         parent::setUp();
         helper(['ip_helpers']);
+
+        // Qui si prova il canvas di dompdf (carta intestata disegnata sulle
+        // pagine dopo la prima): il motore si forza così il test non dipende
+        // da un Gotenberg in ascolto sulla macchina.
+        $this->engineEnv     = $_ENV['pdf.engine'] ?? null;
+        $_ENV['pdf.engine']  = 'dompdf';
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->engineEnv === null) {
+            unset($_ENV['pdf.engine']);
+        } else {
+            $_ENV['pdf.engine'] = $this->engineEnv;
+        }
+
+        parent::tearDown();
     }
 
     public function testIlMarcatoreTornaIndietroUguale(): void

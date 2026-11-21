@@ -32,9 +32,18 @@ final class DocumentPdfIntegrationTest extends CIUnitTestCase
     /** @var array<string, mixed> */
     private array $originalTests = [];
 
+    /** @var string|null valore di pdf.engine prima del test */
+    private ?string $engineEnv = null;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // I PDF qui si controllano con l'impaginazione di dompdf: si forza il
+        // motore, così la suite resta identica anche su una macchina dove
+        // Gotenberg è in ascolto.
+        $this->engineEnv    = $_ENV['pdf.engine'] ?? null;
+        $_ENV['pdf.engine'] = 'dompdf';
 
         $config = config('Database');
 
@@ -70,6 +79,12 @@ final class DocumentPdfIntegrationTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
+        if ($this->engineEnv === null) {
+            unset($_ENV['pdf.engine']);
+        } else {
+            $_ENV['pdf.engine'] = $this->engineEnv;
+        }
+
         $this->restoreConnections();
 
         parent::tearDown();

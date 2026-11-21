@@ -9,6 +9,28 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ## [Non pubblicata]
 
+### Aggiunto
+
+- Modelli email: il form ha il pulsante "Anteprima", che apre in una scheda
+  il messaggio come lo riceve il cliente, con i tag sostituiti da dati di
+  esempio. Il corpo è isolato in un iframe (nessuno script, nessun CSS
+  dell'app) e l'anteprima usa la stessa conversione testo → HTML dell'invio,
+  così non mostra qualcosa di diverso da ciò che parte.
+- Stampa PDF con Gotenberg (Chromium) sul VPS: i documenti vengono resi come
+  in un browser, con il motore scelto in Impostazioni > PDF o da `.env`
+  (`pdf.engine`). I margini del foglio vengono passati a Chromium e la
+  numerazione "Pagina n / totale" la compone lui nel piede, così resta esatta
+  anche quando il documento cambia lunghezza. Se Gotenberg non risponde, il
+  PDF esce comunque con dompdf e il guasto resta nel log. Nelle installazioni
+  esistenti la migrazione non
+  tocca nulla: il motore predefinito è Gotenberg, `pdf.engine = dompdf` (o la
+  tendina) riporta al vecchio comportamento.
+- Metodi di pagamento: l'anagrafica parte con tutte le modalità del tracciato
+  FatturaPA (MP01–MP23), non più solo con bonifico, contanti, assegno, carta e
+  RiBa. Una migrazione completa anche le installazioni esistenti, aggiungendo
+  solo i metodi mancanti e lasciando intatti quelli già presenti o
+  rinominati.
+
 ### Modificato
 
 - La pagina Importa / Esporta è più semplice: due card, una per importare
@@ -25,6 +47,15 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Creare una fattura o un preventivo con il cliente di un'altra azienda viene
+  rifiutato: prima il documento nasceva nell'azienda attiva ma intestato
+  all'anagrafica altrui, e il dettaglio ne mostrava i dati. La verifica è la
+  stessa che il cambio cliente faceva già.
+- Impostazioni > Account utente: rimuovere un cliente assegnato controlla che
+  l'assegnazione appartenga davvero all'utente indicato nell'indirizzo; prima
+  bastava cambiare l'id dell'utente per togliere l'assegnazione a un altro.
+- Il PDF del DDT non mostra più la chiave `email_abbr` al posto
+  dell'etichetta: la traduzione mancava sia in italiano sia in inglese.
 - F24: reimportare una quietanza senza protocollo leggibile non crea più un
   secondo F24 già pagato; viene segnalata come già importata.
 - F24: il protocollo delle quietanze non si legge più dentro altre parole

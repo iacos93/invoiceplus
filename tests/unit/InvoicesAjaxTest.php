@@ -174,6 +174,51 @@ final class InvoicesAjaxTest extends CIUnitTestCase
         $this->assertTrue($json['success']);
     }
 
+    public function testCreazioneRifiutaUnClienteDiUnAltraAzienda(): void
+    {
+        $invoice = $this->createMock(InvoiceModel::class);
+        $invoice->method('validate')->willReturn(true);
+        // Il documento non deve nemmeno nascere: niente insert.
+        $invoice->expects($this->never())->method('create');
+
+        $client = $this->createMock(ClientModel::class);
+        $client->expects($this->once())->method('findScoped')->with(3)->willReturn(null);
+
+        $this->controller(
+            ['client_id' => 3, 'invoice_date_created' => '2026-01-01', 'invoice_group_id' => 1],
+            [
+                InvoiceModel::class => $invoice,
+                ClientModel::class  => $client,
+            ]
+        )->create();
+
+        $this->assertStringContainsString(
+            'Cliente non valido',
+            (string) session()->getFlashdata('alert_error')
+        );
+    }
+
+    public function testCreazioneAccettaUnClienteDellAzienda(): void
+    {
+        $invoice = $this->createMock(InvoiceModel::class);
+        $invoice->method('validate')->willReturn(true);
+        $invoice->expects($this->once())->method('create')->willReturn(9);
+
+        $client = $this->createMock(ClientModel::class);
+        $client->expects($this->once())->method('findScoped')->with(3)->willReturn(['client_id' => 3]);
+
+        $response = $this->controller(
+            ['client_id' => 3, 'invoice_date_created' => '2026-01-01', 'invoice_group_id' => 1],
+            [
+                InvoiceModel::class => $invoice,
+                ClientModel::class  => $client,
+            ]
+        )->create();
+
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertStringContainsString('/invoices/view/9', $response->getHeaderLine('Location'));
+    }
+
     /**
      * Il controller con i soli pezzi che gli servono: richiesta finta (per il
      * metodo e il POST), risposta vera per il JSON, model passati.

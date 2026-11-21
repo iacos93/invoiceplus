@@ -303,6 +303,15 @@ class QuotesAjax extends BaseController
         $this->quoteModel->setValidationRules($this->quoteModel->validationRulesLegacy());
 
         if ($this->quoteModel->validate($post)) {
+            // Anche qui il client_id del POST finiva direttamente nell'insert:
+            // un preventivo poteva nascere intestato a un'anagrafica di
+            // un'altra azienda. Stesso controllo di changeClient().
+            if (! (new ClientModel())->findScoped((int) $post['client_id'])) {
+                session()->setFlashdata('alert_error', 'Cliente non valido o non appartenente all\'azienda attiva.');
+
+                return redirect()->to('/quotes/form_create')->withInput();
+            }
+
             $quoteId = $this->quoteModel->create($this->quoteModel->dbArrayFromPost($post));
 
             // Righe dal form di creazione: "items" in JSON (tabella righe della

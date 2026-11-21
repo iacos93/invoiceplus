@@ -378,23 +378,16 @@ class Companies extends BaseController
         }
 
         // Metodi di pagamento: anch'essi globali (ip_payment_methods non ha
-        // company_id). Si precompilano con le modalita' fiscali italiane piu'
-        // comuni e il relativo codice MP della fattura elettronica, cosi' la
-        // fattura emessa riporta gia' DatiPagamento/ModalitaPagamento validi.
+        // company_id). Si precompilano con tutte le modalita' fiscali del
+        // tracciato e il relativo codice MP, cosi' la fattura emessa riporta
+        // gia' DatiPagamento/ModalitaPagamento validi. L'elenco sta nel model
+        // perche' e' lo stesso che completa le installazioni esistenti.
         if ((new PaymentMethodModel())->countAllResults() === 0) {
-            $methods = [
-                ['Bonifico',            'MP05', true],
-                ['Contanti',            'MP01', false],
-                ['Assegno',             'MP02', false],
-                ['Carta di credito',    'MP08', false],
-                ['Ricevuta bancaria',   'MP12', true],
-            ];
-
-            foreach ($methods as [$name, $sdi, $needsBank]) {
+            foreach (PaymentMethodModel::standardMethods() as $method) {
                 (new PaymentMethodModel())->insert([
-                    'payment_method_name'                => $name,
-                    'payment_method_sdi_code'           => $sdi,
-                    'payment_method_requires_bank_account' => $needsBank,
+                    'payment_method_name'                  => $method['name'],
+                    'payment_method_sdi_code'              => $method['sdi_code'],
+                    'payment_method_requires_bank_account' => $method['requires_bank_account'],
                 ]);
             }
 

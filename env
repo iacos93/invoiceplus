@@ -67,6 +67,16 @@
 # mcp.company_id = 0        # Override azienda MCP (0 = usa ip_settings.mcp_company_id)
 
 #--------------------------------------------------------------------
+# PDF
+#--------------------------------------------------------------------
+# Motore di stampa: gotenberg (Chromium, predefinito) oppure dompdf, che
+# resta il ripiego automatico se il servizio non risponde. L'indirizzo si
+# può lasciare vuoto per usare il default di Gotenberg (porta 3000 in locale).
+# pdf.engine = gotenberg
+# pdf.gotenbergURL = http://127.0.0.1:3000
+# pdf.gotenbergTimeout = 30
+
+#--------------------------------------------------------------------
 # SESSION
 #--------------------------------------------------------------------
 

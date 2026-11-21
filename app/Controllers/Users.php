@@ -218,6 +218,16 @@ class Users extends BaseController
             throw PageNotFoundException::forPageNotFound();
         }
 
+        // La coppia della rotta è un vincolo, non due parametri indipendenti:
+        // la riga si cancellava per user_client_id e basta, quindi bastava
+        // indicare un altro utente nell'URL per togliere l'assegnazione a
+        // quello vero. Si verifica che la riga appartenga proprio a $userId.
+        $userClient = (new UserClientModel())->find($userClientId);
+
+        if (!$userClient || (int) $userClient['user_id'] !== $userId) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
         (new UserClientModel())->delete($userClientId);
 
         session()->setFlashdata('alert_success', 'Cliente rimosso correttamente');

@@ -88,6 +88,7 @@ class Settings extends BaseController
         'monospace_amounts', 'read_only_toggle', 'cron_key',
         // Scheda Fatture
         'default_invoice_terms', 'pdf_invoice_footer', 'pdf_watermark',
+        'pdf_engine', 'pdf_gotenberg_url', 'pdf_gotenberg_timeout',
         'invoices_due_after', 'default_invoice_tax_rate', 'default_item_tax_rate',
         'default_include_item_tax', 'invoice_default_payment_method',
         'invoice_pre_password', 'generate_invoice_number_for_draft',
@@ -139,6 +140,7 @@ class Settings extends BaseController
         'default_quote_notes'  => 5000,
         'pdf_invoice_footer'   => 5000,
         'pdf_quote_footer'     => 5000,
+        'pdf_gotenberg_url'    => 255,
     ];
 
     /**
@@ -413,6 +415,7 @@ class Settings extends BaseController
             'currency_symbol_placement' => ['before', 'beforespace', 'after', 'afterspace'],
             'read_only_toggle'          => ['0', '1', '2', '3'],
             'default_include_item_tax'  => ['0', '1'],
+            'pdf_engine'                => ['dompdf', 'gotenberg'],
             'sdi_channel'               => array_keys(SdiSender::CHANNELS),
         ];
     }
@@ -478,6 +481,18 @@ class Settings extends BaseController
                 $errors[$key] = sprintf('%s: selezione non valida.', $label);
 
                 continue;
+            }
+
+            // Un URL che non è un URL diventa un errore di cURL a ogni stampa,
+            // mascherato dal ripiego su dompdf: meglio dirlo al salvataggio.
+            if ($key === 'pdf_gotenberg_url' && $value !== '' && !filter_var($value, FILTER_VALIDATE_URL)) {
+                $errors[$key] = sprintf('%s: indirizzo non valido.', $label);
+
+                continue;
+            }
+
+            if ($key === 'pdf_gotenberg_timeout' && (!ctype_digit($value) || (int) $value < 1 || (int) $value > 300)) {
+                $errors[$key] = sprintf('%s: indica un numero di secondi fra 1 e 300.', $label);
             }
 
             if (isset($settings[$key . '_field_is_amount']) && $value !== '' && !is_numeric(standardize_amount($value))) {

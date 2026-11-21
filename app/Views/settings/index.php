@@ -605,6 +605,54 @@
                                            value="<?= esc(old('settings[pdf_watermark]', get_setting('pdf_watermark'))) ?>">
                                 </div>
 
+                                <?php
+                                // Motore di stampa: vale per fatture, preventivi,
+                                // DDT e report. Gotenberg rende l'HTML come il
+                                // browser; dompdf resta il ripiego automatico
+                                // quando il servizio non risponde.
+                                $pdfEngine = (string) get_setting(
+                                    'pdf_engine',
+                                    env('pdf.engine') ?: 'gotenberg'
+                                );
+                                ?>
+                                <div class="ip-doc-field">
+                                    <label class="ip-doc-label" for="settings[pdf_engine]">
+                                        <?= trans('pdf_engine', '', 'Motore stampa PDF') ?>
+                                    </label>
+                                    <select name="settings[pdf_engine]" id="settings[pdf_engine]" class="form-control simple-select">
+                                        <option value="gotenberg" <?= $pdfEngine === 'gotenberg' ? 'selected' : '' ?>>
+                                            <?= trans('pdf_engine_gotenberg', '', 'Gotenberg (Chromium, consigliato)') ?>
+                                        </option>
+                                        <option value="dompdf" <?= $pdfEngine === 'dompdf' ? 'selected' : '' ?>>
+                                            <?= trans('pdf_engine_dompdf', '', 'dompdf (integrato, nessun servizio esterno)') ?>
+                                        </option>
+                                    </select>
+                                    <p class="ip-field-help">
+                                        <?= trans('pdf_engine_hint', '', 'Gotenberg rende il documento come un browser; se il servizio non risponde il PDF esce comunque con dompdf.') ?>
+                                    </p>
+                                </div>
+
+                                <div class="ip-doc-field">
+                                    <label class="ip-doc-label" for="settings[pdf_gotenberg_url]">
+                                        <?= trans('pdf_gotenberg_url', '', 'Indirizzo di Gotenberg') ?>
+                                    </label>
+                                    <input type="url" name="settings[pdf_gotenberg_url]" id="settings[pdf_gotenberg_url]"
+                                           class="form-control" placeholder="http://127.0.0.1:3000"
+                                           value="<?= esc(old('settings[pdf_gotenberg_url]', get_setting('pdf_gotenberg_url', env('pdf.gotenbergURL') ?: ''))) ?>">
+                                    <p class="ip-field-help">
+                                        <?= trans('pdf_gotenberg_url_hint', '', 'Vuoto: http://127.0.0.1:3000, il default di Gotenberg installato sul VPS.') ?>
+                                    </p>
+                                </div>
+
+                                <div class="ip-doc-field">
+                                    <label class="ip-doc-label" for="settings[pdf_gotenberg_timeout]">
+                                        <?= trans('pdf_gotenberg_timeout', '', 'Attesa massima di Gotenberg (secondi)') ?>
+                                    </label>
+                                    <input type="number" min="1" max="300" name="settings[pdf_gotenberg_timeout]" id="settings[pdf_gotenberg_timeout]"
+                                           class="form-control"
+                                           value="<?= esc(old('settings[pdf_gotenberg_timeout]', get_setting('pdf_gotenberg_timeout', env('pdf.gotenbergTimeout') ?: '30'))) ?>">
+                                </div>
+
 <div class="ip-doc-field">
                                     <label class="ip-doc-label" for="invoice_logo"><?= trans('invoice_logo', '', 'Logo (intestazione)') ?></label>
                                     <input type="file" name="invoice_logo" id="invoice_logo" class="ip-file-input"

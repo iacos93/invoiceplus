@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\MailPreview;
 use App\Models\EmailTemplateModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
@@ -107,6 +108,34 @@ class EmailTemplates extends BaseController
         ];
 
         return view('email_templates/form', $data);
+    }
+
+    /**
+     * Anteprima HTML del modello in lavorazione.
+     *
+     * È una POST perché riceve il corpo ancora non salvato dal form: una GET
+     * mostrerebbe solo l'ultima versione salvata, che non è quella che si sta
+     * scrivendo. Il pulsante apre una scheda nuova, così il form resta com'è.
+     */
+    public function preview()
+    {
+        $request = service('request');
+
+        if ($request->getMethod() !== 'POST') {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        $fromName  = trim((string) $request->getPost('email_template_from_name'));
+        $fromEmail = trim((string) $request->getPost('email_template_from_email'));
+
+        return view('email_templates/preview', [
+            'title'   => trim((string) $request->getPost('email_template_title')),
+            'subject' => MailPreview::subject((string) $request->getPost('email_template_subject')),
+            'from'    => $fromName !== '' || $fromEmail !== ''
+                ? trim($fromName . ($fromEmail !== '' ? ' <' . $fromEmail . '>' : ''))
+                : '',
+            'body'    => MailPreview::body((string) $request->getPost('email_template_body')),
+        ]);
     }
 
     public function delete(int $id)

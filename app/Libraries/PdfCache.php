@@ -153,11 +153,16 @@ class PdfCache
     }
 
     /**
-     * La versione di dompdf fa parte della chiave: aggiornare il motore di
-     * stampa deve produrre PDF nuovi, non riusare i vecchi.
+     * Motore e versione fanno parte della chiave: cambiare motore (o
+     * l'indirizzo di Gotenberg) deve produrre PDF nuovi, non riusare i vecchi
+     * stampati dall'altro.
      */
     private static function engine(): string
     {
+        if (function_exists('pdf_engine') && pdf_engine() === 'gotenberg') {
+            return 'gotenberg/1@' . \App\Libraries\GotenbergPdf::configuredUrl();
+        }
+
         if (!class_exists(\Composer\InstalledVersions::class)) {
             return 'dompdf';
         }

@@ -653,6 +653,14 @@ if (!function_exists('header_actions')) {
         $formAttr = !empty($opts['form']) ? ' form="' . esc((string) $opts['form'], 'attr') . '"' : '';
 
         $html = '<div class="btn-group btn-group-sm">';
+        // 'preview_url' => url: pulsante che invia lo stesso form a un altro
+        // indirizzo, in una scheda nuova. Serve alle anteprime che devono
+        // vedere i valori ancora non salvati (es. modelli email).
+        if (!empty($opts['preview_url'])) {
+            $html .= '<button type="submit" name="btn_preview" value="1" class="btn btn-outline-secondary"'
+                  . ' formaction="' . esc((string) $opts['preview_url'], 'attr') . '" formtarget="_blank">'
+                  . '<i class="fa-solid fa-eye"></i> ' . trans('preview') . '</button>';
+        }
         if (!$hide_submit) {
             $html .= '<button type="submit" id="btn-submit" name="btn_submit" class="btn btn-success ajax-loader" value="1"' . $formAttr . '>'
                   . '<i class="fa-solid fa-check"></i> ' . trans('save') . '</button>';
@@ -1207,14 +1215,57 @@ if (!function_exists('pdf_create')) {
     }
 }
 
+if (!function_exists('pdf_engine')) {
+    /**
+     * Motore di stampa dei PDF: 'gotenberg' (Chromium) o 'dompdf'.
+     *
+     * L'impostazione vince sull'ambiente; senza nessuna delle due si usa
+     * Gotenberg, perché è il motore che rende i documenti come il browser e
+     * sul VPS è già in ascolto. Nei test resta dompdf: così la suite non
+     * dipende da un servizio esterno e i controlli sulla carta intestata
+     * continuano a riguardare il canvas di dompdf.
+     */
+    function pdf_engine(): string
+    {
+        // L'ambiente vince sull'impostazione: è il modo per forzare dompdf su
+        // un'installazione senza toccare il database (ed è anche come i test
+        // restano indipendenti da un Gotenberg in ascolto sulla macchina).
+        $engine = trim((string) env('pdf.engine'));
+
+        if ($engine === '') {
+            $engine = trim((string) get_setting('pdf_engine', ''));
+        }
+
+        if ($engine === '') {
+            $engine = 'gotenberg';
+        }
+
+        return strtolower($engine) === 'dompdf' ? 'dompdf' : 'gotenberg';
+    }
+}
+
 if (!function_exists('pdf_render')) {
     /**
      * HTML → byte del PDF, senza cache: è il lavoro che pdf_create() fa solo
      * quando la cache non ha già il documento, separato perché i test lo
      * possano chiamare.
+     *
+     * Con Gotenberg configurato ma non raggiungibile si ripiega su dompdf: un
+     * PDF deve uscire comunque, e il guasto resta scritto nel log invece di
+     * diventare una pagina d'errore al posto della fattura.
      */
     function pdf_render(string $html): string
     {
+        if (pdf_engine() === 'gotenberg') {
+            try {
+                return pdf_render_gotenberg($html);
+            } catch (\Throwable $e) {
+                log_message('error', 'Stampa PDF con Gotenberg non riuscita ({msg}): si ripiega su dompdf.', [
+                    'msg' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $html   = pdf_page_total($html);
         $dompdf = new \Dompdf\Dompdf();
         $dompdf->loadHtml($html);
@@ -1230,6 +1281,24 @@ if (!function_exists('pdf_render')) {
         }
 
         return (string) $dompdf->output();
+    }
+}
+
+if (!function_exists('pdf_render_gotenberg')) {
+    /**
+     * HTML → byte del PDF con Gotenberg (Chromium).
+     *
+     * La numerazione la compone il footer.html nativo, quindi qui non serve
+     * né il segnaposto %%PAGINE%% né il doppio passaggio di dompdf. La classe
+     * sul <html> spegne il vecchio contatore CSS, che Chromium non sa
+     * riempire, e non ha effetto sul ripiego dompdf (che riceve l'HTML
+     * originale).
+     */
+    function pdf_render_gotenberg(string $html): string
+    {
+        $html = preg_replace('/<html(?=[\s>])/', '<html class="ip-pdf-gotenberg"', $html, 1) ?? $html;
+
+        return (new \App\Libraries\GotenbergPdf())->render($html);
     }
 }
 

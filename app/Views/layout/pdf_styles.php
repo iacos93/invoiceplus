@@ -191,6 +191,13 @@ html.ip-sheet-embedded body.doc-paged {
    primi 24 mm e corpo che riparte a 30 mm. Fuori dai fogli dell'anteprima il
    blocco non si vede mai: nel PDF la fascia è disegnata, non impaginata. */
 .doc-running-head { display: none; }
+
+/* Gotenberg stampa con Chromium, che riempie il numero di pagina nel
+   footer.html nativo: il vecchio "n / totale" composto da counter(page) qui
+   resterebbe a zero, quindi si spegne. Con dompdf la classe non c'è e il
+   contatore CSS continua a funzionare. */
+html.ip-pdf-gotenberg .doc-footer .pages { display: none; }
+html.ip-pdf-gotenberg .doc-footer .pages:before { content: none; }
 .doc-page.has-head { padding-top: 30mm; }
 .doc-page.has-head .doc-page__body { height: 245mm; }
 .doc-page .doc-running-head {

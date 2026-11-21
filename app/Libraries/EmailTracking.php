@@ -102,7 +102,10 @@ class EmailTracking
      */
     public function textToHtml(string $text): string
     {
-        return nl2br(esc($text), false);
+        // La conversione vive in MailTemplate perché la usa anche l'anteprima
+        // dei modelli: una sola definizione evita che anteprima e invio
+        // mostrino due messaggi diversi.
+        return MailTemplate::toHtml($text);
     }
 
     /**
