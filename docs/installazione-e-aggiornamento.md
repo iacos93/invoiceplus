@@ -120,6 +120,46 @@ Exit `0` e una riga con il comando consentito: il prerequisito c'è. Se risponde
 `root:root`), il nome senza punti (`invoiceplus-reload`, non
 `invoiceplus.reload`) e che `/etc/sudoers` contenga `#includedir /etc/sudoers.d`.
 
+#### La prima volta: lo script non c'è ancora
+
+`tools/deploy.sh` è entrato nel repository con `bec3c4e` e arriva **con il
+pull**: su un'installazione più vecchia di quel commit lo script non esiste, e
+non può aggiornare sé stesso. In quel caso il primo aggiornamento si fa a mano,
+con gli stessi passi che farà lui, nell'ordine in cui li farà:
+
+```console
+cd /home/invoiceplus/htdocs/invoice.novatech.cloud
+. writable/cron-runner.conf
+curl -fsS "$BASE_URL/cron/backup/$CRON_KEY"      # se non risponde, fermati qui
+cp -a . "../release-pre-$(git rev-parse --short HEAD)"
+PRIMA=$(git rev-parse HEAD)
+git pull --ff-only origin main
+git diff --name-only "$PRIMA" HEAD -- composer.lock | grep -q . &&
+    composer install --no-dev --prefer-dist --no-interaction
+php8.4 spark migrate
+php8.4 spark cache:clear
+```
+
+Poi, da `ubuntu`, il reload del pool — l'unico passo privilegiato, che usa il
+permesso descritto sopra:
+
+```console
+sudo systemctl reload php8.4-fpm
+```
+
+Due cose da controllare prima di copiare il blocco: che
+`writable/cron-runner.conf` esista con `BASE_URL` e `CRON_KEY`, perché il `.`
+lo carica nella shell e senza quelle variabili il `curl` fallisce subito,
+prima che il codice venga toccato; e che `php8.4` nel PATH sia il binario del
+pool, altrimenti vale quello indicato da `PHP_BIN`.
+
+Dalla volta successiva lo script c'è e vale la procedura qui sotto: il percorso
+manuale serve solo a questa prima esecuzione e non va ripetuto, perché lo
+script fa gli stessi passi con più controlli (albero pulito, `--ff-only`,
+backup obbligatorio, permesso del reload verificato prima di partire).
+
+#### L'aggiornamento, dalla seconda volta in poi
+
 L'aggiornamento si fa con `tools/deploy.sh`, che esegue gli stessi passi nella
 stessa sequenza e si ferma al primo che fallisce:
 
@@ -176,13 +216,23 @@ cartella com'è adesso — `git checkout` non tocca `.env`, `writable/` e
 
 ```console
 cd /home/invoiceplus/htdocs/invoice.novatech.cloud
-cp -a . "../release-pre-$(git rev-parse --short HEAD)"   # prima di tools/deploy.sh
+rsync -a --exclude 'writable/backups/' ./ \
+    "../release-pre-$(git rev-parse --short HEAD)/"   # prima di tools/deploy.sh
 ```
+
+`cp -a` non sa escludere niente e `writable/backups` contiene i dump e gli zip
+dei file caricati: con `cp` ogni copia li duplicherebbe, e su un disco che ne
+conserva già quattordici sono i GB che si accumulano più in fretta. `rsync`
+esclude solo quella cartella; `writable/logs`, `writable/cache` e
+`writable/uploads` restano nella copia, perché fanno parte dello stato
+dell'installazione. Se `rsync` non c'è, `tar -C . -cf - --exclude=writable/backups .
+| tar -C "../release-pre-<sha>" -xf -` fa lo stesso.
 
 La copia finisce accanto all'applicazione, in `/home/invoiceplus/htdocs`, fuori
 dal document root — è `public/` a essere servita, non la cartella che la
-contiene — e pesa quanto `vendor/`. Contiene però anche due cose che git non
-porta con sé: **`.env`**, con la chiave di cifratura dei segreti, e `vendor/`.
+contiene — e pesa quanto `vendor/` più i file caricati. Contiene però anche due
+cose che git non porta con sé: **`.env`**, con la chiave di cifratura dei
+segreti, e `vendor/`.
 Non è quindi un archivio da lasciare in giro: quando l'aggiornamento è
 confermato (login, una fattura con il PDF, `writable/logs` pulito) si elimina,
 altrimenti le copie con i segreti si accumulano a ogni deploy.
@@ -190,6 +240,15 @@ altrimenti le copie con i segreti si accumulano a ogni deploy.
 ```console
 rm -rf ../release-pre-<sha>
 ```
+
+Il ripristino non ha bisogno della copia dei backup, perché il dump da usare è
+**già** in `writable/backups`: è lo stesso file che ha creato il backup di
+questo aggiornamento, e la copia non l'ha né duplicato né toccato. La copia
+serve per `.env`, `vendor/` e `writable/` (log, cache, upload), non per il
+database. Attenzione alla rotazione: i dump si fermano a quattordici, quindi il
+rollback col ripristino si decide subito; dopo qualche notte di backup il file
+che serve può non esserci più — `ls -lt writable/backups | head` dice cosa
+c'è.
 
 Per tornare al commit precedente:
 
@@ -217,9 +276,10 @@ dati scritti nel frattempo (fatture, incassi) non sono nel codice. Quindi:
 
 - se il commit nuovo non ha applicato migrazioni, il checkout basta;
 - se ne ha applicate e qualcosa non va, l'unica strada sicura è ripristinare il
-  dump fatto prima del pull (sezione Ripristino) tenendo il codice del commit
-  precedente; il dump è più vecchio dei documenti creati nel frattempo, che
-  vanno rifatti a mano o reimportati;
+  dump fatto prima del pull (sezione Ripristino), che è quello in
+  `writable/backups` e non sta nella copia `release-pre`, tenendo il codice del
+  commit precedente; il dump è più vecchio dei documenti creati nel frattempo,
+  che vanno rifatti a mano o reimportati;
 - `php spark migrate:status` dice quali migrazioni risultano applicate: se ne
   compaiono di nuove rispetto al dump, il ripristino è obbligatorio.
 
