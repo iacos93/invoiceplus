@@ -164,6 +164,68 @@ margini del foglio e «Pagina n / totale» nel piede. Se il PDF arriva ma in
 `writable/logs` c'è «Stampa PDF con Gotenberg non riuscita», il ripiego ha
 funzionato e il guasto è nel servizio: il `curl` qui sopra dice se risponde.
 
+#### Tornare indietro su questo server
+
+Lo script porta il codice a un commit nuovo; git sa tornare a quello
+precedente, lo schema no. La copia va fatta **prima di lanciare
+`tools/deploy.sh`**, non solo «prima del pull»: il pull lo fa lo script, quindi
+chi lancia lo script e poi cerca la copia non la trova. Servono quindi due cose
+prima di partire: il commit di partenza (`git rev-parse HEAD`) e la copia della
+cartella com'è adesso — `git checkout` non tocca `.env`, `writable/` e
+`vendor/`, e nella copia restano com'erano.
+
+```console
+cd /home/invoiceplus/htdocs/invoice.novatech.cloud
+cp -a . "../release-pre-$(git rev-parse --short HEAD)"   # prima di tools/deploy.sh
+```
+
+La copia finisce accanto all'applicazione, in `/home/invoiceplus/htdocs`, fuori
+dal document root — è `public/` a essere servita, non la cartella che la
+contiene — e pesa quanto `vendor/`. Contiene però anche due cose che git non
+porta con sé: **`.env`**, con la chiave di cifratura dei segreti, e `vendor/`.
+Non è quindi un archivio da lasciare in giro: quando l'aggiornamento è
+confermato (login, una fattura con il PDF, `writable/logs` pulito) si elimina,
+altrimenti le copie con i segreti si accumulano a ogni deploy.
+
+```console
+rm -rf ../release-pre-<sha>
+```
+
+Per tornare al commit precedente:
+
+```console
+cd /home/invoiceplus/htdocs/invoice.novatech.cloud
+git checkout <sha-precedente>     # HEAD staccato: è voluto
+php spark cache:clear             # le configurazioni in cache sono quelle nuove
+```
+
+Se fra i due commit è cambiato `composer.lock`, un
+`composer install --no-dev --prefer-dist` riallinea `vendor/`. Poi il reload
+del pool, da `ubuntu`:
+
+```console
+sudo systemctl reload php8.4-fpm
+```
+
+Con `HEAD` staccato `tools/deploy.sh` si rifiuta di partire, perché controlla il
+ramo: è voluto, un rollback non deve aggiornare da solo. Per risalire:
+`git checkout main` e `git pull --ff-only origin main`.
+
+**Il database non torna indietro con git.** Le migrazioni non hanno tutte una
+discesa affidabile — alcune aggiungono colonne, altre correggono dati — e i
+dati scritti nel frattempo (fatture, incassi) non sono nel codice. Quindi:
+
+- se il commit nuovo non ha applicato migrazioni, il checkout basta;
+- se ne ha applicate e qualcosa non va, l'unica strada sicura è ripristinare il
+  dump fatto prima del pull (sezione Ripristino) tenendo il codice del commit
+  precedente; il dump è più vecchio dei documenti creati nel frattempo, che
+  vanno rifatti a mano o reimportati;
+- `php spark migrate:status` dice quali migrazioni risultano applicate: se ne
+  compaiono di nuove rispetto al dump, il ripristino è obbligatorio.
+
+Dopo il ripristino si ricontrolla quello di sempre: login, una fattura con il
+PDF, e `writable/logs` senza errori nuovi.
+
 ### Tornare indietro
 
 Il codice si riporta al tag precedente con `git checkout <tag>` e
