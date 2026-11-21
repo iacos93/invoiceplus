@@ -279,14 +279,18 @@ jobs:
 
       # `deploy.sh` e `rollback.sh` girano sul server, dove un errore si paga
       # con un aggiornamento a metà o un rollback che non parte. La sintassi si
-      # controlla sempre; il rollback si esegue anche per intero su repository
-      # finti, con `php` e `composer` sostituiti da stub: è l'unico modo per
-      # sapere che l'ordine dei passi e i controlli sono quelli che il messaggio
-      # racconta, senza un server vero.
+      # controlla sempre; entrambi poi si eseguono per intero su repository
+      # finti, con `php`, `composer`, `curl`, `systemctl` e il comando
+      # privilegiato sostituiti da stub: è l'unico modo per sapere che l'ordine
+      # dei passi e i controlli sono quelli che il messaggio racconta, senza un
+      # server vero. Del deploy si verificano la copia `release-pre` (con `.env`,
+      # senza `writable/backups`, anche col ripiego `tar`) e il riavvio dei
+      # worker, che con un pid sbagliato fermerebbe le code in silenzio.
       - name: Verifica gli script di deploy e rollback
         run: |
           bash -n tools/deploy.sh tools/rollback.sh
           bash tools/tests/rollback_harness.sh
+          bash tools/tests/deploy_harness.sh
 
       # Fallisce se una dipendenza ha un advisory noto: e' l'unico controllo
       # che si accorge di una vulnerabilita' corretta a monte.
