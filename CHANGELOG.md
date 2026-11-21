@@ -47,6 +47,10 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Bacheca: la doppia riga sotto il totale dell'Indice di redditività ha ora
+  due tratti dello stesso spessore. Con un tratto da 1px e uno da 2px il primo,
+  sui display con pixel frazionari, risultava più chiaro e più corto, e la
+  coppia sembrava sbagliata invece di essere la riga di chiusura del mastro.
 - Creare una fattura o un preventivo con il cliente di un'altra azienda viene
   rifiutato: prima il documento nasceva nell'azienda attiva ma intestato
   all'anagrafica altrui, e il dettaglio ne mostrava i dati. La verifica è la

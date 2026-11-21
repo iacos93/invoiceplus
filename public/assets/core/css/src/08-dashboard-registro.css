@@ -373,14 +373,19 @@
   .ip-indice .card-value { font-size: 1.875rem; }
 }
 
-/* Doppia riga di chiusura: due tratti (1px + 2px) sotto il totale, come la
-   chiusura del mastro. Firma della finestra Indice: non ripetuta altrove. */
+/* Doppia riga di chiusura: due tratti uguali (2px + 2px) sotto il totale, come
+   la chiusura del mastro. Firma della finestra Indice: non ripetuta altrove.
+   Lo spessore è lo stesso per entrambi: con 1px e 2px il tratto sottile, a
+   rapporti di pixel non interi, si sfaceva in una riga più chiara e più corta
+   di quel che è, e il paio sembrava un errore di disegno invece della riga
+   tracciata sotto il totale. L'altezza resta 8px (2 + 4 di respiro + 2), così
+   il resto del sommario non si sposta. */
 .ip-ledger-rule {
   display: block;
   width: 64px;
   height: 8px;
   margin: 2px 0 8px;
-  border-top: 1px solid var(--kpi, var(--ip-primary));
+  border-top: 2px solid var(--kpi, var(--ip-primary));
   border-bottom: 2px solid var(--kpi, var(--ip-primary));
 }
 
