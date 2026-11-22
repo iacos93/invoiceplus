@@ -7445,9 +7445,10 @@ span.ip-status-bar-seg { cursor: default; }
      (--ip-headerbar-height, riscritta in layout/base.php), che vale 56 con il
      solo titolo e cresce quando c'è headerbar-meta o quando le azioni vanno a
      capo. Con un'altezza fissa, su quelle pagine il filtro anno tornava 9px
-     più in alto della fascia del titolo e i due fili non combaciavano. Il
-     contenuto resta centrato nella fascia, come il titolo e il meta nella
-     headerbar. */
+     più in alto della fascia del titolo e i due fili non combaciavano. La
+     fascia cresce verso il basso, però: il selettore resta appiccicato in cima
+     come in ogni altra pagina (10px dal bordo, la stessa quota del titolo),
+     altrimenti cambiando schermata il filtro si sposterebbe su e giù. */
   min-height: var(--ip-headerbar-height, 56px);
   /* La colonna che scorre è un flex column: senza questo il blocco veniva
      compresso al min-height (79px con il meta) e, con azienda e anno
@@ -7455,9 +7456,6 @@ span.ip-status-bar-seg { cursor: default; }
      Il blocco cresce quanto il suo contenuto e si ferma al minimo della
      headerbar quando ne ha meno. */
   flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
   padding: 10px 12px;
   background: var(--ip-bg-card);
   /* Stesso grigio del bordo di #headerbar, inciso dentro il blocco: la
@@ -7466,6 +7464,12 @@ span.ip-status-bar-seg { cursor: default; }
      vedeva il gradino dove le due colonne si incontrano. */
   box-shadow: inset 0 -1px 0 var(--ip-border);
 }
+/* Con headerbar-meta il titolo sta 4px più in alto (padding 10 invece di 12 e
+   una riga di contesto sotto): il selettore scende dei suoi 4px, così il testo
+   del filtro e quello del titolo cadono sulla stessa riga (centro 80 contro
+   80). Senza, i riquadri partivano dalla stessa quota ma i testi restavano
+   sfalsati di 4px, che è quello che l'occhio vede. */
+body:has(.headerbar-meta) .ip-sidebar-context { padding-top: 6px; }
 .ip-sidebar-context form + form { margin-top: 6px; }
 /* Codice destinatario dell'azienda: riga sola, il codice in mono come i
    codici fiscali della scheda cliente. */

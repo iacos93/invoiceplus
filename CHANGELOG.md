@@ -71,8 +71,10 @@ Le regole per scrivere le voci e preparare una release sono in
   selettore centrato sulla riga del titolo, e un unico filo.
 - Pagine con `headerbar-meta` (Stato del sistema, report): il blocco del filtro
   anno segue l'altezza misurata della headerbar, `--ip-headerbar-height` (79px
-  con la riga di contesto), invece di fermarsi a 56; il selettore resta
-  centrato sulla fascia del titolo e i due fili chiudono alla stessa quota.
+  con la riga di contesto), invece di fermarsi a 56. La fascia cresce verso il
+  basso e il selettore resta sulla riga del titolo come nelle altre pagine:
+  con il meta il suo testo scende di 4px (padding 6 invece di 10), così filtro
+  e titolo hanno il centro a 80; i due fili chiudono alla stessa quota.
   Lo script in `layout/base.php` rimisura la headerbar a ogni navigazione
   parziale (`ip:page-ready`) e riaggancia il `ResizeObserver` al nuovo
   elemento: prima il token restava quello della pagina precedente, quindi
