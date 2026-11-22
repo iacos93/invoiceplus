@@ -33,6 +33,21 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Interfaccia: l'app prende l'identità grafica della landing di Invoice+ —
+  palette «notte e cielo» (canvas #0a0d14 e superficie #131824 in tema scuro,
+  carta fredda e cielo profondo #0b6cb0 in chiaro), Epilogue per titoli e
+  testo, JetBrains Mono per le cifre, raggi corti come l'angolo `sharp` della
+  landing. Cambiano solo i token in `css/src/01-token.css`: card, tabelle,
+  form, sidebar e topbar li leggono già, quindi nessuna view è stata toccata.
+  I due caratteri sono font variabili serviti da `assets/core/fonts`, così
+  non si aggiunge nessuna richiesta a Google Fonts e la CSP resta invariata.
+  I contrasti sono stati misurati sui due temi invece che stimati (4.5:1 per
+  il testo, 3:1 per i bordi dei controlli, su canvas e superficie): il testo
+  passa ovunque, mentre il bordo dei controlli secondari stava a 1.42:1 sul
+  canvas chiaro e 1.56:1 sulla superficie scura e ora arriva a 3.30–3.80:1,
+  così `.btn-secondary` e `.btn-outline-secondary` hanno un contorno che si
+  vede. Lo stesso controllo ha portato il segno di rientro del prospetto da
+  2.85:1 a 5.97:1.
 - La pagina Importa / Esporta è più semplice: due card, una per importare
   e una per esportare, ognuna con una frase, i file in gioco e il pulsante
   principale, più l'elenco delle anagrafiche importabili dalla loro pagina.

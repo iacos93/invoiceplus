@@ -89,8 +89,10 @@
 .ip-prospetto tr.is-detail .ip-prospetto__op {
   /* Il segno deve reggere il suo compito — dire che la riga appartiene al
      totale sopra — quindi resta quieto ma leggibile: sul bordo forte era
-     sotto 2:1 su bianco e spariva. */
-  color: var(--ip-neutral);
+     sotto 2:1 su bianco e spariva. --ip-neutral (#999999) lo teneva a
+     2.85:1 sulla card e 2.68:1 sul canvas, sotto 4.5 per un segno da 12px:
+     il grigio attenuato del testo lo porta a 5.97 / 5.61 restando discreto. */
+  color: var(--ip-text-muted);
   font-size: var(--ip-text-sm);
 }
 .ip-prospetto tr.is-detail .ip-prospetto__label {

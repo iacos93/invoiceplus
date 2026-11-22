@@ -703,7 +703,7 @@ html[data-theme="dark"] .ip-import-badge.is-available{ background:#1c271d; color
 .ip-export-type:has(input:checked) .ip-export-type__hint{ color: var(--ip-text-muted); opacity:1; }
 html[data-theme="dark"] .ip-export-type:has(input:checked) .ip-export-type__hint{ color: #a8adb8; }
 .ip-export-type:has(input:checked) .ip-export-badge{ background: var(--ip-bg-card); color: var(--ip-text-muted); border-color: var(--ip-border); }
-html[data-theme="dark"] .ip-export-type:has(input:checked) .ip-export-badge{ background: #1e1e23; color: #9b9ba5; border-color: #33333b; }
+html[data-theme="dark"] .ip-export-type:has(input:checked) .ip-export-badge{ background: var(--ip-bg-subtle); color: var(--ip-text-muted); border-color: var(--ip-border); }
 .ip-export-type:has(input:checked) .ip-export-badge--annual{ background:#fdf4e6; color:#8a5a00; border-color:#f5dec2; }
 html[data-theme="dark"] .ip-export-type:has(input:checked) .ip-export-badge--annual{ background:#2e2414; color:#e8a13d; border-color:#4a3518; }
 .ip-export-type:has(input:checked)::before, .ip-export-type:has(input:checked)::after{

@@ -989,7 +989,7 @@ html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
   padding: 6px;
   border: 1px solid var(--ip-border);
   border-radius: var(--ip-radius);
-  background: repeating-conic-gradient(#f4f4f5 0 25%, #e4e4e7 0 50%) 0 0 / 12px 12px;
+  background: repeating-conic-gradient(var(--ip-hover) 0 25%, var(--ip-border) 0 50%) 0 0 / 12px 12px;
 }
 
 /* -----------------------------------------------------------------------------

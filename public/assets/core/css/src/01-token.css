@@ -57,6 +57,38 @@
 }
 
 /* -----------------------------------------------------------------------------
+   I due caratteri dell'identità Invoice+ (stile della landing)
+   -----------------------------------------------------------------------------
+   Stessa procedura degli altri: sottoinsieme latino di Google, un file per
+   famiglia, servito da assets/core/fonts così la CSP non dichiara origini
+   esterne e il service worker lo mette in cache. Sono due font variabili
+   (Epilogue 400-700, JetBrains Mono 400-600): un solo file copre ogni peso che
+   il foglio usa, invece delle coppie 500/600 di IBM Plex Mono.
+
+   Epilogue prende sia --ip-display sia --ip-font: nella landing era l'unica
+   voce tipografica (titoli e testo), e il contrasto serif/sans che dava
+   Fraunces qui non serve più perché la gerarchia la porta la scala dei
+   gradini, non il cambio di famiglia. Fraunces e Figtree restano dichiarati
+   perché le pagine d'errore autonome (app/Views/errors) li nominano nel loro
+   CSS inline: senza il @font-face cadrebbero sul ripiego di sistema.
+   -------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Epilogue";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../fonts/epilogue-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-latin.woff2") format("woff2");
+}
+
+/* -----------------------------------------------------------------------------
    Base del documento (ex layer "modern-theme")
    -----------------------------------------------------------------------------
    Questo tratto teneva un secondo set di token --bg-main, --primary,
@@ -259,25 +291,38 @@ a:hover {
 :root {
   /* Palette IP — neutra, professionale (grigio/bianco + accento slate scuro;
      colore riservato solo alla semantica di stato: pagato/scaduto/attenzione) */
-  --ip-bg:            #f6f6f7;     /* canvas neutro */
+  /* Tema chiaro riallineato alla palette dell'identità ("notte e cielo":
+     carta fredda, inchiostro notte, cielo #5ab9fc come accento). Il canvas
+     resta chiaro e leggibile: #5ab9fc come testo starebbe a 1.9:1 sul bianco,
+     quindi link e superfici piene usano la sua versione profonda #0b6cb0
+     (5.6:1), mentre la tinta chiara resta per gli usi decorativi nel tema
+     scuro, dove il fondo è notte. */
+  --ip-bg:            #f7f8fa;     /* canvas freddo */
   --ip-bg-card:       #ffffff;
-  --ip-border:        #e4e4e7;
-  --ip-border-soft:   #ececef;
-  --ip-border-strong: #d4d4d8;      /* bordo .btn-secondary (leggibile come pulsante) */
-  --ip-border-strong-hover: #a1a1aa;/* hover/active dello stesso bordo */
+  --ip-border:        #e3e7ee;
+  --ip-border-soft:   #eef1f6;
+  /* Bordo dei controlli che si riconoscono dal contorno: .btn-secondary,
+     .btn-outline-secondary, gli slot del codice OTP, le aree di drop. Serve
+     3:1 su ENTRAMBI i fondi (WCAG 1.4.11), come --ip-border-field.
+     Il valore precedente #ccd3df misurava 1.51:1 sulla card e 1.42:1 sul
+     canvas: il pulsante secondario non aveva un contorno percepibile.
+     Ora 3.50:1 sulla card e 3.30:1 sul canvas; l'hover scende a #6f7787
+     (4.50 / 4.24), cioè più scuro del riposo come per i campi. */
+  --ip-border-strong: #82899a;
+  --ip-border-strong-hover: #6f7787;
   /* Hover dei campi: deve essere piu' scuro del bordo a riposo, non piu'
      chiaro. Quando --ip-border-field e' salito a 3:1 questo token (#cbd5e1,
      1.5:1) e' finito sotto il valore di riposo e l'hover schiariva il bordo. */
-  --ip-border-hover:  #6b7280;      /* bordo campi su hover (input, IPSelect) */
-  --ip-text:          #18181b;     /* quasi nero neutro */
-  --ip-text-strong:   #18181b;     /* testo "inchiostro" per cifre evidenziate */
+  --ip-border-hover:  #5b6474;      /* bordo campi su hover (input, IPSelect) */
+  --ip-text:          #0f141d;     /* inchiostro notte */
+  --ip-text-strong:   #0a0d14;     /* testo "inchiostro" per cifre evidenziate */
   /* Scurito il 2026-10-24: #71717a stava a 4.47:1 sul canvas (sotto 4.5 per il
      testo da 12-14px, e il canvas è il fondo più frequente). Ora 4.89:1 sul
      canvas e 5.28:1 sulla card. */
-  --ip-text-muted:    #6b6b73;
-  --ip-primary:       #18181b;     /* slate/nero — accento primario neutro */
-  --ip-primary-hover: #27272a;
-  --ip-primary-dark:  #09090b;     /* (active) */
+  --ip-text-muted:    #5b6474;     /* 5.4:1 sul canvas freddo */
+  --ip-primary:       #0b6cb0;     /* cielo profondo — link, azioni, cifre */
+  --ip-primary-hover: #095a94;
+  --ip-primary-dark:  #073f68;     /* (active) */
   /* Tinte derivate invece che scritte in rgba(): un rgba() con i numeri del
      tema chiaro resta identico quando il tema si ribalta, quindi la tinta
      "soft" di un accento chiaro diventa un velo scuro su fondo scuro. Con
@@ -379,17 +424,17 @@ a:hover {
 
   /* Barra superiore scura, ripresa da $navbar-inverse-bg del tema originale
      (#333c4a): e' la firma visiva più riconoscibile di InvoicePlane. */
-  --ip-navbar-bg:     #333c4a;
-  --ip-navbar-border: #29313c;
+  --ip-navbar-bg:     #0a0d14;
+  --ip-navbar-border: #131824;
   --ip-navbar-text:   rgba(255, 255, 255, 0.78);
   --ip-navbar-hover:  rgba(255, 255, 255, 0.10);
 
-  --ip-radius:        6px;
-  --ip-radius-sm:     4px;
+  --ip-radius:        4px;      /* raggi corti: la landing usa l'angolo "sharp" */
+  --ip-radius-sm:     3px;
   /* Raggio più morbido per superfici "fluttuanti" grandi (modali, popover,
      toast): stacca dal raggio di default dei campi/card senza introdurre
      una nuova famiglia di forme. */
-  --ip-radius-lg:     10px;
+  --ip-radius-lg:     8px;
   /* Geometria delle superfici a card — una misura sola per intestazione,
      corpo e piè di card. Prima erano tre ritmi: il footer stava a 16px di
      rientro mentre header e body stavano a 18 (il testo del piè di card non
@@ -414,13 +459,13 @@ a:hover {
   --ip-shadow-lg:     0 18px 48px -12px rgba(24, 24, 27, 0.22), 0 6px 16px rgba(24, 24, 27, 0.08);
   --ip-preview-bg:    #52525b;      /* fondo "carta" dell'anteprima .ip-preview__sheet */
   --ip-transition:    150ms ease;
-  --ip-font:          "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --ip-display:       "Fraunces", Georgia, "Times New Roman", serif;
+  --ip-font:          "Epilogue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --ip-display:       "Epilogue", system-ui, sans-serif;
   /* Carattere del solo nome accanto al logo. Ha un token suo, e non riusa
      --ip-display, perché il nome è un marchio e non un titolo: così cambiare
      il serif dei titoli non ritocca il marchio, e viceversa. */
   --ip-brand-font:    "Sora", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --ip-mono:          "IBM Plex Mono", "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+  --ip-mono:          "JetBrains Mono", ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
   /* Bootstrap dà a <code>, <kbd> e <pre> il proprio stack (SFMono-Regular):
      identificatori di serie e chiavi MCP uscivano in un monospazio diverso
      dalle cifre del resto dell'app, che sono tutte in IBM Plex Mono. */
@@ -428,7 +473,7 @@ a:hover {
 
   /* Mapping BS5 → palette IP (per .text-bg-*, .link-primary, .alert-* etc.) */
   --bs-primary:        var(--ip-primary);
-  --bs-primary-rgb:    24, 24, 27;
+  --bs-primary-rgb:    11, 108, 176;
   --bs-success:        var(--ip-success);
   --bs-success-rgb:    70, 136, 71;
   --bs-warning:        var(--ip-warning);
@@ -438,7 +483,7 @@ a:hover {
   --bs-info:           var(--ip-info);
   --bs-info-rgb:       58, 135, 173;
   --bs-link-color:     var(--ip-primary);
-  --bs-link-color-rgb: 24, 24, 27;
+  --bs-link-color-rgb: 11, 108, 176;
   --bs-link-hover-color: var(--ip-primary-hover);
 
   /* Bordi: senza questa mappatura Bootstrap continua a disegnare con il proprio
@@ -465,22 +510,30 @@ a:hover {
    blocco chiaro anche quando ridefiniscono le stesse variabili.
    -------------------------------------------------------------------------- */
 html[data-theme="dark"] {
-  --ip-bg:                #151518;    /* canvas */
-  --ip-bg-card:           #1e1e23;    /* superfici (card, sidebar, pannelli) */
-  --ip-border:            #33333b;
-  --ip-border-soft:       #2a2a31;
-  --ip-border-strong:     #4b4b55;
-  --ip-border-strong-hover: #63636e;
-  --ip-text:              #e7e7ea;
-  --ip-text-strong:       #f4f4f5;
-  --ip-text-muted:        #9b9ba5;
-  --ip-primary:           #e7e7ea;    /* accento invertito: link/testo chiari */
-  --ip-primary-hover:     #f4f4f5;
-  --ip-primary-dark:      #c9c9d0;    /* (active) */
+  /* Tema scuro dell'identità: la palette della landing (notte #0a0d14,
+     superficie #131824, inchiostro #e9edf3, cielo #5ab9fc). Qui il cielo è
+     già abbastanza chiaro per fare da accento nel testo (8.1:1 sulla notte)
+     e da fondo dei pulsanti, che scrivono in --ip-bg. */
+  --ip-bg:                #0a0d14;    /* canvas */
+  --ip-bg-card:           #131824;    /* superfici (card, sidebar, pannelli) */
+  --ip-border:            #232c40;
+  --ip-border-soft:       #1a2131;
+  /* Stesso ruolo del tema chiaro, sul fondo notte: #2f3a52 stava a 1.56:1
+     sulla superficie e 1.71:1 sul canvas, quindi il contorno dei controlli
+     spariva. Qui serve un grigio-azzurro più chiaro del riposo: 3.47:1 sulla
+     superficie e 3.80:1 sul canvas; hover #7a8498 (4.71 / 5.17). */
+  --ip-border-strong:     #636e86;
+  --ip-border-strong-hover: #7a8498;
+  --ip-text:              #e9edf3;
+  --ip-text-strong:       #f4f7fb;
+  --ip-text-muted:        #98a2b3;    /* 7:1 sulla notte, 6.4:1 sulla superficie */
+  --ip-primary:           #5ab9fc;    /* cielo — link, azioni, cifre */
+  --ip-primary-hover:     #7ccaff;
+  --ip-primary-dark:      #3d9ee0;    /* (active) */
   --ip-primary-soft:      color-mix(in srgb, var(--ip-primary) 9%, transparent);
   --ip-on-primary:        var(--ip-bg);    /* testo su sfondo --ip-primary (scuro: primary chiaro) */
   --ip-on-neutral:        var(--ip-bg);    /* chip neutri: in scuro il grigio pieno è chiaro */
-  --ip-bg-subtle:         #26262d;
+  --ip-bg-subtle:         #1a2131;
   --ip-warning-border:    #7a5520;
   --ip-shadow-focus-danger: 0 0 0 3px color-mix(in srgb, var(--ip-danger) 30%, transparent);
 
@@ -507,8 +560,8 @@ html[data-theme="dark"] {
   --ip-neutral-solid:     #a0a0a8;
 --ip-canceled:          #4a4a52;
 
-   --ip-border-field:      #6e6e7a;    /* 3.3:1 su card scura (#1e1e23) */
-   --ip-border-hover:      #8a8a97;    /* hover campi: piu' chiaro del riposo */
+   --ip-border-field:      #6b7689;    /* 3.6:1 sulla superficie #131824 */
+   --ip-border-hover:      #8891a1;    /* hover campi: piu' chiaro del riposo */
    /* In scuro i fondi dei pulsanti sono gia' chiari e il testo e' scuro
       (vedi html[data-theme="dark"] .btn-success): la tinta di stato va bene
       cosi' com'e'. */
@@ -516,7 +569,7 @@ html[data-theme="dark"] {
    --ip-info-solid:        var(--ip-info);
    --ip-on-bright:         var(--ip-bg);
 
-   --ip-hover:             #26262d;    /* hover bottoni neutri/righe */
+   --ip-hover:             #1a2131;    /* hover bottoni neutri/righe */
   /* Barra superiore. I due tentativi precedenti hanno fissato altrettanti
      vincoli: #262b36 era troppo vicino per luminosita' a card/sidebar
      (#1e1e23, ~12/255 di luminanza percepita) e la barra si perdeva nello
@@ -531,10 +584,12 @@ html[data-theme="dark"] {
      (~59/255: resta identico lo stacco netto da card e canvas che serviva a
      far leggere la fascia) e la riporta sulla rampa neutra della palette,
      che ha gia' la stessa lieve dominante bluastra (#33333b = 51,51,59).
-     Il testo (bianco a 0.78) resta a ~7.6:1, invariato. Il pannello brand
-     del login usa lo stesso token, così le due superfici restano coerenti. */
-  --ip-navbar-bg:         #3b3b45;
-  --ip-navbar-border:     #2a2a31;
+     Il testo (bianco a 0.78) resta a ~7.6:1, invariato.      Il pannello brand del login usa lo stesso token, così le due superfici restano coerenti.
+     Con l'identità Invoice+ la barra scende infine sulla superficie #131824: la
+     relazione cercata resta (più chiara del canvas #0a0d14, quindi la fascia si
+     stacca senza accendersi), e il navy saturo non c'è più da nessuna parte. */
+  --ip-navbar-bg:         #131824;
+  --ip-navbar-border:     #232c40;
   --ip-navbar-text:       rgba(255, 255, 255, 0.78);
   --ip-navbar-hover:      rgba(255, 255, 255, 0.10);
 
@@ -543,14 +598,14 @@ html[data-theme="dark"] {
   --ip-shadow-md:         0 6px 16px -4px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.30);
   --ip-shadow-lg:         0 22px 56px -14px rgba(0, 0, 0, 0.70), 0 8px 20px rgba(0, 0, 0, 0.45);
   --ip-preview-bg:        #0f0f12;    /* fondo "carta" dell'anteprima */
-  --ip-skeleton-bg:       #33333b;
-  --ip-skeleton-shine:    #26262d;
+  --ip-skeleton-bg:       #1f2739;
+  --ip-skeleton-shine:    #28324a;
 
   /* Mapping BS5 -> palette scura: gli rgb servono alle varianti rgba() */
   --bs-body-bg:           var(--ip-bg);
   --bs-body-color:        var(--ip-text);
-  --bs-primary-rgb:       231, 231, 234;
-  --bs-link-color-rgb:    231, 231, 234;
+  --bs-primary-rgb:       90, 185, 252;
+  --bs-link-color-rgb:    90, 185, 252;
   --bs-success-rgb:       87, 168, 89;
   --bs-warning-rgb:       232, 156, 47;
   --bs-danger-rgb:        208, 113, 110;
