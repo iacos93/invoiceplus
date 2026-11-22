@@ -599,12 +599,14 @@ class InvoiceModel extends IpBaseModel
             $dbArray['invoice_group_id'] = (new InvoiceGroupModel())->defaultGroupId(0, 'default_invoice_group');
         }
 
-        // Metodo di pagamento: 0 o assente = "non scelto" e vince la
-        // preferenza del cliente. Il form di creazione ora lo mostra con un
-        // campo che nasce sul predefinito: se l'utente ne sceglie uno a mano
-        // arriva un id esplicito e resta quello.
+        // Metodo di pagamento: 0 o assente = "non scelto". Vince la preferenza
+        // del cliente, poi il predefinito delle impostazioni (Impostazioni >
+        // Fatture > Metodo di pagamento predefinito). Senza questo ripiego la
+        // voce 0 del form, che promette "da preferenze cliente", lasciava la
+        // fattura senza metodo anche quando un predefinito era configurato.
         if (empty($dbArray['payment_method'])) {
-            $dbArray['payment_method'] = $clientPrefs['client_default_payment_method_id'] ?? 0;
+            $dbArray['payment_method'] = $clientPrefs['client_default_payment_method_id']
+                ?? (int) get_setting('invoice_default_payment_method', 0);
         }
 
         if (empty($dbArray['invoice_url_key'])) {

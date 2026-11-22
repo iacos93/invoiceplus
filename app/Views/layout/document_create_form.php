@@ -44,6 +44,16 @@
 $payment_methods = $payment_methods ?? [];
 $bank_accounts   = $bank_accounts ?? [];
 
+// Metodo di pagamento predefinito delle impostazioni (Impostazioni > Fatture):
+// il select della fattura nasce su quello, non sempre su "Da preferenze
+// cliente" — che resta la voce 0 e al salvataggio fa vincere la preferenza
+// dell'anagrafica, con questo default come ripiego.
+$ip_payment_method_default  = (int) get_setting('invoice_default_payment_method', 0);
+$ip_payment_method_selected = old('payment_method');
+$ip_payment_method_selected = $ip_payment_method_selected === null
+    ? $ip_payment_method_default
+    : (int) $ip_payment_method_selected;
+
 // Anagrafica minima per l'anteprima cliente sotto il select (solo i campi
 // mostrati: non serve — e non è il caso di — spedire tutta la tabella).
 
@@ -258,10 +268,11 @@ if (!$ip_old_items && !empty($doc_prefill_items ?? [])) {
                         <div class="ip-doc-field">
                             <label class="ip-doc-label" for="payment_method"><?= trans('payment_method', '', 'Metodo di pagamento') ?></label>
                             <select name="payment_method" id="payment_method" class="form-control simple-select">
-                                <option value="0"><?= trans('payment_method_from_client', '', 'Da preferenze cliente') ?></option>
+                                <option value="0" <?= $ip_payment_method_selected === 0 ? 'selected' : '' ?>><?= trans('payment_method_from_client', '', 'Da preferenze cliente') ?></option>
                                 <?php foreach ($payment_methods as $ip_pm): ?>
                                     <option value="<?= (int) $ip_pm['payment_method_id'] ?>"
-                                        data-requires-bank-account="<?= db_bool($ip_pm['payment_method_requires_bank_account']) ? 1 : 0 ?>">
+                                        data-requires-bank-account="<?= db_bool($ip_pm['payment_method_requires_bank_account']) ? 1 : 0 ?>"
+                                        <?= $ip_payment_method_selected === (int) $ip_pm['payment_method_id'] ? 'selected' : '' ?>>
                                         <?= esc($ip_pm['payment_method_name']) ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -426,6 +437,9 @@ if (!$ip_old_items && !empty($doc_prefill_items ?? [])) {
     // cliente. Una volta che l'utente sceglie a mano, l'automazione si ferma,
     // stessa regola dell'esigibilità IVA.
     var payMethodSelect = document.getElementById('payment_method');
+    // Default delle impostazioni: cliente senza preferenza torna qui, non a 0
+    // (che vuol dire "risolvi sul server" con lo stesso ordine).
+    var payMethodDefault = <?= (int) $ip_payment_method_default ?>;
     var payMethodTouchedByUser = false;
     var applyingPaymentMethodDefault = false;
 
@@ -456,11 +470,11 @@ if (!$ip_old_items && !empty($doc_prefill_items ?? [])) {
     function applyPaymentMethodDefault(data) {
         if (!payMethodSelect || payMethodTouchedByUser) { return; }
 
-        // 0 = "da preferenze cliente": nessuna preferenza sull'anagrafica si
-        // traduce nel valore 0, che al salvataggio il model risolve di nuovo
-        // lato server. Cliente senza metodo = si torna a 0, non si resta
-        // incollati al metodo del cliente scelto prima.
-        var wants = data && data.paymentMethodId ? String(data.paymentMethodId) : '0';
+        // Nessuna preferenza sull'anagrafica = si torna al predefinito delle
+        // impostazioni, non si resta incollati al metodo del cliente scelto
+        // prima. Se anche il predefinito e' vuoto (0) al salvataggio il model
+        // risolve di nuovo lato server.
+        var wants = data && data.paymentMethodId ? String(data.paymentMethodId) : String(payMethodDefault);
 
         if (payMethodSelect.value === wants) { return; }
 

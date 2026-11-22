@@ -62,6 +62,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Crea fattura: il metodo di pagamento tiene conto del predefinito scelto in
+  Impostazioni > Fatture. Il select nasceva sempre su «Da preferenze cliente» e
+  quel valore non leggeva mai `invoice_default_payment_method`: l'impostazione
+  si poteva salvare ma non cambiava niente, e la fattura restava senza metodo
+  anche con un predefinito configurato. Ora il campo parte sul predefinito,
+  la preferenza dell'anagrafica lo scavalca quando c'è, e al salvataggio la
+  voce 0 ripiega su cliente → predefinito → nessun metodo.
 - Colonne della pagina, tutte le schermate: il filtro anno in testa alla
   sidebar chiude sulla stessa riga del titolo. Il blocco era alto 60px
   (padding 14 sopra e 10 sotto) contro i 56 dell'headerbar, e con una sola
