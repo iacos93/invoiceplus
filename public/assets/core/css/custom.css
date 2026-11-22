@@ -12132,9 +12132,13 @@ html[data-theme="dark"] .ip-import-outcome.is-error{ background:#2c1c19; color:#
   margin-top: 3px;
 }
 
-/* KPI positivo (IVA a credito). */
+/* KPI positivo (IVA a credito). Testo con la variante -text, come le sorelle
+   danger e warning: la tinta piena #468847 su carta bianca misura 4.31:1
+   (4.06:1 sul canvas), sotto la soglia del testo; #3d7a3e sale a 5.18:1 sulla
+   card e 4.88:1 sul canvas. Era l'unico valore della parete KPI del tema
+   chiaro ancora sotto 4.5:1. */
 .card-value.card-value-success {
-  color: var(--ip-success, #2e7d32);
+  color: var(--ip-success-text);
 }
 
 /* Scheda compatta su telefono: cella azioni (lista costi, che non ha una

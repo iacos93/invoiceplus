@@ -62,6 +62,11 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Bacheca, tema chiaro: il valore verde delle finestre KPI (IVA a credito) usa
+  la variante `-text` come i fratelli ambra e rosso. La tinta piena #468847 su
+  carta bianca misura 4.31:1 (4.06:1 sul canvas), sotto la soglia del testo,
+  ed era l'ultimo testo del tema chiaro rimasto sotto 4.5; ora 5.18:1 sulla
+  card e 4.88:1 sul canvas.
 - Interfaccia: i testi e i glifi che usavano le tinte piene di stato passano
   alle varianti `-text` (ambra 2.28:1 e verde 4.16:1 sul bianco erano sotto
   4.5, ora 5.42 e 5.18): anteprima XML, stella dei preferiti, conferma del
