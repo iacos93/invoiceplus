@@ -860,7 +860,10 @@ span.ip-status-bar-seg { cursor: default; }
 .ip-sidebar .ip-year-filter .ip-select__control {
   height: 36px;
   padding: 0 10px;
-  border-color: var(--ip-border);
+  /* È un controllo, non un riquadro: il perimetro dei contenitori (1.31:1 sul
+     canvas) non basta a riconoscerlo come selettore. Stesso bordo dei campi,
+     3.24:1 sul canvas e 3.50:1 sulla card. */
+  border-color: var(--ip-border-field);
   background-color: var(--ip-hover);
   color: var(--ip-text);
   font-size: var(--ip-text-base);

@@ -632,7 +632,10 @@ html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
   padding: var(--ip-space-8) var(--ip-space-9);
   background: var(--ip-stato-bg);
   border: 1px solid color-mix(in srgb, var(--ip-stato) 30%, var(--ip-border));
-  border-left: 4px solid var(--ip-stato);
+  /* 3px come .ip-window--alert, .ip-schedule-bucket e le righe del calendario:
+     era l'unico segno da 4px, e accanto alle altre strisce di stato la stessa
+     informazione sembrava di un altro componente. */
+  border-left: 3px solid var(--ip-stato);
   border-radius: var(--ip-radius);
   box-shadow: var(--ip-shadow-sm);
 }

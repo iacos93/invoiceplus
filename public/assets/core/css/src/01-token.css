@@ -299,8 +299,15 @@ a:hover {
      scuro, dove il fondo è notte. */
   --ip-bg:            #f7f8fa;     /* canvas freddo */
   --ip-bg-card:       #ffffff;
-  --ip-border:        #e3e7ee;
-  --ip-border-soft:   #eef1f6;
+  /* Perimetro dei contenitori (finestre, card, tabelle): un solo grigio per
+     tutta la pagina. Il precedente #e3e7ee stava a 1.24:1 sulla card e 1.17:1
+     sul canvas — la finestra si distingueva solo perché bianca sulla carta
+     fredda — mentre le due card dei grafici portavano nello stesso momento un
+     contorno #82899a (3.50:1): due grigi per lo stesso componente, e una
+     coppia di card corniciata in mezzo a card senza bordo. Ora 1.39:1 sulla
+     card e 1.31:1 sul canvas: una linea che si vede senza fare da cornice. */
+  --ip-border:        #d5dbe5;
+  --ip-border-soft:   #e6eaf1;   /* separatori interni: un gradino sotto il perimetro */
   /* Bordo dei controlli che si riconoscono dal contorno: .btn-secondary,
      .btn-outline-secondary, gli slot del codice OTP, le aree di drop. Serve
      3:1 su ENTRAMBI i fondi (WCAG 1.4.11), come --ip-border-field.

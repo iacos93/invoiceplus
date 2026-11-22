@@ -301,8 +301,15 @@ a:hover {
      scuro, dove il fondo è notte. */
   --ip-bg:            #f7f8fa;     /* canvas freddo */
   --ip-bg-card:       #ffffff;
-  --ip-border:        #e3e7ee;
-  --ip-border-soft:   #eef1f6;
+  /* Perimetro dei contenitori (finestre, card, tabelle): un solo grigio per
+     tutta la pagina. Il precedente #e3e7ee stava a 1.24:1 sulla card e 1.17:1
+     sul canvas — la finestra si distingueva solo perché bianca sulla carta
+     fredda — mentre le due card dei grafici portavano nello stesso momento un
+     contorno #82899a (3.50:1): due grigi per lo stesso componente, e una
+     coppia di card corniciata in mezzo a card senza bordo. Ora 1.39:1 sulla
+     card e 1.31:1 sul canvas: una linea che si vede senza fare da cornice. */
+  --ip-border:        #d5dbe5;
+  --ip-border-soft:   #e6eaf1;   /* separatori interni: un gradino sotto il perimetro */
   /* Bordo dei controlli che si riconoscono dal contorno: .btn-secondary,
      .btn-outline-secondary, gli slot del codice OTP, le aree di drop. Serve
      3:1 su ENTRAMBI i fondi (WCAG 1.4.11), come --ip-border-field.
@@ -6591,12 +6598,16 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 }
 
 /* Le due finestre-grafico sono il "main chart" della pagina (il centro del
-   pattern KPI -> grafico -> tabella): un'ombra e un bordo leggermente più
-   marcati delle KPI/tabelle danno loro il peso visivo di blocco primario,
-   non solo un'altra card della griglia. */
+   pattern KPI -> grafico -> tabella): un'ombra più marcata delle KPI/tabelle
+   dà loro il peso visivo di blocco primario, non solo un'altra card della
+   griglia. Il peso lo porta l'ombra, non il contorno: prima queste due card
+   ricevevano anche --ip-border-strong (#82899a, 3.50:1) mentre le altre
+   portavano --ip-border (1.24:1), e la coppia dei grafici sembrava di un
+   altro componente — per giunta con un secondo tratto sotto il bordo, dato
+   dall'ombra sullo stesso lato. Il perimetro resta quello di tutte le
+   finestre. */
 .ip-window-split:first-of-type .ip-window {
   box-shadow: var(--ip-shadow-md, 0 4px 14px rgba(24, 24, 27, .1));
-  border-color: var(--ip-border-strong, var(--ip-border));
 }
 
 /* Periodo di riferimento nell'header del grafico dashboard */
@@ -7468,7 +7479,10 @@ span.ip-status-bar-seg { cursor: default; }
 .ip-sidebar .ip-year-filter .ip-select__control {
   height: 36px;
   padding: 0 10px;
-  border-color: var(--ip-border);
+  /* È un controllo, non un riquadro: il perimetro dei contenitori (1.31:1 sul
+     canvas) non basta a riconoscerlo come selettore. Stesso bordo dei campi,
+     3.24:1 sul canvas e 3.50:1 sulla card. */
+  border-color: var(--ip-border-field);
   background-color: var(--ip-hover);
   color: var(--ip-text);
   font-size: var(--ip-text-base);
@@ -13479,7 +13493,10 @@ html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
   padding: var(--ip-space-8) var(--ip-space-9);
   background: var(--ip-stato-bg);
   border: 1px solid color-mix(in srgb, var(--ip-stato) 30%, var(--ip-border));
-  border-left: 4px solid var(--ip-stato);
+  /* 3px come .ip-window--alert, .ip-schedule-bucket e le righe del calendario:
+     era l'unico segno da 4px, e accanto alle altre strisce di stato la stessa
+     informazione sembrava di un altro componente. */
+  border-left: 3px solid var(--ip-stato);
   border-radius: var(--ip-radius);
   box-shadow: var(--ip-shadow-sm);
 }

@@ -62,6 +62,14 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Bordi, tema chiaro: un solo grigio per il perimetro dei contenitori. Il
+  precedente #e3e7ee stava a 1.24:1 sulla card e 1.17:1 sul canvas, mentre le
+  due card dei grafici portavano nello stesso momento un contorno #82899a
+  (3.50:1): le finestre della bacheca non avevano tutte lo stesso bordo. Ora
+  #d5dbe5 (1.39:1 sulla card, 1.31:1 sul canvas) per tutte, e il peso dei
+  grafici lo porta la sola ombra. Il filtro anno della sidebar è un controllo
+  e passa al bordo dei campi (3.24:1 sul canvas), e la striscia di stato di
+  Riconciliazione usa il segno da 3px come `.ip-window--alert` invece dei 4px.
 - Bacheca, tema chiaro: il valore verde delle finestre KPI (IVA a credito) usa
   la variante `-text` come i fratelli ambra e rosso. La tinta piena #468847 su
   carta bianca misura 4.31:1 (4.06:1 sul canvas), sotto la soglia del testo,

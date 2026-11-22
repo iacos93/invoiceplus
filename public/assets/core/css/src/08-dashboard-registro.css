@@ -703,12 +703,16 @@
 }
 
 /* Le due finestre-grafico sono il "main chart" della pagina (il centro del
-   pattern KPI -> grafico -> tabella): un'ombra e un bordo leggermente più
-   marcati delle KPI/tabelle danno loro il peso visivo di blocco primario,
-   non solo un'altra card della griglia. */
+   pattern KPI -> grafico -> tabella): un'ombra più marcata delle KPI/tabelle
+   dà loro il peso visivo di blocco primario, non solo un'altra card della
+   griglia. Il peso lo porta l'ombra, non il contorno: prima queste due card
+   ricevevano anche --ip-border-strong (#82899a, 3.50:1) mentre le altre
+   portavano --ip-border (1.24:1), e la coppia dei grafici sembrava di un
+   altro componente — per giunta con un secondo tratto sotto il bordo, dato
+   dall'ombra sullo stesso lato. Il perimetro resta quello di tutte le
+   finestre. */
 .ip-window-split:first-of-type .ip-window {
   box-shadow: var(--ip-shadow-md, 0 4px 14px rgba(24, 24, 27, .1));
-  border-color: var(--ip-border-strong, var(--ip-border));
 }
 
 /* Periodo di riferimento nell'header del grafico dashboard */
