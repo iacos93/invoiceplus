@@ -32,6 +32,12 @@
 #   DEPLOY_REMOTE, DEPLOY_BRANCH, DEPLOY_FPM_SERVICE, DEPLOY_GOTENBERG_HEALTH,
 #   DEPLOY_BACKUP_TIMEOUT, DEPLOY_QUEUE_TIMEOUT, DEPLOY_QUEUE_RESTART_WAIT,
 #   PHP_BIN, COMPOSER_BIN.
+#
+# Con DEPLOY_ALWAYS=1 esegue i passi di sicurezza anche quando il codice è già
+# a origin/main. Serve al primo aggiornamento che cambia questo stesso file: la
+# copia in esecuzione è quella vecchia, quindi un controllo appena aggiunto
+# entrerebbe in vigore solo dalla volta dopo. Rilanciandolo dopo il pull con
+# DEPLOY_ALWAYS=1, il controllo vale già per quell'aggiornamento.
 
 set -eu
 
@@ -122,9 +128,20 @@ target=$(git rev-parse "$REMOTE/$BRANCH" 2>/dev/null) \
 
 current=$(git rev-parse HEAD)
 if [ "$current" = "$target" ]; then
-    printf 'Già aggiornato a %s (%s): niente da fare.\n' \
+    # Un controllo aggiunto a questo file non può valere per l'esecuzione che
+    # lo porta: la shell sta leggendo la copia vecchia e il pull non la
+    # sostituisce sotto i piedi. DEPLOY_ALWAYS=1 è la via esplicita per
+    # chiedere comunque i passi di sicurezza — backup con la verifica del dump
+    # nuovo, copia release-pre, cache, reload — su un albero già allineato.
+    # Non è un riavvio dello script né un salto di passi: si percorre la stessa
+    # sequenza da capo, e il pull che segue non ha nulla da fare.
+    if [ "${DEPLOY_ALWAYS:-0}" != "1" ]; then
+        printf 'Già aggiornato a %s (%s): niente da fare.\n' \
+            "$(git rev-parse --short HEAD)" "$(git log -1 --format=%s)"
+        exit 0
+    fi
+    printf 'Già aggiornato a %s (%s): DEPLOY_ALWAYS=1, eseguo comunque i passi di sicurezza.\n' \
         "$(git rev-parse --short HEAD)" "$(git log -1 --format=%s)"
-    exit 0
 fi
 
 # --- 0. Permessi -----------------------------------------------------------

@@ -270,6 +270,37 @@ chk "10.2 codice intatto" "$(git -C "$d/app" rev-parse HEAD)" "$head"
 chk "10.3 copia non creata" "$([ -d "$d/release-pre-$old" ] && echo presente || echo assente)" "assente"
 unset CURL_EMPTY_DUMP
 
+echo "== 11. albero già a origin/main: esce senza toccare nulla"
+d="$T/d11"; setup "$d"
+git -C "$d/app" fetch -q origin
+git -C "$d/app" reset --hard -q origin/main
+head=$(git -C "$d/app" rev-parse HEAD)
+out=$(run_deploy "$d" "$T/bin:$PATH"); rc=$?
+chk "11.1 exit" "$rc" 0
+has "Già aggiornato" "$out"
+chk "11.2 nessun backup" "$(grep -c 'spark cache:clear' "$d/php.log" 2>/dev/null)" "0"
+chk "11.3 copia non creata" "$([ -d "$d/release-pre-$(git -C "$d/app" rev-parse --short HEAD)" ] && echo presente || echo assente)" "assente"
+chk "11.4 codice" "$(git -C "$d/app" rev-parse HEAD)" "$head"
+
+# È la via per il primo aggiornamento che cambia deploy.sh: la copia in
+# esecuzione è la vecchia, quindi il controllo nuovo non potrebbe girare. Con
+# DEPLOY_ALWAYS=1 si percorrono i passi di sicurezza sull'albero già allineato.
+echo "== 12. DEPLOY_ALWAYS=1: i passi di sicurezza anche senza aggiornamenti"
+d="$T/d12"; setup "$d"
+git -C "$d/app" fetch -q origin
+git -C "$d/app" reset --hard -q origin/main
+export DEPLOY_ALWAYS=1
+out=$(run_deploy "$d" "$T/bin:$PATH"); rc=$?
+chk "12.1 exit" "$rc" 0
+has "eseguo comunque i passi di sicurezza" "$out"
+has "Dump nuovo: backup_" "$out"
+chk "12.2 cache svuotata" "$(grep -c 'spark cache:clear' "$d/php.log" 2>/dev/null || echo 0)" "1"
+# Due righe contengono «reload php8.4-fpm»: il controllo del permesso (`-l`) e
+# il reload vero. Qui interessa il secondo, che è l'unico senza `-l`.
+chk "12.3 reload del pool" "$(grep -c 'privilegiato -n /' "$d/sys.log" 2>/dev/null)" "1"
+chk "12.4 copia creata" "$([ -f "$d/release-pre-$(git -C "$d/app" rev-parse --short HEAD)/.env" ] && echo si || echo no)" "si"
+unset DEPLOY_ALWAYS
+
 echo
 echo "risultato: $PASS ok, $FAIL falliti"
 [ "$FAIL" -eq 0 ]

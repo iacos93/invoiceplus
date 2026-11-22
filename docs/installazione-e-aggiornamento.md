@@ -196,6 +196,20 @@ sono tornati, avvisando se non lo sono — e chiede a Gotenberg se risponde. Usa
 quando è nel PATH: è la versione del pool, mentre il `php` generico della
 macchina può essere un'altra.
 
+Un aggiornamento che cambia `deploy.sh` non può essere eseguito dalla copia
+nuova mentre è in corso: la shell ha già letto quella vecchia, quindi un
+controllo appena aggiunto entrerebbe in vigore solo dalla volta successiva. Per
+farlo valere subito, dopo il pull si rilancia lo script con `DEPLOY_ALWAYS=1`:
+
+```console
+DEPLOY_ALWAYS=1 tools/deploy.sh
+```
+
+Con `HEAD` già a `origin/main` esegue comunque i passi di sicurezza — backup
+con la verifica che il dump nuovo esista e non sia vuoto, copia `release-pre`,
+cache, reload e worker — invece di uscire con «Già aggiornato». Senza la
+variabile il comportamento resta quello di prima.
+
 Due cose lo script non può fare da solo:
 
 - **il reload del pool richiede il permesso sudoers** descritto sopra. Lo
