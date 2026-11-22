@@ -33,6 +33,7 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Menu conto RiBa: ridotto il distacco dal selettore e il padding verticale della voce, senza alterare le altre tendine.
 - RiBa: allargata e centrata la select del conto in testata, così il nome della banca è leggibile e allineato nel controllo.
 - RiBa: il selettore del conto in testata mantiene 200 px anche dopo la trasformazione IPSelect e mostra un testo chiaro quando non esistono conti idonei.
 - RiBa: il selettore mostra solo i conti aziendali con IBAN e codice SIA; la generazione rifiuta anche richieste con conti non idonei e segnala quando non ce ne sono.

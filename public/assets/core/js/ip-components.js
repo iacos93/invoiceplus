@@ -61,9 +61,9 @@
         return anchor.closest('.modal') || document.body;
     }
 
-    function placePanel(panel, anchor) {
+    function placePanel(panel, anchor, panelGap) {
         var rect = anchor.getBoundingClientRect();
-        var gap = 4;
+        var gap = panelGap === undefined ? 4 : panelGap;
         panel.style.minWidth = rect.width + 'px';
         panel.style.left = rect.left + 'px';
 
@@ -239,6 +239,9 @@
 
         this.panel = make('div', 'ip-select-panel');
         this.panel.id = nextId('ip-select-panel');
+        if (this.select.classList.contains('ip-riba-account-select')) {
+            this.panel.classList.add('ip-select-panel--compact');
+        }
 
         this.searchable = options.length >= SEARCH_THRESHOLD;
         if (this.searchable) {
@@ -401,7 +404,7 @@
         });
         if (index !== -1) { this.setActive(index); }
 
-        placePanel(this.panel, this.control);
+        placePanel(this.panel, this.control, this.select.classList.contains('ip-riba-account-select') ? 2 : undefined);
         if (this.search) { this.search.focus(); }
     };
 

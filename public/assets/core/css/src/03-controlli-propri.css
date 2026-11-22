@@ -101,13 +101,14 @@
   z-index: var(--ip-z-toast);
   display: none;
   max-width: calc(100vw - 16px);
-  padding: 4px;
+  padding: 3px;
   background: var(--ip-bg-card);
   border: 1px solid var(--ip-border);
   border-radius: var(--ip-radius);
   box-shadow: var(--ip-shadow-md);
 }
 .ip-select-panel.is-open { display: block; }
+.ip-select-panel--compact { padding: 2px; }
 .ip-select-panel__search {
   padding: 4px 4px 6px;
   border-bottom: 1px solid var(--ip-border-soft);
@@ -135,7 +136,7 @@
   overscroll-behavior: contain;
 }
 .ip-select-option {
-  padding: 7px 10px;
+  padding: 5px 10px;
   font-size: var(--ip-text-base);
   color: var(--ip-text);
   border-radius: var(--ip-radius-sm);
@@ -144,6 +145,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.ip-select-panel--compact .ip-select-option { padding-top: 4px; padding-bottom: 4px; }
 /* .is-active = riga sotto cursore/tastiera, .is-selected = valore corrente. */
 .ip-select-option.is-active { background: var(--ip-hover); }
 .ip-select-option.is-selected {
