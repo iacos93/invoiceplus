@@ -12,7 +12,7 @@ if ($accounts === []) {
 }
 foreach ($accounts as $a) {
     $ip_riba_accounts_options .= '<option value="' . (int) $a['bank_account_id'] . '"'
-        . esc($a['bank_account_name']) . '</option>';
+        . '>' . esc($a['bank_account_name']) . '</option>';
 }
 $actions = '<div class="headerbar-total">'
     . '<span class="headerbar-total__label">' . trans('bank_account', '', 'Conto di accredito') . '</span>'

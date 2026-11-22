@@ -70,6 +70,7 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- RiBa: corretto il tag delle opzioni del conto, che non veniva chiuso e lasciava vuota la select anche quando era disponibile un conto idoneo.
 - Crea fattura: il metodo di pagamento tiene conto del predefinito scelto in
   Impostazioni > Fatture. Il select nasceva sempre su «Da preferenze cliente» e
   quel valore non leggeva mai `invoice_default_payment_method`: l'impostazione
