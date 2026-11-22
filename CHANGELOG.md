@@ -71,6 +71,7 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- RiBa: il gruppo conto della testata allinea verticalmente etichetta e selettore al centro.
 - RiBa: corretto il tag delle opzioni del conto, che non veniva chiuso e lasciava vuota la select anche quando era disponibile un conto idoneo.
 - Crea fattura: il metodo di pagamento tiene conto del predefinito scelto in
   Impostazioni > Fatture. Il select nasceva sempre su «Da preferenze cliente» e

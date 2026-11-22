@@ -206,6 +206,9 @@ body:has(.ip-topbar) {
 #headerbar .headerbar-total .ip-select:has(> .ip-riba-account-select) .ip-select__value {
   text-align: center;
 }
+#headerbar .headerbar-total:has(.ip-riba-account-select) {
+  align-items: center;
+}
 @media (max-width: 575.98px) {
   .headerbar-total { width: 100%; margin-right: 0; }
   #headerbar .headerbar-total .ip-select:has(> .ip-riba-account-select) {
