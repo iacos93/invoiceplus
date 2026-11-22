@@ -6387,10 +6387,10 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-dash-windows .ip-window .ip-window-header {
   box-shadow: inset 0 3px 0 0 var(--kpi, var(--ip-primary));
 }
-/* Icona d'intestazione tinteggiata: lo stesso segnale dell'inchiostro, ma in
-   superficie soft, così l'header non "grida" colore pieno. */
+/* L'icona resta sulla superficie neutra condivisa; il colore identifica la
+   metrica senza tingere ogni finestra. */
 .ip-dash-windows .ip-window .card-header-icon {
-  background: var(--kpi-bg, var(--ip-primary-soft));
+  background: var(--ip-hover);
   color: var(--kpi, var(--ip-primary));
 }
 /* Scadute e' una finestra --alert (bordo rosso a sinistra di default): lo
@@ -6441,33 +6441,11 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   .ip-dash-windows .ip-window:hover { transform: none; }
 }
 
-/* Velo d'inchiostro: la parete di finestre si legge come "colonne colorate di
-   un mastro" (come già anticipa il filetto superiore della finestra). Un lavaggio
-   dell'inchiostro della metrica, appena percettibile e solo in testa alla card,
-   tinge il corpo senza "gridare" colore: il resto resta disciplinato (numeri in
-   Fraunces, etichette in mono) e la cifra resta la voce dominante. Il velo sale
-   dal bordo superiore e sfuma prima del sottotitolo, così la metrica si
-   riconosce a colpo d'occhio anche quando le finestre sono accostate.
-   Esteso a tutte le finestre della dashboard. */
-.ip-dash-windows .ip-window {
-  position: relative;
-}
+/* Le superfici restano neutre: il filetto superiore e i grafici portano i
+   colori delle metriche, così le finestre vicine non formano una parete a
+   campiture. */
 .ip-dash-windows .ip-window::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 92px;
-  background: linear-gradient(to bottom,
-    color-mix(in srgb, var(--kpi, var(--ip-primary)) 12%, transparent),
-    transparent);
-  pointer-events: none;
-  z-index: 0;
-}
-/* Header e corpo restano sopra il velo: la cifra non ci passa sotto. */
-.ip-dash-windows .ip-window > .ip-window-header,
-.ip-dash-windows .ip-window > .ip-window-body {
-  position: relative;
-  z-index: 1;
+  content: none;
 }
 
 /* -----------------------------------------------------------------------------
