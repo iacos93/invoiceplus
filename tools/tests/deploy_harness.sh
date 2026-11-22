@@ -45,7 +45,17 @@ exit 0
 EOS
 cat > "$T/bin/curl" <<'EOS'
 #!/bin/sh
-# -w '%{http_code}' in ultima posizione: risponde 200 e non scrive file.
+# L'endpoint cron/backup risponde 200 e scrive il dump in writable/backups (lo
+# script gira dalla cartella dell'applicazione). CURL_NO_DUMP simula un 200
+# senza file, CURL_EMPTY_DUMP un file da zero byte.
+if [ "${CURL_NO_DUMP:-0}" != "1" ]; then
+  name="writable/backups/backup_$(date +%Y%m%d_%H%M%S).dump"
+  if [ "${CURL_EMPTY_DUMP:-0}" = "1" ]; then
+    : > "$name"
+  else
+    printf 'dump nuovo\n' > "$name"
+  fi
+fi
 printf '200'
 exit 0
 EOS
@@ -88,7 +98,7 @@ chmod +x "$T/bin"/*
 # deploy.sh e agli stub: se ne manca uno il caso si vede subito, invece di
 # riuscire per caso grazie a un rsync trovato altrove.
 mkdir -p "$T/bin2"
-for b in sh git tar mkdir rm cat head sed awk grep cut tr id dirname cp ln chmod env sort wc mktemp basename date stat touch tail; do
+for b in sh git tar mkdir rm cat head sed awk grep cut tr id dirname cp ln chmod env sort wc mktemp basename date stat touch tail find; do
     p=$(command -v "$b" 2>/dev/null) && ln -sf "$p" "$T/bin2/$b"
 done
 cp "$T/bin"/* "$T/bin2"/
@@ -152,6 +162,7 @@ printf 'cache\n' > "$d/app/writable/cache/FactoriesCache_config"
 out=$(run_deploy "$d" "$T/bin:$PATH"); rc=$?
 chk "1.1 exit" "$rc" 0
 has "Copia di sicurezza per il rollback" "$out"
+has "Dump nuovo: backup_" "$out"
 copy="$d/release-pre-$old"
 chk "1.2 cartella copia" "$([ -d "$copy" ] && echo si || echo no)" "si"
 chk "1.3 copia con .env" "$([ -f "$copy/.env" ] && echo si || echo no)" "si"
@@ -236,6 +247,28 @@ has "nessun worker è ripartito" "$out"
 has "dopo 2 s nessun worker è ripartito" "$out"
 has "spark queue:status" "$out"
 unset PGREP_PIDS PGREP_STATE KILL_LOG DEPLOY_QUEUE_RESTART_WAIT
+
+echo "== 9. 200 senza dump nuovo: nessun pull"
+d="$T/d9"; setup "$d"; old=$(cat "$d.old")
+head=$(git -C "$d/app" rev-parse HEAD)
+export CURL_NO_DUMP=1
+out=$(run_deploy "$d" "$T/bin:$PATH"); rc=$?
+chk "9.1 exit" "$rc" 1
+has "non c'è un dump nuovo" "$out"
+chk "9.2 codice intatto" "$(git -C "$d/app" rev-parse HEAD)" "$head"
+chk "9.3 copia non creata" "$([ -d "$d/release-pre-$old" ] && echo presente || echo assente)" "assente"
+unset CURL_NO_DUMP
+
+echo "== 10. dump nuovo ma vuoto: nessun pull"
+d="$T/d10"; setup "$d"; old=$(cat "$d.old")
+head=$(git -C "$d/app" rev-parse HEAD)
+export CURL_EMPTY_DUMP=1
+out=$(run_deploy "$d" "$T/bin:$PATH"); rc=$?
+chk "10.1 exit" "$rc" 1
+has "è vuoto (0 byte)" "$out"
+chk "10.2 codice intatto" "$(git -C "$d/app" rev-parse HEAD)" "$head"
+chk "10.3 copia non creata" "$([ -d "$d/release-pre-$old" ] && echo presente || echo assente)" "assente"
+unset CURL_EMPTY_DUMP
 
 echo
 echo "risultato: $PASS ok, $FAIL falliti"

@@ -176,9 +176,12 @@ esac
 BASE_URL=${BASE_URL%/}
 
 backup_body=$(mktemp)
+# Riferimento per riconoscere il dump di *questo* backup: un file qualsiasi in
+# writable/backups direbbe solo che il backup di ieri sera ha funzionato.
+dump_marker=$(mktemp)
 backup_status=$(curl -sS -o "$backup_body" -w '%{http_code}' --max-time "$BACKUP_TIMEOUT" \
     "${BASE_URL}/cron/backup/${CRON_KEY}") || {
-    rm -f "$backup_body"
+    rm -f "$backup_body" "$dump_marker"
     die "Backup non eseguito: la richiesta a $BASE_URL è fallita (rete, TLS o sito irraggiungibile).
    $NOTHING_DONE"
 }
@@ -195,6 +198,25 @@ case "$backup_status" in
    $NOTHING_DONE" ;;
 esac
 printf '%s\n' "$backup_text"
+
+# Un 200 dice che l'endpoint ha risposto, non che il dump esista: disco pieno,
+# `pg_dump` che esce senza scrivere o un errore catturato lasciano un file da
+# zero byte, e un dump vuoto è indistinguibile da un backup riuscito finché non
+# serve — cioè quando non si può più rimediare. Prima del pull si guarda il
+# file: deve essere comparso adesso e non essere vuoto.
+new_dump=$(find writable/backups -name 'backup_*' -type f -newer "$dump_marker" -print 2>/dev/null | head -1)
+rm -f "$dump_marker"
+[ -n "$new_dump" ] \
+    || die "Backup non verificato: l'endpoint ha risposto 200, ma in writable/backups non c'è un dump nuovo.
+   Il pull non è stato fatto: controlla writable/logs e che il disco abbia spazio, poi rilancia.
+   $NOTHING_DONE"
+dump_size=$(wc -c < "$new_dump" | tr -d ' ')
+[ "$dump_size" -gt 0 ] \
+    || die "Backup non utilizzabile: il dump nuovo ($new_dump) è vuoto (0 byte).
+   L'endpoint ha risposto 200 ma non ha scritto niente: senza dump il rollback non
+   avrebbe il database da ripristinare. Guarda writable/logs e lo spazio su disco, poi rilancia.
+   $NOTHING_DONE"
+printf 'Dump nuovo: %s (%s byte).\n' "$(basename "$new_dump")" "$dump_size"
 
 # --- 1b. Copia di sicurezza ------------------------------------------------
 # Serve al rollback, che si rifiuta di partire senza: va fatta prima del pull,

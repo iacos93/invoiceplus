@@ -183,7 +183,9 @@ tools/deploy.sh
 
 Cosa fa, nell'ordine: controlla che l'albero sia pulito e che il ramo sia
 `main`, esegue il backup (dump del database e file caricati, passando
-dall'endpoint `cron/backup` con la chiave di `writable/cron-runner.conf`), crea
+dall'endpoint `cron/backup` con la chiave di `writable/cron-runner.conf`, e
+controlla che il dump nuovo esista in `writable/backups` e non sia vuoto: un
+200 con un file da zero byte sarebbe un backup che non c'è), crea
 la copia `release-pre` del commit di partenza senza i backup, aggiorna da
 `origin/main` con `--ff-only`, installa le dipendenze **solo** se
 `composer.lock` è cambiato, applica le migrazioni, svuota la cache
