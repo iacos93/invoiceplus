@@ -599,9 +599,33 @@
             }
         }
 
+        // La headerbar cambia altezza da una pagina all'altra (headerbar-meta
+        // sotto il titolo, azioni che vanno a capo) e la navigazione parziale
+        // la sostituisce: l'osservatore va riagganciato al nuovo elemento,
+        // altrimenti --ip-headerbar-height resta quella della pagina di prima.
+        // La usa anche il blocco del filtro anno in sidebar, che deve chiudere
+        // sulla stessa riga della headerbar.
+        var hbNode = null;
+        var hbObserver = null;
+        function observeHeaderbar() {
+            var headerbar = document.getElementById('headerbar');
+            if (headerbar === hbNode) { return; }
+            if (hbObserver) { hbObserver.disconnect(); hbObserver = null; }
+            hbNode = headerbar;
+            if (headerbar && window.ResizeObserver) {
+                hbObserver = new ResizeObserver(syncHeight);
+                hbObserver.observe(headerbar);
+            }
+        }
+
         syncHeight();
+        observeHeaderbar();
         window.addEventListener('load', syncHeight);
         window.addEventListener('resize', syncHeight);
+        document.addEventListener('ip:page-ready', function () {
+            syncHeight();
+            observeHeaderbar();
+        });
         if (document.fonts && document.fonts.ready) {
             document.fonts.ready.then(syncHeight);
         }

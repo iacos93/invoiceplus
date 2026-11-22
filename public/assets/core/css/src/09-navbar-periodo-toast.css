@@ -822,17 +822,30 @@ span.ip-status-bar-seg { cursor: default; }
   top: -14px;
   z-index: 3;
   margin: -14px -12px 4px;
-  /* 10 + 36 + 10 = 56, la stessa altezza di #headerbar (min-height 56 con
-     padding 12): il filtro anno cade sulla riga del titolo di pagina e i due
-     blocchi chiudono sullo stesso filo. Con 14 sopra e 10 sotto il blocco era
-     alto 60, il selettore stava 4px sotto «Bacheca» e la linea della colonna
-     finiva 4px più in basso di quella della pagina. */
+  /* L'altezza non è più un 56 scritto qui: è quella misurata della headerbar
+     (--ip-headerbar-height, riscritta in layout/base.php), che vale 56 con il
+     solo titolo e cresce quando c'è headerbar-meta o quando le azioni vanno a
+     capo. Con un'altezza fissa, su quelle pagine il filtro anno tornava 9px
+     più in alto della fascia del titolo e i due fili non combaciavano. Il
+     contenuto resta centrato nella fascia, come il titolo e il meta nella
+     headerbar. */
+  min-height: var(--ip-headerbar-height, 56px);
+  /* La colonna che scorre è un flex column: senza questo il blocco veniva
+     compresso al min-height (79px con il meta) e, con azienda e anno
+     entrambi presenti, il secondo selettore sbordava sopra il filo e il menu.
+     Il blocco cresce quanto il suo contenuto e si ferma al minimo della
+     headerbar quando ne ha meno. */
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 10px 12px;
   background: var(--ip-bg-card);
-  /* Stesso grigio del bordo di #headerbar: con --ip-border-soft il filo
-     cambiava tono proprio dove la colonna incontra la pagina, e sembravano
-     due righe diverse invece di una. */
-  box-shadow: 0 1px 0 var(--ip-border);
+  /* Stesso grigio del bordo di #headerbar, inciso dentro il blocco: la
+     headerbar chiude con il proprio border-bottom (l'ultimo pixel della sua
+     altezza), mentre una 0 1px 0 esterna cadeva un pixel più in basso e si
+     vedeva il gradino dove le due colonne si incontrano. */
+  box-shadow: inset 0 -1px 0 var(--ip-border);
 }
 .ip-sidebar-context form + form { margin-top: 6px; }
 /* Codice destinatario dell'azienda: riga sola, il codice in mono come i
@@ -858,7 +871,9 @@ span.ip-status-bar-seg { cursor: default; }
 /* In visione off-canvas il contesto non deve incollarsi: la colonna non
    scorre sotto di sé, e sticky lascerebbe uno stacco dal bordo. */
 @media (max-width: 991.98px) {
-  .ip-sidebar-context { position: static; margin: 0 0 4px; padding: 0; box-shadow: none; }
+  /* Off-canvas: la colonna non scorre sotto di sé e non c'è una headerbar
+     accanto da seguire, quindi il blocco torna alto quanto il suo contenuto. */
+  .ip-sidebar-context { position: static; margin: 0 0 4px; padding: 0; min-height: 0; display: block; box-shadow: none; }
 }
 .ip-sidebar .ip-company-switch,
 .ip-sidebar .ip-year-filter { display: block; }

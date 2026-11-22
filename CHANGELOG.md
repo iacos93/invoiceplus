@@ -69,6 +69,18 @@ Le regole per scrivere le voci e preparare una release sono in
   della colonna 4px più in basso di quello della pagina — per giunta di un
   grigio diverso (`--ip-border-soft` contro `--ip-border`). Ora 10+36+10 = 56,
   selettore centrato sulla riga del titolo, e un unico filo.
+- Pagine con `headerbar-meta` (Stato del sistema, report): il blocco del filtro
+  anno segue l'altezza misurata della headerbar, `--ip-headerbar-height` (79px
+  con la riga di contesto), invece di fermarsi a 56; il selettore resta
+  centrato sulla fascia del titolo e i due fili chiudono alla stessa quota.
+  Lo script in `layout/base.php` rimisura la headerbar a ogni navigazione
+  parziale (`ip:page-ready`) e riaggancia il `ResizeObserver` al nuovo
+  elemento: prima il token restava quello della pagina precedente, quindi
+  arrivando alla bacheca da una pagina con meta il blocco restava a 79. Con
+  azienda e anno entrambi presenti il blocco non viene più compresso dal
+  contenitore flex (il secondo selettore sbordava sopra il filo e il menu) e
+  il filo è inciso nel blocco, perché una linea esterna cadeva un pixel sotto
+  quella della headerbar.
 - Bordi, tema chiaro: un solo grigio per il perimetro dei contenitori. Il
   precedente #e3e7ee stava a 1.24:1 sulla card e 1.17:1 sul canvas, mentre le
   due card dei grafici portavano nello stesso momento un contorno #82899a
