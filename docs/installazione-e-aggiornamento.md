@@ -183,10 +183,11 @@ tools/deploy.sh
 
 Cosa fa, nell'ordine: controlla che l'albero sia pulito e che il ramo sia
 `main`, esegue il backup (dump del database e file caricati, passando
-dall'endpoint `cron/backup` con la chiave di `writable/cron-runner.conf`, e
-controlla che il dump nuovo esista in `writable/backups` e non sia vuoto: un
-200 con un file da zero byte sarebbe un backup che non c'è), crea
-la copia `release-pre` del commit di partenza senza i backup, aggiorna da
+dall'endpoint `cron/backup` con la chiave di `writable/cron-runner.conf`: lo
+stato HTTP è la garanzia, perché l'endpoint risponde 500 se il dump non c'è, se
+è vuoto o se la rotazione l'ha eliminato subito dopo — non serve che lo script
+rifaccia quel controllo), crea la copia `release-pre` del commit di partenza
+senza i backup, aggiorna da
 `origin/main` con `--ff-only`, installa le dipendenze **solo** se
 `composer.lock` è cambiato, applica le migrazioni, svuota la cache
 dell'applicazione (Redis o file) e, se esiste, quella delle configurazioni,
@@ -195,20 +196,6 @@ li rilancia chi li aveva avviati, e lo script aspetta un minuto per vedere se
 sono tornati, avvisando se non lo sono — e chiede a Gotenberg se risponde. Usa `php8.4`
 quando è nel PATH: è la versione del pool, mentre il `php` generico della
 macchina può essere un'altra.
-
-Un aggiornamento che cambia `deploy.sh` non può essere eseguito dalla copia
-nuova mentre è in corso: la shell ha già letto quella vecchia, quindi un
-controllo appena aggiunto entrerebbe in vigore solo dalla volta successiva. Per
-farlo valere subito, dopo il pull si rilancia lo script con `DEPLOY_ALWAYS=1`:
-
-```console
-DEPLOY_ALWAYS=1 tools/deploy.sh
-```
-
-Con `HEAD` già a `origin/main` esegue comunque i passi di sicurezza — backup
-con la verifica che il dump nuovo esista e non sia vuoto, copia `release-pre`,
-cache, reload e worker — invece di uscire con «Già aggiornato». Senza la
-variabile il comportamento resta quello di prima.
 
 Due cose lo script non può fare da solo:
 

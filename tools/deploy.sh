@@ -32,12 +32,6 @@
 #   DEPLOY_REMOTE, DEPLOY_BRANCH, DEPLOY_FPM_SERVICE, DEPLOY_GOTENBERG_HEALTH,
 #   DEPLOY_BACKUP_TIMEOUT, DEPLOY_QUEUE_TIMEOUT, DEPLOY_QUEUE_RESTART_WAIT,
 #   PHP_BIN, COMPOSER_BIN.
-#
-# Con DEPLOY_ALWAYS=1 esegue i passi di sicurezza anche quando il codice è già
-# a origin/main. Serve al primo aggiornamento che cambia questo stesso file: la
-# copia in esecuzione è quella vecchia, quindi un controllo appena aggiunto
-# entrerebbe in vigore solo dalla volta dopo. Rilanciandolo dopo il pull con
-# DEPLOY_ALWAYS=1, il controllo vale già per quell'aggiornamento.
 
 set -eu
 
@@ -128,20 +122,9 @@ target=$(git rev-parse "$REMOTE/$BRANCH" 2>/dev/null) \
 
 current=$(git rev-parse HEAD)
 if [ "$current" = "$target" ]; then
-    # Un controllo aggiunto a questo file non può valere per l'esecuzione che
-    # lo porta: la shell sta leggendo la copia vecchia e il pull non la
-    # sostituisce sotto i piedi. DEPLOY_ALWAYS=1 è la via esplicita per
-    # chiedere comunque i passi di sicurezza — backup con la verifica del dump
-    # nuovo, copia release-pre, cache, reload — su un albero già allineato.
-    # Non è un riavvio dello script né un salto di passi: si percorre la stessa
-    # sequenza da capo, e il pull che segue non ha nulla da fare.
-    if [ "${DEPLOY_ALWAYS:-0}" != "1" ]; then
-        printf 'Già aggiornato a %s (%s): niente da fare.\n' \
-            "$(git rev-parse --short HEAD)" "$(git log -1 --format=%s)"
-        exit 0
-    fi
-    printf 'Già aggiornato a %s (%s): DEPLOY_ALWAYS=1, eseguo comunque i passi di sicurezza.\n' \
+    printf 'Già aggiornato a %s (%s): niente da fare.\n' \
         "$(git rev-parse --short HEAD)" "$(git log -1 --format=%s)"
+    exit 0
 fi
 
 # --- 0. Permessi -----------------------------------------------------------
@@ -192,13 +175,14 @@ case "$CRON_KEY" in
 esac
 BASE_URL=${BASE_URL%/}
 
+# Lo stato HTTP è la garanzia, non un controllo di questo script: cron/backup
+# risponde 500 se il dump non c'è, se è vuoto o se la rotazione l'ha eliminato
+# subito dopo. Un controllo sul file qui sarebbe una seconda copia della
+# stessa regola, e varrebbe solo per la versione dello script in esecuzione.
 backup_body=$(mktemp)
-# Riferimento per riconoscere il dump di *questo* backup: un file qualsiasi in
-# writable/backups direbbe solo che il backup di ieri sera ha funzionato.
-dump_marker=$(mktemp)
 backup_status=$(curl -sS -o "$backup_body" -w '%{http_code}' --max-time "$BACKUP_TIMEOUT" \
     "${BASE_URL}/cron/backup/${CRON_KEY}") || {
-    rm -f "$backup_body" "$dump_marker"
+    rm -f "$backup_body"
     die "Backup non eseguito: la richiesta a $BASE_URL è fallita (rete, TLS o sito irraggiungibile).
    $NOTHING_DONE"
 }
@@ -215,25 +199,6 @@ case "$backup_status" in
    $NOTHING_DONE" ;;
 esac
 printf '%s\n' "$backup_text"
-
-# Un 200 dice che l'endpoint ha risposto, non che il dump esista: disco pieno,
-# `pg_dump` che esce senza scrivere o un errore catturato lasciano un file da
-# zero byte, e un dump vuoto è indistinguibile da un backup riuscito finché non
-# serve — cioè quando non si può più rimediare. Prima del pull si guarda il
-# file: deve essere comparso adesso e non essere vuoto.
-new_dump=$(find writable/backups -name 'backup_*' -type f -newer "$dump_marker" -print 2>/dev/null | head -1)
-rm -f "$dump_marker"
-[ -n "$new_dump" ] \
-    || die "Backup non verificato: l'endpoint ha risposto 200, ma in writable/backups non c'è un dump nuovo.
-   Il pull non è stato fatto: controlla writable/logs e che il disco abbia spazio, poi rilancia.
-   $NOTHING_DONE"
-dump_size=$(wc -c < "$new_dump" | tr -d ' ')
-[ "$dump_size" -gt 0 ] \
-    || die "Backup non utilizzabile: il dump nuovo ($new_dump) è vuoto (0 byte).
-   L'endpoint ha risposto 200 ma non ha scritto niente: senza dump il rollback non
-   avrebbe il database da ripristinare. Guarda writable/logs e lo spazio su disco, poi rilancia.
-   $NOTHING_DONE"
-printf 'Dump nuovo: %s (%s byte).\n' "$(basename "$new_dump")" "$dump_size"
 
 # --- 1b. Copia di sicurezza ------------------------------------------------
 # Serve al rollback, che si rifiuta di partire senza: va fatta prima del pull,

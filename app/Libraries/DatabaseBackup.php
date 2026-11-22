@@ -120,6 +120,18 @@ final class DatabaseBackup
 
         $removed = self::rotate($this->dir, 'backup_', $engine === self::ENGINE_POSTGRES ? '.dump' : '.sql');
 
+        // La rotazione tiene gli ultimi 14 per nome, e il nome contiene la
+        // data: con l'orologio del server indietro il dump appena scritto è il
+        // primo in ordine alfabetico e la rotazione lo elimina. Senza questo
+        // ricontrollo l'endpoint risponderebbe 200 indicando un file che non
+        // c'è più, e chi si fida dello stato HTTP — il cron-runner con
+        // `curl -f`, tools/deploy.sh — proseguirebbe senza backup.
+        clearstatcache(true, $file);
+
+        if (! is_file($file) || (int) filesize($file) === 0) {
+            throw new RuntimeException('il dump è sparito subito dopo la scrittura (rotazione con orologio non allineato?): ' . basename($file));
+        }
+
         return ['file' => $file, 'bytes' => (int) filesize($file), 'removed' => $removed];
     }
 

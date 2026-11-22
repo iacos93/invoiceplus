@@ -62,6 +62,12 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Backup: `cron/backup` risponde 500 anche quando il dump appena scritto viene
+  eliminato dalla rotazione (orologio del server non allineato). Prima
+  rispondeva 200 indicando un file che non c'era più, e chi si fida dello stato
+  HTTP — `tools/deploy.sh`, il cron-runner con `curl -f` — proseguiva senza
+  backup. Il controllo sta nell'endpoint, quindi vale per qualunque versione
+  dello script chiamante.
 - Bacheca: la doppia riga sotto il totale dell'Indice di redditività ha ora
   due tratti dello stesso spessore. Con un tratto da 1px e uno da 2px il primo,
   sui display con pixel frazionari, risultava più chiaro e più corto, e la

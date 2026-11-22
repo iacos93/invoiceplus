@@ -195,6 +195,100 @@ final class DatabaseBackupTest extends CIUnitTestCase
         $this->assertSame(0600, fileperms($esito['file']) & 0777, 'Il dump deve essere leggibile solo dall\'utente del processo PHP');
     }
 
+    /**
+     * Uno script finto che si comporta come mysqldump: serve a far fallire il
+     * dump senza un database, che è il caso in cui l'endpoint deve rispondere
+     * con un errore invece che con 200.
+     */
+    private function binarioFinto(string $corpo): string
+    {
+        $bin = $this->dir . '/finto-mysqldump-' . bin2hex(random_bytes(3));
+        file_put_contents($bin, "#!/bin/sh\n" . $corpo);
+        chmod($bin, 0755);
+
+        return $bin;
+    }
+
+    /** @param array<string, mixed> $db */
+    private function dumpCon(array $db, string $binario): void
+    {
+        putenv('backup.mysqldumpPath=' . $binario);
+
+        try {
+            (new DatabaseBackup($db, $this->dir))->dump();
+        } finally {
+            putenv('backup.mysqldumpPath');
+        }
+    }
+
+    /**
+     * Comando a posto (exit 0) ma nessun file: è il caso di un pg_dump che
+     * scrive su un percorso diverso da quello atteso. L'endpoint non deve
+     * rispondere 200: tools/deploy.sh e il cron-runner guardano lo stato HTTP.
+     */
+    public function testDumpSenzaFileNonRisultaRiuscito(): void
+    {
+        $bin = $this->binarioFinto("exit 0\n");
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('file non prodotto');
+
+        $this->dumpCon(['DBDriver' => 'MySQLi', 'database' => 'invoiceplane'], $bin);
+    }
+
+    /**
+     * File scritto ma da zero byte: un dump vuoto non è un backup, e non deve
+     * restare in writable/backups a occupare un posto nella rotazione.
+     */
+    public function testDumpVuotoNonRisultaRiuscitoEVieneRimosso(): void
+    {
+        $bin = $this->binarioFinto(
+            "for arg in \"\$@\"; do\n"
+            . "  case \"\$arg\" in\n"
+            . "    --result-file=*) : > \"\${arg#--result-file=}\" ;;\n"
+            . "  esac\n"
+            . "done\n"
+            . "exit 0\n"
+        );
+
+        try {
+            $this->dumpCon(['DBDriver' => 'MySQLi', 'database' => 'invoiceplane'], $bin);
+            $this->fail('Un dump vuoto non deve essere accettato');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('file non prodotto', $e->getMessage());
+        }
+
+        $this->assertSame([], glob($this->dir . '/backup_*') ?: [], 'Il file da 0 byte va tolto');
+    }
+
+    /**
+     * La rotazione tiene gli ultimi 14 per nome: se l'orologio va indietro, il
+     * dump appena scritto è il più vecchio e sparisce subito. L'endpoint non
+     * deve rispondere 200 con il nome di un file che non c'è più.
+     */
+    public function testDumpEliminatoDallaRotazioneNonRisultaRiuscito(): void
+    {
+        // MySQL ruota i `.sql` (PostgreSQL i `.dump`): i nomi devono avere
+        // l'estensione del motore, altrimenti la rotazione non li conta.
+        foreach (range(1, 14) as $n) {
+            file_put_contents(sprintf('%s/backup_2030%02d01_030000.sql', $this->dir, $n), 'x');
+        }
+
+        $bin = $this->binarioFinto(
+            "for arg in \"\$@\"; do\n"
+            . "  case \"\$arg\" in\n"
+            . "    --result-file=*) printf 'dump di prova' > \"\${arg#--result-file=}\" ;;\n"
+            . "  esac\n"
+            . "done\n"
+            . "exit 0\n"
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('è sparito subito dopo la scrittura');
+
+        $this->dumpCon(['DBDriver' => 'MySQLi', 'database' => 'invoiceplane'], $bin);
+    }
+
     public function testRotazioneTieneGliUltimiDump(): void
     {
         foreach (range(1, 16) as $n) {
