@@ -603,7 +603,7 @@
   transition: var(--ip-transition);
 }
 .ip-xml-tool-btn:hover { color: var(--ip-text); border-color: var(--ip-border); }
-.ip-xml-tool-btn.is-done { color: var(--ip-success); border-color: var(--ip-success); }
+.ip-xml-tool-btn.is-done { color: var(--ip-success-text); border-color: var(--ip-success); }
 .ip-xml-tool-btn[aria-pressed="true"] { color: var(--ip-primary); border-color: var(--ip-primary); }
 
 /* -----------------------------------------------------------------------------

@@ -4754,7 +4754,9 @@ select.form-select:focus-visible {
 }
 .ip-auth-brand-foot {
   font-size: var(--ip-text-sm);
-  color: rgba(244, 244, 245, 0.45);
+  /* A 0.45 il testo composto sulla notte stava a 4.21:1, sotto 4.5 per i
+     12px: a 0.60 sale a 6.71:1 e resta il tono più spento del pannello. */
+  color: rgba(244, 244, 245, 0.6);
   display: flex;
   align-items: center;
   gap: var(--ip-space-4);
@@ -5332,8 +5334,10 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   color: var(--ip-primary);
   font-size: var(--ip-text-3xl);
 }
-.ip-security-summary.is-strong .ip-security-summary__shield { background: var(--ip-success-bg); color: var(--ip-success); }
-.ip-security-summary.is-good   .ip-security-summary__shield { background: var(--ip-warning-bg); color: var(--ip-warning); }
+/* Le icone stanno su fondo tinto: la tinta piena resta sotto 3:1 (ambra
+   2.2:1 sulla sua crema), la variante -text arriva a 4.97:1. */
+.ip-security-summary.is-strong .ip-security-summary__shield { background: var(--ip-success-bg); color: var(--ip-success-text); }
+.ip-security-summary.is-good   .ip-security-summary__shield { background: var(--ip-warning-bg); color: var(--ip-warning-text); }
 .ip-security-summary.is-weak   .ip-security-summary__shield { background: var(--ip-danger-bg);  color: var(--ip-danger); }
 .ip-security-summary__body { flex: 1 1 auto; min-width: 0; }
 .ip-security-summary__title {
@@ -5374,7 +5378,7 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   border-color: var(--ip-border-strong);
   background: var(--ip-bg-card);
 }
-.ip-security-chip.is-on .fa { color: var(--ip-success); }
+.ip-security-chip.is-on .fa { color: var(--ip-success-text); }
 .ip-security-chip__meta {
   font-family: var(--ip-mono, monospace);
   font-size: var(--ip-text-sm);
@@ -5651,7 +5655,7 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 }
 .ip-fisc-code__copy:hover,
 .ip-fisc-code__copy:focus-visible { color: var(--ip-primary); background: var(--ip-primary-soft); }
-.ip-fisc-code__copy.is-copied { color: var(--ip-success); }
+.ip-fisc-code__copy.is-copied { color: var(--ip-success-text); }
 .ip-fisc-code__copy:focus-visible { outline: none; box-shadow: var(--ip-shadow-focus); }
 
 /* Riepilogo economico: da griglia di sole cifre a piastrelle con icona. */
@@ -8301,11 +8305,13 @@ dall'altra) avevano quindi intestazioni di altezza diversa. */
   color: var(--ip-border-field);
   transition: color var(--ip-transition), transform var(--ip-transition);
 }
+/* La stella è un glifo, ma resta nel gradino di testo: --ip-warning pieno
+   dà 2.28:1 sul bianco, la sua variante -text 5.42:1. */
 .ip-fav-toggle:hover {
-  color: var(--ip-warning);
+  color: var(--ip-warning-text);
   transform: scale(1.15);
 }
-.ip-fav-toggle.is-on { color: var(--ip-warning); }
+.ip-fav-toggle.is-on { color: var(--ip-warning-text); }
 
 /* Numero documento nelle liste: è il link che porta al record ed era alto
    16px. inline-block + padding verticale lo portano a 24px senza allargare
@@ -9326,7 +9332,7 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
   transition: var(--ip-transition);
 }
 .ip-xml-tool-btn:hover { color: var(--ip-text); border-color: var(--ip-border); }
-.ip-xml-tool-btn.is-done { color: var(--ip-success); border-color: var(--ip-success); }
+.ip-xml-tool-btn.is-done { color: var(--ip-success-text); border-color: var(--ip-success); }
 .ip-xml-tool-btn[aria-pressed="true"] { color: var(--ip-primary); border-color: var(--ip-primary); }
 
 /* -----------------------------------------------------------------------------
@@ -11328,7 +11334,7 @@ html[data-theme="dark"] .ip-pager .pagination {
   background: var(--ip-warning);
 }
 .ip-xml-switch__btn { position: relative; }
-.ip-xml-switch__btn.has-warning { color: var(--ip-warning); }
+.ip-xml-switch__btn.has-warning { color: var(--ip-warning-text); }
 .ip-xml-panels {
   position: relative;
 }
@@ -11393,8 +11399,10 @@ html[data-theme="dark"] .ip-pager .pagination {
 .xml-comment { color: var(--ip-text-muted); font-style: italic; }
 .xml-prolog { color: var(--ip-text-muted); }
 .xml-tag { color: var(--ip-primary); font-weight: 600; }
-.xml-attr { color: var(--ip-warning); }
-.xml-value { color: var(--ip-success); }
+/* Nell'anteprima XML questi due sono testo, non icone: le tinte piene
+   stanno a 2.28:1 e 4.16:1 sul bianco, le varianti -text a 5.42 e 5.18. */
+.xml-attr { color: var(--ip-warning-text); }
+.xml-value { color: var(--ip-success-text); }
 .ip-xml-sidebar {
   display: flex;
   flex-direction: column;
@@ -14222,8 +14230,8 @@ html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
 .ip-setup-checks[open] summary::before { transform: rotate(45deg); }
 .ip-setup-checks summary:hover { color: var(--ip-text); }
 .ip-setup-checks li { color: var(--ip-text); }
-.ip-setup-checks li .fa-circle-check { color: var(--ip-success); }
-.ip-setup-checks li .fa-triangle-exclamation { color: var(--ip-warning); }
+.ip-setup-checks li .fa-circle-check { color: var(--ip-success-text); }
+.ip-setup-checks li .fa-triangle-exclamation { color: var(--ip-warning-text); }
 /* Nota di piede del primo avvio e suggerimento sotto la password: testo
    corrente muto. La nota usava .ip-webauthn-status, la riga di stato mono
    dei pulsanti passkey, e così sembrava un messaggio di sistema. */

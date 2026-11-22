@@ -62,6 +62,11 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Interfaccia: i testi e i glifi che usavano le tinte piene di stato passano
+  alle varianti `-text` (ambra 2.28:1 e verde 4.16:1 sul bianco erano sotto
+  4.5, ora 5.42 e 5.18): anteprima XML, stella dei preferiti, conferma del
+  codice fiscale, riepilogo di sicurezza e controlli di configurazione. La
+  coda del pannello del login sale da 4.21:1 a 6.71:1 (`rgba` da 0.45 a 0.60).
 - Backup: `cron/backup` risponde 500 anche quando il dump appena scritto viene
   eliminato dalla rotazione (orologio del server non allineato). Prima
   rispondeva 200 indicando un file che non c'era più, e chi si fida dello stato

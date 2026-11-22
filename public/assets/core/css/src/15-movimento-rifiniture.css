@@ -1387,8 +1387,8 @@ html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
 .ip-setup-checks[open] summary::before { transform: rotate(45deg); }
 .ip-setup-checks summary:hover { color: var(--ip-text); }
 .ip-setup-checks li { color: var(--ip-text); }
-.ip-setup-checks li .fa-circle-check { color: var(--ip-success); }
-.ip-setup-checks li .fa-triangle-exclamation { color: var(--ip-warning); }
+.ip-setup-checks li .fa-circle-check { color: var(--ip-success-text); }
+.ip-setup-checks li .fa-triangle-exclamation { color: var(--ip-warning-text); }
 /* Nota di piede del primo avvio e suggerimento sotto la password: testo
    corrente muto. La nota usava .ip-webauthn-status, la riga di stato mono
    dei pulsanti passkey, e così sembrava un messaggio di sistema. */

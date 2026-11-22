@@ -230,7 +230,7 @@
 }
 .ip-fisc-code__copy:hover,
 .ip-fisc-code__copy:focus-visible { color: var(--ip-primary); background: var(--ip-primary-soft); }
-.ip-fisc-code__copy.is-copied { color: var(--ip-success); }
+.ip-fisc-code__copy.is-copied { color: var(--ip-success-text); }
 .ip-fisc-code__copy:focus-visible { outline: none; box-shadow: var(--ip-shadow-focus); }
 
 /* Riepilogo economico: da griglia di sole cifre a piastrelle con icona. */

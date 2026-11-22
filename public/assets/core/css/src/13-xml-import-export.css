@@ -123,7 +123,7 @@
   background: var(--ip-warning);
 }
 .ip-xml-switch__btn { position: relative; }
-.ip-xml-switch__btn.has-warning { color: var(--ip-warning); }
+.ip-xml-switch__btn.has-warning { color: var(--ip-warning-text); }
 .ip-xml-panels {
   position: relative;
 }
@@ -188,8 +188,10 @@
 .xml-comment { color: var(--ip-text-muted); font-style: italic; }
 .xml-prolog { color: var(--ip-text-muted); }
 .xml-tag { color: var(--ip-primary); font-weight: 600; }
-.xml-attr { color: var(--ip-warning); }
-.xml-value { color: var(--ip-success); }
+/* Nell'anteprima XML questi due sono testo, non icone: le tinte piene
+   stanno a 2.28:1 e 4.16:1 sul bianco, le varianti -text a 5.42 e 5.18. */
+.xml-attr { color: var(--ip-warning-text); }
+.xml-value { color: var(--ip-success-text); }
 .ip-xml-sidebar {
   display: flex;
   flex-direction: column;

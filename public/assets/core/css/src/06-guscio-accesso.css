@@ -851,7 +851,9 @@ select.form-select:focus-visible {
 }
 .ip-auth-brand-foot {
   font-size: var(--ip-text-sm);
-  color: rgba(244, 244, 245, 0.45);
+  /* A 0.45 il testo composto sulla notte stava a 4.21:1, sotto 4.5 per i
+     12px: a 0.60 sale a 6.71:1 e resta il tono più spento del pannello. */
+  color: rgba(244, 244, 245, 0.6);
   display: flex;
   align-items: center;
   gap: var(--ip-space-4);
@@ -1429,8 +1431,10 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   color: var(--ip-primary);
   font-size: var(--ip-text-3xl);
 }
-.ip-security-summary.is-strong .ip-security-summary__shield { background: var(--ip-success-bg); color: var(--ip-success); }
-.ip-security-summary.is-good   .ip-security-summary__shield { background: var(--ip-warning-bg); color: var(--ip-warning); }
+/* Le icone stanno su fondo tinto: la tinta piena resta sotto 3:1 (ambra
+   2.2:1 sulla sua crema), la variante -text arriva a 4.97:1. */
+.ip-security-summary.is-strong .ip-security-summary__shield { background: var(--ip-success-bg); color: var(--ip-success-text); }
+.ip-security-summary.is-good   .ip-security-summary__shield { background: var(--ip-warning-bg); color: var(--ip-warning-text); }
 .ip-security-summary.is-weak   .ip-security-summary__shield { background: var(--ip-danger-bg);  color: var(--ip-danger); }
 .ip-security-summary__body { flex: 1 1 auto; min-width: 0; }
 .ip-security-summary__title {
@@ -1471,7 +1475,7 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   border-color: var(--ip-border-strong);
   background: var(--ip-bg-card);
 }
-.ip-security-chip.is-on .fa { color: var(--ip-success); }
+.ip-security-chip.is-on .fa { color: var(--ip-success-text); }
 .ip-security-chip__meta {
   font-family: var(--ip-mono, monospace);
   font-size: var(--ip-text-sm);
