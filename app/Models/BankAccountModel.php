@@ -113,6 +113,37 @@ class BankAccountModel extends IpBaseModel
     }
 
     /**
+     * Conti utilizzabili per generare flussi RiBa: devono avere sia IBAN
+     * dell'azienda creditrice sia codice SIA assegnato dalla banca.
+     * Il perimetro aziendale è lo stesso di getAllOrdered().
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getRibaEligibleOrdered(): array
+    {
+        return $this->scopeToCompany()
+                    ->where('bank_account_iban IS NOT NULL', null, false)
+                    ->where('bank_account_iban !=', '')
+                    ->where('bank_account_sia_code IS NOT NULL', null, false)
+                    ->where('bank_account_sia_code !=', '')
+                    ->orderBy('bank_account_is_default', 'DESC')
+                    ->orderBy('bank_account_name', 'ASC')
+                    ->findAll();
+    }
+
+    /** Recupera un conto RiBa idoneo nel perimetro dell'azienda attiva. */
+    public function findRibaEligibleScoped(int $id): ?array
+    {
+        return $this->scopeToCompany()
+                    ->where('bank_account_id', $id)
+                    ->where('bank_account_iban IS NOT NULL', null, false)
+                    ->where('bank_account_iban !=', '')
+                    ->where('bank_account_sia_code IS NOT NULL', null, false)
+                    ->where('bank_account_sia_code !=', '')
+                    ->first();
+    }
+
+    /**
      * Conto predefinito dell'azienda attiva, o il suo primo conto se nessuno è
      * marcato tale.
      *

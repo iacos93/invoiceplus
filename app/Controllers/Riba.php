@@ -27,11 +27,13 @@ class Riba extends BaseController
     public function index()
     {
         $ribaMethods = (new PaymentMethodModel())->ribaMethodIds();
+        $accounts    = (new BankAccountModel())->getRibaEligibleOrdered();
 
         return view('riba/index', [
             'invoices'        => $this->presentable($ribaMethods),
             'has_riba_method' => $ribaMethods !== [],
-            'accounts'        => (new BankAccountModel())->getAllOrdered(),
+            'accounts'        => $accounts,
+            'has_riba_account' => $accounts !== [],
         ]);
     }
 
@@ -83,7 +85,7 @@ class Riba extends BaseController
         // findScoped() e non find(): il conto arriva dal POST e senza perimetro
         // una distinta poteva essere costruita accreditando l'IBAN e il codice
         // SIA di un altro soggetto giuridico, con dentro fatture di questo.
-        $account = (new BankAccountModel())->findScoped($accountId);
+        $account = (new BankAccountModel())->findRibaEligibleScoped($accountId);
 
         if (!$account) {
             session()->setFlashdata('alert_error', 'Conto di accredito non valido.');

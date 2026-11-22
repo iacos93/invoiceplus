@@ -2,30 +2,30 @@
 <?= $this->section('content') ?>
 <?php $this->setVar('pageTitle', trans('riba', '', 'Ricevute bancarie')); ?>
 <?php
-// L'avviso sul SIA riguarda il conto scelto, non l'azienda: ogni opzione
-// porta con se' se il proprio codice c'e', e il JS in fondo alla pagina
-// mostra l'avviso solo quando manca a quello selezionato.
+// Gli account passati dal controller sono già verificati: IBAN e codice SIA
+// sono presenti, quindi la select contiene solo conti configurati per RiBa.
 $ip_riba_accounts_options = '';
 foreach ($accounts as $a) {
     $ip_riba_accounts_options .= '<option value="' . (int) $a['bank_account_id'] . '"'
-        . ' data-sia="' . (empty($a['bank_account_sia_code']) ? '0' : '1') . '">'
         . esc($a['bank_account_name']) . '</option>';
 }
 $actions = '<div class="headerbar-total">'
     . '<span class="headerbar-total__label">' . trans('bank_account', '', 'Conto di accredito') . '</span>'
     . '<select name="bank_account_id" form="riba_form" class="form-control input-sm simple-select"'
     . ' aria-label="' . esc(trans('bank_account', '', 'Conto di accredito'), 'attr') . '"'
-    . ' style="min-width:200px">' . $ip_riba_accounts_options . '</select>'
+    . ' style="min-width:200px"' . (empty($accounts) ? ' disabled' : '') . '>' . $ip_riba_accounts_options . '</select>'
     . '</div>'
-    . '<button type="submit" form="riba_form" class="btn btn-sm btn-success" ' . (empty($invoices) ? 'disabled' : '') . '><i class="fa fa-solid fa-download" aria-hidden="true"></i> ' . trans('generate_flow', '', 'Genera flusso') . '</button>';
+    . '<button type="submit" form="riba_form" class="btn btn-sm btn-success" ' . (empty($invoices) || empty($accounts) ? 'disabled' : '') . '><i class="fa fa-solid fa-download" aria-hidden="true"></i> ' . trans('generate_flow', '', 'Genera flusso') . '</button>';
 ?>
 <?= $this->include('layout/headerbar', ['title' => trans('riba', '', 'Ricevute bancarie (RiBa)'), 'actions' => $actions]) ?>
 
 <div id="content" class="ip-doc-form">
-    <div class="alert alert-warning" id="riba_no_sia" hidden>
-        <i class="fa fa-solid fa-exclamation-triangle" aria-hidden="true"></i>
-        <?= trans('riba_no_sia', '', 'Il conto di accredito scelto non ha il codice SIA: la banca rifiuterebbe il flusso. Impostalo in Impostazioni → Conti di saldo.') ?>
-    </div>
+    <?php if (!$has_riba_account): ?>
+        <div class="alert alert-warning" role="status">
+            <i class="fa fa-solid fa-exclamation-triangle" aria-hidden="true"></i>
+            <?= trans('riba_no_eligible_account', '', 'Nessun conto abilitato per RiBa. In Impostazioni → Conti di saldo completa IBAN e codice SIA del conto da usare.') ?>
+        </div>
+    <?php endif; ?>
 
     <?php if (!$has_riba_method): ?>
         <?php // Senza un metodo con codice MP12 nessuna fattura risulta emessa
@@ -133,21 +133,5 @@ $actions = '<div class="headerbar-total">'
     syncAll();
 })();
 
-(function () {
-    // Il codice SIA appartiene al conto: cambiando conto di accredito cambia
-    // anche se l'avviso si applica.
-    var select = document.querySelector('select[name="bank_account_id"]');
-    var alert  = document.getElementById('riba_no_sia');
-
-    if (!select || !alert) { return; }
-
-    function apply() {
-        var option = select.options[select.selectedIndex];
-        alert.hidden = !option || option.dataset.sia === '1';
-    }
-
-    select.addEventListener('change', apply);
-    apply();
-})();
 </script>
 <?= $this->endSection() ?>

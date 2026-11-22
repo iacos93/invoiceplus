@@ -33,6 +33,7 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- RiBa: il selettore mostra solo i conti aziendali con IBAN e codice SIA; la generazione rifiuta anche richieste con conti non idonei e segnala quando non ce ne sono.
 - Schede clienti e fornitori: card e righe di riepilogo seguono un solo passo verticale da 16 px; tolti i margini Bootstrap ridondanti e lo spazio residuo sotto l’ultima riga.
 - Bacheca: le finestre KPI mantengono il colore sul filetto, sull'icona e nei
   grafici, mentre sfondi e fondi delle icone restano neutri. Le metriche si
