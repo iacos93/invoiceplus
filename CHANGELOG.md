@@ -33,6 +33,7 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Schede clienti e fornitori: card e righe di riepilogo seguono un solo passo verticale da 16 px; tolti i margini Bootstrap ridondanti e lo spazio residuo sotto l’ultima riga.
 - Bacheca: le finestre KPI mantengono il colore sul filetto, sull'icona e nei
   grafici, mentre sfondi e fondi delle icone restano neutri. Le metriche si
   distinguono ancora senza trasformare la griglia in una parete di campiture.

@@ -35,7 +35,7 @@ $field = function (string $name, string $label, array $opts = []) use ($model, $
 };
 ?>
 
-<form method="POST" action="<?= site_url('suppliers/form/' . ($id ?? '')) ?>">
+<form method="POST" action="<?= site_url('suppliers/form/' . ($id ?? '')) ?>" class="ip-supplier-form">
 
     <?= csrf_field() ?>
 

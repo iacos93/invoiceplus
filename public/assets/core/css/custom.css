@@ -9485,11 +9485,28 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
   width: 100%;
 }
 .ip-form-pane .card,
+.ip-client-form .card,
+.ip-supplier-form .card,
 .ip-settings-pane .card,
-.ip-settings-pane > .ip-doc-section { margin: 0 0 16px; }
+.ip-settings-pane > .ip-doc-section { margin: 0 0 var(--ip-space-7); }
 .ip-form-pane .card:last-child,
+.ip-client-form .card:last-child,
+.ip-supplier-form .card:last-child,
 .ip-settings-pane .card:last-child,
 .ip-settings-pane > .ip-doc-section:last-child { margin-bottom: 0; }
+
+/* Le schede anagrafiche alternano righe Bootstrap (mb-3 = 16px) e card che
+   hanno già 16px di margine. Togliamo il margine della riga: la distanza
+   viene dal componente card, con una sola fonte e lo stesso ritmo del form. */
+.ip-client-form .card,
+.ip-supplier-form .card { margin-bottom: var(--ip-space-7); }
+
+/* Nei profili anagrafici le righe della griglia hanno un gutter interno
+   separato dal distacco verticale fra gruppi. Usiamo il token comune e
+   azzeriamo il margine dell'ultima riga: il padding del pannello chiude già
+   il contenuto. */
+.tab-rich-content > .row.g-3 { margin-bottom: var(--ip-space-7) !important; }
+.tab-rich-content > .row.g-3:last-child { margin-bottom: 0 !important; }
 
 /* Pannello Sicurezza sotto il form del profilo utente (users/form): sta
    nello stesso #content del form, quindi ne eredita i margini; qui solo lo
