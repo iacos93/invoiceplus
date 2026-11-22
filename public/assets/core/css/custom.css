@@ -1083,8 +1083,21 @@ body:has(.ip-topbar) {
   font-variant-numeric: tabular-nums;
   color: var(--ip-text);
 }
+/* La select RiBa è trasformata da IPSelect: la larghezza minima impostata
+   sull'elemento nativo nascosto non si trasferisce al pulsante visibile.
+   Riserviamo al controllo la sua larghezza nella riga flex della headerbar. */
+#headerbar .headerbar-total .ip-select:has(> .ip-riba-account-select) {
+  flex: 0 0 200px;
+  width: 200px;
+  min-width: 200px;
+}
 @media (max-width: 575.98px) {
   .headerbar-total { width: 100%; margin-right: 0; }
+  #headerbar .headerbar-total .ip-select:has(> .ip-riba-account-select) {
+    flex-basis: min(200px, 58vw);
+    width: min(200px, 58vw);
+    min-width: 0;
+  }
 }
 
 /* Gruppo filtri stato nei listati: separato, non invadente */

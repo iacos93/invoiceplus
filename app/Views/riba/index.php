@@ -5,15 +5,20 @@
 // Gli account passati dal controller sono già verificati: IBAN e codice SIA
 // sono presenti, quindi la select contiene solo conti configurati per RiBa.
 $ip_riba_accounts_options = '';
+if ($accounts === []) {
+    $ip_riba_accounts_options = '<option value="">'
+        . esc(trans('riba_no_eligible_account_short', '', 'Nessun conto RiBa configurato'))
+        . '</option>';
+}
 foreach ($accounts as $a) {
     $ip_riba_accounts_options .= '<option value="' . (int) $a['bank_account_id'] . '"'
         . esc($a['bank_account_name']) . '</option>';
 }
 $actions = '<div class="headerbar-total">'
     . '<span class="headerbar-total__label">' . trans('bank_account', '', 'Conto di accredito') . '</span>'
-    . '<select name="bank_account_id" form="riba_form" class="form-control input-sm simple-select"'
+    . '<select name="bank_account_id" form="riba_form" class="form-control input-sm simple-select ip-riba-account-select"'
     . ' aria-label="' . esc(trans('bank_account', '', 'Conto di accredito'), 'attr') . '"'
-    . ' style="min-width:200px"' . (empty($accounts) ? ' disabled' : '') . '>' . $ip_riba_accounts_options . '</select>'
+    . (empty($accounts) ? ' disabled' : '') . '>' . $ip_riba_accounts_options . '</select>'
     . '</div>'
     . '<button type="submit" form="riba_form" class="btn btn-sm btn-success" ' . (empty($invoices) || empty($accounts) ? 'disabled' : '') . '><i class="fa fa-solid fa-download" aria-hidden="true"></i> ' . trans('generate_flow', '', 'Genera flusso') . '</button>';
 ?>
