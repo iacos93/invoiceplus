@@ -65,7 +65,7 @@
 .ip-dash-windows {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ip-space-7);
+  gap: var(--ip-space-6);
   /* stretch (non start): le finestre della stessa riga chiudono alla stessa
      altezza. Con align-items:start bastava un sottotitolo in più (IVA) o in
      meno (Saldo) perché la riga di KPI risultasse a gradini. */
@@ -651,7 +651,7 @@
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--ip-space-7);
+  gap: var(--ip-space-6);
 }
 /* Sotto i 1200px le due colonne non bastano più alle tabelle "recenti":
    a 1100px la colonna scende sotto i 500px e le cinque colonne di

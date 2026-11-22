@@ -36,6 +36,8 @@ Le regole per scrivere le voci e preparare una release sono in
 - Bacheca: le finestre KPI mantengono il colore sul filetto, sull'icona e nei
   grafici, mentre sfondi e fondi delle icone restano neutri. Le metriche si
   distinguono ancora senza trasformare la griglia in una parete di campiture.
+- Bacheca: ridotto a 12 px lo spazio tra le finestre, mantenendo lo stesso
+  passo tra KPI e grafici.
 - Interfaccia: l'app prende l'identità grafica della landing di Invoice+ —
   palette «notte e cielo» (canvas #0a0d14 e superficie #131824 in tema scuro,
   carta fredda e cielo profondo #0b6cb0 in chiaro), Epilogue per titoli e
