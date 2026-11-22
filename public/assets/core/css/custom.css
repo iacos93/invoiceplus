@@ -7441,9 +7441,17 @@ span.ip-status-bar-seg { cursor: default; }
   top: -14px;
   z-index: 3;
   margin: -14px -12px 4px;
-  padding: 14px 12px 10px;
+  /* 10 + 36 + 10 = 56, la stessa altezza di #headerbar (min-height 56 con
+     padding 12): il filtro anno cade sulla riga del titolo di pagina e i due
+     blocchi chiudono sullo stesso filo. Con 14 sopra e 10 sotto il blocco era
+     alto 60, il selettore stava 4px sotto «Bacheca» e la linea della colonna
+     finiva 4px più in basso di quella della pagina. */
+  padding: 10px 12px;
   background: var(--ip-bg-card);
-  box-shadow: 0 1px 0 var(--ip-border-soft);
+  /* Stesso grigio del bordo di #headerbar: con --ip-border-soft il filo
+     cambiava tono proprio dove la colonna incontra la pagina, e sembravano
+     due righe diverse invece di una. */
+  box-shadow: 0 1px 0 var(--ip-border);
 }
 .ip-sidebar-context form + form { margin-top: 6px; }
 /* Codice destinatario dell'azienda: riga sola, il codice in mono come i

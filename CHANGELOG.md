@@ -62,6 +62,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Colonne della pagina, tutte le schermate: il filtro anno in testa alla
+  sidebar chiude sulla stessa riga del titolo. Il blocco era alto 60px
+  (padding 14 sopra e 10 sotto) contro i 56 dell'headerbar, e con una sola
+  azienda il selettore stava 4px sotto «Bacheca», con il filo di separazione
+  della colonna 4px più in basso di quello della pagina — per giunta di un
+  grigio diverso (`--ip-border-soft` contro `--ip-border`). Ora 10+36+10 = 56,
+  selettore centrato sulla riga del titolo, e un unico filo.
 - Bordi, tema chiaro: un solo grigio per il perimetro dei contenitori. Il
   precedente #e3e7ee stava a 1.24:1 sulla card e 1.17:1 sul canvas, mentre le
   due card dei grafici portavano nello stesso momento un contorno #82899a
