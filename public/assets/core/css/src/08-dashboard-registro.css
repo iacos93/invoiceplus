@@ -665,20 +665,8 @@
   .ip-window-split { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* Gerarchia a fasce: hero (indice) -> striscia KPI -> grafici -> tabelle.
-   Prima tutte le finestre stavano in un'unica griglia con lo stesso gap
-   uniforme (15px ovunque): hero, KPI, grafici e tabelle si leggevano come
-   una massa unica invece di quattro livelli. Un margine crescente prima di
-   ogni riga ".ip-window-split" (che nel DOM segna sempre l'inizio di un
-   nuovo livello: prima i due grafici affiancati, poi il dettaglio/tabelle)
-   dà lo scarto d'aria che nel pattern "KPI in alto, grafico principale,
-   tabella sotto" separa i tre blocchi senza toccare il markup PHP. */
-.ip-window-split {
-  margin-top: 10px;
-}
-.ip-window-split + .ip-window-split {
-  margin-top: 4px;
-}
+/* Il distacco fra le righe usa il gap della griglia esterna: un margine qui
+   aggiungerebbe una seconda spaziatura prima dei grafici e delle tabelle. */
 
 /* Le due finestre-grafico sono il "main chart" della pagina (il centro del
    pattern KPI -> grafico -> tabella): un'ombra più marcata delle KPI/tabelle
