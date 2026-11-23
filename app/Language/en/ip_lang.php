@@ -1655,4 +1655,8 @@ return array (
   'bulk_none_eligible_payments' => 'None of the selected payments was allowed for this action.',
   'bulk_done_delete_payments' => 'deleted',
   'bulk_delete_confirm_payments' => 'Delete the selected payments? The invoice balances are recalculated and, if a payment was the last one, the invoice goes back to "sent". A deleted payment cannot be restored.',
+  'supplier_since' => 'Supplier since',
+  'supplier_code' => 'Supplier code',
+  'expenses_paid_total' => 'Total paid',
+  'expenses_count_label' => 'Recorded expenses',
 );

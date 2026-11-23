@@ -208,35 +208,21 @@ $actions = '<div class="btn-group btn-group-sm">'
                     <div class="ip-client-codes">
                         <?php
                         // Un blocco per codice, tutti con lo stesso aspetto e lo
-                        // stesso pulsante di copia: il listener in fondo alla
-                        // pagina legge data-copy-code, quindi un codice nuovo
-                        // non richiede JS nuovo.
-                        $fiscCode = static function (string $label, string $value): string {
-                            $copia = esc(trans('copy', '', 'Copia'), 'attr');
-
-                            return '<div class="ip-fisc-code">'
-                                . '<span class="ip-fisc-code__label">' . esc($label) . '</span>'
-                                . '<span class="ip-fisc-code__value">' . esc($value) . '</span>'
-                                . '<button type="button" class="ip-fisc-code__copy" data-copy-code="' . esc($value, 'attr')
-                                . '" title="' . $copia . '" aria-label="' . $copia . '">'
-                                . '<i class="fa fa-solid fa-copy" aria-hidden="true"></i>'
-                                . '</button>'
-                                . '</div>';
-                        };
-
+                        // stesso pulsante di copia (fisc_code_block, condiviso
+                        // con la scheda fornitore).
                         if (!empty($client['client_vat_id'])) {
-                            echo $fiscCode(trans('vat_id', '', 'Partita IVA'), (string) $client['client_vat_id']);
+                            echo fisc_code_block(trans('vat_id', '', 'Partita IVA'), (string) $client['client_vat_id']);
                         }
                         if (!empty($client['client_tax_code'])) {
-                            echo $fiscCode(trans('tax_code', '', 'Codice fiscale'), (string) $client['client_tax_code']);
+                            echo fisc_code_block(trans('tax_code', '', 'Codice fiscale'), (string) $client['client_tax_code']);
                         }
                         if (!empty($client['client_sdi_code'])) {
-                            echo $fiscCode(trans('sdi_code', '', 'Codice destinatario'), (string) $client['client_sdi_code']);
+                            echo fisc_code_block(trans('sdi_code', '', 'Codice destinatario'), (string) $client['client_sdi_code']);
                         }
                         // Il codice cliente è il numero con cui ci si riferisce a
                         // lui al telefono o in contabilità: è l'id della scheda,
                         // lo stesso che compare nell'indirizzo della pagina.
-                        echo $fiscCode(trans('client_code', '', 'Codice cliente'), (string) (int) $client['client_id']);
+                        echo fisc_code_block(trans('client_code', '', 'Codice cliente'), (string) (int) $client['client_id']);
                         ?>
                     </div>
                 </div>
@@ -816,28 +802,6 @@ $actions = '<div class="btn-group btn-group-sm">'
 
 </div>
 
-<script>
-/* Copia negli appunti i codici fiscali dalla tessera anagrafica: utile per
-   incollarli in FatturaPA o nel cassetto fiscale senza ricopiare a mano. */
-(function () {
-    document.querySelectorAll('.ip-fisc-code__copy').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var value = btn.getAttribute('data-copy-code');
-            if (!value || !navigator.clipboard) { return; }
-            navigator.clipboard.writeText(value).then(function () {
-                var icon = btn.querySelector('i');
-                if (!icon) { return; }
-                var prev = icon.className;
-                icon.className = 'fa fa-check';
-                btn.classList.add('is-copied');
-                setTimeout(function () {
-                    icon.className = prev;
-                    btn.classList.remove('is-copied');
-                }, 1200);
-            });
-        });
-    });
-})();
-</script>
+<?= $this->include('layout/copy_code_script') ?>
 
 <?= $this->endSection() ?>

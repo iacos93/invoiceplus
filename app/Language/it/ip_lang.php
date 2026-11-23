@@ -1674,4 +1674,8 @@ return array (
   'bulk_none_eligible_payments' => 'Nessuno dei pagamenti selezionati era ammesso per questa azione.',
   'bulk_done_delete_payments' => 'eliminati',
   'bulk_delete_confirm_payments' => 'Eliminare i pagamenti selezionati? Il saldo delle fatture viene ricalcolato e, se un incasso era l\'ultimo, la fattura torna "inviata". Il pagamento non si recupera.',
+  'supplier_since' => 'Fornitore dal',
+  'supplier_code' => 'Codice fornitore',
+  'expenses_paid_total' => 'Totale pagato',
+  'expenses_count_label' => 'Spese registrate',
 );

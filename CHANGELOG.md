@@ -33,6 +33,12 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Scheda fornitore: stessa impaginazione della scheda cliente. Tessera con
+  partita IVA, codice fiscale, codice destinatario, IBAN e codice fornitore da
+  copiare con un clic; riepilogo in quattro cifre (totale speso, pagato,
+  saldo, spese registrate); contatti e note in card affiancate. Prima codici,
+  contatti e IBAN stavano in un'unica tabella a metà pagina.
+
 - Scheda cliente: tolta la piastrella con le iniziali in testata. Ripeteva il
   nome scritto accanto e sulle ragioni sociali dava sigle sbagliate («2WARE
   S.R.L.» diventava «2S»).

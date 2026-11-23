@@ -2598,3 +2598,28 @@ if (!function_exists('chart_window_anchor')) {
     }
 }
 
+if (!function_exists('fisc_code_block')) {
+    /**
+     * Un codice della tessera anagrafica (partita IVA, codice fiscale, codice
+     * destinatario, IBAN...) con il pulsante per copiarlo.
+     *
+     * Sta qui e non nella vista perché le tessere sono due, cliente e
+     * fornitore, e devono avere lo stesso aspetto: copiato in entrambe, il
+     * blocco aveva già cominciato a divergere. Lo script che copia legge
+     * data-copy-code (partial layout/copy_code_script), quindi un codice nuovo
+     * non chiede JS nuovo.
+     */
+    function fisc_code_block(string $label, string $value): string
+    {
+        $copia = esc(trans('copy', '', 'Copia'), 'attr');
+
+        return '<div class="ip-fisc-code">'
+            . '<span class="ip-fisc-code__label">' . esc($label) . '</span>'
+            . '<span class="ip-fisc-code__value">' . esc($value) . '</span>'
+            . '<button type="button" class="ip-fisc-code__copy" data-copy-code="' . esc($value, 'attr')
+            . '" title="' . $copia . '" aria-label="' . $copia . '">'
+            . '<i class="fa fa-solid fa-copy" aria-hidden="true"></i>'
+            . '</button>'
+            . '</div>';
+    }
+}

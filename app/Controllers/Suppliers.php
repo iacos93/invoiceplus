@@ -132,8 +132,9 @@ class Suppliers extends BaseController
         }
 
         return view('suppliers/view', [
-            'supplier' => $supplier,
-            'expenses' => (new ExpenseModel())->forSupplier($id),
+            'supplier'  => $supplier,
+            'expenses'  => (new ExpenseModel())->forSupplier($id),
+            'countries' => country_list(),
         ]);
     }
 
