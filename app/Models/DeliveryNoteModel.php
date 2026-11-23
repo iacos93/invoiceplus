@@ -7,11 +7,16 @@ namespace App\Models;
  */
 class DeliveryNoteModel extends IpBaseModel
 {
+    use Concerns\HasClientSnapshot;
+
     protected $table            = 'ip_delivery_notes';
     protected $primaryKey       = 'delivery_note_id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useTimestamps    = false;
+
+    // Intestazione ferma all'emissione: vedi Concerns\HasClientSnapshot.
+    protected $afterFind = ['applyClientSnapshot'];
 
     protected $allowedFields = [
         'company_id', 'client_id', 'invoice_group_id', 'invoice_id',

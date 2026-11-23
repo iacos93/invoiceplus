@@ -6,6 +6,8 @@ use App\Libraries\GuestPassword;
 
 class InvoiceModel extends IpBaseModel
 {
+    use Concerns\HasClientSnapshot;
+
     protected $table            = 'ip_invoices';
     protected $primaryKey       = 'invoice_id';
     protected $useAutoIncrement = true;
@@ -33,6 +35,11 @@ class InvoiceModel extends IpBaseModel
     protected $afterInsert = ['clearFinanceCache'];
     protected $afterUpdate = ['clearFinanceCache'];
     protected $afterDelete = ['clearFinanceCache'];
+
+    // Intestazione ferma all'emissione: vedi Concerns\HasClientSnapshot e
+    // App\Libraries\ClientSnapshot. Rinominare il cliente in anagrafica non
+    // deve riscrivere una fattura già uscita.
+    protected $afterFind = ['applyClientSnapshot'];
 
     protected $allowedFields = [
         'user_id',
