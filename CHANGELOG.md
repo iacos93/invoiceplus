@@ -33,6 +33,12 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Deploy: a aggiornamento riuscito `tools/deploy.sh` elimina anche la copia
+  `release-pre-*` appena fatta, così sul server non resta nessun `.env` fuori
+  dall'applicazione; se il deploy si ferma a metà la copia resta per
+  `tools/rollback.sh`. Per tenerla anche a deploy riuscito:
+  `DEPLOY_KEEP_ROLLBACK_COPY=1`, che `tools/deploy-remote.sh` inoltra al server.
+
 - Calendario: nel pannello «Scadenze del mese» totali, sezioni e scadenze
   partono dalla stessa colonna del titolo e i separatori arrivano ai bordi.
   In generale `card-body no-padding` ora toglie davvero il padding del corpo

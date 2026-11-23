@@ -31,6 +31,7 @@
 # Variabili per le installazioni diverse da questa:
 #   DEPLOY_REMOTE, DEPLOY_BRANCH, DEPLOY_FPM_SERVICE, DEPLOY_GOTENBERG_HEALTH,
 #   DEPLOY_BACKUP_TIMEOUT, DEPLOY_QUEUE_TIMEOUT, DEPLOY_QUEUE_RESTART_WAIT,
+#   DEPLOY_KEEP_ROLLBACK_COPY (1 = tiene la copia release-pre a deploy riuscito),
 #   PHP_BIN, COMPOSER_BIN.
 
 set -eu
@@ -360,28 +361,43 @@ fi
     || die "Gotenberg: $gotenberg_status su $GOTENBERG_HEALTH (atteso 200).
    L'aggiornamento è completo, ma i PDF escono da dompdf finché il servizio non torna."
 
-# --- 6. Copie di sicurezza precedenti --------------------------------------
-# Arrivati qui l'aggiornamento è riuscito e la copia appena fatta è quella da
-# cui ripartire: le precedenti servirebbero solo per un rollback di due deploy
-# indietro, che lo schema già migrato renderebbe comunque un ripristino da
-# dump. Ognuna però tiene il .env con la chiave di cifratura, e lasciarle alla
-# pulizia a mano voleva dire trovarne venti sul server. Si eliminano solo a
-# deploy concluso: se qualcosa sopra fallisce, restano tutte dove sono.
-say "Copie di sicurezza precedenti"
+# --- 6. Copie di sicurezza -------------------------------------------------
+# La copia serve finché il deploy è in corso: se un passo sopra fallisce lo
+# script si ferma prima di qui, e la copia resta per tools/rollback.sh. Arrivati
+# qui l'aggiornamento è riuscito, e ogni copia sul server è un .env con la
+# chiave di cifratura in più, fuori dalla cartella dell'applicazione: si
+# eliminano tutte, anche quella appena fatta. Lasciarle alla pulizia a mano
+# voleva dire trovarne venti.
+#
+# Il prezzo è che il rollback di un deploy riuscito non ha più la copia da cui
+# ripartire: resta il backup fatto all'inizio (dump e file caricati in
+# writable/backups) più il codice nella storia di git. Chi vuole tenere la
+# copia per un rollback rapido lancia il deploy con DEPLOY_KEEP_ROLLBACK_COPY=1
+# (o lo scrive in writable/cron-runner.conf): in quel caso restano solo le
+# precedenti a sparire.
+KEEP_ROLLBACK_COPY=${DEPLOY_KEEP_ROLLBACK_COPY:-0}
+say "Copie di sicurezza"
 removed=0
 for old_copy in "$parent"/release-pre-*; do
     [ -d "$old_copy" ] || continue
-    [ "$old_copy" = "$copy" ] && continue
+    [ "$KEEP_ROLLBACK_COPY" = 1 ] && [ "$old_copy" = "$copy" ] && continue
     if rm -rf -- "$old_copy"; then
         removed=$((removed + 1))
     else
         printf "Attenzione: non riesco a eliminare %s, toglila a mano (contiene .env).\n" "$old_copy" >&2
     fi
 done
-printf 'Eliminate: %s. Resta %s.\n' "$removed" "$copy"
 
 from_short=$(git rev-parse --short "$current")
 printf '\nFatto: %s → %s\n' "$from_short" "$(git rev-parse --short HEAD)"
-printf 'Per tornare indietro: tools/rollback.sh %s, poi il reload del pool e, se lo schema è cambiato, il ripristino del dump.\n' \
-    "$from_short"
-printf "La copia di prima del pull è in %s: il prossimo deploy la sostituisce; contiene .env\ncon la chiave di cifratura, eliminala prima se non ti serve più.\n" "$copy"
+if [ "$KEEP_ROLLBACK_COPY" = 1 ]; then
+    printf 'Eliminate: %s. Resta %s, che contiene .env con la chiave di cifratura:\n' "$removed" "$copy"
+    printf 'eliminala quando il rollback non serve più. Il prossimo deploy la toglie comunque.\n'
+    printf 'Per tornare indietro: tools/rollback.sh %s, poi il reload del pool e, se lo schema è cambiato, il ripristino del dump.\n' \
+        "$from_short"
+else
+    printf 'Eliminate: %s. Nessuna copia release-pre resta sul server.\n' "$removed"
+    printf 'Per tornare indietro: git checkout %s, composer install se il lock è cambiato, cache:clear,\n' "$from_short"
+    printf 'reload del pool e, se lo schema è cambiato, ripristino del backup appena fatto in writable/backups.\n'
+    printf 'Per un rollback con tools/rollback.sh rilancia il deploy con DEPLOY_KEEP_ROLLBACK_COPY=1.\n'
+fi

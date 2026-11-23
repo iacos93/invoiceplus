@@ -15,6 +15,8 @@
 #   DEPLOY_DIR=/home/invoiceplus/htdocs/esempio.it
 #
 # Uso: tools/deploy-remote.sh   (gli argomenti extra vanno a ssh, es. -p 2222)
+#      DEPLOY_KEEP_ROLLBACK_COPY=1 tools/deploy-remote.sh   tiene la copia per
+#      tools/rollback.sh, che altrimenti il deploy riuscito elimina
 set -eu
 
 conf="${XDG_CONFIG_HOME:-$HOME/.config}/invoiceplus/deploy.conf"
@@ -28,5 +30,10 @@ DEPLOY_USER="${DEPLOY_USER:-invoiceplus}"
 # BatchMode: se la chiave non basta meglio un errore subito che un prompt di
 # password, che è proprio ciò che questo script deve togliere. -t serve
 # perché deploy.sh scriva l'avanzamento riga per riga.
+# sudo -i riparte da un ambiente pulito: l'unica variabile del deploy che ha
+# senso decidere da qui (tenere la copia per il rollback) va passata a mano.
+keep=''
+[ "${DEPLOY_KEEP_ROLLBACK_COPY:-0}" = 1 ] && keep='DEPLOY_KEEP_ROLLBACK_COPY=1 '
+
 exec ssh -t -o BatchMode=yes "$@" "$DEPLOY_HOST" \
-    "sudo -n -iu '$DEPLOY_USER' sh -c 'cd \"$DEPLOY_DIR\" && tools/deploy.sh'"
+    "sudo -n -iu '$DEPLOY_USER' sh -c 'cd \"$DEPLOY_DIR\" && ${keep}tools/deploy.sh'"

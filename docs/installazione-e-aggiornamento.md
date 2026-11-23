@@ -262,12 +262,22 @@ dal document root — è `public/` a essere servita, non la cartella che la
 contiene — e pesa quanto `vendor/` più i file caricati. Contiene però anche due
 cose che git non porta con sé: **`.env`**, con la chiave di cifratura dei
 segreti, e `vendor/`.
-Non è quindi un archivio da lasciare in giro. `tools/deploy.sh`, a
-aggiornamento riuscito, elimina le copie `release-pre-*` dei deploy precedenti
-e tiene solo quella appena fatta; se il deploy si ferma prima, non tocca
-nessuna copia. Con l'aggiornamento a mano, o quando anche l'ultima copia non
-serve più (login, una fattura con il PDF, `writable/logs` pulito), si elimina
-così:
+Non è quindi un archivio da lasciare in giro. `tools/deploy.sh` la usa come
+rete durante l'aggiornamento: se un passo fallisce si ferma e la copia resta,
+pronta per `tools/rollback.sh`. A aggiornamento riuscito elimina invece tutte
+le copie `release-pre-*`, anche quella appena fatta, così sul server non resta
+nessun `.env` fuori posto. Da lì il ritorno indietro passa dal backup fatto
+all'inizio del deploy e dalla storia di git. Per tenere la copia e poter usare
+`tools/rollback.sh` anche dopo un deploy riuscito:
+
+```console
+DEPLOY_KEEP_ROLLBACK_COPY=1 tools/deploy.sh
+```
+
+(o `DEPLOY_KEEP_ROLLBACK_COPY=1 tools/deploy-remote.sh` dal proprio computer);
+il deploy successivo la elimina comunque. Con l'aggiornamento a mano la copia
+si toglie così, quando non serve più (login, una fattura con il PDF,
+`writable/logs` pulito):
 
 ```console
 rm -rf ../release-pre-<sha>
