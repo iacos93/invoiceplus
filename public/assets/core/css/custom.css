@@ -8219,15 +8219,26 @@ dall'altra) avevano quindi intestazioni di altezza diversa. */
   color: var(--ip-text-muted);
 }
 
-@media (max-width: 991.98px) {
-  .ip-preview .ip-preview__side { position: static; }
+/* Sotto i 1200 px il riepilogo passa sotto il foglio. La soglia era 992, ma
+   il foglio A4 serve 794 px per stare a scala 1: con 300 px fissi alla colonna
+   laterale, a 1024 il documento scendeva al 51% — corpo a 6 px, note minime a
+   5 — e si leggeva solo ingrandendo. L'anteprima è il contenuto della pagina,
+   il riepilogo la accompagna: da 1200 in su restano affiancati e il foglio
+   torna 1:1. La regola guarda solo le pagine con un foglio dentro.
+   minmax(0, 1fr) e non 1fr: con 1fr il minimo della traccia è il contenuto
+   (min-content), quindi le tabelle interne larghe (prospetto di Utile e
+   imposte) tenevano la colonna a 754 px su uno schermo da 390 e la pagina
+   scorreva in orizzontale. */
+@media (max-width: 1199.98px) {
+  .ip-preview:has(.ip-preview__sheet) { grid-template-columns: minmax(0, 1fr); }
+  .ip-preview:has(.ip-preview__sheet) .ip-preview__side { position: static; }
 }
+/* Le altre pagine con pannello laterale — il riquadro della stima imposte in
+   Controllo di gestione — non hanno un foglio da leggere: lì la soglia resta
+   quella di prima, 992. */
 @media (max-width: 991.98px) {
-  /* minmax(0, 1fr) e non 1fr: con 1fr il minimo della traccia è il contenuto
-     (min-content), quindi le tabelle interne larghe (prospetto di Utile e
-     imposte) tenevano la colonna a 754 px su uno schermo da 390 e la pagina
-     scorreva in orizzontale. */
   .ip-preview { grid-template-columns: minmax(0, 1fr); }
+  .ip-preview .ip-preview__side { position: static; }
 }
 
 /* Sfondo scuro attorno al foglio: lo stacca dalla pagina e lo fa leggere
@@ -8773,6 +8784,17 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
    menu, e con display:contents perdevano il proprio riquadro collassando. */
 .ip-doc-actions > form { display: contents; }
 .ip-doc-actions .dropdown { display: inline-flex; }
+/* Sotto i 480 px il totale occupa già una riga intera e, con l'etichetta
+   accanto all'icona, i tre comandi lasciavano 31 px liberi su 350: «Altre
+   azioni» finiva da solo su una quarta riga, staccato dagli altri. Qui resta
+   la sola icona e la barra torna compatta; il nome dell'azione non sparisce,
+   è nell'aria-label del bottone (title per il tooltip). */
+@media (max-width: 480px) {
+  #headerbar .ip-doc-actions .ip-doc-actions__label { display: none; }
+  /* Con la sola icona il comando restava 34 px largo: sotto i 44 di un
+     bersaglio tattile, e quattro di loro stanno comunque in 194 px su 350. */
+  #headerbar .ip-doc-actions .btn { min-width: 44px; }
+}
 /* Le voci che sono form POST (CSRF) dentro il menu: niente margine che
    spaccherebbe la riga, la voce (il button) gestisce larghezza e hover. */
 .ip-doc-actions .dropdown-menu form { margin: 0; }

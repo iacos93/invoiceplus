@@ -82,6 +82,21 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Anteprima fattura, preventivo e DDT: il riepilogo passa sotto il foglio
+  sotto i 1200 px, non più sotto i 992. Il foglio A4 serve 794 px per stare a
+  scala 1 e con 300 px fissi alla colonna laterale, a 1024, il documento
+  scendeva al 51% — corpo a 6 px — e si leggeva solo ingrandendo. A 1024 ora
+  il foglio è al 91% e il riepilogo segue l'anteprima; da 1200 in su resta
+  affiancato come prima. Il pannello del Controllo di gestione, che non ha un
+  foglio, non cambia.
+- Testata fattura sotto i 480 px: i comandi di sola icona sono larghi 44 px,
+  il minimo di un bersaglio tattile; erano 34. Quattro comandi occupano 194 px
+  su 350 disponibili, quindi la riga resta una sola.
+- Testata fattura sotto i 480 px: i comandi stanno su una riga. Con
+  l'etichetta accanto all'icona i tre bottoni occupavano 319 dei 350 px
+  disponibili, e «Altre azioni» andava a capo da solo, staccato dal resto.
+  Sotto quella soglia restano le sole icone, con il nome dell'azione
+  nell'aria-label e nel tooltip; sopra non cambia niente.
 - Da tastiera si vede dove si è: l'anello di focus era un nero al 14%,
   circa 1,2:1 sul bianco, sotto il 3:1 che le WCAG chiedono a un indicatore di
   focus — sui bottoni pieni spariva e su quelli chiari si leggeva come un

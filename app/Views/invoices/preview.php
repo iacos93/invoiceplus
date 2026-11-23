@@ -68,14 +68,18 @@ if ($locked) {
         $editAction .= '<form method="post" action="' . site_url('invoices/unlock/' . $invoice_id) . '" class="d-inline">'
             . csrf_field()
             . '<button type="submit" class="btn btn-sm btn-secondary" data-bs-toggle="confirm"'
+            . ' title="' . esc(trans('invoice_unlock', '', 'Sblocca'), 'attr') . '"'
+            . ' aria-label="' . esc(trans('invoice_unlock', '', 'Sblocca'), 'attr') . '"'
             . ' data-confirm-title="' . esc(trans('confirm', '', 'Conferma'), 'attr') . '"'
             . ' data-confirm-body="' . esc(trans('invoice_unlock_confirm', '', 'Sbloccare la fattura per modificarla? Se risulta già trasmessa, la modifica non cambia ciò che lo SdI ha ricevuto.'), 'attr') . '"'
             . ' data-confirm-ok="' . esc(trans('invoice_unlock', '', 'Sblocca'), 'attr') . '">'
-            . '<i class="fa fa-solid fa-lock-open" aria-hidden="true"></i> ' . esc(trans('invoice_unlock', '', 'Sblocca')) . '</button></form>';
+            . '<i class="fa fa-solid fa-lock-open" aria-hidden="true"></i> <span class="ip-doc-actions__label">' . esc(trans('invoice_unlock', '', 'Sblocca')) . '</span></button></form>';
     }
 } else {
-    $editAction = '<a class="btn btn-sm btn-primary" href="' . site_url('invoices/edit/' . $invoice_id) . '">'
-        . '<i class="fa fa-solid fa-pencil" aria-hidden="true"></i> ' . trans('edit', '', 'Modifica') . '</a>';
+    $editAction = '<a class="btn btn-sm btn-primary" href="' . site_url('invoices/edit/' . $invoice_id) . '"'
+        . ' title="' . esc(trans('edit', '', 'Modifica'), 'attr') . '"'
+        . ' aria-label="' . esc(trans('edit', '', 'Modifica'), 'attr') . '">'
+        . '<i class="fa fa-solid fa-pencil" aria-hidden="true"></i> <span class="ip-doc-actions__label">' . trans('edit', '', 'Modifica') . '</span></a>';
 }
 
 // Barra del documento. Prima erano otto bottoni secondari identici sulla
@@ -93,14 +97,18 @@ $actions = '<div class="ip-doc-actions">'
 
 // Con la fattura bloccata «Modifica» sparisce: l'azione principale diventa
 // scaricare il documento, quindi è quella a portare il colore pieno.
-$actions .= '<a class="btn btn-sm ' . ($locked ? 'btn-primary' : 'btn-secondary') . '" href="' . site_url('invoices/generate_pdf/' . $invoice_id) . '">'
-    . '<i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> ' . trans('download_pdf', '', 'PDF') . '</a>';
+$actions .= '<a class="btn btn-sm ' . ($locked ? 'btn-primary' : 'btn-secondary') . '" href="' . site_url('invoices/generate_pdf/' . $invoice_id) . '"'
+    . ' title="' . esc(trans('download_pdf', '', 'Scarica PDF'), 'attr') . '"'
+    . ' aria-label="' . esc(trans('download_pdf', '', 'Scarica PDF'), 'attr') . '">'
+    . '<i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> <span class="ip-doc-actions__label">' . trans('download_pdf', '', 'Scarica PDF') . '</span></a>';
 
 // Invio per email: apre la schermata del Mailer con l'anteprima del messaggio,
 // il template e il PDF allegabile. La stessa pagina mostra come configurare
 // un mittente se non ce n'e' ancora uno.
-$actions .= '<a class="btn btn-sm btn-secondary" href="' . site_url('mailer/invoice/' . $invoice_id) . '">'
-    . '<i class="fa fa-solid fa-envelope" aria-hidden="true"></i> ' . trans('email_invoice', '', 'Invia fattura') . '</a>';
+$actions .= '<a class="btn btn-sm btn-secondary" href="' . site_url('mailer/invoice/' . $invoice_id) . '"'
+    . ' title="' . esc(trans('email_invoice', '', 'Invia fattura'), 'attr') . '"'
+    . ' aria-label="' . esc(trans('email_invoice', '', 'Invia fattura'), 'attr') . '">'
+    . '<i class="fa fa-solid fa-envelope" aria-hidden="true"></i> <span class="ip-doc-actions__label">' . trans('email_invoice', '', 'Invia fattura') . '</span></a>';
 
 // Voci del menu «Altro», nell'ordine in cui servono: prima il seguito del
 // documento (marcare inviata, sollecitare), poi gli strumenti fiscali (i tre
@@ -168,7 +176,9 @@ if ($is_draft) {
 }
 
 $actions .= '<div class="dropdown">'
-    . '<button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="' . esc(trans('more_actions', '', 'Altre azioni'), 'attr') . '">'
+    . '<button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"'
+    . ' title="' . esc(trans('more_actions', '', 'Altre azioni'), 'attr') . '"'
+    . ' aria-label="' . esc(trans('more_actions', '', 'Altre azioni'), 'attr') . '">'
     . '<i class="fa fa-solid fa-ellipsis-h d-md-none" aria-hidden="true"></i><span class="d-none d-md-inline">' . esc(trans('more_actions', '', 'Altre azioni')) . '</span>'
     . '</button>'
     . '<ul class="dropdown-menu dropdown-menu-end">' . $more . '</ul>'
