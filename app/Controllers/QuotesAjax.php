@@ -553,6 +553,13 @@ class QuotesAjax extends BaseController
             // senza questa riga la fattura convertita nasceva senza azienda e
             // compariva nel fatturato di tutte.
             'company_id'             => $quote['company_id'] ?? active_company_id(),
+            // La fattura nata da un preventivo eredita la copia del cliente
+            // che il preventivo porta con se': se il cliente e' stato
+            // rinominato dopo, il documento convertito deve mostrare
+            // l'intestazione del preventivo da cui nasce, non quella di oggi.
+            // L'insert e' grezzo, quindi la copia va scritta qui a mano.
+            'client_snapshot'        => ($quote['client_snapshot'] ?? null)
+                ?: \App\Libraries\ClientSnapshot::capture((int) $quote['client_id']),
             // Stessa regola della creazione manuale (InvoiceModel::create()):
             // il metodo di pagamento arriva dalle preferenze del cliente.
             // Senza questa riga la conversione era l'unico percorso che lo

@@ -6,6 +6,8 @@ use App\Libraries\GuestPassword;
 
 class QuoteModel extends IpBaseModel
 {
+    use Concerns\HasClientSnapshot;
+
     protected $table            = 'ip_quotes';
     protected $primaryKey       = 'quote_id';
     protected $useAutoIncrement = true;
@@ -17,6 +19,9 @@ class QuoteModel extends IpBaseModel
     // Il vecchio encrypt_secret() era reversibile; l'hash no.
     protected $beforeInsert = ['hashDocumentPassword'];
     protected $beforeUpdate = ['hashDocumentPassword'];
+
+    // Intestazione ferma all'emissione: vedi Concerns\HasClientSnapshot.
+    protected $afterFind = ['applyClientSnapshot'];
 
     protected $allowedFields = [
         'user_id',

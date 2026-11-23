@@ -40,6 +40,18 @@ Le regole per scrivere le voci e preparare una release sono in
 - RiBa: la tendina del conto in testata è larga quanto il nome del conto
   (fra 160 e 240 px) invece di 280 px fissi, con il testo allineato a sinistra.
 
+- Anagrafica clienti: rinominare un cliente non cambia più le fatture, i
+  preventivi e i DDT che portano il suo nome. Ogni documento prende copia
+  dell'intestazione (nome, indirizzo e dati fiscali) quando nasce, e da lì
+  resta quella: una fattura già consegnata mostra il nome con cui è stata
+  emessa, anche se in anagrafica il cliente viene corretto, trasferito o gli
+  cambia la partita IVA. Email, telefono e lingua restano invece quelli di
+  oggi, così un sollecito arriva all'indirizzo attuale. Cambiando davvero il
+  cliente di una bozza la copia si aggiorna, e un preventivo convertito in
+  fattura porta con sé l'intestazione del preventivo. I documenti già in
+  archivio hanno preso copia dai dati attuali dell'anagrafica con la
+  migrazione.
+
 - Deploy: `tools/deploy-remote.sh` lancia `tools/deploy.sh` sul server dal
   proprio computer con la chiave SSH, senza password né cambio d'utente a
   mano; host e cartella stanno in `~/.config/invoiceplus/deploy.conf`.
