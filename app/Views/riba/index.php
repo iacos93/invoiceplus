@@ -46,6 +46,19 @@ $actions = '<div class="headerbar-total">'
         <?= trans('riba_bank_check', '', 'Il tracciato segue lo standard CBI, ma le banche adottano varianti: fai verificare il primo flusso dalla tua banca prima di usarlo in produzione.') ?>
     </div>
 
+    <?php if (empty($invoices)): ?>
+        <?php // Senza fatture la tabella mostrava solo intestazioni e una casella
+              // "seleziona tutte" che non seleziona nulla: lo stato vuoto delle
+              // altre liste dice la stessa cosa senza colonne inutili. ?>
+        <div class="empty-state card">
+            <div class="card-body empty-body">
+                <i class="fa fa-solid fa-check-circle empty-state-icon" aria-hidden="true"></i>
+                <p class="empty-state-text">
+                    <?= trans('riba_none_only', '', 'Nessuna fattura da presentare: servono fatture emesse con pagamento RiBa, con saldo aperto e non già inserite in una distinta.') ?>
+                </p>
+            </div>
+        </div>
+    <?php else: ?>
     <form method="POST" action="<?= site_url('riba/generate') ?>" id="riba_form">
         <?= csrf_field() ?>
 
@@ -101,16 +114,12 @@ $actions = '<div class="headerbar-total">'
                             <td class="ip-items-table__total"><?= format_currency($inv['invoice_balance']) ?></td>
                         </tr>
                     <?php endforeach; ?>
-                    <?php if (empty($invoices)): ?>
-                        <tr><td colspan="6" class="ip-items-table__empty">
-                            <?= trans('riba_none_only', '', 'Nessuna fattura da presentare: servono fatture emesse con pagamento RiBa, con saldo aperto e non già inserite in una distinta.') ?>
-                        </td></tr>
-                    <?php endif; ?>
                     </tbody>
                 </table>
             </div>
         </section>
     </form>
+    <?php endif; ?>
 </div>
 
 <script>

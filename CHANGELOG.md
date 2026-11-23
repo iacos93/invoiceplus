@@ -33,6 +33,13 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Deploy: `tools/deploy-remote.sh` lancia `tools/deploy.sh` sul server dal
+  proprio computer con la chiave SSH, senza password né cambio d'utente a
+  mano; host e cartella stanno in `~/.config/invoiceplus/deploy.conf`.
+
+- RiBa: senza fatture da presentare la pagina mostra un riquadro vuoto come
+  le altre liste, invece di una tabella con le sole intestazioni.
+
 - Menu conto RiBa: ridotto il distacco dal selettore e il padding verticale della voce, senza alterare le altre tendine.
 - RiBa: allargata e centrata la select del conto in testata, così il nome della banca è leggibile e allineato nel controllo.
 - RiBa: il selettore del conto in testata mantiene 200 px anche dopo la trasformazione IPSelect e mostra un testo chiaro quando non esistono conti idonei.
