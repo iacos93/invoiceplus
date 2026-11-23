@@ -292,6 +292,12 @@ body:has(.ip-topbar) {
   padding: var(--ip-card-head-y) var(--ip-card-pad-x);
 }
 .card-body { padding: var(--ip-card-body-y) var(--ip-card-pad-x); }
+/* Corpo a filo: chi lo chiede gestisce da sé il margine delle righe (liste,
+   tabelle, griglie). Senza questa regola la classe valeva solo su #content e
+   il corpo teneva i suoi 16/18 px, che si sommavano al padding delle righe:
+   nei pannelli laterali il contenuto finiva rientrato rispetto al titolo e i
+   separatori non arrivavano ai bordi della card. */
+.card-body.no-padding { padding: 0; }
 /* L'ultimo elemento di un corpo non porta con sé il proprio margine: il
    respiro di chiusura lo dà il padding della card. Senza questo, un campo
    (margin-bottom 16) dentro un corpo con padding 16 lasciava 32px sotto e 16

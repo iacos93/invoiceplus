@@ -1200,7 +1200,7 @@ html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
   display: flex;
   gap: 16px;
   margin: 0;
-  padding: 12px 14px;
+  padding: 14px var(--ip-card-pad-x);
   border-bottom: 1px solid var(--ip-border-soft);
 }
 .ip-calendar-totals > div { flex: 1 1 0; min-width: 0; }

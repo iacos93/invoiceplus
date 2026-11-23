@@ -148,7 +148,7 @@ foreach ($upcoming as $event) {
                     <?php endif; ?>
                 </dl>
                 <?php if (empty($month_days)): ?>
-                    <p class="ip-number-help" style="padding:16px">
+                    <p class="ip-number-help" style="padding: var(--ip-card-body-y) var(--ip-card-pad-x)">
                         <?= trans('calendar_no_upcoming', '', 'Nessuna scadenza in questo mese.') ?>
                     </p>
                 <?php else: ?>
@@ -293,7 +293,7 @@ foreach ($upcoming as $event) {
                 </div>
                 <div class="card-body no-padding">
                     <?php if (empty($upcoming)): ?>
-                        <p class="ip-number-help" style="padding:16px">
+                        <p class="ip-number-help" style="padding: var(--ip-card-body-y) var(--ip-card-pad-x)">
                             <?= trans('calendar_no_upcoming', '', 'Nessuna scadenza in questo mese.') ?>
                         </p>
                     <?php else: ?>

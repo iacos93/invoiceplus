@@ -1188,6 +1188,12 @@ body:has(.ip-topbar) {
   padding: var(--ip-card-head-y) var(--ip-card-pad-x);
 }
 .card-body { padding: var(--ip-card-body-y) var(--ip-card-pad-x); }
+/* Corpo a filo: chi lo chiede gestisce da sé il margine delle righe (liste,
+   tabelle, griglie). Senza questa regola la classe valeva solo su #content e
+   il corpo teneva i suoi 16/18 px, che si sommavano al padding delle righe:
+   nei pannelli laterali il contenuto finiva rientrato rispetto al titolo e i
+   separatori non arrivavano ai bordi della card. */
+.card-body.no-padding { padding: 0; }
 /* L'ultimo elemento di un corpo non porta con sé il proprio margine: il
    respiro di chiusura lo dà il padding della card. Senza questo, un campo
    (margin-bottom 16) dentro un corpo con padding 16 lasciava 32px sotto e 16
@@ -10519,7 +10525,9 @@ button.ip-calendar-event-more:focus-visible {
   grid-template-columns: 40px 1fr auto;
   gap: var(--ip-space-4);
   align-items: center;
-  padding: 10px 14px;
+  /* Stesso margine laterale dell'intestazione della card: titolo, sezioni e
+     voci partono tutti dalla stessa colonna. */
+  padding: 10px var(--ip-card-pad-x);
   text-decoration: none;
   color: var(--ip-text);
 }
@@ -10599,7 +10607,7 @@ button.ip-calendar-event-more:focus-visible {
   align-items: center;
   gap: var(--ip-space-4);
   margin: 0;
-  padding: 10px 14px 2px;
+  padding: 16px var(--ip-card-pad-x) 4px;
   font-family: var(--ip-mono);
   font-size: var(--ip-text-xs);
   font-weight: 600;
@@ -14167,7 +14175,7 @@ html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
   display: flex;
   gap: 16px;
   margin: 0;
-  padding: 12px 14px;
+  padding: 14px var(--ip-card-pad-x);
   border-bottom: 1px solid var(--ip-border-soft);
 }
 .ip-calendar-totals > div { flex: 1 1 0; min-width: 0; }

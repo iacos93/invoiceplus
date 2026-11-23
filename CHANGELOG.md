@@ -33,6 +33,11 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Calendario: nel pannello «Scadenze del mese» totali, sezioni e scadenze
+  partono dalla stessa colonna del titolo e i separatori arrivano ai bordi.
+  In generale `card-body no-padding` ora toglie davvero il padding del corpo
+  della card (calendario, dettaglio progetto).
+
 - Deploy: `tools/deploy.sh`, a aggiornamento riuscito, elimina le copie
   `release-pre-*` dei deploy precedenti e tiene solo quella appena fatta, che
   serve al rollback. Prima si accumulavano sul server, ognuna con il `.env`.
