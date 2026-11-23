@@ -393,8 +393,8 @@ $areaChart = static function (array $values, array $labels, string $colorVar, ar
         $bands .= '<g class="ip-chart-month" tabindex="0" role="img" aria-label="' . esc($title . ': ' . strip_tags(format_currency($v)), 'attr') . '"'
             . $tipAttr($title, [[$meta[$i]['row'] ?? trans('dashboard_profit_label', '', 'Utile di impresa'), format_currency($v), $v < 0 ? 'loss' : 'profit']], $href !== '' ? $openHint : '')
             . $href . '>'
-            . '<rect class="ip-chart-col" x="' . round($cx - $bandW / 2, 1) . '" y="12" width="' . round($bandW, 1)
-            . '" height="' . ($H - 24) . '" rx="6" />'
+            . '<rect class="ip-chart-col" x="' . round($cx - $bandW / 2, 1) . '" y="4" width="' . round($bandW, 1)
+            . '" height="' . ($H - 4) . '" rx="6" />'
             . '<circle class="ip-area-dot" cx="' . round($cx, 1) . '" cy="' . round($yOf($v), 1) . '" r="3.5" fill="' . $colorVar . '" />'
             . '</g>';
         // Sei etichette ci stanno tutte: saltarne una sì e una no lasciava
