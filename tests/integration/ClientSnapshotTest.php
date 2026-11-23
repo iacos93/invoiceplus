@@ -17,7 +17,8 @@ use CodeIgniter\Test\CIUnitTestCase;
  * di quando la si apriva. Qui si verifica che la rinomina non tocchi fatture,
  * preventivi e DDT già emessi, che il documento nato senza copia (anteriore
  * alla migrazione) mostri l'anagrafica, e che la copia segua invece il cliente
- * quando lo si cambia davvero sul documento.
+ * quando lo si cambia davvero sul documento. Le bozze invece seguono
+ * l'anagrafica fino all'invio, che ferma l'intestazione di quel momento.
  *
  * Ogni test gira in una transazione chiusa con rollback sulla copia del
  * database, come le altre prove di scrittura.
@@ -94,7 +95,7 @@ final class ClientSnapshotTest extends CIUnitTestCase
     public function testRinominareIlClienteNonToccaLaFatturaGiaEmessa(): void
     {
         $cliente = $this->cliente('Alfa Srl', 'Via Roma 1', 'IT01234567890');
-        $fattura = $this->fattura($cliente);
+        $fattura = $this->fatturaEmessa($cliente);
 
         $prima = (new InvoiceModel())->getById($fattura);
 
@@ -122,7 +123,7 @@ final class ClientSnapshotTest extends CIUnitTestCase
             'client_id'           => $cliente,
             'user_id'             => $this->utente,
             'invoice_group_id'    => $this->gruppo,
-            'quote_status_id'     => 1,
+            'quote_status_id'     => 2,
             'quote_date_created'  => date('Y-m-d'),
             'quote_number'        => '',
         ]);
@@ -152,7 +153,7 @@ final class ClientSnapshotTest extends CIUnitTestCase
         $alfa  = $this->cliente('Alfa Srl', 'Via Roma 1', 'IT01234567890');
         $gamma = $this->cliente('Gamma Srl', 'Corso Italia 2', 'IT09876543210');
 
-        $fattura = $this->fattura($alfa);
+        $fattura = $this->fatturaEmessa($alfa);
 
         (new InvoiceModel())->update($fattura, ['client_id' => $gamma]);
 
@@ -176,6 +177,47 @@ final class ClientSnapshotTest extends CIUnitTestCase
             ->update(['client_snapshot' => null]);
 
         $this->assertSame('Alfa Srl', (new InvoiceModel())->getById($fattura)['client_name']);
+    }
+
+    /**
+     * Una bozza non è ancora uscita: se nel frattempo si corregge il cliente
+     * (la partita IVA sbagliata, l'indirizzo), deve partire con i dati giusti.
+     */
+    public function testLaBozzaSegueLAnagrafica(): void
+    {
+        $cliente = $this->cliente('Alfa Srl', 'Via Roma 1', 'IT01234567890');
+        $fattura = $this->fattura($cliente);
+
+        (new ClientModel())->saveRecord($cliente, [
+            'client_name'   => 'Beta Srl',
+            'client_vat_id' => 'IT11111111111',
+        ]);
+
+        $bozza = (new InvoiceModel())->getById($fattura);
+
+        $this->assertSame('Beta Srl', $bozza['client_name'], 'Bozza: deve mostrare il nome corretto in anagrafica');
+        $this->assertSame('IT11111111111', $bozza['client_vat_id'], 'Bozza: deve partire con la partita IVA corretta');
+    }
+
+    /**
+     * L'intestazione si ferma quando la bozza diventa inviata, con i dati di
+     * quel momento, non con quelli del giorno in cui la bozza è nata; dopo,
+     * un'altra correzione in anagrafica non la tocca più.
+     */
+    public function testLInvioFermaLIntestazioneDiQuelMomento(): void
+    {
+        $cliente = $this->cliente('Alfa Srl', 'Via Roma 1', 'IT01234567890');
+        $fattura = $this->fattura($cliente);
+
+        (new ClientModel())->saveRecord($cliente, ['client_name' => 'Beta Srl']);
+        (new InvoiceModel())->update($fattura, ['invoice_status_id' => 2]);
+        (new ClientModel())->saveRecord($cliente, ['client_name' => 'Gamma Srl']);
+
+        $this->assertSame(
+            'Beta Srl',
+            (new InvoiceModel())->getById($fattura)['client_name'],
+            'Invio: deve restare il nome in anagrafica al momento dell\'invio'
+        );
     }
 
     /** Salva anche la copia sul documento, non solo sull'anagrafica. */
@@ -247,6 +289,16 @@ final class ClientSnapshotTest extends CIUnitTestCase
         ]);
 
         $this->assertGreaterThan(0, $id, 'Fattura non creata');
+
+        return $id;
+    }
+
+    /** Fattura creata e subito segnata come inviata: la copia è ferma. */
+    private function fatturaEmessa(int $cliente): int
+    {
+        $id = $this->fattura($cliente);
+
+        $this->assertTrue((new InvoiceModel())->update($id, ['invoice_status_id' => 2]), 'Fattura non segnata come inviata');
 
         return $id;
     }

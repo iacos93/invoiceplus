@@ -46,9 +46,11 @@ Le regole per scrivere le voci e preparare una release sono in
   resta quella: una fattura già consegnata mostra il nome con cui è stata
   emessa, anche se in anagrafica il cliente viene corretto, trasferito o gli
   cambia la partita IVA. Email, telefono e lingua restano invece quelli di
-  oggi, così un sollecito arriva all'indirizzo attuale. Cambiando davvero il
-  cliente di una bozza la copia si aggiorna, e un preventivo convertito in
-  fattura porta con sé l'intestazione del preventivo. I documenti già in
+  oggi, così un sollecito arriva all'indirizzo attuale. Le bozze invece
+  seguono l'anagrafica fino all'invio: una partita IVA corretta prima di
+  inviare finisce nel documento, e l'intestazione si ferma al momento
+  dell'invio. Cambiando il cliente di un documento la copia si aggiorna, e un
+  preventivo già inviato e convertito in fattura le passa la sua intestazione. I documenti già in
   archivio hanno preso copia dai dati attuali dell'anagrafica con la
   migrazione.
 

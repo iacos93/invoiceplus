@@ -557,8 +557,13 @@ class QuotesAjax extends BaseController
             // che il preventivo porta con se': se il cliente e' stato
             // rinominato dopo, il documento convertito deve mostrare
             // l'intestazione del preventivo da cui nasce, non quella di oggi.
-            // L'insert e' grezzo, quindi la copia va scritta qui a mano.
-            'client_snapshot'        => ($quote['client_snapshot'] ?? null)
+            // L'insert e' grezzo, quindi la copia va scritta qui a mano. Un
+            // preventivo ancora in bozza non ha un'intestazione ferma (la sua
+            // copia si rifa' a ogni salvataggio e puo' essere vecchia): in quel
+            // caso vale l'anagrafica di oggi.
+            'client_snapshot'        => ((int) ($quote['quote_status_id'] ?? 1) !== 1
+                    ? ($quote['client_snapshot'] ?? null)
+                    : null)
                 ?: \App\Libraries\ClientSnapshot::capture((int) $quote['client_id']),
             // Stessa regola della creazione manuale (InvoiceModel::create()):
             // il metodo di pagamento arriva dalle preferenze del cliente.
