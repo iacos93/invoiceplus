@@ -1101,13 +1101,14 @@ body:has(.ip-topbar) {
 /* La select RiBa è trasformata da IPSelect: la larghezza minima impostata
    sull'elemento nativo nascosto non si trasferisce al pulsante visibile.
    Riserviamo al controllo la sua larghezza nella riga flex della headerbar. */
+/* Largo quanto il nome del conto, non di più: a 280 px fissi la tendina
+   occupava mezza testata per un nome di venti caratteri. Il tetto evita che
+   un nome lungo spinga «Genera flusso» a capo. */
 #headerbar .headerbar-total .ip-select:has(> .ip-riba-account-select) {
-  flex: 0 0 280px;
-  width: 280px;
-  min-width: 280px;
-}
-#headerbar .headerbar-total .ip-select:has(> .ip-riba-account-select) .ip-select__value {
-  text-align: center;
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 160px;
+  max-width: 240px;
 }
 /* Il selettore del conto non è un .btn, ma nella testata sta accanto a uno:
    prendeva altezza e testo dalle regole dei campi (35 px e 14 px, e con le
@@ -1129,8 +1130,7 @@ body:has(.ip-topbar) {
 @media (max-width: 575.98px) {
   .headerbar-total { width: 100%; margin-right: 0; }
   #headerbar .headerbar-total .ip-select:has(> .ip-riba-account-select) {
-    flex-basis: min(280px, 58vw);
-    width: min(280px, 58vw);
+    max-width: 58vw;
     min-width: 0;
   }
 }

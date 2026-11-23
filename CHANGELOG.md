@@ -33,6 +33,9 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- RiBa: la tendina del conto in testata è larga quanto il nome del conto
+  (fra 160 e 240 px) invece di 280 px fissi, con il testo allineato a sinistra.
+
 - Deploy: `tools/deploy-remote.sh` lancia `tools/deploy.sh` sul server dal
   proprio computer con la chiave SSH, senza password né cambio d'utente a
   mano; host e cartella stanno in `~/.config/invoiceplus/deploy.conf`.
