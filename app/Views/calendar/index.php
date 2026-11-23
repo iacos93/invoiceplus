@@ -232,7 +232,12 @@ foreach ($upcoming as $event) {
                                         <?php foreach (array_slice($cell['events'], 0, 3) as $event): ?>
                                             <a href="<?= esc($event['url']) ?>"
                                                class="ip-calendar-event ip-calendar-event--<?= esc($event['type']) ?> <?= $event['overdue'] ? 'is-overdue' : '' ?>"
-                                               title="<?= esc($event['title']) ?>">
+                                               title="<?= esc(($event['overdue'] ? trans('calendar_overdue_one', '', 'Scaduta') . ': ' : '') . $event['title']) ?>">
+                                                <?php // Il rosso da solo non basta: chi non lo distingue, e lo
+                                                      // screen reader, devono sapere che la scadenza è passata. ?>
+                                                <?php if ($event['overdue']): ?>
+                                                    <i class="fa fa-solid fa-circle-exclamation ip-calendar-event__icon" aria-hidden="true"></i><span class="ip-visually-hidden"><?= trans('calendar_overdue_one', '', 'Scaduta') ?>: </span>
+                                                <?php endif; ?>
                                                 <?= esc($event['title']) ?>
                                             </a>
                                         <?php endforeach; ?>
@@ -253,7 +258,7 @@ foreach ($upcoming as $event) {
                                                         <li class="ip-calendar-popover__item ip-calendar-popover__item--<?= esc($event['type']) ?><?= $event['overdue'] ? ' is-overdue' : '' ?>">
                                                             <a href="<?= esc($event['url']) ?>">
                                                                 <span class="ip-calendar-popover__badge ip-calendar-popover__badge--<?= esc($event['type']) ?>"><?= esc($typeInfo[$event['type']]['label'] ?? $event['type']) ?></span>
-                                                                <span class="ip-calendar-popover__title"><?= esc($event['title']) ?></span>
+                                                                <span class="ip-calendar-popover__title"><?php if ($event['overdue']): ?><i class="fa fa-solid fa-circle-exclamation ip-calendar-event__icon" aria-hidden="true"></i><span class="ip-visually-hidden"><?= trans('calendar_overdue_one', '', 'Scaduta') ?>: </span><?php endif; ?><?= esc($event['title']) ?></span>
                                                                 <?php if ($event['amount'] !== null): ?>
                                                                     <span class="ip-calendar-popover__amount"><?= format_currency($event['amount']) ?></span>
                                                                 <?php endif; ?>

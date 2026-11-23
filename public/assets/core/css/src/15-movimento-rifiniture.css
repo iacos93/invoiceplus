@@ -266,7 +266,7 @@ html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
   font-size: var(--ip-text-sm);
 }
 .ip-recon-dir.is-in  { background: var(--ip-success-bg); color: var(--ip-success-text); }
-.ip-recon-dir.is-out { background: var(--ip-violet-bg);  color: var(--ip-violet); }
+.ip-recon-dir.is-out { background: var(--ip-violet-bg);  color: var(--ip-violet-text); }
 
 .ip-recon-desc { display: flex; flex-direction: column; gap: var(--ip-space-2); min-width: 0; }
 .ip-recon-desc__text {

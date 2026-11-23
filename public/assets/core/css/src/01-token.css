@@ -370,6 +370,7 @@ a:hover {
   --ip-info-bg:       #edf3f7;
   --ip-violet:        #6d5dd3;     /* costi / money-out: inchiostro distinto da rosso e blu */
   --ip-violet-bg:     #f1eefe;
+  --ip-violet-text:   #6252c8;     /* 5.17:1 su violet-bg: il viola pieno qui era a 4.43 */
 
   --ip-neutral:       #999999;     /* $color_grey — draft / stato neutro */
   --ip-neutral-solid: #6E6E6E;     /* grigio pieno: serve più scuro per reggere testo bianco */
@@ -531,8 +532,11 @@ html[data-theme="dark"] {
      e da fondo dei pulsanti, che scrivono in --ip-bg. */
   --ip-bg:                #0a0d14;    /* canvas */
   --ip-bg-card:           #131824;    /* superfici (card, sidebar, pannelli) */
-  --ip-border:            #232c40;
-  --ip-border-soft:       #1a2131;
+  /* Separatori e bordi un gradino più chiari: a #232c40 / #1a2131 erano a
+     1.27:1 e 1.10:1 sulla superficie, cioè quanto la card sul canvas, e le
+     righe interne (griglia del calendario, liste) sparivano. */
+  --ip-border:            #2a3550;
+  --ip-border-soft:       #202940;
   /* Stesso ruolo del tema chiaro, sul fondo notte: #2f3a52 stava a 1.56:1
      sulla superficie e 1.71:1 sul canvas, quindi il contorno dei controlli
      spariva. Qui serve un grigio-azzurro più chiaro del riposo: 3.47:1 sulla
@@ -570,6 +574,7 @@ html[data-theme="dark"] {
   --ip-info-text:         #7ab4d4;
   --ip-violet:            #9b8ce8;    /* costi, adattato al fondo scuro */
   --ip-violet-bg:         #211d33;
+  --ip-violet-text:       var(--ip-violet);   /* 5.67:1 su violet-bg scuro */
   --ip-neutral:           #8a8a92;
   --ip-neutral-solid:     #a0a0a8;
 --ip-canceled:          #4a4a52;

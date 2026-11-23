@@ -1359,6 +1359,7 @@ return array (
   'calendar_events' => 'scadenze',
   'calendar_legend' => 'Legenda',
   'calendar_overdue' => 'Scadute',
+  'calendar_overdue_one' => 'Scaduta',
   'calendar_planned' => 'In programma',
   'calendar_view' => 'Vista',
   'calendar_view_month' => 'Mese',

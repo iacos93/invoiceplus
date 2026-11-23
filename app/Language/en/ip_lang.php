@@ -1350,6 +1350,7 @@ return array (
   'calendar_events' => 'deadlines',
   'calendar_legend' => 'Legend',
   'calendar_overdue' => 'Overdue',
+  'calendar_overdue_one' => 'Overdue',
   'calendar_planned' => 'Scheduled',
   'calendar_view' => 'View',
   'calendar_view_month' => 'Month',

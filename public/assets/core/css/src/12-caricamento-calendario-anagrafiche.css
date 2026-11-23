@@ -375,6 +375,8 @@ button.ip-calendar-daynum:focus-visible {
 .ip-calendar-event--invoice { border-left-color: var(--ip-success); }
 .ip-calendar-event--f24     { border-left-color: var(--ip-warning-text); }
 .ip-calendar-event--task    { border-left-color: var(--ip-primary); }
+/* Icona delle scadute: il segnale non affidato al solo colore. */
+.ip-calendar-event__icon { margin-right: 4px; font-size: 0.9em; }
 .ip-calendar-event.is-overdue {
   background: var(--ip-danger-bg);
   border-left-color: var(--ip-danger);

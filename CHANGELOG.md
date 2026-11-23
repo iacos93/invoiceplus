@@ -33,6 +33,12 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Colori: nel calendario le scadenze passate hanno un'icona e la parola
+  «Scaduta» per lo screen reader, non solo il rosso; l'etichetta «uscita» della
+  riconciliazione passa a un viola leggibile (5,2:1 invece di 4,4:1); nel tema
+  scuro bordi e separatori sono un gradino più chiari, e le righe interne di
+  griglie e liste tornano visibili.
+
 - Deploy: a aggiornamento riuscito `tools/deploy.sh` elimina anche la copia
   `release-pre-*` appena fatta, così sul server non resta nessun `.env` fuori
   dall'applicazione; se il deploy si ferma a metà la copia resta per
