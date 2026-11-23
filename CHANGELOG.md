@@ -33,6 +33,10 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Deploy: `tools/deploy.sh`, a aggiornamento riuscito, elimina le copie
+  `release-pre-*` dei deploy precedenti e tiene solo quella appena fatta, che
+  serve al rollback. Prima si accumulavano sul server, ognuna con il `.env`.
+
 - RiBa: la tendina del conto in testata è larga quanto il nome del conto
   (fra 160 e 240 px) invece di 280 px fissi, con il testo allineato a sinistra.
 

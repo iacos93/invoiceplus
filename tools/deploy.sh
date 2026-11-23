@@ -360,8 +360,28 @@ fi
     || die "Gotenberg: $gotenberg_status su $GOTENBERG_HEALTH (atteso 200).
    L'aggiornamento è completo, ma i PDF escono da dompdf finché il servizio non torna."
 
+# --- 6. Copie di sicurezza precedenti --------------------------------------
+# Arrivati qui l'aggiornamento è riuscito e la copia appena fatta è quella da
+# cui ripartire: le precedenti servirebbero solo per un rollback di due deploy
+# indietro, che lo schema già migrato renderebbe comunque un ripristino da
+# dump. Ognuna però tiene il .env con la chiave di cifratura, e lasciarle alla
+# pulizia a mano voleva dire trovarne venti sul server. Si eliminano solo a
+# deploy concluso: se qualcosa sopra fallisce, restano tutte dove sono.
+say "Copie di sicurezza precedenti"
+removed=0
+for old_copy in "$parent"/release-pre-*; do
+    [ -d "$old_copy" ] || continue
+    [ "$old_copy" = "$copy" ] && continue
+    if rm -rf -- "$old_copy"; then
+        removed=$((removed + 1))
+    else
+        printf "Attenzione: non riesco a eliminare %s, toglila a mano (contiene .env).\n" "$old_copy" >&2
+    fi
+done
+printf 'Eliminate: %s. Resta %s.\n' "$removed" "$copy"
+
 from_short=$(git rev-parse --short "$current")
 printf '\nFatto: %s → %s\n' "$from_short" "$(git rev-parse --short HEAD)"
 printf 'Per tornare indietro: tools/rollback.sh %s, poi il reload del pool e, se lo schema è cambiato, il ripristino del dump.\n' \
     "$from_short"
-printf "La copia di prima del pull è in %s: eliminala quando l'applicazione è confermata,\nperché contiene .env con la chiave di cifratura.\n" "$copy"
+printf "La copia di prima del pull è in %s: il prossimo deploy la sostituisce; contiene .env\ncon la chiave di cifratura, eliminala prima se non ti serve più.\n" "$copy"

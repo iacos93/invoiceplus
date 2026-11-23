@@ -262,9 +262,12 @@ dal document root — è `public/` a essere servita, non la cartella che la
 contiene — e pesa quanto `vendor/` più i file caricati. Contiene però anche due
 cose che git non porta con sé: **`.env`**, con la chiave di cifratura dei
 segreti, e `vendor/`.
-Non è quindi un archivio da lasciare in giro: quando l'aggiornamento è
-confermato (login, una fattura con il PDF, `writable/logs` pulito) si elimina,
-altrimenti le copie con i segreti si accumulano a ogni deploy.
+Non è quindi un archivio da lasciare in giro. `tools/deploy.sh`, a
+aggiornamento riuscito, elimina le copie `release-pre-*` dei deploy precedenti
+e tiene solo quella appena fatta; se il deploy si ferma prima, non tocca
+nessuna copia. Con l'aggiornamento a mano, o quando anche l'ultima copia non
+serve più (login, una fattura con il PDF, `writable/logs` pulito), si elimina
+così:
 
 ```console
 rm -rf ../release-pre-<sha>
