@@ -34,8 +34,12 @@
 }
 
 /* Esito SdI nella lista: il badge può andare a capo invece di allargare la
-   colonna, e lo stato "importata" è una nota discreta (vedi invoices/index). */
-.ip-sdi-badge {
+   colonna, e lo stato "importata" è una nota discreta (vedi invoices/index).
+   L'a capo vale solo dentro la tabella: nel titolo della fattura la stessa
+   etichetta ("Trasmessa da altro gestionale") finiva su due righe, e il
+   timbro — alto 33 px contro i 22 degli altri — non stava più sulla riga del
+   titolo. */
+.ip-table-card .ip-sdi-badge {
   white-space: normal;
   max-width: 14em;
   text-align: left;

@@ -54,9 +54,15 @@ $invoiceModelLock = new \App\Models\InvoiceModel();
 $locked           = $invoiceModelLock->isLocked((array) $invoice);
 
 if ($locked) {
-    $editAction = '<span class="btn btn-sm btn-secondary disabled" aria-disabled="true" title="'
+    // Il blocco è uno stato, non un'azione: era un bottone disattivato accanto
+    // a «Sblocca», cioè un comando che sembrava rotto. Ora sta nel titolo con
+    // gli altri timbri e nei comandi resta solo quello che si può davvero fare.
+    $title .= ' <span class="badge ip-status text-bg-secondary" title="'
         . esc(trans('invoice_locked', '', 'La fattura è bloccata e non si può modificare. Se è stata trasmessa allo SdI, per correggerla emetti una nota di credito.'), 'attr') . '">'
-        . '<i class="fa fa-solid fa-lock" aria-hidden="true"></i> ' . esc(trans('invoice_locked_badge', '', 'Bloccata')) . '</span>';
+        . '<i class="fa fa-solid fa-lock" aria-hidden="true"></i> '
+        . esc(trans('invoice_locked_badge', '', 'Bloccata')) . '</span>';
+
+    $editAction = '';
 
     if ($invoiceModelLock->canUnlock((int) $invoice_id)) {
         $editAction .= '<form method="post" action="' . site_url('invoices/unlock/' . $invoice_id) . '" class="d-inline">'
@@ -72,21 +78,23 @@ if ($locked) {
         . '<i class="fa fa-solid fa-pencil" aria-hidden="true"></i> ' . trans('edit', '', 'Modifica') . '</a>';
 }
 
+// Barra del documento. Prima erano otto bottoni secondari identici sulla
+// stessa riga (PDF, invio, i tre comandi XML, DDT, invia a SdI, copia,
+// elimina): a 1440 px andavano a capo su due righe e nessuno diceva da dove
+// cominciare. Ora restano visibili il totale del documento, lo stato di blocco
+// e le due azioni che si usano davvero (il PDF e l'invio al cliente); il resto
+// vive nel menu «Altro», lo stesso schema della modifica del preventivo.
 $actions = '<div class="ip-doc-actions">'
-    . $editAction
-    . '<a class="btn btn-sm btn-secondary" href="' . site_url('invoices/generate_pdf/' . $invoice_id) . '">'
-    . '<i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> ' . trans('download_pdf', '', 'PDF') . '</a>';
+    . '<div class="headerbar-total">'
+    . '<span class="headerbar-total__label">' . trans('total', '', 'Totale') . '</span>'
+    . '<span class="headerbar-total__amount">' . format_currency($invoice['invoice_total'] ?? 0) . '</span>'
+    . '</div>'
+    . $editAction;
 
-// Il PDF non marca piu' la fattura come inviata: quando l'impostazione lo
-// prevedeva, il passaggio di stato era una conseguenza nascosta dello scarico
-// (e un export la applicava a tutte). Ora e' questo clic esplicito.
-if ((int) get_setting('mark_invoices_sent_pdf', 0) === 1 && $is_draft) {
-    $actions .= '<form method="post" action="' . site_url('invoices/mark_sent/' . $invoice_id) . '" class="d-inline">'
-        . csrf_field()
-        . '<button type="submit" class="btn btn-sm btn-secondary">'
-        . '<i class="fa fa-solid fa-paper-plane" aria-hidden="true"></i> '
-        . esc(trans('mark_as_sent', '', 'Segna come inviata')) . '</button></form>';
-}
+// Con la fattura bloccata «Modifica» sparisce: l'azione principale diventa
+// scaricare il documento, quindi è quella a portare il colore pieno.
+$actions .= '<a class="btn btn-sm ' . ($locked ? 'btn-primary' : 'btn-secondary') . '" href="' . site_url('invoices/generate_pdf/' . $invoice_id) . '">'
+    . '<i class="fa fa-regular fa-file-pdf" aria-hidden="true"></i> ' . trans('download_pdf', '', 'PDF') . '</a>';
 
 // Invio per email: apre la schermata del Mailer con l'anteprima del messaggio,
 // il template e il PDF allegabile. La stessa pagina mostra come configurare
@@ -94,40 +102,53 @@ if ((int) get_setting('mark_invoices_sent_pdf', 0) === 1 && $is_draft) {
 $actions .= '<a class="btn btn-sm btn-secondary" href="' . site_url('mailer/invoice/' . $invoice_id) . '">'
     . '<i class="fa fa-solid fa-envelope" aria-hidden="true"></i> ' . trans('email_invoice', '', 'Invia fattura') . '</a>';
 
-// Anche per le note di credito: escono come TD04 con importi positivi e
-// riferimento alla fattura d'origine (Invoices::generateXml), quindi il
-// tracciato e' valido e va mostrato e scaricato come per le fatture.
-$actions .= '<a class="btn btn-sm btn-secondary" href="' . site_url('invoices/preview_xml/' . $invoice_id) . '">'
-    . '<i class="fa fa-solid fa-eye" aria-hidden="true"></i> ' . trans('xml_preview', '', 'Anteprima XML') . '</a>'
-    . '<a class="btn btn-sm btn-secondary" href="' . site_url('invoices/generate_xml/' . $invoice_id) . '">'
-    . '<i class="fa fa-regular fa-file-code" aria-hidden="true"></i> ' . trans('it_download_xml', '', 'XML') . '</a>';
+// Voci del menu «Altro», nell'ordine in cui servono: prima il seguito del
+// documento (marcare inviata, sollecitare), poi gli strumenti fiscali (i tre
+// comandi XML), poi le azioni che creano un altro documento e infine quelle
+// distruttive, separata da un filetto.
+$more = '';
 
-$actions .= '<a class="btn btn-sm btn-secondary" href="' . site_url('invoices/validate_xml/' . $invoice_id) . '">'
-    . '<i class="fa fa-regular fa-check-square" aria-hidden="true"></i> ' . trans('validate_xml', '', 'Verifica XML') . '</a>';
+// Il PDF non marca piu' la fattura come inviata: quando l'impostazione lo
+// prevedeva, il passaggio di stato era una conseguenza nascosta dello scarico
+// (e un export la applicava a tutte). Ora e' un clic esplicito.
+if ((int) get_setting('mark_invoices_sent_pdf', 0) === 1 && $is_draft) {
+    $more .= '<li><form action="' . site_url('invoices/mark_sent/' . $invoice_id) . '" method="POST" class="d-inline">'
+        . csrf_field()
+        . '<button type="submit" class="dropdown-button">'
+        . '<i class="fa fa-solid fa-paper-plane fa-margin" aria-hidden="true"></i> '
+        . esc(trans('mark_as_sent', '', 'Segna come inviata')) . '</button></form></li>';
+}
 
 // Sollecito manuale: solo su una fattura scaduta, e apre la schermata di
 // invio gia' impostata come sollecito (Mailer::invoice). Non c'e' un invio
 // automatico dei solleciti, per scelta.
 if (\App\Controllers\Mailer::isOverdue($invoice)) {
-    $actions .= '<a class="btn btn-sm btn-warning" href="' . site_url('mailer/invoice/' . $invoice_id) . '">'
-        . '<i class="fa fa-solid fa-envelope" aria-hidden="true"></i> ' . trans('send_reminder', '', 'Sollecita') . '</a>';
+    $more .= '<li><a href="' . site_url('mailer/invoice/' . $invoice_id) . '">'
+        . '<i class="fa fa-solid fa-envelope fa-margin" aria-hidden="true"></i> ' . trans('send_reminder', '', 'Sollecita') . '</a></li>';
 }
 
-$actions .= '<div class="dropdown">'
-    . '<button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="' . esc(trans('options', '', 'Opzioni'), 'attr') . '">'
-    . '<i class="fa fa-solid fa-cog" aria-hidden="true"></i></button><ul class="dropdown-menu dropdown-menu-end">';
+// Anche per le note di credito: escono come TD04 con importi positivi e
+// riferimento alla fattura d'origine (Invoices::generateXml), quindi il
+// tracciato e' valido e va mostrato e scaricato come per le fatture.
+$more .= '<li><a href="' . site_url('invoices/preview_xml/' . $invoice_id) . '">'
+    . '<i class="fa fa-solid fa-eye fa-margin" aria-hidden="true"></i> ' . trans('xml_preview', '', 'Anteprima XML') . '</a></li>'
+    . '<li><a href="' . site_url('invoices/generate_xml/' . $invoice_id) . '">'
+    . '<i class="fa fa-regular fa-file-code fa-margin" aria-hidden="true"></i> ' . trans('it_download_xml', '', 'Scarica XML') . '</a></li>'
+    . '<li><a href="' . site_url('invoices/validate_xml/' . $invoice_id) . '">'
+    . '<i class="fa fa-regular fa-check-square fa-margin" aria-hidden="true"></i> ' . trans('validate_xml', '', 'Verifica XML') . '</a></li>'
+    . '<li><hr class="dropdown-divider"></li>';
 
-$actions .= '<li><a href="' . site_url('delivery_notes/from/invoice/' . $invoice_id) . '">'
+$more .= '<li><a href="' . site_url('delivery_notes/from/invoice/' . $invoice_id) . '">'
     . '<i class="fa fa-solid fa-truck fa-margin" aria-hidden="true"></i> ' . trans('create_delivery_note', '', 'Crea DDT') . '</a></li>';
 
-$actions .= '<li><form action="' . site_url('invoices/send_sdi/' . $invoice_id) . '" method="POST">' . csrf_field()
+$more .= '<li><form action="' . site_url('invoices/send_sdi/' . $invoice_id) . '" method="POST">' . csrf_field()
     . '<button type="button" class="dropdown-button" data-bs-toggle="confirm"'
     . ' data-confirm-title="' . esc(trans('send_to_sdi', '', 'Invia a SdI'), 'attr') . '"'
     . ' data-confirm-body="' . esc(trans('send_to_sdi_confirm', '', 'Inviare la fattura allo SdI (Sistema di Interscambio) tramite il canale configurato?'), 'attr') . '"'
     . ' data-confirm-ok="' . esc(trans('send_to_sdi', '', 'Invia a SdI'), 'attr') . '">'
     . '<i class="fa fa-regular fa-paper-plane fa-margin" aria-hidden="true"></i> ' . trans('send_to_sdi', '', 'Invia a SdI') . '</button></form></li>';
 
-$actions .= '<li><form action="' . site_url('invoices/ajax/create_credit') . '" method="POST">' . csrf_field()
+$more .= '<li><form action="' . site_url('invoices/ajax/create_credit') . '" method="POST">' . csrf_field()
     . '<input type="hidden" name="invoice_id" value="' . $invoice_id . '">'
     . '<button type="submit" class="dropdown-button"><i class="fa fa-solid fa-plus fa-margin" aria-hidden="true"></i> '
     . trans('create_credit_invoice', '', 'Nota di credito') . '</button></form></li>'
@@ -137,7 +158,8 @@ $actions .= '<li><form action="' . site_url('invoices/ajax/create_credit') . '" 
     . trans('copy_invoice', '', 'Copia') . '</button></form></li>';
 
 if ($is_draft) {
-    $actions .= '<li><form action="' . site_url('invoices/delete/' . $invoice_id) . '" method="POST">' . csrf_field()
+    $more .= '<li><hr class="dropdown-divider"></li>'
+        . '<li><form action="' . site_url('invoices/delete/' . $invoice_id) . '" method="POST">' . csrf_field()
         . '<button type="button" class="dropdown-button" data-bs-toggle="confirm"'
         . ' data-confirm-title="' . esc(trans('confirm', '', 'Conferma'), 'attr') . '"'
         . ' data-confirm-body="' . esc(trans('delete_invoice_warning', '', 'Eliminare la fattura?'), 'attr') . '"'
@@ -145,7 +167,14 @@ if ($is_draft) {
         . '<i class="fa fa-solid fa-trash-can fa-margin" aria-hidden="true"></i> ' . trans('delete', '', 'Elimina') . '</button></form></li>';
 }
 
-$actions .= '</ul></div></div>';
+$actions .= '<div class="dropdown">'
+    . '<button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="' . esc(trans('more_actions', '', 'Altre azioni'), 'attr') . '">'
+    . '<i class="fa fa-solid fa-ellipsis-h d-md-none" aria-hidden="true"></i><span class="d-none d-md-inline">' . esc(trans('more_actions', '', 'Altre azioni')) . '</span>'
+    . '</button>'
+    . '<ul class="dropdown-menu dropdown-menu-end">' . $more . '</ul>'
+    . '</div>';
+
+$actions .= '</div>';
 ?>
 
 <?= $this->include('layout/headerbar', ['title' => $title, 'actions' => $actions]) ?>

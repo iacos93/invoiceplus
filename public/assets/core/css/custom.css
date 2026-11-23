@@ -1027,6 +1027,13 @@ body:has(.ip-topbar) {
      schermata parla la stessa lingua tipografica. */
   font-family: var(--ip-display);
 }
+/* Timbri di stato nel titolo (Pagato, Inviato, esito SdI): centrati sulla riga
+   del titolo. Con il `vertical-align: baseline` della base .badge il testo
+   dell'11 px stava 2,6 px sopra il centro ottico del titolo, e il timbro più
+   alto spostava anche la linea di base degli altri. */
+#headerbar .headerbar-title .badge {
+  vertical-align: middle;
+}
 /* Slot destinato a breadcrumb/metadata sotto il titolo (opt-in via .headerbar-meta) */
 #headerbar .headerbar-meta {
   width: 100%;
@@ -2067,10 +2074,12 @@ input[type="radio"]:disabled {
 /* Rosso solo dove l'azione distrugge qualcosa. Il rosso era sul selettore di
    base perché lì .dropdown-button era sempre e solo "Elimina"; ora che il menu
    contiene anche copia e nota di credito, tingerle tutte di rosso le faceva
-   sembrare tutte pericolose. La conferma è il segnale che distingue le due
-   famiglie: le azioni distruttive la chiedono, le altre no. */
-.dropdown-menu .dropdown-button[data-bs-toggle="confirm"] { color: var(--ip-danger); }
-.dropdown-menu .dropdown-button[data-bs-toggle="confirm"]:hover { background: var(--ip-danger-bg); }
+   sembrare tutte pericolose. A distinguere le due famiglie non è la conferma
+   (anche inviare allo SdI e sbloccare la chiedono, e finivano rosse: l'invio
+   sembrava un'eliminazione) ma il segnale data-confirm-danger, che le azioni
+   distruttive mettono. */
+.dropdown-menu .dropdown-button[data-confirm-danger="1"] { color: var(--ip-danger); }
+.dropdown-menu .dropdown-button[data-confirm-danger="1"]:hover { background: var(--ip-danger-bg); }
 /* Tabella dentro #content.table-content: .table-responsive senza bordo extra
    (padding gestito da #content.table-content qui sopra, sezione 2). */
 .table-content .table-responsive { border: 0; border-radius: 0; }
@@ -8254,11 +8263,16 @@ dall'altra) avevano quindi intestazioni di altezza diversa. */
      ("Aliquota contributi" per 2 px). fit-content dà all'etichetta la sua
      larghezza intera fino al 60%; il valore prende il resto e va a capo lui. */
   grid-template-columns: fit-content(60%) minmax(90px, 1fr);
-  gap: 6px 16px;
+  /* 8 sopra (dalla scala 4/8/12/16), 16 fra le due colonne: 6 era la misura
+     più stretta della stessa scala e nelle card lunghe del riquadro SdI le
+     righe si leggevano come un blocco unico. */
+  gap: var(--ip-space-4) var(--ip-space-7);
   margin: 0;
 }
+/* Etichetta a 500: a 13 px il 400 spariva accanto al valore, e la coppia
+   etichetta/valore si leggeva come due testi dello stesso peso. */
 .ip-preview__totals dt {
-  font-weight: 400;
+  font-weight: 500;
   font-size: var(--ip-text-base);
   color: var(--ip-text-muted);
 }
@@ -12150,8 +12164,12 @@ html[data-theme="dark"] .ip-import-outcome.is-error{ background:#2c1c19; color:#
 }
 
 /* Esito SdI nella lista: il badge può andare a capo invece di allargare la
-   colonna, e lo stato "importata" è una nota discreta (vedi invoices/index). */
-.ip-sdi-badge {
+   colonna, e lo stato "importata" è una nota discreta (vedi invoices/index).
+   L'a capo vale solo dentro la tabella: nel titolo della fattura la stessa
+   etichetta ("Trasmessa da altro gestionale") finiva su due righe, e il
+   timbro — alto 33 px contro i 22 degli altri — non stava più sulla riga del
+   titolo. */
+.ip-table-card .ip-sdi-badge {
   white-space: normal;
   max-width: 14em;
   text-align: left;

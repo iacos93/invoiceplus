@@ -69,6 +69,16 @@ Le regole per scrivere le voci e preparare una release sono in
 - "Importa dati" porta direttamente al form finché non c'è nessuna
   importazione, invece che a una cronologia vuota con un solo pulsante. Il
   collegamento "Cronologia importazioni" compare dalla prima importazione.
+- Fattura aperta: la testata dice il totale e tiene visibili solo le azioni
+  che si usano davvero (PDF e invio al cliente); «Segna come inviata» e
+  «Sollecita», i comandi XML, il DDT, la nota di credito, la copia e
+  l'eliminazione passano nel menu «Altro», come nella modifica del
+  preventivo. Prima erano otto bottoni secondari identici
+  sulla stessa riga: a 1440 px andavano su due righe e non dicevano da dove
+  cominciare. Con la fattura bloccata il PDF prende il colore pieno, perché è
+  l'azione che resta.
+- Anteprima documento: le etichette del riepilogo sono a 13 px/500 (a 400
+  sparivano accanto al valore) e le righe respirano su 8 px invece di 6.
 
 ### Corretto
 
@@ -84,6 +94,16 @@ Le regole per scrivere le voci e preparare una release sono in
 - Login: il campo in errore mostra l'anello. La regola aveva una parentesi in
   più (`box-shadow: var(--ip-shadow-focus-danger))`), quindi il browser la
   scartava come invalida e il bordo rosso restava senza contorno.
+- Fattura aperta: il timbro dell'esito SdI («Trasmessa da altro gestionale»)
+  sta su una riga accanto al numero e si centra sulla riga del titolo. Il
+  limite di larghezza che gli faceva chiudere il testo serviva alla colonna
+  della lista, e ora vale solo dentro la tabella: nel titolo il timbro andava
+  su due righe, alto 33 px contro i 22 degli altri, e scendeva sotto la linea
+  del numero e dello stato.
+- Menu a tendina: solo le voci che distruggono qualcosa sono rosse. Il colore
+  era sulla sola conferma, quindi «Invia a SdI» — che chiede conferma ma non
+  elimina niente — si leggeva come un'azione pericolosa; ora lo decide
+  `data-confirm-danger`.
 - RiBa: il gruppo conto della testata allinea verticalmente etichetta e selettore al centro.
 - RiBa: corretto il tag delle opzioni del conto, che non veniva chiuso e lasciava vuota la select anche quando era disponibile un conto idoneo.
 - Crea fattura: il metodo di pagamento tiene conto del predefinito scelto in

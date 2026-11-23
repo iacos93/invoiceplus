@@ -131,6 +131,13 @@ body:has(.ip-topbar) {
      schermata parla la stessa lingua tipografica. */
   font-family: var(--ip-display);
 }
+/* Timbri di stato nel titolo (Pagato, Inviato, esito SdI): centrati sulla riga
+   del titolo. Con il `vertical-align: baseline` della base .badge il testo
+   dell'11 px stava 2,6 px sopra il centro ottico del titolo, e il timbro più
+   alto spostava anche la linea di base degli altri. */
+#headerbar .headerbar-title .badge {
+  vertical-align: middle;
+}
 /* Slot destinato a breadcrumb/metadata sotto il titolo (opt-in via .headerbar-meta) */
 #headerbar .headerbar-meta {
   width: 100%;
@@ -1171,10 +1178,12 @@ input[type="radio"]:disabled {
 /* Rosso solo dove l'azione distrugge qualcosa. Il rosso era sul selettore di
    base perché lì .dropdown-button era sempre e solo "Elimina"; ora che il menu
    contiene anche copia e nota di credito, tingerle tutte di rosso le faceva
-   sembrare tutte pericolose. La conferma è il segnale che distingue le due
-   famiglie: le azioni distruttive la chiedono, le altre no. */
-.dropdown-menu .dropdown-button[data-bs-toggle="confirm"] { color: var(--ip-danger); }
-.dropdown-menu .dropdown-button[data-bs-toggle="confirm"]:hover { background: var(--ip-danger-bg); }
+   sembrare tutte pericolose. A distinguere le due famiglie non è la conferma
+   (anche inviare allo SdI e sbloccare la chiedono, e finivano rosse: l'invio
+   sembrava un'eliminazione) ma il segnale data-confirm-danger, che le azioni
+   distruttive mettono. */
+.dropdown-menu .dropdown-button[data-confirm-danger="1"] { color: var(--ip-danger); }
+.dropdown-menu .dropdown-button[data-confirm-danger="1"]:hover { background: var(--ip-danger-bg); }
 /* Tabella dentro #content.table-content: .table-responsive senza bordo extra
    (padding gestito da #content.table-content qui sopra, sezione 2). */
 .table-content .table-responsive { border: 0; border-radius: 0; }

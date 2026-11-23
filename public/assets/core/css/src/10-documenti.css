@@ -713,11 +713,16 @@ dall'altra) avevano quindi intestazioni di altezza diversa. */
      ("Aliquota contributi" per 2 px). fit-content dà all'etichetta la sua
      larghezza intera fino al 60%; il valore prende il resto e va a capo lui. */
   grid-template-columns: fit-content(60%) minmax(90px, 1fr);
-  gap: 6px 16px;
+  /* 8 sopra (dalla scala 4/8/12/16), 16 fra le due colonne: 6 era la misura
+     più stretta della stessa scala e nelle card lunghe del riquadro SdI le
+     righe si leggevano come un blocco unico. */
+  gap: var(--ip-space-4) var(--ip-space-7);
   margin: 0;
 }
+/* Etichetta a 500: a 13 px il 400 spariva accanto al valore, e la coppia
+   etichetta/valore si leggeva come due testi dello stesso peso. */
 .ip-preview__totals dt {
-  font-weight: 400;
+  font-weight: 500;
   font-size: var(--ip-text-base);
   color: var(--ip-text-muted);
 }
