@@ -10,12 +10,12 @@ use App\Libraries\ClientSnapshot;
  * Il trait sta su InvoiceModel, QuoteModel e DeliveryNoteModel e agisce in due
  * punti soli, scelti perché sono gli unici da cui passano tutti i percorsi:
  *
- * - doInsert/doUpdate: la copia nasce con il documento. Su update si riscrive
- *   solo se cambia il cliente (il documento viene riassegnato), non a ogni
- *   salvataggio: se no, aprire e salvare una bozza dopo aver corretto
- *   l'anagrafica rimetterebbe in circolo il nome nuovo, cioè proprio quello che
- *   la copia serve a evitare.
- * - afterFind: i campi congelati sostituiscono quelli del join su ip_clients.
+ * - doInsert/doUpdate: la copia nasce con il documento. Finché è in bozza si
+ *   rifà a ogni salvataggio, compreso quello che la segna come inviata; dopo
+ *   si riscrive solo se cambia il cliente (il documento viene riassegnato),
+ *   così correggere l'anagrafica non tocca ciò che è già uscito.
+ * - afterFind: i campi congelati sostituiscono quelli del join su ip_clients,
+ *   tranne sulle bozze, che mostrano l'anagrafica di oggi.
  *
  * Sta dopo il filtro degli allowedFields (doInsert/doUpdate arrivano già
  * filtrati), quindi client_snapshot non va aggiunto agli allowedFields: un
@@ -40,8 +40,8 @@ trait HasClientSnapshot
         // insieme resta escluso, perché la copia giusta è una per documento.
         $docId = is_array($id) && count($id) === 1 ? reset($id) : $id;
 
-        if (is_array($row) && !empty($row['client_id']) && is_numeric($docId)) {
-            $snapshot = $this->clientSnapshotOnClientChange((int) $docId, (int) $row['client_id']);
+        if (is_array($row) && is_numeric($docId)) {
+            $snapshot = $this->clientSnapshotForUpdate((int) $docId, (int) ($row['client_id'] ?? 0));
 
             if ($snapshot !== null) {
                 $row['client_snapshot'] = $snapshot;
@@ -52,16 +52,55 @@ trait HasClientSnapshot
     }
 
     /**
-     * Copia da scrivere quando una update porta con sé un client_id: null se
-     * il cliente è lo stesso di sempre e la copia va lasciata com'è.
+     * Colonna di stato e valore che vuol dire "bozza", per le tabelle che
+     * hanno una bozza. Il DDT non ce l'ha: nasce già consegnato, e la sua
+     * copia resta quella della creazione.
+     *
+     * @return array{0: string, 1: int}|null
      */
-    private function clientSnapshotOnClientChange(int $id, int $clientId): ?string
+    private function clientSnapshotDraftStatus(): ?array
     {
+        return match ($this->table) {
+            'ip_invoices' => ['invoice_status_id', 1],
+            'ip_quotes'   => ['quote_status_id', 1],
+            default       => null,
+        };
+    }
+
+    /**
+     * Copia da scrivere con questa update, o null per lasciarla com'è.
+     *
+     * Finché il documento è in bozza la copia si rifà a ogni salvataggio: una
+     * bozza non è ancora uscita, e se nel frattempo si corregge la partita IVA
+     * in anagrafica deve partire con quella giusta, non con quella del giorno
+     * in cui è stata creata. Lo stato letto è quello prima dell'update, quindi
+     * anche il salvataggio che la segna come inviata rifà la copia: è lì che
+     * l'intestazione si ferma. Dopo, la copia cambia solo se cambia il cliente.
+     */
+    private function clientSnapshotForUpdate(int $id, int $clientId): ?string
+    {
+        $draft = $this->clientSnapshotDraftStatus();
+        $fields = 'client_id, client_snapshot' . ($draft !== null ? ', ' . $draft[0] : '');
+
         $stored = $this->db->table($this->table)
-            ->select('client_snapshot')
+            ->select($fields)
             ->where($this->primaryKey, $id)
             ->get()
             ->getRowArray();
+
+        if ($stored === null) {
+            return null;
+        }
+
+        $targetClient = $clientId ?: (int) ($stored['client_id'] ?? 0);
+
+        if ($draft !== null && (int) ($stored[$draft[0]] ?? 0) === $draft[1]) {
+            return ClientSnapshot::capture($targetClient);
+        }
+
+        if ($clientId === 0) {
+            return null;
+        }
 
         $snapshot = ClientSnapshot::decode($stored['client_snapshot'] ?? null);
 
@@ -88,17 +127,43 @@ trait HasClientSnapshot
         }
 
         if (!empty($event['singleton'])) {
-            $event['data'] = ClientSnapshot::apply($data);
+            $event['data'] = $this->applySnapshotUnlessDraft($data);
 
             return $event;
         }
 
         foreach ($data as $key => $row) {
             if (is_array($row) || is_object($row)) {
-                $event['data'][$key] = ClientSnapshot::apply($row);
+                $event['data'][$key] = $this->applySnapshotUnlessDraft($row);
             }
         }
 
         return $event;
+    }
+
+    /**
+     * Una bozza mostra l'anagrafica di oggi anche se la sua copia è più
+     * vecchia: la copia di una bozza si aggiorna solo quando la si salva, e
+     * chi corregge il cliente e riapre la bozza deve già vedere la correzione.
+     * Se la riga non porta la colonna di stato (select ridotte), si applica la
+     * copia: nel dubbio vale l'intestazione congelata.
+     *
+     * @param array<string, mixed>|object $row
+     *
+     * @return array<string, mixed>|object
+     */
+    private function applySnapshotUnlessDraft($row)
+    {
+        $draft = $this->clientSnapshotDraftStatus();
+
+        if ($draft !== null) {
+            $status = is_array($row) ? ($row[$draft[0]] ?? null) : ($row->{$draft[0]} ?? null);
+
+            if ($status !== null && (int) $status === $draft[1]) {
+                return $row;
+            }
+        }
+
+        return ClientSnapshot::apply($row);
     }
 }
