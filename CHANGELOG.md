@@ -137,6 +137,10 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Bacheca, grafico dell'Indice di redditività: la banda che si tinge al passaggio
+  del mouse su un mese toccava il bordo superiore e inferiore del riquadro; ora
+  ha margine sopra e sotto (12 px per lato), come la banda ha già il margine
+  laterale.
 - Pulsanti divisi (Esporta, Nuovo cliente/fornitore e gli altri con la freccia
   del menu): il filetto interno che separa la freccia dal testo era applicato a
   ogni variante e si sommava al bordo già condiviso dai due pezzi, dando un
