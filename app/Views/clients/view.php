@@ -162,19 +162,6 @@ $actions = '<div class="btn-group btn-group-sm">'
         <div id="clientDetails" class="tab-pane tab-rich-content active" role="tabpanel" aria-labelledby="tab-clientDetails" tabindex="0">
 
             <?php
-            // Monogramma anagrafico: le iniziali del nome (o della ragione
-            // sociale) diventano l'avatar della "tessera" del cliente, come
-            // l'avatar utente in testata ma in versione squircle brand.
-            $mono_source = $client['client_surname'] != ''
-                ? ($client['client_name'] . ' ' . $client['client_surname'])
-                : (string) $client['client_name'];
-            // Persona con cognome a parte: un'iniziale dal nome e una dal
-            // cognome ("Maria Angela" + "Zema" = MZ, non MA).
-            $monogram    = $client['client_surname'] != ''
-                ? mb_substr(name_monogram((string) $client['client_name']), 0, 1)
-                    . mb_substr(name_monogram((string) $client['client_surname']), 0, 1)
-                : name_monogram($mono_source);
-
             // Indirizzo in linea singola per la testata anagrafica.
             $loc_parts = array_filter([
                 $client['client_address_1'],
@@ -200,11 +187,6 @@ $actions = '<div class="btn-group btn-group-sm">'
                  prima andavano aperti in modifica per leggerli. -->
             <div class="card ip-client-masthead mb-3">
                 <div class="ip-client-masthead__body">
-                    <?php /* La piastrella è 62px: tre iniziali ci stanno solo
-                             stringendo il carattere, e il modificatore dice al
-                             CSS quante ne sono arrivate. */ ?>
-                    <div class="ip-client-mono ip-client-mono--<?= mb_strlen($monogram) ?>" aria-hidden="true"><?= esc($monogram) ?></div>
-
                     <div class="ip-client-id">
                         <h2 class="ip-client-name"><?= esc(format_client($client)) ?></h2>
                         <div class="ip-client-id__meta">

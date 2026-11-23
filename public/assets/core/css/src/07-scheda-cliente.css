@@ -93,35 +93,15 @@
    19b. Scheda cliente — masthead anagrafico e riepilogo rinnovati
    -------------------------------------------------------------------------- */
 
-/* Tessera anagrafica: il biglietto da visita del cliente. Avatar monogramma,
-   identità testuale e — a destra — la piastra dei codici fiscali. */
+/* Tessera anagrafica: il biglietto da visita del cliente. Identità testuale
+   e — a destra — la piastra dei codici fiscali. Il monogramma con le iniziali
+   non c'è più: ripeteva il nome scritto accanto e, sulle ragioni sociali,
+   dava sigle sbagliate («2WARE S.R.L.» → «2S»). */
 .ip-client-masthead__body {
   display: flex;
   gap: var(--ip-space-9);
   align-items: flex-start;
   padding: 22px 24px;
-}
-.ip-client-mono {
-  flex: 0 0 auto;
-  width: 62px;
-  height: 62px;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
-  font-family: var(--ip-display);
-  font-weight: 600;
-  font-size: 26px;
-  letter-spacing: -0.02em;
-  color: var(--ip-on-primary);
-  background: linear-gradient(140deg, var(--ip-primary), var(--ip-primary-dark));
-  box-shadow: var(--ip-shadow-sm);
-}
-/* Tre iniziali ("ICS Duca d'Aosta" → IDA) nella stessa piastrella: a 26px la
-   terza lettera uscirebbe dal quadrato, quindi il carattere scende e il
-   tracking si stringe finché le tre lettere tornano centrate. */
-.ip-client-mono--3 {
-  font-size: 19px;
-  letter-spacing: -0.01em;
 }
 .ip-client-id {
   flex: 1 1 auto;

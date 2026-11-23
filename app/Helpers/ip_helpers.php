@@ -1775,63 +1775,6 @@ if (!function_exists('item_vat_label')) {
     }
 }
 
-if (!function_exists('name_monogram')) {
-    /**
-     * Monogramma di un nome o di una ragione sociale: le iniziali delle prime
-     * parole che contano, due o tre secondo quante ne ha ($max).
-     *
-     * Prendere le prime due parole qualunque dava "CD" per «Comune di
-     * Monte Alto»: la preposizione finiva nel monogramma al posto del
-     * nome vero. Articoli, preposizioni e congiunzioni si saltano, e di ogni
-     * parola conta la prima lettera o cifra, così virgolette e parentesi
-     * («Scuola "Verdi"») non diventano un'iniziale. Se dopo il filtro non
-     * resta nulla (un nome fatto solo di particelle) si torna alle parole
-     * così come sono.
-     */
-    function name_monogram(string $name, int $max = 3): string
-    {
-        $skip = ['di', 'de', 'del', 'dello', 'della', 'dei', 'degli', 'delle', 'da', 'dal', 'dalla',
-            'e', 'ed', 'il', 'lo', 'la', 'i', 'gli', 'le', 'a', 'al', 'alla', 'in', 'per', 'con', 'su',
-            'and', 'of', 'the'];
-
-        $all = [];
-        $significant = [];
-
-        foreach (preg_split('/[\s\-\/]+/u', trim($name)) ?: [] as $word) {
-            // L'articolo eliso resta attaccato alla parola ("d'Aosta"): la sua
-            // lettera non è un'iniziale, e prenderla dava "IDD" per «ICS Duca
-            // d'Aosta». Si toglie prima, così conta la lettera che si legge.
-            $word  = preg_replace("/^[\p{L}]'/u", '', $word) ?? $word;
-            // Solo lettere e cifre: "d'Italia" resta "Italia", «"Verdi"» "Verdi".
-            $clean = preg_replace('/[^\p{L}\p{N}]+/u', '', $word) ?? '';
-
-            if ($clean === '') {
-                continue;
-            }
-
-            $all[] = $clean;
-
-            if (!in_array(mb_strtolower($clean), $skip, true)) {
-                $significant[] = $clean;
-            }
-        }
-
-        // Fino a tre iniziali, non due: le ragioni sociali lunghe si mangiano le
-        // prime due ("ICS Duca d'Aosta", "ICS Giovanni XXIII", "ICS Filippo
-        // Maria Beltrami" diventavano tutte e tre "IC") e nella scheda il
-        // monogramma smetteva di distinguere un cliente dall'altro. Con due
-        // parole significative il risultato resta quello di prima, quindi chi
-        // ha un nome corto non vede cambiare nulla.
-        $monogram = '';
-
-        foreach (array_slice($significant ?: $all, 0, $max) as $word) {
-            $monogram .= mb_substr($word, 0, 1);
-        }
-
-        return $monogram === '' ? '?' : mb_strtoupper($monogram);
-    }
-}
-
 if (!function_exists('format_client')) {
     /**
      * Nome completo del cliente (nome + cognome se presente),

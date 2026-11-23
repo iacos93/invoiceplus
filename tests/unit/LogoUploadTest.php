@@ -117,25 +117,4 @@ final class LogoUploadTest extends CIUnitTestCase
         $this->assertStringNotContainsString('1000', $out);
         $this->assertSame('<svg><g/></svg>', svg_size_from_viewbox('<svg><g/></svg>'));
     }
-
-    public function testMonogramSkipsParticles(): void
-    {
-        helper('ip');
-
-        // Tre parole che contano, tre iniziali: con due, nella scheda cliente,
-        // tre istituti comprensivi diversi si presentavano tutti come "IC".
-        $this->assertSame('CMA', name_monogram('Comune di Monte Alto'));
-        $this->assertSame('MAZ', name_monogram('Maria Angela Zema'));
-        $this->assertSame('IDA', name_monogram("ICS Duca d'Aosta"));
-        $this->assertSame('IFM', name_monogram('ICS Filippo Maria Beltrami'));
-        // Due parole significative: il risultato resta quello di prima.
-        $this->assertSame('SV', name_monogram('Scuola "Verdi"'));
-        $this->assertSame('N', name_monogram('Novatech'));
-        $this->assertSame('DI', name_monogram('di il'));
-        $this->assertSame('?', name_monogram('  '));
-        // Il tetto si può abbassare: la scheda utente ha una piastrella più
-        // piccola e resta a due (chiamata esplicita, non default).
-        $this->assertSame('CM', name_monogram('Comune di Monte Alto', 2));
-        $this->assertSame('CMAN', name_monogram('Comune di Monte Alto Nord', 4));
-    }
 }

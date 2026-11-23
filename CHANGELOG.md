@@ -33,6 +33,10 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Modificato
 
+- Scheda cliente: tolta la piastrella con le iniziali in testata. Ripeteva il
+  nome scritto accanto e sulle ragioni sociali dava sigle sbagliate («2WARE
+  S.R.L.» diventava «2S»).
+
 - Colori: nel calendario le scadenze passate hanno un'icona e la parola
   «Scaduta» per lo screen reader, non solo il rosso; l'etichetta «uscita» della
   riconciliazione passa a un viola leggibile (5,2:1 invece di 4,4:1); nel tema
