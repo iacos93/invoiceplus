@@ -137,6 +137,12 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Pulsanti divisi (Esporta, Nuovo cliente/fornitore e gli altri con la freccia
+  del menu): il filetto interno che separa la freccia dal testo era applicato a
+  ogni variante e si sommava al bordo già condiviso dai due pezzi, dando un
+  doppio bordo nel mezzo. Ora il filetto compare solo sul pulsante primario
+  (dove il bordo è del colore del pulsante e non si vede), mentre sul
+  secondario resta il solo bordo di Bootstrap.
 - Telefono: i controlli a tendina restano alla scala compatta. La regola che
   porta i campi a 16 px per fermare lo zoom di iOS si applicava anche al
   bottone che sostituisce il select, che è un comando e non un campo: nella
