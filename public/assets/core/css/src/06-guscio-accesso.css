@@ -90,10 +90,19 @@
   background: var(--ip-navbar-hover);
   color: #fff;
 }
-.ip-topbar .ip-sidebar-toggle:focus-visible,
-.ip-topbar .ip-topbar-link:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.75);
-  outline-offset: 1px;
+/* Sulla barra scura il blu di --ip-focus-ring sta a 3,2:1, al limite: qui
+   l'anello prende il colore del testo della barra e regge in entrambi i temi,
+   perche' la topbar non cambia colore. Il token e' ridichiarato sui singoli
+   comandi e non su .ip-topbar: il pannello utente e' chiaro ed e' annidato
+   nella barra, non deve ereditare un anello bianco. */
+.ip-topbar .ip-sidebar-toggle,
+.ip-topbar .ip-topbar-link,
+.ip-topbar .ip-brand,
+.ip-topbar .ip-install-btn,
+.ip-topbar .ip-user-button,
+.ip-topbar-right > .ip-theme-toggle {
+  --ip-focus-ring: 2px solid rgba(255, 255, 255, 0.75);
+  --ip-focus-offset: 1px;
 }
 /* La dropdown utente resta su fondo chiaro: e' un pannello, non la barra. */
 .ip-topbar .dropdown-menu { color: var(--ip-text); }
@@ -737,23 +746,16 @@ tr.empty-row .empty-actions .empty-cta { margin: 0; }
    6. Accessibilità — focus visibile e riduzione del movimento
    -------------------------------------------------------------------------- */
 
-/* :not(...) esclude gli elementi che hanno già un proprio border-radius
-   (input, select, bottoni, i nostri componenti custom): il border-radius:2px
-   qui sotto sovrascriveva il loro raggio appena andavano a fuoco, facendo
-   "scattare" gli angoli (bordo squadrato mentre lo stato :focus è attivo).
-   Anche i due input dei componenti JS (ricerca globale, filtro IPSelect)
-   sono esclusi: hanno già il loro anello di focus dedicato. */
+/* :not(...) esclude chi ha già un anello proprio — bottoni, campi, i due
+   input dei componenti JS (ricerca globale, filtro IPSelect) — altrimenti
+   ne riceverebbe due. Per gli altri l'anello arriva dal token e segue il
+   raggio dell'elemento: il `border-radius: 2px` che stava qui squadrava gli
+   angoli al momento del fuoco, e su una voce arrotondata l'anello restava
+   più squadrato dell'elemento. Il colore è nel token perché chi sta su un
+   fondo scuro (la topbar) lo ridichiara sui propri comandi. */
 :focus-visible:not(.btn):not(.form-control):not(select):not(.ip-select__control):not(.ip-datepicker-input):not(.ip-global-search__input):not(.ip-select-panel__input) {
-  outline: 2px solid var(--ip-primary);
-  outline-offset: 1px;
-  border-radius: 2px;
-}
-.btn:focus-visible,
-.form-control:focus-visible,
-select.form-control:focus-visible,
-select.form-select:focus-visible {
-  outline: 0;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -908,8 +910,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   border-radius: var(--ip-radius-sm);
 }
 .ip-auth-form-box .btn-primary:focus-visible {
-  outline: none;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 /* Separatore "oppure" fra form e login passkey: riga su entrambi i lati,
    come nelle card di autenticazione moderne, senza introdurre markup extra. */
@@ -1025,8 +1027,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
               box-shadow var(--ip-transition),
               background-color var(--ip-transition);
 }
-/* Niente anello (--ip-shadow-focus) qui: su una casella così piccola
-   (44×52px, radius 4px) il bordo di 1px più l'anello di 3px a bordo netto
+/* Niente anello (--ip-focus-ring) qui: su una casella così piccola
+   (44×52px, radius 4px) il bordo di 1px più l'anello di 2px a bordo netto
    si leggevano come due contorni concentrici invece che come un alone
    morbido. Il focus resta comunque chiaro con bordo scuro + sfondo tinto. */
 .ip-code-slot:focus {
@@ -1088,9 +1090,9 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   background: var(--ip-hover);
 }
 .ip-mfa-method-btn:focus-visible {
-  outline: none;
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-mfa-method-btn__icon {
   width: 40px;
@@ -1202,7 +1204,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-auth-form-box .form-control.is-invalid,
 .ip-auth-form-box .form-control.is-invalid:focus {
   border-color: var(--ip-danger);
-  box-shadow: var(--ip-shadow-focus-danger));
+  outline: 2px solid var(--ip-danger);
+  outline-offset: 2px;
 }
 /* Campo codice di recupero: la cifra stampata in mono, come gli importi. */
 .ip-auth-form-box .form-control.is-mono {
@@ -1275,8 +1278,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 }
 .ip-secret-line button:hover { color: var(--ip-text); background: var(--ip-hover); }
 .ip-secret-line button:focus-visible {
-  outline: none;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-backup-grid {
   display: grid;
@@ -1402,8 +1405,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-factor-danger summary::-webkit-details-marker { display: none; }
 .ip-factor-danger summary:hover { text-decoration: underline; }
 .ip-factor-danger summary:focus-visible {
-  outline: none;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
   border-radius: var(--ip-radius-sm);
 }
 /* Riepilogo stato in cima alla pagina: uno scudo tinta il livello e tre chip

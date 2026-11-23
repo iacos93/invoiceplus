@@ -72,6 +72,18 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Da tastiera si vede dove si è: l'anello di focus era un nero al 14%,
+  circa 1,2:1 sul bianco, sotto il 3:1 che le WCAG chiedono a un indicatore di
+  focus — sui bottoni pieni spariva e su quelli chiari si leggeva come un
+  bordo. Ora è un outline di 2 px di `--ip-primary` (5,5:1) staccato dal bordo
+  di 2 px; sui comandi della topbar, che è scura in entrambi i temi, il colore
+  diventa bianco. L'anello non dipende più dal colore della superficie sotto
+  l'elemento: era uno strato di ombra colorato come la card e sui fondi scuri
+  disegnava una fascia bianca. In più il contorno segue il raggio
+  dell'elemento, che non viene più squadrato a 2 px mentre è a fuoco.
+- Login: il campo in errore mostra l'anello. La regola aveva una parentesi in
+  più (`box-shadow: var(--ip-shadow-focus-danger))`), quindi il browser la
+  scartava come invalida e il bordo rosso restava senza contorno.
 - RiBa: il gruppo conto della testata allinea verticalmente etichetta e selettore al centro.
 - RiBa: corretto il tag delle opzioni del conto, che non veniva chiuso e lasciava vuota la select anche quando era disponibile un conto idoneo.
 - Crea fattura: il metodo di pagamento tiene conto del predefinito scelto in

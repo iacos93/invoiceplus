@@ -560,15 +560,19 @@ hr {
   border-color: var(--bs-btn-hover-border-color);
 }
 /* Anello focus da tastiera coerente su tutta l'app: link, bottoni e i nostri
-   controlli custom condividono lo stesso --ip-shadow-focus delle input, cosi'
-   la navigazione da tastiera resta sempre leggibile. */
+   controlli custom condividono lo stesso --ip-focus-ring delle input, cosi'
+   la navigazione da tastiera resta sempre leggibile. E' un outline, non
+   un'ombra colorata come la superficie: la topbar e' scura in entrambi i temi. */
 a:focus-visible,
 .btn:focus-visible,
 .ip-select__control:focus-visible,
 .ip-nav-link:focus-visible,
 .ip-nav-sub-link:focus-visible {
-  outline: none;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
+  /* Bootstrap aggiungerebbe il suo alone blu su :focus-visible: due
+     indicatori sovrapposti, uno dei quali chiaro sui fondi scuri. */
+  box-shadow: none;
 }
 /* Alias BS5: .btn-secondary e' il sostituto di .btn-default.
    Bordo un gradino più marcato di --ip-border: su fondo card (bianco su bianco)
@@ -771,8 +775,9 @@ select.form-select:hover {
 select.form-control:focus,
 select.form-select:focus {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
+  box-shadow: none;   /* alone Bootstrap sostituito dall'anello */
 }
 /* Select native <select class="form-control"> (markup legacy BS3) —
    niente freccia di sistema, padding destro per hover coerente con .form-select BS5. */
@@ -996,8 +1001,9 @@ input[type="checkbox"]:indeterminate {
 input[type="checkbox"]:focus-visible,
 input[type="radio"]:focus-visible {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
+  box-shadow: none;
 }
 .form-check-input:disabled,
 input[type="checkbox"]:disabled,
@@ -1155,7 +1161,9 @@ input[type="radio"]:disabled {
   color: var(--ip-text);
 }
 .options.btn-group > .btn-secondary.dropdown-toggle:focus-visible {
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
+  box-shadow: none;
 }
 .options.btn-group .dropdown-menu { min-width: 180px; }
 .options.btn-group .dropdown-menu > li > a > i.fa.fa-margin { width: 16px; text-align: center; }

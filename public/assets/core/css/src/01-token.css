@@ -344,7 +344,6 @@ a:hover {
   /* Tinte di servizio che erano riferite senza essere definite. */
   --ip-bg-subtle:     #f2f4f6;   /* riga in trascinamento */
   --ip-warning-border:#f0ad4e;   /* barra del feed calendario senza token */
-  --ip-shadow-focus-danger: 0 0 0 3px color-mix(in srgb, var(--ip-danger) 15%, transparent);
   --ip-level:         0;         /* rientro dei sottoconti, sovrascritto inline */
   --ip-bulk-bar-h:    0px;       /* altezza della barra azioni, misurata da JS */
 
@@ -457,7 +456,16 @@ a:hover {
   --ip-card-foot-y:  10px;
   --ip-sidebar-width: 236px;
   --ip-shadow-sm:     0 1px 2px 0 rgba(24, 24, 27, 0.05);
-  --ip-shadow-focus:  0 0 0 3px rgba(24, 24, 27, 0.14);
+  /* Anello di focus leggibile e indipendente dalla superficie. Era un nero al
+     14% (circa 1,2:1 sul bianco, sotto il 3:1 che le WCAG 2.4.11 chiedono a un
+     indicatore); poi due strati di ombra, il primo colorato di --ip-bg-card,
+     che sui fondi scuri (la topbar, e in tema scuro card e sidebar)
+     disegnava una fascia bianca. Ora e' un outline: sta fuori dal bordo, il suo offset e'
+     trasparente e lo stacco lo mostra il fondo vero, qualunque esso sia. Sui
+     bottoni pieni l'offset serve: un anello blu a contatto con un bottone blu
+     non si vede. */
+  --ip-focus-ring:    2px solid var(--ip-primary);
+  --ip-focus-offset:  2px;
   /* Scala di elevazione: --ip-shadow-md per pannelli fluttuanti (modali,
      dropdown, IPSelect/IPDatepicker gia' usano la propria), --ip-shadow-lg per
      overlay/drag. Prima l'unica ombra era --ip-shadow-sm: aprendo più livelli
@@ -542,7 +550,6 @@ html[data-theme="dark"] {
   --ip-on-neutral:        var(--ip-bg);    /* chip neutri: in scuro il grigio pieno è chiaro */
   --ip-bg-subtle:         #1a2131;
   --ip-warning-border:    #7a5520;
-  --ip-shadow-focus-danger: 0 0 0 3px color-mix(in srgb, var(--ip-danger) 30%, transparent);
 
   /* Tinte di stato adattate: il vermiglio/verde/ambra originali su fondo
      scuro non reggevano il contrasto, qui le varianti più chiare. */
@@ -601,7 +608,8 @@ html[data-theme="dark"] {
   --ip-navbar-hover:      rgba(255, 255, 255, 0.10);
 
   --ip-shadow-sm:         0 1px 2px 0 rgba(0, 0, 0, 0.45);
-  --ip-shadow-focus:      0 0 0 3px color-mix(in srgb, var(--ip-primary) 18%, transparent);
+  --ip-focus-ring:        2px solid var(--ip-primary);
+  --ip-focus-offset:      2px;
   --ip-shadow-md:         0 6px 16px -4px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.30);
   --ip-shadow-lg:         0 22px 56px -14px rgba(0, 0, 0, 0.70), 0 8px 20px rgba(0, 0, 0, 0.45);
   --ip-preview-bg:        #0f0f12;    /* fondo "carta" dell'anteprima */

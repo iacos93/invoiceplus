@@ -346,7 +346,6 @@ a:hover {
   /* Tinte di servizio che erano riferite senza essere definite. */
   --ip-bg-subtle:     #f2f4f6;   /* riga in trascinamento */
   --ip-warning-border:#f0ad4e;   /* barra del feed calendario senza token */
-  --ip-shadow-focus-danger: 0 0 0 3px color-mix(in srgb, var(--ip-danger) 15%, transparent);
   --ip-level:         0;         /* rientro dei sottoconti, sovrascritto inline */
   --ip-bulk-bar-h:    0px;       /* altezza della barra azioni, misurata da JS */
 
@@ -459,7 +458,16 @@ a:hover {
   --ip-card-foot-y:  10px;
   --ip-sidebar-width: 236px;
   --ip-shadow-sm:     0 1px 2px 0 rgba(24, 24, 27, 0.05);
-  --ip-shadow-focus:  0 0 0 3px rgba(24, 24, 27, 0.14);
+  /* Anello di focus leggibile e indipendente dalla superficie. Era un nero al
+     14% (circa 1,2:1 sul bianco, sotto il 3:1 che le WCAG 2.4.11 chiedono a un
+     indicatore); poi due strati di ombra, il primo colorato di --ip-bg-card,
+     che sui fondi scuri (la topbar, e in tema scuro card e sidebar)
+     disegnava una fascia bianca. Ora e' un outline: sta fuori dal bordo, il suo offset e'
+     trasparente e lo stacco lo mostra il fondo vero, qualunque esso sia. Sui
+     bottoni pieni l'offset serve: un anello blu a contatto con un bottone blu
+     non si vede. */
+  --ip-focus-ring:    2px solid var(--ip-primary);
+  --ip-focus-offset:  2px;
   /* Scala di elevazione: --ip-shadow-md per pannelli fluttuanti (modali,
      dropdown, IPSelect/IPDatepicker gia' usano la propria), --ip-shadow-lg per
      overlay/drag. Prima l'unica ombra era --ip-shadow-sm: aprendo più livelli
@@ -544,7 +552,6 @@ html[data-theme="dark"] {
   --ip-on-neutral:        var(--ip-bg);    /* chip neutri: in scuro il grigio pieno è chiaro */
   --ip-bg-subtle:         #1a2131;
   --ip-warning-border:    #7a5520;
-  --ip-shadow-focus-danger: 0 0 0 3px color-mix(in srgb, var(--ip-danger) 30%, transparent);
 
   /* Tinte di stato adattate: il vermiglio/verde/ambra originali su fondo
      scuro non reggevano il contrasto, qui le varianti più chiare. */
@@ -603,7 +610,8 @@ html[data-theme="dark"] {
   --ip-navbar-hover:      rgba(255, 255, 255, 0.10);
 
   --ip-shadow-sm:         0 1px 2px 0 rgba(0, 0, 0, 0.45);
-  --ip-shadow-focus:      0 0 0 3px color-mix(in srgb, var(--ip-primary) 18%, transparent);
+  --ip-focus-ring:        2px solid var(--ip-primary);
+  --ip-focus-offset:      2px;
   --ip-shadow-md:         0 6px 16px -4px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.30);
   --ip-shadow-lg:         0 22px 56px -14px rgba(0, 0, 0, 0.70), 0 8px 20px rgba(0, 0, 0, 0.45);
   --ip-preview-bg:        #0f0f12;    /* fondo "carta" dell'anteprima */
@@ -1448,15 +1456,19 @@ hr {
   border-color: var(--bs-btn-hover-border-color);
 }
 /* Anello focus da tastiera coerente su tutta l'app: link, bottoni e i nostri
-   controlli custom condividono lo stesso --ip-shadow-focus delle input, cosi'
-   la navigazione da tastiera resta sempre leggibile. */
+   controlli custom condividono lo stesso --ip-focus-ring delle input, cosi'
+   la navigazione da tastiera resta sempre leggibile. E' un outline, non
+   un'ombra colorata come la superficie: la topbar e' scura in entrambi i temi. */
 a:focus-visible,
 .btn:focus-visible,
 .ip-select__control:focus-visible,
 .ip-nav-link:focus-visible,
 .ip-nav-sub-link:focus-visible {
-  outline: none;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
+  /* Bootstrap aggiungerebbe il suo alone blu su :focus-visible: due
+     indicatori sovrapposti, uno dei quali chiaro sui fondi scuri. */
+  box-shadow: none;
 }
 /* Alias BS5: .btn-secondary e' il sostituto di .btn-default.
    Bordo un gradino più marcato di --ip-border: su fondo card (bianco su bianco)
@@ -1659,8 +1671,9 @@ select.form-select:hover {
 select.form-control:focus,
 select.form-select:focus {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
+  box-shadow: none;   /* alone Bootstrap sostituito dall'anello */
 }
 /* Select native <select class="form-control"> (markup legacy BS3) —
    niente freccia di sistema, padding destro per hover coerente con .form-select BS5. */
@@ -1884,8 +1897,9 @@ input[type="checkbox"]:indeterminate {
 input[type="checkbox"]:focus-visible,
 input[type="radio"]:focus-visible {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
+  box-shadow: none;
 }
 .form-check-input:disabled,
 input[type="checkbox"]:disabled,
@@ -2043,7 +2057,9 @@ input[type="radio"]:disabled {
   color: var(--ip-text);
 }
 .options.btn-group > .btn-secondary.dropdown-toggle:focus-visible {
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
+  box-shadow: none;
 }
 .options.btn-group .dropdown-menu { min-width: 180px; }
 .options.btn-group .dropdown-menu > li > a > i.fa.fa-margin { width: 16px; text-align: center; }
@@ -2193,8 +2209,8 @@ input[type="radio"]:disabled {
 .ip-select__control:focus-visible,
 .ip-select.is-open .ip-select__control {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-select__control:disabled {
   background-color: var(--ip-bg);
@@ -2269,8 +2285,8 @@ input[type="radio"]:disabled {
 }
 .ip-select-panel__input:focus {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-select-panel__list {
   max-height: 260px;
@@ -2502,8 +2518,8 @@ input[type="radio"]:disabled {
 .ip-file__control:focus-visible,
 .ip-file.is-focused .ip-file__control {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-file__control:disabled {
   background-color: var(--ip-bg);
@@ -3561,8 +3577,8 @@ html[data-theme="dark"] .ip-chart-month.is-active .ip-chart-label { fill: #fffff
 }
 .ip-table-card-search.ip-live-search input.form-control:focus {
   border-color: var(--ip-primary);
-  outline: 0;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 @media (max-width: 575.98px) {
   /* Header stack verticale su mobile: titolo riga, ricerca a tutta larghezza. */
@@ -4021,10 +4037,19 @@ html[data-theme="dark"] .ip-chart-month.is-active .ip-chart-label { fill: #fffff
   background: var(--ip-navbar-hover);
   color: #fff;
 }
-.ip-topbar .ip-sidebar-toggle:focus-visible,
-.ip-topbar .ip-topbar-link:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.75);
-  outline-offset: 1px;
+/* Sulla barra scura il blu di --ip-focus-ring sta a 3,2:1, al limite: qui
+   l'anello prende il colore del testo della barra e regge in entrambi i temi,
+   perche' la topbar non cambia colore. Il token e' ridichiarato sui singoli
+   comandi e non su .ip-topbar: il pannello utente e' chiaro ed e' annidato
+   nella barra, non deve ereditare un anello bianco. */
+.ip-topbar .ip-sidebar-toggle,
+.ip-topbar .ip-topbar-link,
+.ip-topbar .ip-brand,
+.ip-topbar .ip-install-btn,
+.ip-topbar .ip-user-button,
+.ip-topbar-right > .ip-theme-toggle {
+  --ip-focus-ring: 2px solid rgba(255, 255, 255, 0.75);
+  --ip-focus-offset: 1px;
 }
 /* La dropdown utente resta su fondo chiaro: e' un pannello, non la barra. */
 .ip-topbar .dropdown-menu { color: var(--ip-text); }
@@ -4668,23 +4693,16 @@ tr.empty-row .empty-actions .empty-cta { margin: 0; }
    6. Accessibilità — focus visibile e riduzione del movimento
    -------------------------------------------------------------------------- */
 
-/* :not(...) esclude gli elementi che hanno già un proprio border-radius
-   (input, select, bottoni, i nostri componenti custom): il border-radius:2px
-   qui sotto sovrascriveva il loro raggio appena andavano a fuoco, facendo
-   "scattare" gli angoli (bordo squadrato mentre lo stato :focus è attivo).
-   Anche i due input dei componenti JS (ricerca globale, filtro IPSelect)
-   sono esclusi: hanno già il loro anello di focus dedicato. */
+/* :not(...) esclude chi ha già un anello proprio — bottoni, campi, i due
+   input dei componenti JS (ricerca globale, filtro IPSelect) — altrimenti
+   ne riceverebbe due. Per gli altri l'anello arriva dal token e segue il
+   raggio dell'elemento: il `border-radius: 2px` che stava qui squadrava gli
+   angoli al momento del fuoco, e su una voce arrotondata l'anello restava
+   più squadrato dell'elemento. Il colore è nel token perché chi sta su un
+   fondo scuro (la topbar) lo ridichiara sui propri comandi. */
 :focus-visible:not(.btn):not(.form-control):not(select):not(.ip-select__control):not(.ip-datepicker-input):not(.ip-global-search__input):not(.ip-select-panel__input) {
-  outline: 2px solid var(--ip-primary);
-  outline-offset: 1px;
-  border-radius: 2px;
-}
-.btn:focus-visible,
-.form-control:focus-visible,
-select.form-control:focus-visible,
-select.form-select:focus-visible {
-  outline: 0;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -4839,8 +4857,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   border-radius: var(--ip-radius-sm);
 }
 .ip-auth-form-box .btn-primary:focus-visible {
-  outline: none;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 /* Separatore "oppure" fra form e login passkey: riga su entrambi i lati,
    come nelle card di autenticazione moderne, senza introdurre markup extra. */
@@ -4956,8 +4974,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
               box-shadow var(--ip-transition),
               background-color var(--ip-transition);
 }
-/* Niente anello (--ip-shadow-focus) qui: su una casella così piccola
-   (44×52px, radius 4px) il bordo di 1px più l'anello di 3px a bordo netto
+/* Niente anello (--ip-focus-ring) qui: su una casella così piccola
+   (44×52px, radius 4px) il bordo di 1px più l'anello di 2px a bordo netto
    si leggevano come due contorni concentrici invece che come un alone
    morbido. Il focus resta comunque chiaro con bordo scuro + sfondo tinto. */
 .ip-code-slot:focus {
@@ -5019,9 +5037,9 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
   background: var(--ip-hover);
 }
 .ip-mfa-method-btn:focus-visible {
-  outline: none;
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-mfa-method-btn__icon {
   width: 40px;
@@ -5133,7 +5151,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-auth-form-box .form-control.is-invalid,
 .ip-auth-form-box .form-control.is-invalid:focus {
   border-color: var(--ip-danger);
-  box-shadow: var(--ip-shadow-focus-danger));
+  outline: 2px solid var(--ip-danger);
+  outline-offset: 2px;
 }
 /* Campo codice di recupero: la cifra stampata in mono, come gli importi. */
 .ip-auth-form-box .form-control.is-mono {
@@ -5206,8 +5225,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 }
 .ip-secret-line button:hover { color: var(--ip-text); background: var(--ip-hover); }
 .ip-secret-line button:focus-visible {
-  outline: none;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-backup-grid {
   display: grid;
@@ -5333,8 +5352,8 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-factor-danger summary::-webkit-details-marker { display: none; }
 .ip-factor-danger summary:hover { text-decoration: underline; }
 .ip-factor-danger summary:focus-visible {
-  outline: none;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
   border-radius: var(--ip-radius-sm);
 }
 /* Riepilogo stato in cima alla pagina: uno scudo tinta il livello e tre chip
@@ -5684,7 +5703,7 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 .ip-fisc-code__copy:hover,
 .ip-fisc-code__copy:focus-visible { color: var(--ip-primary); background: var(--ip-primary-soft); }
 .ip-fisc-code__copy.is-copied { color: var(--ip-success-text); }
-.ip-fisc-code__copy:focus-visible { outline: none; box-shadow: var(--ip-shadow-focus); }
+.ip-fisc-code__copy:focus-visible { outline: var(--ip-focus-ring); outline-offset: var(--ip-focus-offset); }
 
 /* Riepilogo economico: da griglia di sole cifre a piastrelle con icona. */
 .ip-client-stats {
@@ -6123,10 +6142,10 @@ html[data-theme="dark"] .login-logo--dark { display: block; }
 /* Focus da tastiera: il bottone deve essere visibile anche prima che il
    :focus-within accenda il gruppo, e avere un anello proprio. */
 .ip-window-btn:focus-visible {
-  outline: 0;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
   background: var(--ip-hover);
   color: var(--ip-text);
-  box-shadow: var(--ip-shadow-focus);
 }
 
 /* flex: le finestre in griglia (.ip-dash-windows / .ip-window-split) sono
@@ -9424,8 +9443,8 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
    .nav-link:focus-visible) ma e' il blu di default del framework, l'unico
    punto dell'app in cui comparirebbe. Qui usa il token dell'app. */
 .ip-tabs .nav-link:focus-visible {
-  outline: 0;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
   color: var(--ip-text);
 }
 .ip-tabs .nav-link.active:focus-visible { color: var(--ip-on-primary); }
@@ -9679,13 +9698,13 @@ html[data-theme="dark"] .ip-bulk-bar__danger:focus-visible { color: var(--ip-bg)
   /* Focus coerente col resto dell'app: bordo primary + anello, non il
      vermiglio di default di un token --ip-accent mai definito. */
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus), 0 3px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 2px var(--ip-primary), 0 3px 10px rgba(0, 0, 0, 0.2);
 }
 /* Focus catturato sul wrapper (click sull'icona/risultati): solleva la pill
    anche quando il fuoco finisce sull'input figlio, non solo sull'input stesso. */
 .ip-global-search:focus-within .ip-global-search__input {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus), 0 3px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 2px var(--ip-primary), 0 3px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* Scorciatoia (Ctrl K, che su Mac diventa ⌘ K): indicata sul campo perché
@@ -10373,11 +10392,13 @@ button.ip-calendar-daynum {
   cursor: pointer;
   border-radius: var(--ip-radius-sm);
 }
-button.ip-calendar-daynum:hover,
+button.ip-calendar-daynum:hover { color: var(--ip-primary); }
+/* L'anello solo da tastiera: era anche su :hover, e col mouse il giorno
+   sotto il puntatore sembrava aver preso il fuoco. */
 button.ip-calendar-daynum:focus-visible {
   color: var(--ip-primary);
-  outline: 0;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 /* Il pallino sotto il numero indica "oggi" senza dover decodificare il fondo
    tenue della cella: accento pieno, lo stesso tratto del numero. */
@@ -10434,11 +10455,11 @@ button.ip-calendar-event-more {
   font-family: inherit;
   text-align: left;
 }
-button.ip-calendar-event-more:hover,
+button.ip-calendar-event-more:hover { color: var(--ip-primary); }
 button.ip-calendar-event-more:focus-visible {
   color: var(--ip-primary);
-  outline: 0;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 
 .ip-calendar-list { list-style: none; margin: 0; padding: 0; }
@@ -11955,7 +11976,7 @@ html[data-theme="dark"] .ip-import-badge.is-available{ background:#1c271d; color
 /* La radio vera è nascosta: il focus da tastiera va mostrato sulla card.
    Prima :focus-within azzerava ogni anello e con Tab non si vedeva dove si
    era. */
-.ip-export-type:has(input:focus-visible){ box-shadow: var(--ip-shadow-focus); }
+.ip-export-type:has(input:focus-visible){ outline: var(--ip-focus-ring); outline-offset: var(--ip-focus-offset); }
 .ip-export-type:has(input:checked) .ip-export-type__title{ color: var(--ip-text); }
 .ip-export-type:has(input:checked) .ip-export-type__title i{ opacity:.85; }
 .ip-export-type:has(input:checked) .ip-export-type__hint{ color: var(--ip-text-muted); opacity:1; }
@@ -12376,8 +12397,8 @@ html[data-theme="dark"] .ip-import-outcome.is-error{ background:#2c1c19; color:#
    quindi scorrendo con Tab le cinque voci non mostravano dove si era. Stesso
    anello di .ip-tabs. */
 .ip-subnav__item:focus-visible {
-  outline: 0;
-  box-shadow: var(--ip-shadow-focus);
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
   color: var(--ip-text);
 }
 .ip-subnav__item.is-active:focus-visible { color: var(--ip-on-primary); }

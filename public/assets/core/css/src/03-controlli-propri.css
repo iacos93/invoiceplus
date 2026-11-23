@@ -51,8 +51,8 @@
 .ip-select__control:focus-visible,
 .ip-select.is-open .ip-select__control {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-select__control:disabled {
   background-color: var(--ip-bg);
@@ -127,8 +127,8 @@
 }
 .ip-select-panel__input:focus {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-select-panel__list {
   max-height: 260px;
@@ -360,8 +360,8 @@
 .ip-file__control:focus-visible,
 .ip-file.is-focused .ip-file__control {
   border-color: var(--ip-primary);
-  box-shadow: var(--ip-shadow-focus);
-  outline: none;
+  outline: var(--ip-focus-ring);
+  outline-offset: var(--ip-focus-offset);
 }
 .ip-file__control:disabled {
   background-color: var(--ip-bg);
