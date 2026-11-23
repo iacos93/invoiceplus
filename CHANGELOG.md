@@ -82,6 +82,12 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- Telefono: i controlli a tendina restano alla scala compatta. La regola che
+  porta i campi a 16 px per fermare lo zoom di iOS si applicava anche al
+  bottone che sostituisce il select, che è un comando e non un campo: nella
+  testata RiBa il selettore del conto aveva il testo a 16 px accanto a
+  «Genera flusso» a 12. Ora la regola copre solo i campi veri (il select
+  nativo sotto e il campo di ricerca del pannello compresi).
 - RiBa: il selettore del conto nella testata ha la stessa altezza e lo stesso
   testo del bottone «Genera flusso». Prendeva le misure dalle regole dei campi
   (35 px e 14 px, e 16 px su 40 con quelle da telefono) e accanto al bottone,

@@ -13329,13 +13329,18 @@ html.ip-theme-changing .ip-sidebar { view-transition-name: none; }
   select.form-control,
   textarea.form-control,
   .form-select,
-  .ip-select__control,
   .ip-select__search input {
     /* !important voluto: le varianti compatte (righe della fattura, campi
        input-sm) fissano 12px con selettori più specifici, e basta un solo
        campo sotto i 16px perché iOS ingrandisca la pagina. */
     font-size: 16px !important;
   }
+  /* Il controllo di IPSelect resta fuori da questo elenco: è un <button>,
+     non un campo, e iOS non ci applica lo zoom al tocco; a 16px si portava
+     dietro una scala da campo dentro una testata fatta di comandi (accanto a
+     «Genera flusso», 12px). Il select nativo sotto — quello che riceve focus e
+     valore, e che iOS guarda se mai ne avesse uno — resta a 16px qui sopra,
+     e il campo di ricerca del pannello pure. */
   input.form-control,
   select.form-control,
   .form-select,
