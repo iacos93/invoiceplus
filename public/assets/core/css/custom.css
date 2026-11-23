@@ -1109,6 +1109,20 @@ body:has(.ip-topbar) {
 #headerbar .headerbar-total .ip-select:has(> .ip-riba-account-select) .ip-select__value {
   text-align: center;
 }
+/* Il selettore del conto non è un .btn, ma nella testata sta accanto a uno:
+   prendeva altezza e testo dalle regole dei campi (35 px e 14 px, e con le
+   regole da telefono 16 px su 40), quindi accanto a «Genera flusso» sembrava
+   un altro controllo, più alto e con il testo più grande. Qui prende le misure
+   del bottone — altezza del token compatto, testo 12 px, padding orizzontale
+   dello stesso ordine — così la coppia resta allineata a ogni larghezza, in
+   entrambi i temi. */
+#headerbar .headerbar-total .ip-select:has(> .ip-riba-account-select) .ip-select__control {
+  height: var(--ip-control-h-sm);
+  min-height: var(--ip-control-h-sm);
+  padding: 0 var(--ip-space-6);
+  font-size: var(--ip-text-sm);
+  line-height: 1;
+}
 #headerbar .headerbar-total:has(.ip-riba-account-select) {
   align-items: center;
 }

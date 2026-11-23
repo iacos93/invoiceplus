@@ -82,6 +82,10 @@ Le regole per scrivere le voci e preparare una release sono in
 
 ### Corretto
 
+- RiBa: il selettore del conto nella testata ha la stessa altezza e lo stesso
+  testo del bottone «Genera flusso». Prendeva le misure dalle regole dei campi
+  (35 px e 14 px, e 16 px su 40 con quelle da telefono) e accanto al bottone,
+  che è un comando da 30 px con il testo a 12, sembrava un altro controllo.
 - Anteprima fattura, preventivo e DDT: il riepilogo passa sotto il foglio
   sotto i 1200 px, non più sotto i 992. Il foglio A4 serve 794 px per stare a
   scala 1 e con 300 px fissi alla colonna laterale, a 1024, il documento
